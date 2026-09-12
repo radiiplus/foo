@@ -1,0 +1,6 @@
+module missing {
+  start() {
+    constant result is undefined_symbol.
+    give.
+  }
+}

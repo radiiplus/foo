@@ -1,0 +1,33 @@
+module process {
+  --- Process management ---
+  --- Provides process control and argument access ---
+  
+  public function args() {
+    constant result of type integer 64 is 0.
+    give result.
+  }
+  
+  public function arg(index of type integer 64) {
+    constant result of type pointer to byte is uninitialized.
+    give result.
+  }
+  
+  public type Command is record {
+    handle of type pointer to byte.
+  }.
+  
+  public function spawn(command of type pointer to byte) {
+    constant result of type Command is uninitialized.
+    give result.
+  }
+  
+  public function wait(command of type Command) {
+    constant result of type integer 64 is 0.
+    give result.
+  }
+  
+  public function output(command of type Command) {
+    constant result of type pointer to byte is uninitialized.
+    give result.
+  }
+}

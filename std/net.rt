@@ -1,0 +1,40 @@
+module net {
+  --- Network operations ---
+  --- TCP/UDP networking and DNS resolution ---
+  
+  public type Stream is record {
+    handle of type pointer to byte.
+  }.
+  
+  public type Listener is record {
+    handle of type pointer to byte.
+  }.
+  
+  public type Socket is record {
+    handle of type pointer to byte.
+  }.
+  
+  public function dial(host of type pointer to byte, port of type integer 32) {
+    constant result of type Stream is uninitialized.
+    give result.
+  }
+  
+  public function accept(host of type pointer to byte, port of type integer 32) {
+    constant result of type Listener is uninitialized.
+    give result.
+  }
+  
+  public function send(stream of type Stream, data of type pointer to byte, size of type integer 64) {
+    give.
+  }
+  
+  public function receive(stream of type Stream, buffer of type pointer to byte, size of type integer 64) {
+    constant result of type integer 64 is 0.
+    give result.
+  }
+  
+  public function resolve(host of type pointer to byte) {
+    constant result of type pointer to byte is uninitialized.
+    give result.
+  }
+}

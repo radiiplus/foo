@@ -1,0 +1,28 @@
+module map {
+  --- Hash map collection ---
+  --- Key-value store implementation ---
+  
+  public type Map is record {
+    data of type pointer to byte.
+    size of type integer 64.
+  }.
+  
+  public function create() {
+    constant result of type Map is uninitialized.
+    give result.
+  }
+  
+  public function put(collection of type Map, key of type pointer to byte, value of type pointer to byte) {
+    give.
+  }
+  
+  public function get(collection of type Map, key of type pointer to byte) {
+    constant result of type pointer to byte is uninitialized.
+    give result.
+  }
+  
+  public function contains(collection of type Map, key of type pointer to byte) {
+    constant result of type boolean is false.
+    give result.
+  }
+}

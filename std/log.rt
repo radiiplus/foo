@@ -1,0 +1,27 @@
+module log {
+  --- Logging utilities ---
+  --- Structured logging with levels and scopes ---
+  
+  public type Level is choice {
+    Error.
+    Warning.
+    Info.
+    Debug.
+  }.
+  
+  public function error(scope of type pointer to byte, message of type pointer to byte) {
+    give.
+  }
+  
+  public function warning(scope of type pointer to byte, message of type pointer to byte) {
+    give.
+  }
+  
+  public function info(scope of type pointer to byte, message of type pointer to byte) {
+    give.
+  }
+  
+  public function debug(scope of type pointer to byte, message of type pointer to byte) {
+    give.
+  }
+}

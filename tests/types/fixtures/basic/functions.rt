@@ -1,0 +1,10 @@
+module functions {
+  function add(a of type integer 32, b of type integer 32) {
+    give a plus b.
+  }
+  
+  start() {
+    constant result is add(1, 2).
+    give.
+  }
+}

@@ -1,0 +1,26 @@
+module time {
+  --- Time and duration utilities ---
+  --- Cross-platform time operations ---
+  
+  public type Duration is record {
+    nanos of type integer 64.
+  }.
+  
+  public type Instant is record {
+    nanos of type integer 64.
+  }.
+  
+  public function instant() {
+    constant result of type Instant is uninitialized.
+    give result.
+  }
+  
+  public function moment() {
+    constant result of type integer 64 is 0.
+    give result.
+  }
+  
+  public function pause(duration of type Duration) {
+    give.
+  }
+}

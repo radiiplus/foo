@@ -1,0 +1,8 @@
+module main {
+  use secret.
+  
+  start() {
+    constant x is hidden_value.
+    give.
+  }
+}

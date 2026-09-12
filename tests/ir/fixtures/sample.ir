@@ -1,0 +1,19 @@
+module app {
+
+  extern "c" fn @puts(ptr<int>) -> int
+
+  fn @add(%a: int, %b: int) -> int {
+  entry:
+    %1 = add %a, %b
+    return %1
+  }
+
+  fn @main() -> void {
+  entry:
+    %1 = alloc scope int
+    store 42, %1
+    %2 = load %1
+    %3 = call @add(%2, 42)
+    return
+  }
+}

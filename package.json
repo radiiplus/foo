@@ -1,0 +1,13 @@
+{
+  "name": "tratio",
+  "version": "0.1.0",
+  "scripts": {
+    "test": "tsx tests/lex/run.ts && tsx tests/diag/run.ts && tsx tests/parse/run.ts && tsx tests/sema/run.ts && tsx tests/types/run.ts && tsx tests/ir/run.ts && tsx tests/backend/run.ts && tsx tests/stdlib/run.ts && tsx tests/pkg/run.ts && tsx tests/generics/run.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0"
+  },
+  "workspaces": [
+    "units/*"
+  ]
+}

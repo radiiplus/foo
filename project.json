@@ -1,0 +1,11 @@
+{
+  "name": "tratio",
+  "version": "0.1.0",
+  "language": "1",
+  "build": {
+    "type": "exe",
+    "target": ["linux", "darwin", "windows"],
+    "optimize": "dev"
+  },
+  "dependencies": {}
+}

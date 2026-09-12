@@ -1,0 +1,29 @@
+module memory {
+  public type Allocator is record {
+    handle of type pointer to byte.
+  }.
+  
+  public function system() {
+    constant result of type Allocator is uninitialized.
+    give result.
+  }
+  
+  public function arena() {
+    constant result of type Allocator is uninitialized.
+    give result.
+  }
+  
+  public function allocate(allocator of type Allocator, size of type integer 64) {
+    constant result of type pointer to byte is uninitialized.
+    give result.
+  }
+  
+  public function release(allocator of type Allocator, buffer of type pointer to byte) {
+    give.
+  }
+  
+  public function expand(allocator of type Allocator, buffer of type pointer to byte, size of type integer 64) {
+    constant result of type pointer to byte is uninitialized.
+    give result.
+  }
+}

@@ -1,0 +1,30 @@
+module stream {
+   public type Stream is record {
+     handle of type pointer to byte.
+   }.
+   public function input() {
+     constant result of type Stream is uninitialized.
+     give result.
+   }
+   public function output() {
+     constant result of type Stream is uninitialized.
+     give result.
+   }
+   public function report() {
+     constant result of type Stream is uninitialized.
+     give result.
+   }
+   public function write(stream of type Stream, content of type pointer to byte) {
+     give.
+   }
+   public function read(stream of type Stream, buffer of type pointer to byte, size of type integer 64) {
+     constant result of type integer 64 is 0.
+     give result.
+   }
+   public function close(stream of type Stream) {
+     give.
+   }
+   public function print(stream of type Stream, content of type pointer to byte) {
+     write(stream, content).
+   }
+ }

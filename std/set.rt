@@ -1,0 +1,27 @@
+module set {
+  --- Set collection ---
+  --- Unique value storage ---
+  
+  public type Set is record {
+    data of type pointer to byte.
+    size of type integer 64.
+  }.
+  
+  public function create() {
+    constant result of type Set is uninitialized.
+    give result.
+  }
+  
+  public function insert(collection of type Set, value of type pointer to byte) {
+    give.
+  }
+  
+  public function contains(collection of type Set, value of type pointer to byte) {
+    constant result of type boolean is false.
+    give result.
+  }
+  
+  public function remove(collection of type Set, value of type pointer to byte) {
+    give.
+  }
+}

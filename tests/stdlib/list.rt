@@ -1,0 +1,9 @@
+module test_list {
+  use "std/list".
+  
+  start() {
+    constant collection is create().
+    constant size is length(collection).
+    give.
+  }
+}

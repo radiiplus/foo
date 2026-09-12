@@ -1,0 +1,8 @@
+module test_stream {
+  use "std/stream".
+  start() {
+    constant out is output().
+    print(out, "Hello from Tratio!").
+    give.
+  }
+}

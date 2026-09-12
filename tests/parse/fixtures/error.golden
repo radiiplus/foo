@@ -1,0 +1,7 @@
+module broken {
+    constant x of type integer 32 is -- broken.
+    function missing() {
+        constant y is -- broken.
+      }
+    constant z is 42.
+  }

@@ -1,0 +1,5 @@
+module submodule {
+  public function nested_add(a of type integer 32, b of type integer 32) {
+    give a plus b.
+  }
+}

@@ -1,0 +1,8 @@
+module main {
+  use math.
+  
+  start() {
+    constant result is add(1, 2).
+    give.
+  }
+}

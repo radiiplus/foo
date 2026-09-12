@@ -1,0 +1,17 @@
+module thread {
+  --- Threading primitives ---
+  --- Cross-platform thread management ---
+  
+  public type Thread is record {
+    handle of type pointer to byte.
+  }.
+  
+  public function spawn(entry of type pointer to byte) {
+    constant result of type Thread is uninitialized.
+    give result.
+  }
+  
+  public function await(handle of type Thread) {
+    give.
+  }
+}

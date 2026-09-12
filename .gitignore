@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# TypeScript/JavaScript build and tool caches
+dist/
+build/
+coverage/
+.cache/
+.tsbuildinfo
+
+# Tratio generated outputs and local toolchains
+.tratio-build/
+.tratio/
+tmp-backend-test/
+zig-cache/
+zig-out/
+
+# Logs and temporary files
+*.log
+*.tmp
+tmp/
+temp/
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
