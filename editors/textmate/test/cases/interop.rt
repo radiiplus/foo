@@ -1,0 +1,3 @@
+module network {
+  use c "curl/curl.h".
+}

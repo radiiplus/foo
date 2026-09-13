@@ -1,0 +1,729 @@
+[
+  {
+    "line": 1,
+    "text": "Ordinary",
+    "scope": "comment.line.double-dash.tratio",
+    "absent": "comment.line.documentation.tratio"
+  },
+  {
+    "line": 2,
+    "text": "Regular",
+    "scope": "comment.block.tratio",
+    "absent": "comment.block.documentation.tratio"
+  },
+  {
+    "line": 3,
+    "text": "function",
+    "scope": "comment.block.tratio",
+    "absent": "storage.type.tratio"
+  },
+  {
+    "line": 5,
+    "text": "Documentation",
+    "scope": "comment.line.documentation.tratio"
+  },
+  {
+    "line": 6,
+    "text": "Documentation",
+    "scope": "comment.block.documentation.tratio"
+  },
+  {
+    "line": 7,
+    "text": "constant",
+    "scope": "comment.block.documentation.tratio"
+  },
+  {
+    "line": 9,
+    "text": "sample",
+    "scope": "entity.name.namespace.tratio"
+  },
+  {
+    "line": 10,
+    "text": "identity",
+    "scope": "entity.name.function.tratio"
+  },
+  {
+    "line": 10,
+    "text": "[",
+    "scope": "punctuation.definition.typeparameters.begin.tratio"
+  },
+  {
+    "line": 10,
+    "text": "T:",
+    "scope": "meta.type.parameters.tratio"
+  },
+  {
+    "line": 10,
+    "text": ":",
+    "scope": "punctuation.separator.tratio"
+  },
+  {
+    "line": 11,
+    "text": "give",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 11,
+    "text": "value",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 11,
+    "text": ".",
+    "scope": "punctuation.terminator.tratio"
+  },
+  {
+    "line": 13,
+    "text": "Box",
+    "scope": "entity.name.type.tratio"
+  },
+  {
+    "line": 13,
+    "text": "[",
+    "scope": "meta.type.parameters.tratio"
+  },
+  {
+    "line": 13,
+    "text": "derives",
+    "scope": "keyword.other.tratio"
+  },
+  {
+    "line": 13,
+    "text": "Hash",
+    "scope": "entity.name.type.tratio"
+  },
+  {
+    "line": 14,
+    "text": "count",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 14,
+    "text": "32",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 14,
+    "text": "1_000",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 14,
+    "text": ".",
+    "scope": "punctuation.terminator.tratio"
+  },
+  {
+    "line": 15,
+    "text": "12_345.67_89",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 16,
+    "text": "vector",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 16,
+    "text": "[",
+    "scope": "meta.type.parameters.tratio"
+  },
+  {
+    "line": 16,
+    "text": "splat",
+    "scope": "entity.name.function.tratio"
+  },
+  {
+    "line": 17,
+    "text": "[",
+    "scope": "meta.brackets.tratio",
+    "absent": "meta.type.parameters.tratio"
+  },
+  {
+    "line": 18,
+    "text": "index",
+    "scope": "meta.brackets.tratio"
+  },
+  {
+    "line": 19,
+    "text": "[",
+    "scope": "meta.type.parameters.tratio"
+  },
+  {
+    "line": 20,
+    "text": "apply",
+    "scope": "entity.name.function.tratio"
+  },
+  {
+    "line": 20,
+    "text": "nothing",
+    "scope": "support.type.primitive.tratio"
+  },
+  {
+    "line": 21,
+    "text": "choice",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 22,
+    "text": "packed",
+    "scope": "storage.modifier.tratio"
+  },
+  {
+    "line": 23,
+    "text": "union",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 24,
+    "text": "opaque",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 25,
+    "text": "hash",
+    "scope": "entity.name.function.tratio"
+  },
+  {
+    "line": 25,
+    "text": "fallible",
+    "scope": "storage.modifier.type.tratio"
+  },
+  {
+    "line": 26,
+    "text": "\"header.h\"",
+    "scope": "string.quoted.double.tratio"
+  },
+  {
+    "line": 27,
+    "text": "as",
+    "scope": "keyword.other.tratio"
+  },
+  {
+    "line": 28,
+    "text": "start",
+    "scope": "entity.name.tag.tratio"
+  },
+  {
+    "line": 29,
+    "text": "interrupt",
+    "scope": "entity.name.tag.tratio"
+  },
+  {
+    "line": 30,
+    "text": "naked",
+    "scope": "entity.name.tag.tratio"
+  },
+  {
+    "line": 31,
+    "text": "volatile",
+    "scope": "entity.name.tag.tratio"
+  },
+  {
+    "line": 32,
+    "text": "target_feature",
+    "scope": "entity.name.tag.tratio"
+  },
+  {
+    "line": 32,
+    "text": "\"sse2\"",
+    "scope": "string.quoted.double.tratio"
+  },
+  {
+    "line": 32,
+    "text": "#[",
+    "scope": "punctuation.definition.annotation.tratio"
+  },
+  {
+    "line": 33,
+    "text": "test",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 33,
+    "text": "\"a test\"",
+    "scope": "string.quoted.double.tratio"
+  },
+  {
+    "line": 34,
+    "text": "\"Hello\"",
+    "scope": "string.quoted.double.tratio"
+  },
+  {
+    "line": 34,
+    "text": "newline",
+    "scope": "constant.language.tratio"
+  },
+  {
+    "line": 35,
+    "text": "\"\"",
+    "scope": "string.quoted.double.tratio"
+  },
+  {
+    "line": 36,
+    "text": "\\n",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 36,
+    "text": "\\t",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 36,
+    "text": "\\r",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 36,
+    "text": "\\\\",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 36,
+    "text": "\\\"",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 36,
+    "text": "\\0",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 37,
+    "text": "'a'",
+    "scope": "string.quoted.single.tratio"
+  },
+  {
+    "line": 38,
+    "text": "\\'",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 39,
+    "text": "\\n",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 40,
+    "text": "\\t",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 41,
+    "text": "\\r",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 42,
+    "text": "\\\\",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 43,
+    "text": "\\0",
+    "scope": "constant.character.escape.tratio"
+  },
+  {
+    "line": 44,
+    "text": "λ",
+    "scope": "string.quoted.single.tratio"
+  },
+  {
+    "line": 45,
+    "text": "\\q",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 46,
+    "text": "\\'",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 47,
+    "text": "\\q",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 48,
+    "text": "\\\"",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 49,
+    "text": "unfinished",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 50,
+    "text": "constant",
+    "scope": "storage.modifier.tratio",
+    "absent": "string.quoted.double.tratio"
+  },
+  {
+    "line": 51,
+    "text": "trailing",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 52,
+    "text": "43",
+    "scope": "constant.numeric.tratio",
+    "absent": "string.quoted.double.tratio"
+  },
+  {
+    "line": 53,
+    "text": "x",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 54,
+    "text": "44",
+    "scope": "constant.numeric.tratio",
+    "absent": "string.quoted.single.tratio"
+  },
+  {
+    "line": 55,
+    "text": "many",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 56,
+    "text": "unfinished",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 57,
+    "text": "45",
+    "scope": "constant.numeric.tratio",
+    "absent": "string.quoted.double.tratio"
+  },
+  {
+    "line": 58,
+    "text": "0",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 58,
+    "text": "42",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 58,
+    "text": "1_000",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 58,
+    "text": "1__2",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 58,
+    "text": "1_",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 58,
+    "text": "0.5",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 58,
+    "text": "12_345.6_7",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 58,
+    "text": "5",
+    "scope": "constant.numeric.tratio"
+  },
+  {
+    "line": 58,
+    "text": ".",
+    "scope": "punctuation.terminator.tratio",
+    "last": true
+  },
+  {
+    "line": 59,
+    "text": "bytes",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 59,
+    "text": "bits",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 59,
+    "text": "kilobytes",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 59,
+    "text": "megabytes",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 59,
+    "text": "gigabytes",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 59,
+    "text": "terabytes",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 60,
+    "text": "seconds",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 60,
+    "text": "milliseconds",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 60,
+    "text": "microseconds",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 60,
+    "text": "nanoseconds",
+    "scope": "keyword.other.unit.tratio"
+  },
+  {
+    "line": 61,
+    "text": "xFF",
+    "scope": "variable.other.tratio",
+    "absent": "constant.numeric.tratio"
+  },
+  {
+    "line": 61,
+    "text": "o77",
+    "scope": "variable.other.tratio",
+    "absent": "constant.numeric.tratio"
+  },
+  {
+    "line": 61,
+    "text": "b10",
+    "scope": "variable.other.tratio",
+    "absent": "constant.numeric.tratio"
+  },
+  {
+    "line": 61,
+    "text": "e3",
+    "scope": "variable.other.tratio",
+    "absent": "constant.numeric.tratio"
+  },
+  {
+    "line": 62,
+    "text": "r",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 62,
+    "text": "\"ordinary quoted text\"",
+    "scope": "string.quoted.double.tratio"
+  },
+  {
+    "line": 63,
+    "text": "let",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "var",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "const",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "fn",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "if",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "else",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "defer",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "return",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "mod",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "pub",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "extern",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "export",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "spawn",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "thread_local",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "uninit",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "errdefer",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 63,
+    "text": "orelse",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 64,
+    "text": "+",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 64,
+    "text": "/",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 64,
+    "text": "*",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 64,
+    "text": "=",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 64,
+    "text": "!",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 64,
+    "text": "?",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 64,
+    "text": ";",
+    "scope": "invalid.illegal.tratio"
+  },
+  {
+    "line": 65,
+    "text": ".",
+    "scope": "punctuation.accessor.tratio"
+  },
+  {
+    "line": 65,
+    "text": "field",
+    "scope": "entity.name.function.tratio"
+  },
+  {
+    "line": 66,
+    "text": "modulex",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 66,
+    "text": "constantx",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 66,
+    "text": "integerx",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 66,
+    "text": "truex",
+    "scope": "variable.other.tratio"
+  },
+  {
+    "line": 68,
+    "text": "T",
+    "scope": "meta.type.parameters.tratio"
+  },
+  {
+    "line": 70,
+    "text": "value",
+    "scope": "variable.other.tratio",
+    "absent": "meta.type.parameters.tratio"
+  },
+  {
+    "line": 71,
+    "text": "native",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 72,
+    "text": "module",
+    "scope": "meta.embedded.block.zig",
+    "absent": "keyword.other.tratio"
+  },
+  {
+    "line": 72,
+    "text": "\"}\"",
+    "scope": "string.quoted.double.zig"
+  },
+  {
+    "line": 73,
+    "text": "function",
+    "scope": "comment.line.double-slash.zig"
+  },
+  {
+    "line": 76,
+    "text": "constant",
+    "scope": "storage.modifier.tratio",
+    "absent": "meta.embedded.block.zig"
+  },
+  {
+    "line": 77,
+    "text": "asm",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 78,
+    "text": "2",
+    "scope": "constant.numeric.tratio",
+    "absent": "meta.embedded.block.zig"
+  }
+]

@@ -1,0 +1,47 @@
+type Message is choice {
+  Data(sequence of byte).
+  Failure(ErrorInfo).
+  Closed.
+}.
+
+match message {
+  case Data(bytes) when bytes.length is greater than 0 { consume(bytes). }
+  case Data(bytes) { ignore(bytes). }
+  case Failure(info) { report(info). }
+  case Closed { stop. }
+}
+
+function dot(left of type vector[8, decimal 32], right of type vector[8, decimal 32]) {
+  constant product is left times right.
+  constant answer of type decimal 32 is reduce(product, "add").
+  give answer.
+}
+
+constant ones of type vector[8, decimal 32] is splat(1.0).
+constant reversed is shuffle(ones, ones, 7, 6, 5, 4, 3, 2, 1, 0).
+constant chosen is select(mask, left, right).
+
+type Flags is packed record {
+  mode of type unsigned 3.
+  enabled of type boolean.
+  kind of type unsigned 4.
+}.
+
+type CValue is c union {
+  signed_value of type integer 32.
+  real_value of type decimal 64.
+}.
+
+type Window is opaque.
+
+type Visitor is function(pointer to Window, integer 32) of type nothing for c.
+
+function visit(window of type pointer to Window, event of type integer 32)
+  of type nothing for c {
+  give.
+}
+
+use "c" function install_visitor(
+  callback of type Visitor,
+  window of type pointer to Window
+) of type nothing.

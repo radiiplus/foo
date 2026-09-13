@@ -1,0 +1,566 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Tratio",
+  "scopeName": "source.tratio",
+  "fileTypes": [
+    "rt"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#native"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#characters"
+    },
+    {
+      "include": "#attributes"
+    },
+    {
+      "include": "#connectives"
+    },
+    {
+      "include": "#declarations"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#calls"
+    },
+    {
+      "include": "#brackets"
+    },
+    {
+      "include": "#punctuation"
+    },
+    {
+      "include": "#variables"
+    },
+    {
+      "match": "[^\\s]",
+      "name": "invalid.illegal.tratio"
+    }
+  ],
+  "repository": {
+    "connectives": {
+      "match": "\\b(?:of[ \\t]+type|of|to)\\b",
+      "name": "meta.type.annotation.tratio"
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.documentation.tratio",
+          "begin": "---!",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.tratio"
+            }
+          },
+          "end": "---",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.tratio"
+            }
+          }
+        },
+        {
+          "name": "comment.block.tratio",
+          "begin": "---",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.tratio"
+            }
+          },
+          "end": "---",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.tratio"
+            }
+          }
+        },
+        {
+          "name": "comment.line.documentation.tratio",
+          "match": "(--!)[^\\r\\n]*",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.comment.tratio"
+            }
+          }
+        },
+        {
+          "name": "comment.line.double-dash.tratio",
+          "match": "(--)[^\\r\\n]*",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.comment.tratio"
+            }
+          }
+        }
+      ]
+    },
+    "escape": {
+      "patterns": [
+        {
+          "match": "\\\\[ntr\\\\\\\"0]",
+          "name": "constant.character.escape.tratio"
+        },
+        {
+          "match": "\\\\(?:[^\\r\\n]|$)",
+          "name": "invalid.illegal.tratio"
+        }
+      ]
+    },
+    "characterescape": {
+      "patterns": [
+        {
+          "match": "\\\\[ntr\\\\'0]",
+          "name": "constant.character.escape.tratio"
+        },
+        {
+          "match": "\\\\(?:[^\\r\\n]|$)",
+          "name": "invalid.illegal.tratio"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.tratio invalid.illegal.tratio",
+          "begin": "\"(?!(?:[^\"\\\\\\r\\n]|\\\\[^\\r\\n])*\")",
+          "end": "$",
+          "patterns": [
+            {
+              "include": "#escape"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.double.tratio",
+          "begin": "\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.tratio"
+            }
+          },
+          "end": "\"|$",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.tratio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#escape"
+            }
+          ]
+        }
+      ]
+    },
+    "characters": {
+      "patterns": [
+        {
+          "match": "'(?:[^'\\\\\\r\\n]|\\\\[^\\r\\n]){2,}'",
+          "name": "string.quoted.single.tratio invalid.illegal.tratio"
+        },
+        {
+          "name": "string.quoted.single.tratio invalid.illegal.tratio",
+          "begin": "'(?!(?:[^'\\\\\\r\\n]|\\\\[^\\r\\n])*')",
+          "end": "$",
+          "patterns": [
+            {
+              "include": "#characterescape"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.tratio",
+          "begin": "'",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.tratio"
+            }
+          },
+          "end": "'|$",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.tratio"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#characterescape"
+            }
+          ]
+        }
+      ]
+    },
+    "attributes": {
+      "name": "meta.annotation.tratio",
+      "begin": "(#\\[)[ \\t]*([A-Za-z_][A-Za-z0-9_]*)?",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.annotation.tratio"
+        },
+        "2": {
+          "name": "entity.name.tag.tratio"
+        }
+      },
+      "end": "\\]",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.annotation.tratio"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#punctuation"
+        },
+        {
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+          "name": "entity.name.type.tratio"
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "match": "\\b(module)([ \\t]+)([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.tratio"
+            },
+            "3": {
+              "name": "entity.name.namespace.tratio"
+            }
+          }
+        },
+        {
+          "name": "meta.function.tratio",
+          "begin": "\\b(function)([ \\t]+)([A-Za-z_][A-Za-z0-9_]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.tratio"
+            },
+            "3": {
+              "name": "entity.name.function.tratio"
+            }
+          },
+          "end": "(?=\\(|\\{|\\.|$)",
+          "patterns": [
+            {
+              "include": "#generics"
+            }
+          ]
+        },
+        {
+          "name": "meta.type.tratio",
+          "begin": "\\b(type)([ \\t]+)((?!(?:integer|unsigned|decimal|boolean|byte|character|text|array|sequence|nothing|record|choice|union|opaque|vector|function|optional|pointer|address|reference|fallible)\\b)[A-Za-z_][A-Za-z0-9_]*)(?=[ \\t]*(?:\\[|is\\b))",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.tratio"
+            },
+            "3": {
+              "name": "entity.name.type.tratio"
+            }
+          },
+          "end": "(?=\\bis\\b|$)",
+          "patterns": [
+            {
+              "include": "#generics"
+            }
+          ]
+        },
+        {
+          "match": "\\b(constant|mutable)([ \\t]+)([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "storage.modifier.tratio"
+            },
+            "3": {
+              "name": "variable.other.tratio"
+            }
+          }
+        }
+      ]
+    },
+    "generics": {
+      "name": "meta.type.parameters.tratio",
+      "begin": "\\[",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.typeparameters.begin.tratio"
+        }
+      },
+      "end": "\\]",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.typeparameters.end.tratio"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#comments"
+        },
+        {
+          "include": "#types"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#generics"
+        },
+        {
+          "include": "#punctuation"
+        },
+        {
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+          "name": "entity.name.type.tratio"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "meta.type.tratio",
+          "begin": "\\b(vector)(?=[ \\t]*\\[)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.tratio"
+            }
+          },
+          "end": "(?<=\\])|$",
+          "patterns": [
+            {
+              "include": "#generics"
+            }
+          ]
+        },
+        {
+          "name": "meta.type.tratio",
+          "begin": "\\b([A-Z][A-Za-z0-9_]*)(?=[ \\t]*\\[)",
+          "beginCaptures": {
+            "1": {
+              "name": "entity.name.type.tratio"
+            }
+          },
+          "end": "(?<=\\])|$",
+          "patterns": [
+            {
+              "include": "#generics"
+            }
+          ]
+        },
+        {
+          "match": "\\b(?:integer|unsigned|decimal|boolean|byte|character|text|nothing)\\b",
+          "name": "support.type.primitive.tratio"
+        },
+        {
+          "match": "\\b(?:optional|pointer|address|reference|fallible)\\b",
+          "name": "storage.modifier.type.tratio"
+        },
+        {
+          "match": "\\b(?:array|sequence|record|choice|union|opaque|vector|function)\\b",
+          "name": "storage.type.tratio"
+        },
+        {
+          "match": "\\b[A-Z][A-Za-z0-9_]*\\b",
+          "name": "entity.name.type.tratio"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "match": "\\b(?:give|when|otherwise|for|each|in|while|repeat|until|reaches|advance|match|case|break|continue|unsafe|native|asm|evaluate|on|leave|try|catch|test|eval|reflect|embed|start)\\b",
+          "name": "keyword.control.tratio"
+        },
+        {
+          "match": "\\b(?:is|and|or|not|plus|minus|times|divided|by|equals|does|equal|greater|than|less|at|least|most)\\b",
+          "name": "keyword.operator.tratio"
+        },
+        {
+          "match": "\\b(?:module|use|where|type|context|derives|as)\\b",
+          "name": "keyword.other.tratio"
+        },
+        {
+          "match": "\\b(?:constant|mutable|public|packed)\\b",
+          "name": "storage.modifier.tratio"
+        },
+        {
+          "match": "\\b(?:true|false|uninitialized|unreachable|newline|anything)\\b",
+          "name": "constant.language.tratio"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "match": "(?<![A-Za-z0-9_])[0-9][0-9_]*(?:\\.[0-9][0-9_]*)?",
+          "name": "constant.numeric.tratio"
+        },
+        {
+          "match": "\\b(?:bytes|bits|kilobytes|megabytes|gigabytes|terabytes|seconds|milliseconds|microseconds|nanoseconds)\\b",
+          "name": "keyword.other.unit.tratio"
+        }
+      ]
+    },
+    "calls": {
+      "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=[ \\t]*\\()",
+      "name": "entity.name.function.tratio"
+    },
+    "brackets": {
+      "name": "meta.brackets.tratio",
+      "begin": "\\[",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.section.brackets.begin.tratio"
+        }
+      },
+      "end": "\\]",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.brackets.end.tratio"
+        }
+      },
+      "patterns": [
+        {
+          "include": "$self"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "match": "\\.(?=[A-Za-z_])",
+          "name": "punctuation.accessor.tratio"
+        },
+        {
+          "match": "\\.",
+          "name": "punctuation.terminator.tratio"
+        },
+        {
+          "match": ",|:",
+          "name": "punctuation.separator.tratio"
+        },
+        {
+          "match": "\\{",
+          "name": "punctuation.section.block.begin.tratio"
+        },
+        {
+          "match": "\\}",
+          "name": "punctuation.section.block.end.tratio"
+        },
+        {
+          "match": "\\(",
+          "name": "punctuation.section.parens.begin.tratio"
+        },
+        {
+          "match": "\\)",
+          "name": "punctuation.section.parens.end.tratio"
+        },
+        {
+          "match": "\\]",
+          "name": "punctuation.section.brackets.end.tratio"
+        }
+      ]
+    },
+    "variables": {
+      "match": "[A-Za-z_][A-Za-z0-9_]*\\b",
+      "name": "variable.other.tratio"
+    },
+    "native": {
+      "name": "meta.embedded.block.zig",
+      "begin": "\\b(?:(native)[ \\t]+(zig)|(asm))[ \\t]*(\\{)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.tratio"
+        },
+        "2": {
+          "name": "entity.name.namespace.tratio"
+        },
+        "3": {
+          "name": "keyword.control.tratio"
+        },
+        "4": {
+          "name": "punctuation.section.block.begin.tratio"
+        }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.section.block.end.tratio"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#foreign"
+        }
+      ]
+    },
+    "foreign": {
+      "patterns": [
+        {
+          "begin": "\"",
+          "end": "\"|$",
+          "name": "string.quoted.double.zig",
+          "patterns": [
+            {
+              "match": "\\\\.",
+              "name": "constant.character.escape.zig"
+            }
+          ]
+        },
+        {
+          "begin": "'",
+          "end": "'|$",
+          "name": "string.quoted.single.zig",
+          "patterns": [
+            {
+              "match": "\\\\.",
+              "name": "constant.character.escape.zig"
+            }
+          ]
+        },
+        {
+          "match": "//.*$",
+          "name": "comment.line.double-slash.zig"
+        },
+        {
+          "match": "\\\\\\\\.*$",
+          "name": "string.quoted.double.zig"
+        },
+        {
+          "begin": "\\{",
+          "end": "\\}",
+          "patterns": [
+            {
+              "include": "#foreign"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

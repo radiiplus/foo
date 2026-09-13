@@ -1,0 +1,5 @@
+[
+  {"line":"module network {","tokens":[[0,6,"source.tratio keyword.other.tratio"],[6,7,"source.tratio"],[7,14,"source.tratio entity.name.namespace.tratio"],[14,15,"source.tratio"],[15,16,"source.tratio punctuation.section.block.begin.tratio"]]},
+  {"line":"  use c \"curl/curl.h\".","tokens":[[0,2,"source.tratio"],[2,5,"source.tratio keyword.other.tratio"],[5,6,"source.tratio"],[6,7,"source.tratio variable.other.tratio"],[7,8,"source.tratio"],[8,9,"source.tratio string.quoted.double.tratio punctuation.definition.string.begin.tratio"],[9,20,"source.tratio string.quoted.double.tratio"],[20,21,"source.tratio string.quoted.double.tratio punctuation.definition.string.end.tratio"],[21,22,"source.tratio punctuation.terminator.tratio"]]},
+  {"line":"}","tokens":[[0,1,"source.tratio punctuation.section.block.end.tratio"]]}
+]

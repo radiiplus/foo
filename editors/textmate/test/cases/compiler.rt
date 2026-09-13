@@ -1,0 +1,210 @@
+module compiler {
+  -- Host capabilities: bytes, storage and files. Compiler decisions are below.
+  use "boot" function read(path of type text) of type text.
+  use "boot" function write(path of type text, content of type text) of type nothing.
+  use "boot" function fail(message of type text) of type nothing.
+  use "boot" function join(left of type text, right of type text) of type text.
+  use "boot" function length(value of type text) of type unsigned 64.
+  use "boot" function point(value of type text, index of type unsigned 64) of type unsigned 64.
+  use "boot" function slice(value of type text, first of type unsigned 64, last of type unsigned 64) of type text.
+  use "boot" function same(left of type text, right of type text) of type boolean.
+  use "boot" function below(left of type unsigned 64, right of type unsigned 64) of type boolean.
+  use "boot" function invert(value of type boolean) of type boolean.
+  use "boot" function digits(value of type unsigned 64) of type text.
+  use "boot" function number(value of type text) of type unsigned 64.
+  use "boot" function drop(value of type text) of type nothing.
+  use "boot" function get(key of type text) of type text.
+  use "boot" function put(key of type text, value of type text) of type nothing.
+  use "boot" function append(key of type text, value of type text) of type nothing.
+
+  -- Diagnostics: byte positions are tracked by the lexer, rendered here.
+  function report(problem of type text, offset of type unsigned 64) of type nothing {
+    put("walk", "0"). put("line", "1"). put("column", "1"). put("begin", "0").
+    while below(number(get("walk")), offset) {
+      when same(digits(point(get("source"), number(get("walk")))), "10") {
+        put("line", digits(number(get("line")) plus 1)).
+        put("column", "1"). put("begin", digits(number(get("walk")) plus 1)).
+      } otherwise { put("column", digits(number(get("column")) plus 1)). }
+      put("walk", digits(number(get("walk")) plus 1)).
+    }
+    while below(number(get("walk")), length(get("source"))) {
+      when same(digits(point(get("source"), number(get("walk")))), "10") { break. }
+      put("walk", digits(number(get("walk")) plus 1)).
+    }
+    put("message", join(join(join("source.rt:", get("line")), ":"), get("column"))).
+    append("message", join(join(newline, join(newline, "  ")), slice(get("source"), number(get("begin")), number(get("walk"))))).
+    append("message", join(newline, "  ")). put("walk", "1").
+    while below(number(get("walk")), number(get("column"))) { append("message", " "). put("walk", digits(number(get("walk")) plus 1)). }
+    fail(join(join(get("message"), join("^", join(newline, "  "))), join(problem, newline))). give.
+  }
+
+  -- Lexer: ASCII identifiers, decimal integers, text, punctuation and comments.
+  function cursor() of type unsigned 64 { give number(get("scan")) . }
+  function step() of type nothing { put("scan", digits(cursor() plus 1)). give. }
+  function alpha(code of type unsigned 64) of type boolean {
+    when below(code, 65) { give false. }
+    when below(code, 91) { give true. }
+    when same(digits(code), "95") { give true. }
+    when below(code, 97) { give false. }
+    give below(code, 123).
+  }
+  function digit(code of type unsigned 64) of type boolean {
+    when below(code, 48) { give false. } give below(code, 58).
+  }
+  function letter(code of type unsigned 64) of type boolean {
+    when alpha(code) { give true. } give digit(code).
+  }
+  function token(category of type text, first of type unsigned 64) of type nothing {
+    put(join("token", get("tokens")), slice(get("source"), first, cursor())).
+    put(join("kind", get("tokens")), category). put(join("offset", get("tokens")), digits(first)).
+    put("tokens", digits(number(get("tokens")) plus 1)). give.
+  }
+  function quoted(first of type unsigned 64) of type nothing {
+    step().
+    while below(cursor(), length(get("source"))) {
+      constant code is point(get("source"), cursor()).
+      when same(digits(code), "34") { step(). token("text", first). give. }
+      when same(digits(code), "10") { report("String is missing its closing quote", first). }
+      when same(digits(code), "92") {
+        step(). when invert(below(cursor(), length(get("source")))) { report("String is missing its closing quote", first). }
+        constant escape is slice(get("source"), cursor(), cursor() plus 1).
+        when same(escape, "n") { step(). continue. }
+        when same(escape, "r") { step(). continue. }
+        when same(escape, "t") { step(). continue. }
+        when same(escape, "\\") { step(). continue. }
+        when same(escape, "\"") { step(). continue. }
+        report("Unsupported text escape", cursor()).
+      }
+      step().
+    }
+    report("String is missing its closing quote", first). give.
+  }
+  function scan() of type nothing {
+    while below(cursor(), length(get("source"))) {
+      constant first is cursor(). constant code is point(get("source"), first).
+      when below(code, 33) { step(). continue. }
+      when same(digits(code), "45") {
+        when same(digits(point(get("source"), first plus 1)), "45") {
+          while below(cursor(), length(get("source"))) { when same(digits(point(get("source"), cursor())), "10") { break. } step(). }
+          continue.
+        }
+      }
+      when alpha(code) { while letter(point(get("source"), cursor())) { step(). } token("word", first). continue. }
+      when digit(code) { while digit(point(get("source"), cursor())) { step(). } token("number", first). continue. }
+      when same(digits(code), "34") { quoted(first). continue. }
+      step(). token("mark", first).
+    }
+    token("end", cursor()). give.
+  }
+
+  -- Parser and Zig emitter. Every accepted production is consumed explicitly.
+  function peek() of type text { give get(join("token", get("parse"))). }
+  function category() of type text { give get(join("kind", get("parse"))). }
+  function problem(message of type text) of type nothing { report(message, number(get(join("offset", get("parse"))))). give. }
+  function take() of type text {
+    constant word is peek(). put("parse", digits(number(get("parse")) plus 1)). give word.
+  }
+  function accept(wanted of type text) of type boolean {
+    when same(peek(), wanted) { drop(take()). give true. } give false.
+  }
+  function expect(wanted of type text) of type nothing {
+    when accept(wanted) { give. } problem(join(join("Expected '", wanted), "'")). give.
+  }
+  function ident() of type text {
+    when same(category(), "word") { give take(). } problem("Expected a name"). give "".
+  }
+  function form() of type text {
+    when accept("text") { give "[]const u8". }
+    when accept("boolean") { give "bool". }
+    when accept("nothing") { give "void". }
+    when accept("unsigned") { expect("64"). give "u64". }
+    problem("This bootstrap compiler needs text, boolean, unsigned 64 or nothing"). give "void".
+  }
+  function arguments() of type text {
+    constant value is expression().
+    when accept(",") { give join(join(value, ", "), arguments()). } give value.
+  }
+  function atom() of type text {
+    when accept("newline") { give "\"\\n\"". }
+    when same(category(), "number") { give join(join("@as(u64, ", take()), ")"). }
+    when same(category(), "text") { give take(). }
+    when accept("true") { give "true". } when accept("false") { give "false". }
+    when accept("(") { constant value is expression(). expect(")"). give join(join("(", value), ")"). }
+    constant word is ident().
+    when accept("(") {
+      when accept(")") { give join(join("f_", word), "()"). }
+      constant values is arguments(). expect(")"). give join(join(join(join("f_", word), "("), values), ")").
+    }
+    give join("v_", word).
+  }
+  function product(left of type text) of type text {
+    when accept("times") { give product(join(join(join("(", left), " * "), join(atom(), ")"))). }
+    when accept("divided") { expect("by"). give product(join(join(join("(", left), " / "), join(atom(), ")"))). }
+    give left.
+  }
+  function sum(left of type text) of type text {
+    when accept("plus") { give sum(join(join(join("(", left), " + "), join(product(atom()), ")"))). }
+    when accept("minus") { give sum(join(join(join("(", left), " - "), join(product(atom()), ")"))). }
+    give left.
+  }
+  function expression() of type text { give sum(product(atom())). }
+  function emit(value of type text) of type nothing { append("output", value). give. }
+  function branch() of type nothing {
+    emit(join(join("if (", expression()), ") ")). block().
+    when accept("otherwise") { emit(" else "). when accept("when") { branch(). give. } block(). }
+    give.
+  }
+  function statement() of type nothing {
+    when accept("constant") {
+      constant word is ident(). emit(join("const v_", word)).
+      when accept("of") { expect("type"). emit(join(": ", form())). }
+      expect("is"). emit(join(" = ", expression())). expect("."). emit(join(";", newline)). give.
+    }
+    when accept("give") {
+      when accept(".") { emit(join("return;", newline)). give. }
+      when same(peek(), "}") { expect("."). }
+      emit(join("return ", expression())). expect("."). emit(join(";", newline)). give.
+    }
+    when accept("when") { branch(). give. }
+    when accept("while") { emit(join(join("while (", expression()), ") ")). block(). give. }
+    when accept("break") { expect("."). emit(join("break;", newline)). give. }
+    when accept("continue") { expect("."). emit(join("continue;", newline)). give. }
+    emit(expression()). expect("."). emit(join(";", newline)). give.
+  }
+  function block() of type nothing {
+    expect("{"). emit(join("{", newline)).
+    while invert(accept("}")) { when same(category(), "end") { problem("Missing '}'"). } statement(). }
+    emit(join("}", newline)). give.
+  }
+  function parameters() of type text {
+    constant word is ident(). expect("of"). expect("type"). constant shape is form().
+    append("calls", join("v_", word)).
+    constant value is join(join(join("v_", word), ": "), shape).
+    when accept(",") { append("calls", ", "). give join(join(value, ", "), parameters()). } give value.
+  }
+  function declaration(foreign of type boolean) of type nothing {
+    constant word is ident(). expect("("). put("calls", ""). emit(join(join("fn f_", word), "(")) .
+    when invert(accept(")")) { emit(parameters()). expect(")"). }
+    emit(") ").
+    when accept("of") { expect("type"). emit(form()). } otherwise { emit("void"). }
+    when foreign {
+      expect("."). emit(join(join(join(join(" { return host.", word), "("), get("calls")), join("); }", newline))). give.
+    }
+    block(). give.
+  }
+  function unit() of type nothing {
+    expect("module"). drop(ident()). expect("{").
+    while invert(accept("}")) {
+      when accept("use") { expect("\"boot\""). expect("function"). declaration(true). continue. }
+      when accept("function") { declaration(false). continue. }
+      when same(peek(), "start") { declaration(false). continue. }
+      problem("Expected a function or a bootstrap host declaration").
+    }
+    when same(category(), "end") { give. } problem("Unexpected content after the module"). give.
+  }
+  start() {
+    put("source", read("source.rt")). put("scan", "0"). put("tokens", "0"). scan(). put("parse", "0").
+    put("output", join(join("const host = @import(\"library.zig\").boot;", newline), join("pub fn main() void { f_start(); }", newline))).
+    unit(). write("output.zig", get("output")). give.
+  }
+}

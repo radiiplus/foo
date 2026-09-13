@@ -1,0 +1,60 @@
+{
+  "name": "tratio",
+  "displayName": "Tratio",
+  "description": "Lexical highlighting for Tratio .rt source files.",
+  "version": "1.0.0",
+  "publisher": "tratio",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/radiiplus/tratio.git",
+    "directory": "editors/textmate"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "tratio",
+        "aliases": [
+          "Tratio",
+          "tratio"
+        ],
+        "extensions": [
+          ".rt"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/light.svg",
+          "dark": "./icons/dark.svg"
+        }
+      }
+    ],
+    "configurationDefaults": {
+      "[tratio]": {
+        "editor.bracketPairColorization.enabled": true
+      }
+    },
+    "grammars": [
+      {
+        "language": "tratio",
+        "scopeName": "source.tratio",
+        "path": "./grammars/tratio.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "node tests/run.mjs && node tests/snapshots.mjs",
+    "test:editor": "node tests/editor.mjs",
+    "snapshots": "node tests/snapshots.mjs --update"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "3.1.0",
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.3.2"
+  }
+}

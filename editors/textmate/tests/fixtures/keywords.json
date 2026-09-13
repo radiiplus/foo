@@ -1,0 +1,432 @@
+[
+  {
+    "line": 2,
+    "text": "give",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 3,
+    "text": "when",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 4,
+    "text": "otherwise",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 5,
+    "text": "for",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 6,
+    "text": "each",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 7,
+    "text": "in",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 8,
+    "text": "while",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 9,
+    "text": "repeat",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 10,
+    "text": "until",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 11,
+    "text": "reaches",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 12,
+    "text": "advance",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 13,
+    "text": "match",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 14,
+    "text": "case",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 15,
+    "text": "break",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 16,
+    "text": "continue",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 17,
+    "text": "unsafe",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 18,
+    "text": "native",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 19,
+    "text": "asm",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 20,
+    "text": "evaluate",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 21,
+    "text": "on",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 22,
+    "text": "leave",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 23,
+    "text": "try",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 24,
+    "text": "catch",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 25,
+    "text": "test",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 26,
+    "text": "eval",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 27,
+    "text": "reflect",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 28,
+    "text": "embed",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 29,
+    "text": "start",
+    "scope": "keyword.control.tratio"
+  },
+  {
+    "line": 30,
+    "text": "is",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 31,
+    "text": "and",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 32,
+    "text": "or",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 33,
+    "text": "not",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 34,
+    "text": "plus",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 35,
+    "text": "minus",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 36,
+    "text": "times",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 37,
+    "text": "divided",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 38,
+    "text": "by",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 39,
+    "text": "equals",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 40,
+    "text": "does",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 41,
+    "text": "equal",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 42,
+    "text": "greater",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 43,
+    "text": "than",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 44,
+    "text": "less",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 45,
+    "text": "at",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 46,
+    "text": "least",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 47,
+    "text": "most",
+    "scope": "keyword.operator.tratio"
+  },
+  {
+    "line": 48,
+    "text": "module",
+    "scope": "keyword.other.tratio"
+  },
+  {
+    "line": 49,
+    "text": "use",
+    "scope": "keyword.other.tratio"
+  },
+  {
+    "line": 50,
+    "text": "where",
+    "scope": "keyword.other.tratio"
+  },
+  {
+    "line": 51,
+    "text": "of",
+    "scope": "meta.type.annotation.tratio"
+  },
+  {
+    "line": 52,
+    "text": "type",
+    "scope": "keyword.other.tratio"
+  },
+  {
+    "line": 53,
+    "text": "to",
+    "scope": "meta.type.annotation.tratio"
+  },
+  {
+    "line": 54,
+    "text": "context",
+    "scope": "keyword.other.tratio"
+  },
+  {
+    "line": 55,
+    "text": "derives",
+    "scope": "keyword.other.tratio"
+  },
+  {
+    "line": 56,
+    "text": "as",
+    "scope": "keyword.other.tratio"
+  },
+  {
+    "line": 57,
+    "text": "constant",
+    "scope": "storage.modifier.tratio"
+  },
+  {
+    "line": 58,
+    "text": "mutable",
+    "scope": "storage.modifier.tratio"
+  },
+  {
+    "line": 59,
+    "text": "public",
+    "scope": "storage.modifier.tratio"
+  },
+  {
+    "line": 60,
+    "text": "packed",
+    "scope": "storage.modifier.tratio"
+  },
+  {
+    "line": 61,
+    "text": "integer",
+    "scope": "support.type.primitive.tratio"
+  },
+  {
+    "line": 62,
+    "text": "unsigned",
+    "scope": "support.type.primitive.tratio"
+  },
+  {
+    "line": 63,
+    "text": "decimal",
+    "scope": "support.type.primitive.tratio"
+  },
+  {
+    "line": 64,
+    "text": "boolean",
+    "scope": "support.type.primitive.tratio"
+  },
+  {
+    "line": 65,
+    "text": "byte",
+    "scope": "support.type.primitive.tratio"
+  },
+  {
+    "line": 66,
+    "text": "character",
+    "scope": "support.type.primitive.tratio"
+  },
+  {
+    "line": 67,
+    "text": "text",
+    "scope": "support.type.primitive.tratio"
+  },
+  {
+    "line": 68,
+    "text": "array",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 69,
+    "text": "sequence",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 70,
+    "text": "nothing",
+    "scope": "support.type.primitive.tratio"
+  },
+  {
+    "line": 71,
+    "text": "record",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 72,
+    "text": "choice",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 73,
+    "text": "union",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 74,
+    "text": "opaque",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 75,
+    "text": "vector",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 76,
+    "text": "function",
+    "scope": "storage.type.tratio"
+  },
+  {
+    "line": 77,
+    "text": "optional",
+    "scope": "storage.modifier.type.tratio"
+  },
+  {
+    "line": 78,
+    "text": "pointer",
+    "scope": "storage.modifier.type.tratio"
+  },
+  {
+    "line": 79,
+    "text": "address",
+    "scope": "storage.modifier.type.tratio"
+  },
+  {
+    "line": 80,
+    "text": "reference",
+    "scope": "storage.modifier.type.tratio"
+  },
+  {
+    "line": 81,
+    "text": "fallible",
+    "scope": "storage.modifier.type.tratio"
+  },
+  {
+    "line": 82,
+    "text": "true",
+    "scope": "constant.language.tratio"
+  },
+  {
+    "line": 83,
+    "text": "false",
+    "scope": "constant.language.tratio"
+  },
+  {
+    "line": 84,
+    "text": "uninitialized",
+    "scope": "constant.language.tratio"
+  },
+  {
+    "line": 85,
+    "text": "unreachable",
+    "scope": "constant.language.tratio"
+  },
+  {
+    "line": 86,
+    "text": "newline",
+    "scope": "constant.language.tratio"
+  },
+  {
+    "line": 87,
+    "text": "anything",
+    "scope": "constant.language.tratio"
+  }
+]

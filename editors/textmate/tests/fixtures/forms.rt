@@ -1,0 +1,79 @@
+-- Ordinary comment containing "quotes" and module
+--- Regular block
+function ignored() {}
+---
+--! Documentation for a declaration.
+---! Documentation across lines.
+constant ignored is 10.
+---
+module sample {
+  function identity[T: Eq](value of type T) of type T {
+    give value.
+  }
+  type Box[T] is record { value of type T. } derives Eq, Hash.
+  constant count of type integer 32 is 1_000.
+  mutable amount of type decimal 64 is 12_345.67_89.
+  constant lane of type vector[4, decimal 32] is splat(1.0).
+  constant item is values[0].
+  constant result is values[index[1]].
+  constant box of type Box[integer] is uninitialized.
+  function apply(value of type function(integer) of type nothing for c) {}
+  type Result is choice { Value(integer). Empty. }.
+  type Bits is packed record { count of type unsigned 3. }.
+  type Data is c union { number of type integer. }.
+  type Handle is opaque.
+  public use "crypto" function hash(value of type text) of type fallible text.
+  use c "header.h".
+  use sample as other.
+  #[start]
+  #[interrupt]
+  #[naked]
+  #[volatile]
+  #[target_feature("sse2")]
+  test "a test" { give true. }
+  constant message is "Hello" plus newline plus "World".
+  constant empty is "".
+  constant escapes is "\n\t\r\\\"\0".
+  constant letter is 'a'.
+  constant apostrophe is '\''.
+  constant escapes is '\n'.
+  constant escapes is '\t'.
+  constant escapes is '\r'.
+  constant escapes is '\\'.
+  constant escapes is '\0'.
+  constant symbol is 'λ'.
+  constant bad is "oops\q".
+  constant bad is "\'".
+  constant bad is '\q'.
+  constant bad is '\"'.
+  constant bad is "unfinished
+  constant recovered is 42.
+  constant bad is "trailing\
+  constant recovered is 43.
+  constant bad is 'x
+  constant recovered is 44.
+  constant bad is 'many'.
+  constant bad is "unfinished with \"escaped
+  constant recovered is 45.
+  0 42 1_000 1__2 1_ 0.5 12_345.6_7 5.
+  1 bytes 2 bits 3 kilobytes 4 megabytes 5 gigabytes 6 terabytes
+  1 seconds 2 milliseconds 3 microseconds 4 nanoseconds
+  0xFF 0o77 0b10 1e3
+  r"ordinary quoted text"
+  let var const fn if else defer return mod pub extern export spawn thread_local uninit errdefer orelse
+  + / * = ! ? ;
+  object.field(1).
+  modulex constantx integerx truex
+  function generic[
+    T,
+    U
+  ](value of type T) { give value. }
+  native zig {
+    const module = .{ .value = "}" };
+    // function is Zig text here
+    { const value = 1; }
+  }
+  constant after is 1.
+  asm { "nop" ::: "memory" }
+  constant after is 2.
+}

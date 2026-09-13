@@ -1,0 +1,2436 @@
+{
+  "date": "2026-09-13T19:49:54.086Z",
+  "prefixBytes": 65536,
+  "candidates": [
+    {
+      "name": "module",
+      "flags": "m",
+      "pattern": "^[ \\t]*module[ \\t]+[A-Za-z_][A-Za-z0-9_]*[ \\t\\r\\n]*\\{"
+    },
+    {
+      "name": "phrases",
+      "flags": "",
+      "pattern": "\\b(?:give(?:[ \\t]+[^.\\r\\n]*)?[ \\t]*\\.|(?:constant|mutable)[ \\t]+[A-Za-z_][A-Za-z0-9_]*[^.\\r\\n]*\\bis\\b|function[ \\t]+[A-Za-z_][A-Za-z0-9_]*[^{}\\r\\n]*\\bof[ \\t]+type\\b|use[ \\t]+c[ \\t]+\"[^\"\\r\\n]+\")"
+    },
+    {
+      "name": "combined",
+      "flags": "",
+      "pattern": "^(?:[ \\t\\r\\n]|---[\\s\\S]*?---|--[^\\r\\n]*(?:\\r?\\n|$))*module[ \\t]+[A-Za-z_][A-Za-z0-9_]*[ \\t\\r\\n]*\\{(?=[\\s\\S]*\\b(?:give(?:[ \\t]+[^.\\r\\n]*)?[ \\t]*\\.|function[ \\t]+[A-Za-z_][A-Za-z0-9_]*[ \\t]*(?:\\[[^\\]\\r\\n]+\\][ \\t]*)?\\(|type[ \\t]+[A-Za-z_][A-Za-z0-9_]*[^.\\r\\n]*\\bis\\b|(?:constant|mutable)[ \\t]+[A-Za-z_][A-Za-z0-9_]*[^.\\r\\n]*\\bis\\b|use[ \\t]+(?:c[ \\t]+)?\"[^\"\\r\\n]+\"|start[ \\t]*\\([ \\t]*\\)))"
+    }
+  ],
+  "searches": [
+    {
+      "query": "extension:rt",
+      "url": "https://api.github.com/search/code?q=extension%3Art&per_page=100",
+      "status": 401,
+      "total": null,
+      "message": "Requires authentication"
+    },
+    {
+      "query": "extension:rt \"rt-if\"",
+      "url": "https://api.github.com/search/code?q=extension%3Art%20%22rt-if%22&per_page=100",
+      "status": 401,
+      "total": null,
+      "message": "Requires authentication"
+    },
+    {
+      "query": "extension:rt \"module\"",
+      "url": "https://api.github.com/search/code?q=extension%3Art%20%22module%22&per_page=100",
+      "status": 401,
+      "total": null,
+      "message": "Requires authentication"
+    },
+    {
+      "query": "extension:rt \"<window\"",
+      "url": "https://api.github.com/search/code?q=extension%3Art%20%22%3Cwindow%22&per_page=100",
+      "status": 401,
+      "total": null,
+      "message": "Requires authentication"
+    }
+  ],
+  "inventories": [
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "tree": "becfc2b789c412c9189c35dc900ab6185713cdae",
+      "url": "https://api.github.com/repos/wix-incubator/react-templates/git/trees/HEAD?recursive=1",
+      "count": 86,
+      "selected": 40,
+      "paths": [
+        {
+          "path": "playground/examples.rt",
+          "sha": "d26b69e1c26b80f281ea0985aec6b1b03516bc4b",
+          "size": 3128
+        },
+        {
+          "path": "playground/fiddle.rt",
+          "sha": "8ab9b719af92a51a516cbdce34741cc039b12016",
+          "size": 2704
+        },
+        {
+          "path": "playground/playground-fiddle.rt",
+          "sha": "b23a568789b9c27ee1bccee93e1471b51d51e569",
+          "size": 1624
+        },
+        {
+          "path": "playground/playground.rt",
+          "sha": "eb5188446656ebb64fef5168edc4fb9244536e1e",
+          "size": 2348
+        },
+        {
+          "path": "playground/samples/hello.rt",
+          "sha": "78a4c0567250744246bf5e1023e8884cffacfe63",
+          "size": 21
+        },
+        {
+          "path": "playground/samples/rt-if.rt",
+          "sha": "11f6f6aeba69f24a522fcdfaa8bc288bfc8b6ef7",
+          "size": 244
+        },
+        {
+          "path": "playground/samples/rt-import.rt",
+          "sha": "76846878b2d701e132f4d7ea2660fe5f5b011cfa",
+          "size": 192
+        },
+        {
+          "path": "playground/samples/rt-props.rt",
+          "sha": "318979fb1275997379eca9c1490bd58f188dc052",
+          "size": 588
+        },
+        {
+          "path": "playground/samples/rt-repeat.rt",
+          "sha": "5bdc63c3af5393374be0d6b7c71ebeeb2319c549",
+          "size": 92
+        },
+        {
+          "path": "playground/samples/rt-require.rt",
+          "sha": "5bc9acacc0d67eea0ad3ef3164f4a2759fc87028",
+          "size": 200
+        },
+        {
+          "path": "playground/samples/todo.rt",
+          "sha": "c35addf33420be401ae99a14d0cdab3d24ae61c0",
+          "size": 895
+        },
+        {
+          "path": "playground/samples/todo2.rt",
+          "sha": "ae7a8ec219b4a272e586338aaf09dbe559fcc73b",
+          "size": 761
+        },
+        {
+          "path": "playground/samples/weather.rt",
+          "sha": "1f036f8725656eec6b2d6d6c7666865dacf8aa38",
+          "size": 797
+        },
+        {
+          "path": "sample/ImageSearch.rt",
+          "sha": "6ba0cc0af48cafb9f909fb222a98f40288d48e07",
+          "size": 955
+        },
+        {
+          "path": "test/data/autobind.rt",
+          "sha": "b740b7d65184fbb6723cd382a225a9ac12fd5708",
+          "size": 44
+        },
+        {
+          "path": "test/data/className.rt",
+          "sha": "257c0dee6e031528adcb6836877f8817fd8a5abe",
+          "size": 26
+        },
+        {
+          "path": "test/data/comment.rt",
+          "sha": "c46e980910ab3b434e9c68a63ded8ddae7633c66",
+          "size": 129
+        },
+        {
+          "path": "test/data/concat.rt",
+          "sha": "9fa7b50a69b22eb997169c172ff65f44ebb83887",
+          "size": 48
+        },
+        {
+          "path": "test/data/custom-element.rt",
+          "sha": "90e1a8ba14b020adcbcc5cfac30ceef0976e71d9",
+          "size": 153
+        },
+        {
+          "path": "test/data/div.rt",
+          "sha": "d58db9e7bffddf66a9188e419ad9ad3460e96f7a",
+          "size": 13
+        },
+        {
+          "path": "test/data/eval.rt",
+          "sha": "5b8d9b113c478b074f3161e3fbb99b17f787d396",
+          "size": 77
+        },
+        {
+          "path": "test/data/if-with-scope/valid-if-scope.rt",
+          "sha": "f764ea1685a14ebc4679d33711417792e1f912e0",
+          "size": 137
+        },
+        {
+          "path": "test/data/import.rt",
+          "sha": "129cfe73aa0e9515a66b899e4faf1d08acd92c9b",
+          "size": 229
+        },
+        {
+          "path": "test/data/include.rt",
+          "sha": "b8b9a3592d4232e69659d7c69f93a56bcb9656c0",
+          "size": 67
+        },
+        {
+          "path": "test/data/inputs.rt",
+          "sha": "24586904bff3c701e785857f31a894b1a27c9c04",
+          "size": 102
+        },
+        {
+          "path": "test/data/invalid/if-with-scope/invalid-if-scope-1.rt",
+          "sha": "1060672137c42c32ef7a13620efcd449f03f3a0f",
+          "size": 161
+        },
+        {
+          "path": "test/data/invalid/if-with-scope/invalid-if-scope-2.rt",
+          "sha": "396266d6f723931517b3f9d456cf504df88609bd",
+          "size": 159
+        },
+        {
+          "path": "test/data/invalid/if-with-scope/invalid-if-scope-3.rt",
+          "sha": "68535990229780967e6edcb086b1317a6259505c",
+          "size": 173
+        },
+        {
+          "path": "test/data/invalid/if-with-scope/invalid-if-scope-4.rt",
+          "sha": "ee33f17491bfea8d92edef2ea986e0d9303c2023",
+          "size": 171
+        },
+        {
+          "path": "test/data/invalid/if-with-scope/invalid-if-scope-5.rt",
+          "sha": "b560f6bf2caa406bfbfe152ee87764471a5c47bb",
+          "size": 156
+        },
+        {
+          "path": "test/data/invalid/invalid-autobind.rt",
+          "sha": "46a366c1eb165f46fa79444da1c31a9e80898cec",
+          "size": 134
+        },
+        {
+          "path": "test/data/invalid/invalid-brace.rt",
+          "sha": "aa40fc632ace6c22d4f9ee15bced5ec4a6bb27da",
+          "size": 177
+        },
+        {
+          "path": "test/data/invalid/invalid-exp.rt",
+          "sha": "88ff6c0e121941e609a5a3ee4cbb6111540bb964",
+          "size": 20
+        },
+        {
+          "path": "test/data/invalid/invalid-html.rt",
+          "sha": "6b1f964e6298edca5a7442ffc7d31dddd166bcc0",
+          "size": 5
+        },
+        {
+          "path": "test/data/invalid/invalid-js.rt",
+          "sha": "b4f7e1f9527bf3fa0459cdd4af4dbd0a6e207b42",
+          "size": 33
+        },
+        {
+          "path": "test/data/invalid/invalid-lambda.rt",
+          "sha": "c4da6eb05514094695f3463779c6c9d748a547e7",
+          "size": 24
+        },
+        {
+          "path": "test/data/invalid/invalid-repeat-1.rt",
+          "sha": "7cd3c6ee08cd1ea056c8105d6acd444aa6fea0dc",
+          "size": 54
+        },
+        {
+          "path": "test/data/invalid/invalid-repeat-2.rt",
+          "sha": "177460735c780419f7f766e7f53597436acb3aee",
+          "size": 40
+        },
+        {
+          "path": "test/data/invalid/invalid-rt-import-1.rt",
+          "sha": "001ad6f8d00e4595e0031c0378ef7d80be2570de",
+          "size": 50
+        },
+        {
+          "path": "test/data/invalid/invalid-rt-import-2.rt",
+          "sha": "d4e58b40b2052094d227f9b4a67f250f62f9b946",
+          "size": 56
+        },
+        {
+          "path": "test/data/invalid/invalid-rt-import-3.rt",
+          "sha": "09a34994a42d32a055782427d7bec4c454a29dbd",
+          "size": 27
+        },
+        {
+          "path": "test/data/invalid/invalid-rt-import-4.rt",
+          "sha": "f51dcfb8a4d79825cc8dcb393cecabdcd3a774cd",
+          "size": 62
+        },
+        {
+          "path": "test/data/invalid/invalid-rt-require-1.rt",
+          "sha": "938c91bb67f8093659a32af34aaaa668afeb2e51",
+          "size": 28
+        },
+        {
+          "path": "test/data/invalid/invalid-rt-require-2.rt",
+          "sha": "d001e12ae7e0b8ad69271b839dbf470d89d0e850",
+          "size": 46
+        },
+        {
+          "path": "test/data/invalid/invalid-rt-require-duplicate.rt",
+          "sha": "ceca00a04df6304ffe53a2b05509f202c82c74eb",
+          "size": 97
+        },
+        {
+          "path": "test/data/invalid/invalid-rt-template-1.rt",
+          "sha": "857d10980f4e6bf1e57902d17499b4e33f19feef",
+          "size": 96
+        },
+        {
+          "path": "test/data/invalid/invalid-rt-template-2.rt",
+          "sha": "d0e8d8236b0dd6d649e9b4aad60d8d5c4997c90c",
+          "size": 98
+        },
+        {
+          "path": "test/data/invalid/invalid-scope.rt",
+          "sha": "8a6be666d5874237b8e637de226598170af70d5f",
+          "size": 36
+        },
+        {
+          "path": "test/data/invalid/invalid-single-root.rt",
+          "sha": "5261b932ae36a4860776f3384fb684ff987d949e",
+          "size": 24
+        },
+        {
+          "path": "test/data/invalid/invalid-style-1.rt",
+          "sha": "69a297a511acfb8e8ebcb1b361e06a017a407d01",
+          "size": 46
+        },
+        {
+          "path": "test/data/invalid/invalid-style-2.rt",
+          "sha": "b4cda6c20aece7da6a1e309131c826fbf6590908",
+          "size": 75
+        },
+        {
+          "path": "test/data/invalid/invalid-virtual-1.rt",
+          "sha": "e8498bc7b1b7862695c26843b53a2533ba9a0604",
+          "size": 60
+        },
+        {
+          "path": "test/data/invalid/invalid-virtual-2.rt",
+          "sha": "a855992c87239f2d3afa637f626e21a2cc4fb320",
+          "size": 126
+        },
+        {
+          "path": "test/data/js-in-attr.rt",
+          "sha": "002d5ae91060ebc97588135f1b00271603cc7d80",
+          "size": 47
+        },
+        {
+          "path": "test/data/lambda.rt",
+          "sha": "242ccff2a0c712176e6535305c7222612a7e36b9",
+          "size": 262
+        },
+        {
+          "path": "test/data/native/listViewAndCustomTemplate.rt",
+          "sha": "d365b78182dbf89a0f48fd84fdc7d8fec5f40fb5",
+          "size": 288
+        },
+        {
+          "path": "test/data/native/listViewTemplate.rt",
+          "sha": "bdd57beeca0717373781adc587b1a83bc2774268",
+          "size": 166
+        },
+        {
+          "path": "test/data/native/nativeView.rt",
+          "sha": "a7b0a4fad3df1d9f5c46364bf0c239c8f3c87932",
+          "size": 13
+        },
+        {
+          "path": "test/data/non-breaking-space.rt",
+          "sha": "f2e6264a1a8b2526a6e1107fe2ca35454a17ef46",
+          "size": 17
+        },
+        {
+          "path": "test/data/propTemplates/implicitTemplate.rt",
+          "sha": "0f838470438cca9f05995f92dcbf5fe8015444ac",
+          "size": 114
+        },
+        {
+          "path": "test/data/propTemplates/siblingTemplates.rt",
+          "sha": "21204d72522cd1d3a2643fe11c2223acef87274b",
+          "size": 377
+        },
+        {
+          "path": "test/data/propTemplates/simpleTemplate.rt",
+          "sha": "471943045a6498ac6f2d4ababc93c77e8775e98d",
+          "size": 112
+        },
+        {
+          "path": "test/data/propTemplates/templateInScope.rt",
+          "sha": "750dbf3c0f0661cf00dce3936922c62c1e963b93",
+          "size": 152
+        },
+        {
+          "path": "test/data/propTemplates/twoTemplates.rt",
+          "sha": "c7e7af8d84d7e6cb9ab6e1dd40bacfe8679099de",
+          "size": 298
+        },
+        {
+          "path": "test/data/props-class.rt",
+          "sha": "7bbb78e6ead16e3a42efe03e376e059701a2bdfa",
+          "size": 118
+        },
+        {
+          "path": "test/data/props.rt",
+          "sha": "7ded38b07b5bb908f3ce299aea40138826838c59",
+          "size": 136
+        },
+        {
+          "path": "test/data/repeat-literal-collection.rt",
+          "sha": "ebc5fb64f761e925815e7ccfe0a3fac901e70db6",
+          "size": 73
+        },
+        {
+          "path": "test/data/repeat-with-index.rt",
+          "sha": "fbc44eaad8fbf0d771e00208e7eec02541029bf9",
+          "size": 110
+        },
+        {
+          "path": "test/data/repeat.rt",
+          "sha": "7690dc20ceed92c4f1f1929084ba787a0e2c6dbe",
+          "size": 256
+        },
+        {
+          "path": "test/data/require.rt",
+          "sha": "b5a39b9a53c30a1b063d245443c3c2ebfaf19bf9",
+          "size": 153
+        },
+        {
+          "path": "test/data/rt-class.rt",
+          "sha": "9b15767699118d0ea5c735d776c6b3abbb427d27",
+          "size": 239
+        },
+        {
+          "path": "test/data/scope-evaluated-after-if.rt",
+          "sha": "a7b2a764e4abe44be1a84d5ade475d78b34abd84",
+          "size": 303
+        },
+        {
+          "path": "test/data/scope-evaluated-after-repeat.rt",
+          "sha": "b035c9b5dce620af0764c317b893e2c2471b7dcb",
+          "size": 253
+        },
+        {
+          "path": "test/data/scope-evaluated-after-repeat2.rt",
+          "sha": "d03145c79e62969b15c02210397df3b6c8bdf512",
+          "size": 417
+        },
+        {
+          "path": "test/data/scope-obj.rt",
+          "sha": "b7a1e0f6c950149bc254645dc85081877594bfda",
+          "size": 82
+        },
+        {
+          "path": "test/data/scope-reserved-tokens.rt",
+          "sha": "83d0266f28817f81460793b6400d64b0ae162268",
+          "size": 112
+        },
+        {
+          "path": "test/data/scope-trailing-semicolon.rt",
+          "sha": "77e597898a0fd235974cae3090004d9ad00fd637",
+          "size": 117
+        },
+        {
+          "path": "test/data/scope-variable-references.rt",
+          "sha": "e5d0d6d3d4be3875d480531207bf885edc0b09c9",
+          "size": 464
+        },
+        {
+          "path": "test/data/scope.rt",
+          "sha": "fbf4c3c236ab3547e92b5437088ea87ef848e581",
+          "size": 333
+        },
+        {
+          "path": "test/data/stateless.rt",
+          "sha": "f70beb56b0c4b341b8cc9334345b1f8ddf62d575",
+          "size": 45
+        },
+        {
+          "path": "test/data/style-vendor-prefix.rt",
+          "sha": "299b21ef3c79585698753880a3fb3448a01b17f6",
+          "size": 224
+        },
+        {
+          "path": "test/data/style.rt",
+          "sha": "b50a71d3f3f8d844ff57deac468df47768c59453",
+          "size": 67
+        },
+        {
+          "path": "test/data/svg.rt",
+          "sha": "fecd25b6f49fd5834743edfe7140638949fde4f7",
+          "size": 55
+        },
+        {
+          "path": "test/data/test.rt",
+          "sha": "130c4e76cbfb62d826c3370829ed226b20c9c1de",
+          "size": 522
+        },
+        {
+          "path": "test/data/virtual.rt",
+          "sha": "9e266760db81d64ba567adf32edebf918dcbe6fb",
+          "size": 361
+        },
+        {
+          "path": "test/data/whitespace.rt",
+          "sha": "318f22c9ae68447d350ce265dcaf83ad1d753da3",
+          "size": 425
+        }
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "tree": "4acd36124ea01c64932ae6cde438f4c56b5dbbd6",
+      "url": "https://api.github.com/repos/magalhaesm/42-cursus-miniRT/git/trees/HEAD?recursive=1",
+      "count": 20,
+      "selected": 20,
+      "paths": [
+        {
+          "path": "images/img00.rt",
+          "sha": "731200756d5dcb9cac1e5355bb5154dc2cf769bb",
+          "size": 559
+        },
+        {
+          "path": "images/img01.rt",
+          "sha": "f619710a5360bb2e11f4958a52add32dc478b615",
+          "size": 386
+        },
+        {
+          "path": "images/img02.rt",
+          "sha": "2c305b6cb571c28a28ca18ba82223c64d4415c2d",
+          "size": 544
+        },
+        {
+          "path": "images/img03.rt",
+          "sha": "fc7ec789b2404fdf68905e5c149067b1be2b65e5",
+          "size": 529
+        },
+        {
+          "path": "images/img04.rt",
+          "sha": "6438e37a44e3d8902c1cada5437f4373608d72fa",
+          "size": 540
+        },
+        {
+          "path": "images/img05.rt",
+          "sha": "8c76cb93e928eefa260f3df411f836336de2eb0f",
+          "size": 743
+        },
+        {
+          "path": "images/img06.rt",
+          "sha": "f5c35603068c0d8c9608662b7fe8f848ce9e1797",
+          "size": 994
+        },
+        {
+          "path": "images/img07.rt",
+          "sha": "f2a7db177c93515a969405709072d1a48df9e42c",
+          "size": 796
+        },
+        {
+          "path": "images/img08.rt",
+          "sha": "33d9fefa2eebc27862e29c6c5b538d2a3f73be68",
+          "size": 796
+        },
+        {
+          "path": "images/img09.rt",
+          "sha": "a455dd93d9d22e812909b1ec49fcc92b3bccd06c",
+          "size": 796
+        },
+        {
+          "path": "images/img10.rt",
+          "sha": "e8ebf4b716a7145bbcdd096ee1d794c2309bdc2f",
+          "size": 796
+        },
+        {
+          "path": "images/img11.rt",
+          "sha": "f75ff657e56916e32b71e50410e4e35d009dd0f2",
+          "size": 618
+        },
+        {
+          "path": "images/img12.rt",
+          "sha": "8cc99bbca4cf21cdaeaefefba2635e21567f408d",
+          "size": 615
+        },
+        {
+          "path": "images/img13.rt",
+          "sha": "18618a365cdbf1aae1aa89607a33577afa0c130e",
+          "size": 779
+        },
+        {
+          "path": "images/img14.rt",
+          "sha": "88ad152148d25641de8fa3da441d7779b54a7a22",
+          "size": 904
+        },
+        {
+          "path": "images/img15.rt",
+          "sha": "30b6436f6362802bc28886106779e3f297e77f7d",
+          "size": 1672
+        },
+        {
+          "path": "images/img16.rt",
+          "sha": "ce913f459780397910af1c7a571ea55e896f28c0",
+          "size": 1871
+        },
+        {
+          "path": "images/img17.rt",
+          "sha": "f415eaa838b8c991986eb6dc4b77201c20721ea4",
+          "size": 716
+        },
+        {
+          "path": "images/img18.rt",
+          "sha": "93ead8e2899a5933998132ea985dd15dfb5e189c",
+          "size": 731
+        },
+        {
+          "path": "images/img19.rt",
+          "sha": "8d18b05ca3d0ea4cc641e7fdfdcaf1267df37020",
+          "size": 819
+        }
+      ]
+    },
+    {
+      "repo": "Aprilistic/miniRT",
+      "family": "miniRT scenes",
+      "tree": "8359648e7f5406f528649ecb310530699922d770",
+      "url": "https://api.github.com/repos/Aprilistic/miniRT/git/trees/HEAD?recursive=1",
+      "count": 8,
+      "selected": 8,
+      "paths": [
+        {
+          "path": "rt/2plane.rt",
+          "sha": "85fcf24fd303444302ff6f720270ff1380996a41",
+          "size": 1149
+        },
+        {
+          "path": "rt/3sphere.rt",
+          "sha": "3bf84628f65621323b3595429d0a5146f534a1d4",
+          "size": 284
+        },
+        {
+          "path": "rt/candy.rt",
+          "sha": "67f2e1fb3bf4dc20f3978968db628e50624745d4",
+          "size": 593
+        },
+        {
+          "path": "rt/complex.rt",
+          "sha": "c00c33526bde6c9a290d2590a797fed51c269fd0",
+          "size": 1240
+        },
+        {
+          "path": "rt/pyramid.rt",
+          "sha": "b3c444836fa9075e3834b54210a0476406c51cbe",
+          "size": 597
+        },
+        {
+          "path": "rt/rainbow.rt",
+          "sha": "f235c5f4e0fe719bf899b6bce557073bc81f1ed5",
+          "size": 767
+        },
+        {
+          "path": "rt/snowman.rt",
+          "sha": "a802011c1ce7717f0207ba09d24c2daf21bd778b",
+          "size": 606
+        },
+        {
+          "path": "rt/test.rt",
+          "sha": "fac4d03cdcbe8824de7600c0a1bef3111609d5f9",
+          "size": 189
+        }
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "tree": "00052d25f282733cf710f01e711cc2bbfd27b202",
+      "url": "https://api.github.com/repos/radiiplus/tratio/git/trees/HEAD?recursive=1",
+      "count": 42,
+      "selected": 20,
+      "paths": [
+        {
+          "path": "std/bits.rt",
+          "sha": "ac4dec600cdda925e047147ba100d1df24a36be2",
+          "size": 652
+        },
+        {
+          "path": "std/deque.rt",
+          "sha": "e70517244a388aecb7fed7103fc0345721472e3b",
+          "size": 786
+        },
+        {
+          "path": "std/env.rt",
+          "sha": "a57229d5ffedef50d7cbd31eb1ed46ee43c571cb",
+          "size": 239
+        },
+        {
+          "path": "std/file.rt",
+          "sha": "668c7c57760284abf4eb39ea354cdd1056446cc8",
+          "size": 667
+        },
+        {
+          "path": "std/format.rt",
+          "sha": "9bd322ab5d91a0789981c896583757d8764c3ee1",
+          "size": 400
+        },
+        {
+          "path": "std/heap.rt",
+          "sha": "97c7c725885510508ce7122d05ec641d0163963b",
+          "size": 675
+        },
+        {
+          "path": "std/index.rt",
+          "sha": "2e8e1522cad10984680376f664681ab2f7f4206c",
+          "size": 735
+        },
+        {
+          "path": "std/list.rt",
+          "sha": "bdf8ce7b8a12ee4f58c89884c0936a7ee145e348",
+          "size": 598
+        },
+        {
+          "path": "std/log.rt",
+          "sha": "43e865cd720ce13d204871adb3b6dda1d175109c",
+          "size": 608
+        },
+        {
+          "path": "std/map.rt",
+          "sha": "b1bebb4129ab285d148b2e99d30a23c349b1fd22",
+          "size": 729
+        },
+        {
+          "path": "std/memory.rt",
+          "sha": "384133a519617e13adf00e4bcb4329ac9360625d",
+          "size": 785
+        },
+        {
+          "path": "std/net.rt",
+          "sha": "a40e952df793871e2362b859b96cedf1a397ca70",
+          "size": 1083
+        },
+        {
+          "path": "std/path.rt",
+          "sha": "ae467253dd5f7161c988ee1fcc9d86ee8b8a4929",
+          "size": 743
+        },
+        {
+          "path": "std/process.rt",
+          "sha": "e21793778dff6e4c24a8c0ef5e76df1f5351dc59",
+          "size": 806
+        },
+        {
+          "path": "std/random.rt",
+          "sha": "0676edc067cd94e8ac38b15c191b0d88a0412a06",
+          "size": 573
+        },
+        {
+          "path": "std/set.rt",
+          "sha": "c40f8e5ff728e8715fad2adbffd318b8e685acbe",
+          "size": 626
+        },
+        {
+          "path": "std/stream.rt",
+          "sha": "eab1b62489fb222f3bcae2333a4b9705a92a1bc3",
+          "size": 872
+        },
+        {
+          "path": "std/sync.rt",
+          "sha": "096537d6749664f9585091511b43c99c6e9cc6d7",
+          "size": 722
+        },
+        {
+          "path": "std/thread.rt",
+          "sha": "2b592fa1781d16df3573f00fd43df55797520097",
+          "size": 368
+        },
+        {
+          "path": "std/time.rt",
+          "sha": "f0948aa2547db859042228c9661a3928877f66e0",
+          "size": 515
+        },
+        {
+          "path": "tests/lex/fixtures/sample.rt",
+          "sha": "b72a89cd9a13a74a94e1b9ebd9e19db70903815f",
+          "size": 1426
+        },
+        {
+          "path": "tests/parse/fixtures/basic.rt",
+          "sha": "69acb21ae2625360ebf668d95721971561f39ff3",
+          "size": 1025
+        },
+        {
+          "path": "tests/parse/fixtures/error.rt",
+          "sha": "c78798e3acab5ee93f2bac00793c8e2a341e3bda",
+          "size": 132
+        },
+        {
+          "path": "tests/sema/fixtures/basic/main.rt",
+          "sha": "d76bec6eef7c20a6296f6778bd8957c97fc6c343",
+          "size": 90
+        },
+        {
+          "path": "tests/sema/fixtures/basic/math.rt",
+          "sha": "3449d5177ae2fd57dd50981da8c47127ef3a42e7",
+          "size": 198
+        },
+        {
+          "path": "tests/sema/fixtures/basic/nested.rt",
+          "sha": "f3b9270ece5abf3dc799bcf73cf1a2b969ebe8bc",
+          "size": 109
+        },
+        {
+          "path": "tests/sema/fixtures/basic/path.rt",
+          "sha": "4ae09da3d55d5e7bdab1e9563075a297c5b359b9",
+          "size": 95
+        },
+        {
+          "path": "tests/sema/fixtures/basic/sub/module.rt",
+          "sha": "7ba1608c1ccd7d3e33a571735121d9867e295e79",
+          "size": 118
+        },
+        {
+          "path": "tests/sema/fixtures/errors/dup.rt",
+          "sha": "b2219353947b41f58bf564313090a4a3ad1d31fe",
+          "size": 67
+        },
+        {
+          "path": "tests/sema/fixtures/errors/duplicate.rt",
+          "sha": "7d11dae9ed0d97be405ffe404059a836c39b17db",
+          "size": 58
+        },
+        {
+          "path": "tests/sema/fixtures/errors/field.rt",
+          "sha": "2c9bf34210dd0308cc31f45324fa8cfb9d636f53",
+          "size": 96
+        },
+        {
+          "path": "tests/sema/fixtures/errors/hidden/main.rt",
+          "sha": "2876f4e88bd5990a05be525ca1790ebe730e7c57",
+          "size": 90
+        },
+        {
+          "path": "tests/sema/fixtures/errors/hidden/secret.rt",
+          "sha": "a9b503101477a289a49c3b1b816aedceecf3ba76",
+          "size": 48
+        },
+        {
+          "path": "tests/sema/fixtures/errors/missing.rt",
+          "sha": "d14031600f0b17813839a16d17167fafce7208e8",
+          "size": 85
+        },
+        {
+          "path": "tests/stdlib/list.rt",
+          "sha": "a3075d37c06bd7376139828c92ba59a265e87700",
+          "size": 145
+        },
+        {
+          "path": "tests/stdlib/memory.rt",
+          "sha": "24ae860e6422196c844b38aa5fc3de5c7fc1caf3",
+          "size": 189
+        },
+        {
+          "path": "tests/stdlib/stream.rt",
+          "sha": "0fccebdb6e10ef47f84d155f49ca20eeb5c4b85b",
+          "size": 136
+        },
+        {
+          "path": "tests/types/fixtures/basic/functions.rt",
+          "sha": "018bcfa670afa1c716036d86cab4c7e7c8cd3407",
+          "size": 167
+        },
+        {
+          "path": "tests/types/fixtures/basic/literal.rt",
+          "sha": "59fee745944c64a68a8cfc59a9a0355c85098bf0",
+          "size": 209
+        },
+        {
+          "path": "tests/types/fixtures/errors/escape.rt",
+          "sha": "1cae0735319ab1c91435bd90d87dfebb2666d625",
+          "size": 289
+        },
+        {
+          "path": "tests/types/fixtures/errors/mismatch.rt",
+          "sha": "7e7c38393175ca34455a18f5762ab8da948c1cad",
+          "size": 91
+        },
+        {
+          "path": "tests/types/fixtures/errors/missing.rt",
+          "sha": "1908816dd07c3cc96ad662d02787f7f8c53f946a",
+          "size": 192
+        }
+      ]
+    },
+    {
+      "repo": "contact-discovery/rt_phone_numbers",
+      "family": "Rainbow tables",
+      "tree": "bbcf83a93d30eb821b0ee41900fff7b5969f55f0",
+      "url": "https://api.github.com/repos/contact-discovery/rt_phone_numbers/git/trees/HEAD?recursive=1",
+      "count": 6,
+      "selected": 6,
+      "paths": [
+        {
+          "path": "bin/out/sha1_1_1000x1000000_DE_mobile.rt",
+          "sha": "161db40a3e5eed1714172d329dccb356a5c1d08b",
+          "size": 16000000
+        },
+        {
+          "path": "bin/out/sha256_1_1000x1000000_DE_mobile.rt",
+          "sha": "44515fe03f9c870b65b5042f9258d4f180f6ca7d",
+          "size": 16000000
+        },
+        {
+          "path": "bin/out/sha256_2_1000x1000000_DE_mobile.rt",
+          "sha": "087dc868fe8681f2e0d7507a8b4d2cbe0602ace2",
+          "size": 16000000
+        },
+        {
+          "path": "bin/out/sha256_3_1000x1000000_DE_mobile.rt",
+          "sha": "6845853326ff1e31fc8182959cbca2de0bf65305",
+          "size": 16000000
+        },
+        {
+          "path": "bin/out/sha256_4_1000x1000000_DE_mobile.rt",
+          "sha": "31de89a838eb812c30fed3b8744dcf79e4bfd206",
+          "size": 16000000
+        },
+        {
+          "path": "bin/out/sha256_5_1000x1000000_DE_mobile.rt",
+          "sha": "ffc88d10b44663d6dc7befb92ddcf26e0458f00f",
+          "size": 16000000
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/if-with-scope/invalid-if-scope-3.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/if-with-scope/invalid-if-scope-3.rt",
+      "blob": "68535990229780967e6edcb086b1317a6259505c",
+      "sha256": "618e20d37f63a7ba657276e10c627a72666745ee248d703c1598975e2c15d6d1",
+      "bytes": 173,
+      "snippet": "<div key=\"active-users\"",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-scope.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-scope.rt",
+      "blob": "8a6be666d5874237b8e637de226598170af70d5f",
+      "sha256": "da572c61638ea13e73383a420804baf4fa747720ce9ef3dc5a693ee9a8a5cafd",
+      "bytes": 36,
+      "snippet": "<div rt-scope=\"a in a in a\">",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/non-breaking-space.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/non-breaking-space.rt",
+      "blob": "f2e6264a1a8b2526a6e1107fe2ca35454a17ef46",
+      "sha256": "ef11d982cdaff5ada39b092a2370f7a1d3a0652743ee8611e7645108d8c23984",
+      "bytes": 17,
+      "snippet": "<div>&#160;</div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/native/listViewTemplate.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/native/listViewTemplate.rt",
+      "blob": "bdd57beeca0717373781adc587b1a83bc2774268",
+      "sha256": "6ae6dcda27a46da4a7fc7add5ffab79af5aa8cb43d7a19363cf0acf1683799e3",
+      "bytes": 166,
+      "snippet": "<View>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/scope-trailing-semicolon.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/scope-trailing-semicolon.rt",
+      "blob": "77e597898a0fd235974cae3090004d9ad00fd637",
+      "sha256": "b8fce1e53f17abc6b94f0f0ecad50944cd6072a8a6e3e2e5e97d12a74db0bbe8",
+      "bytes": 117,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-rt-import-1.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-rt-import-1.rt",
+      "blob": "001ad6f8d00e4595e0031c0378ef7d80be2570de",
+      "sha256": "ade7abcdda9e239652ca22b4d135740d515f59d70aa9589eb9c944699cc5aba0",
+      "bytes": 50,
+      "snippet": "<rt-import name=\"*\" from=\"module\" />",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/inputs.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/inputs.rt",
+      "blob": "24586904bff3c701e785857f31a894b1a27c9c04",
+      "sha256": "9b8f11e69c61bfcb21fa582f833042c67521d9b8e3157862ac34af79da333fd4",
+      "bytes": 102,
+      "snippet": "<!doctype rt>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/custom-element.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/custom-element.rt",
+      "blob": "90e1a8ba14b020adcbcc5cfac30ceef0976e71d9",
+      "sha256": "ee5bba81148da47282d3b825a14a3c398420aca23406322251c2b992da76d779",
+      "bytes": 153,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/scope-evaluated-after-repeat.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/scope-evaluated-after-repeat.rt",
+      "blob": "b035c9b5dce620af0764c317b893e2c2471b7dcb",
+      "sha256": "8783b4d7532e22e6bb006b931c5f563e6b8b6a618230d5a85a671f7b07175981",
+      "bytes": 253,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/scope.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/scope.rt",
+      "blob": "fbf4c3c236ab3547e92b5437088ea87ef848e581",
+      "sha256": "32caefdec2b353a10a7cb935b00538049da78873fc02f6354360afc007fed088",
+      "bytes": 333,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/test.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/test.rt",
+      "blob": "130c4e76cbfb62d826c3370829ed226b20c9c1de",
+      "sha256": "22dc475c69751821cc8d23ff9c20c79aafb83d27c936599bb2268f0753503bed",
+      "bytes": 522,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/stateless.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/stateless.rt",
+      "blob": "f70beb56b0c4b341b8cc9334345b1f8ddf62d575",
+      "sha256": "7b71be3223c0a74f53c79691d7dbdd46b65c677a1269e5652cd6f78a2fc9bc96",
+      "bytes": 45,
+      "snippet": "<div rt-stateless>Hello {props.person}</div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/scope-variable-references.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/scope-variable-references.rt",
+      "blob": "e5d0d6d3d4be3875d480531207bf885edc0b09c9",
+      "sha256": "dd09789d99df29f49e9c426f7e73039717deb3adfa96cab89b56f84a635080c3",
+      "bytes": 464,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/whitespace.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/whitespace.rt",
+      "blob": "318f22c9ae68447d350ce265dcaf83ad1d753da3",
+      "sha256": "37fc315b6ae30527b4ad79d985dda64ee82f5bd6d50f41076959ad78e06c70b3",
+      "bytes": 425,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/propTemplates/siblingTemplates.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/propTemplates/siblingTemplates.rt",
+      "blob": "21204d72522cd1d3a2643fe11c2223acef87274b",
+      "sha256": "32137936ccdd6b0ae0db18bc7e20d374a0beaaae9496dfa1793d96c0f1d814c4",
+      "bytes": 377,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-repeat-1.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-repeat-1.rt",
+      "blob": "7cd3c6ee08cd1ea056c8105d6acd444aa6fea0dc",
+      "sha256": "dff86b76ebbf3152e373f0a4351b66082aacb8ce9a54afcf4a9a8a56b90246e4",
+      "bytes": 54,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/if-with-scope/invalid-if-scope-1.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/if-with-scope/invalid-if-scope-1.rt",
+      "blob": "1060672137c42c32ef7a13620efcd449f03f3a0f",
+      "sha256": "3aaf85fff152a89c6c06cf3a8859316f934a17e87a8daf0ce6b45b7ff3e5879f",
+      "bytes": 161,
+      "snippet": "<div key=\"active-users\"",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-rt-require-1.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-rt-require-1.rt",
+      "blob": "938c91bb67f8093659a32af34aaaa668afeb2e51",
+      "sha256": "4ad034d05c4900a0aa46200ce1241615026d4937b7f271a674d3ae9801cc1b62",
+      "bytes": 28,
+      "snippet": "<rt-require />",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "playground/playground.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/playground/playground.rt",
+      "blob": "eb5188446656ebb64fef5168edc4fb9244536e1e",
+      "sha256": "5b9d1cd2effd6912acdcb5a18e150df02e351f4b10aabe8f1a07c9f6ceb35f18",
+      "bytes": 2348,
+      "snippet": "<!--<rt-require dependency=\"./aceEditor\" as=\"CodeEditor\"/>-->",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "playground/samples/rt-repeat.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/playground/samples/rt-repeat.rt",
+      "blob": "5bdc63c3af5393374be0d6b7c71ebeeb2319c549",
+      "sha256": "43d7941aae675ece467ba41bec6ef222da4d45f3437f199284b82bf76b9df1a1",
+      "bytes": 92,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/eval.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/eval.rt",
+      "blob": "5b8d9b113c478b074f3161e3fbb99b17f787d396",
+      "sha256": "9a0a48c5bb13ae2167bc7d9a8c97a319920a01c8ee0f7810969096d524a0368c",
+      "bytes": 77,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/scope-evaluated-after-repeat2.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/scope-evaluated-after-repeat2.rt",
+      "blob": "d03145c79e62969b15c02210397df3b6c8bdf512",
+      "sha256": "23886c64a28eb330059ec18c5732841928b2b7f324c16ebe8adee7b67a281b5f",
+      "bytes": 417,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/propTemplates/simpleTemplate.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/propTemplates/simpleTemplate.rt",
+      "blob": "471943045a6498ac6f2d4ababc93c77e8775e98d",
+      "sha256": "3eba879f97447e4f1a47e3fdc6d3b8a7cd97d5df45b4d74abafbc6eaf80121c7",
+      "bytes": 112,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-rt-import-4.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-rt-import-4.rt",
+      "blob": "f51dcfb8a4d79825cc8dcb393cecabdcd3a774cd",
+      "sha256": "e1751c0a175d4c67b5bac85bee62de9f4e99f1416b16383e428495e0004ece09",
+      "bytes": 62,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-brace.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-brace.rt",
+      "blob": "aa40fc632ace6c22d4f9ee15bced5ec4a6bb27da",
+      "sha256": "c1e798f39d08d5166d90733f7563c6840f83b65e16a481748102ed986e39c09a",
+      "bytes": 177,
+      "snippet": "<!--suppress CheckEmptyScriptTag -->",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-rt-require-duplicate.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-rt-require-duplicate.rt",
+      "blob": "ceca00a04df6304ffe53a2b05509f202c82c74eb",
+      "sha256": "77a3f8a2939a7058b2e25eb4baec8da8f066896f6f0e3e881241be6f42ba32e8",
+      "bytes": 97,
+      "snippet": "<rt-require dependency=\"util\" as=\"util\"/>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-rt-template-2.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-rt-template-2.rt",
+      "blob": "d0e8d8236b0dd6d649e9b4aad60d8d5c4997c90c",
+      "sha256": "c73d678ffac34d48ee89f5b7dde8c62c42227ec356855ec206c33cbe4b73d684",
+      "bytes": 98,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "playground/samples/weather.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/playground/samples/weather.rt",
+      "blob": "1f036f8725656eec6b2d6d6c7666865dacf8aa38",
+      "sha256": "0ae424aa1d9ce42293cc08ee737e1b3801265cd554e58b70ba28f50849c15bb6",
+      "bytes": 797,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/if-with-scope/invalid-if-scope-4.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/if-with-scope/invalid-if-scope-4.rt",
+      "blob": "ee33f17491bfea8d92edef2ea986e0d9303c2023",
+      "sha256": "17927a0eba5b37f3b09f8b156a56b8b640a469daca818f72d72d0f6790bc7eec",
+      "bytes": 171,
+      "snippet": "<div key=\"active-users\"",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-single-root.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-single-root.rt",
+      "blob": "5261b932ae36a4860776f3384fb684ff987d949e",
+      "sha256": "6f37d8490cc6b28159edb9538788b2b76e5c85f38a762e37f2408a70e1d505ce",
+      "bytes": 24,
+      "snippet": "<div></div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/if-with-scope/valid-if-scope.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/if-with-scope/valid-if-scope.rt",
+      "blob": "f764ea1685a14ebc4679d33711417792e1f912e0",
+      "sha256": "eb6daf9998e7c58c053945454bddb3fb84d72ffb66472a67a48ee91fad211ebe",
+      "bytes": 137,
+      "snippet": "<div key=\"active-users\"",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "playground/playground-fiddle.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/playground/playground-fiddle.rt",
+      "blob": "b23a568789b9c27ee1bccee93e1471b51d51e569",
+      "sha256": "eb3228388d66da956edf4e9791659e79231c2c906d9647acdd01c43896b0b46a",
+      "bytes": 1624,
+      "snippet": "<!--suppress CheckEmptyScriptTag -->",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "playground/examples.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/playground/examples.rt",
+      "blob": "d26b69e1c26b80f281ea0985aec6b1b03516bc4b",
+      "sha256": "e130e6a6522e345784b88553d742c34b56b9009cfb3a103bb53834419fd48271",
+      "bytes": 3128,
+      "snippet": "<!--suppress CheckEmptyScriptTag -->",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "playground/samples/rt-if.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/playground/samples/rt-if.rt",
+      "blob": "11f6f6aeba69f24a522fcdfaa8bc288bfc8b6ef7",
+      "sha256": "290922eb28694b4d335324ecb8d7bd79de3a5537fdc52b2baf22dc1955c3c702",
+      "bytes": 244,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/native/listViewAndCustomTemplate.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/native/listViewAndCustomTemplate.rt",
+      "blob": "d365b78182dbf89a0f48fd84fdc7d8fec5f40fb5",
+      "sha256": "55cfebf05b37b6c6e0f6e184c13e33b531b05b006cab49d9b1786ccd3b74c0dd",
+      "bytes": 288,
+      "snippet": "<View>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/propTemplates/twoTemplates.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/propTemplates/twoTemplates.rt",
+      "blob": "c7e7af8d84d7e6cb9ab6e1dd40bacfe8679099de",
+      "sha256": "81935c658e55f8f9c0fb7c89f39fd194af242dd12eed5e9752bc44337e151bd7",
+      "bytes": 298,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "playground/samples/todo2.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/playground/samples/todo2.rt",
+      "blob": "ae7a8ec219b4a272e586338aaf09dbe559fcc73b",
+      "sha256": "51f48efa6354a0831a142cf49dcb6eb00dfe3c0682510010f6f8f82bc7be0cec",
+      "bytes": 761,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/propTemplates/implicitTemplate.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/propTemplates/implicitTemplate.rt",
+      "blob": "0f838470438cca9f05995f92dcbf5fe8015444ac",
+      "sha256": "05fab84ac46832f9e1e4c944b59c3293a63fdbf85e1da9802ca4fa3ee9eb883b",
+      "bytes": 114,
+      "snippet": "<div>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/repeat-with-index.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/repeat-with-index.rt",
+      "blob": "fbc44eaad8fbf0d771e00208e7eec02541029bf9",
+      "sha256": "8eafa11566af70ea1d5afe5e0f570e3df5b562d472642d0cf608d87f5889b85f",
+      "bytes": 110,
+      "snippet": "<ul>",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "wix-incubator/react-templates",
+      "family": "React Templates",
+      "positive": false,
+      "path": "test/data/invalid/invalid-js.rt",
+      "url": "https://raw.githubusercontent.com/wix-incubator/react-templates/becfc2b789c412c9189c35dc900ab6185713cdae/test/data/invalid/invalid-js.rt",
+      "blob": "b4f7e1f9527bf3fa0459cdd4af4dbd0a6e207b42",
+      "sha256": "2bcfd3599a7dc5d401293df4b43d90774448ae59c3a0e0469f0e14978b0ad7da",
+      "bytes": 33,
+      "snippet": "<div rt-scope=\"x'a as v\">",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img14.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img14.rt",
+      "blob": "88ad152148d25641de8fa3da441d7779b54a7a22",
+      "sha256": "d2c96f7ffb6a9bc1fc16156cd190fc86f65cff3cf65e08688392b24ed1dafcf0",
+      "bytes": 904,
+      "snippet": "#Brightness 2/2 02",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img09.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img09.rt",
+      "blob": "a455dd93d9d22e812909b1ec49fcc92b3bccd06c",
+      "sha256": "58c16bc87437bd14513ada545f72fe7857343b3386b72f105be46d8c3c8a0b3f",
+      "bytes": 796,
+      "snippet": "# Camera's position and direction 03",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img03.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img03.rt",
+      "blob": "fc7ec789b2404fdf68905e5c149067b1be2b65e5",
+      "sha256": "8bf269b16dbcab070ff69da2d9632c71eda72a80e73beb02a397f0fc7ba2a72a",
+      "bytes": 529,
+      "snippet": "# Translations and rotations 01",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img12.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img12.rt",
+      "blob": "8cc99bbca4cf21cdaeaefefba2635e21567f408d",
+      "sha256": "35da56cb376a7b3b3b9d21710990850ab373e88e285eec7f316a3539f4d6d536",
+      "bytes": 615,
+      "snippet": "#Brightness 1/2 02",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img15.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img15.rt",
+      "blob": "30b6436f6362802bc28886106779e3f297e77f7d",
+      "sha256": "fddfc012cae6b40378d2ca3c8bba706ab4f25985bf44de2dae198221764af596",
+      "bytes": 1672,
+      "snippet": "#Color disruption: checkerboard 01 and 2nd degree object",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img11.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img11.rt",
+      "blob": "f75ff657e56916e32b71e50410e4e35d009dd0f2",
+      "sha256": "e671d03c344c9f3736417cce87be8d41beb35ae856bf6ec1eb1d0204e337c046",
+      "bytes": 618,
+      "snippet": "# Brightness 1/2 01",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img04.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img04.rt",
+      "blob": "6438e37a44e3d8902c1cada5437f4373608d72fa",
+      "sha256": "c8e9f6aca3a2a60256d2451849e52d9448204309f0687d005ee5b42d9a3f24c6",
+      "bytes": 540,
+      "snippet": "# Translations and rotations 02",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img00.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img00.rt",
+      "blob": "731200756d5dcb9cac1e5355bb5154dc2cf769bb",
+      "sha256": "76bc1319d0a741f0d29b37b33b5e3f499fa49ddbeebc83697599be9a2099b8bf",
+      "bytes": 559,
+      "snippet": "# The Basic Shapes 01",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img01.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img01.rt",
+      "blob": "f619710a5360bb2e11f4958a52add32dc478b615",
+      "sha256": "51160a04c6cdd702fc0b0de7389fdbe031975f790907c11f32063cdae30360da",
+      "bytes": 386,
+      "snippet": "# The Basic Shapes 02",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img07.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img07.rt",
+      "blob": "f2a7db177c93515a969405709072d1a48df9e42c",
+      "sha256": "4fbc49a8776d92ed713578b91b905dce6f68d89fb4f1430ec121977f26948fe8",
+      "bytes": 796,
+      "snippet": "# Camera's position and direction 01",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img06.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img06.rt",
+      "blob": "f5c35603068c0d8c9608662b7fe8f848ce9e1797",
+      "sha256": "4411e74a0758839ea772ea8d2072fcd1272c21461ceec971836dece8fda0cdec",
+      "bytes": 994,
+      "snippet": "# Multiple spheres 02",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img10.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img10.rt",
+      "blob": "e8ebf4b716a7145bbcdd096ee1d794c2309bdc2f",
+      "sha256": "2404c8f5569cd897630c37d1340aac275e485d5255bac9aedd6f4de82dff3a8e",
+      "bytes": 796,
+      "snippet": "# Camera's position and direction 03",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img17.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img17.rt",
+      "blob": "f415eaa838b8c991986eb6dc4b77201c20721ea4",
+      "sha256": "db42d00fbc0fe27a8f7736731d58ce8aa63d129e03d1d8f882e0a1bdfc63cbc8",
+      "bytes": 716,
+      "snippet": "# Colored and multi-spot lights",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img16.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img16.rt",
+      "blob": "ce913f459780397910af1c7a571ea55e896f28c0",
+      "sha256": "0f4e7d4dd65b490b40944be95c313aca093bd948d1ba40cc431689019e55d1c7",
+      "bytes": 1871,
+      "snippet": "#Color disruption: checkerboard 02 and 2nd degree object",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img19.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img19.rt",
+      "blob": "8d18b05ca3d0ea4cc641e7fdfdcaf1267df37020",
+      "sha256": "08381bda776e6251fb647761ffce45372fc6d216430deffbd841e233bd455b42",
+      "bytes": 819,
+      "snippet": "# Handle bump map textures",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img05.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img05.rt",
+      "blob": "8c76cb93e928eefa260f3df411f836336de2eb0f",
+      "sha256": "cd9c490e193599fdc1e132e2f519b9c77ad8431eccc9a911b50b6b6e2d95f088",
+      "bytes": 743,
+      "snippet": "# Multiple spheres 01",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img02.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img02.rt",
+      "blob": "2c305b6cb571c28a28ca18ba82223c64d4415c2d",
+      "sha256": "3e39e027e35b19a09533e5151a756ad15af9ed107ddbf683de5540177c5318b7",
+      "bytes": 544,
+      "snippet": "# The Basic Shapes 03",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img18.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img18.rt",
+      "blob": "93ead8e2899a5933998132ea985dd15dfb5e189c",
+      "sha256": "7a307c04f0afa1a4072a33680a4d325265c8c394ee5912a3fb03c6030368a7e9",
+      "bytes": 731,
+      "snippet": "# Handle bump map textures",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img08.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img08.rt",
+      "blob": "33d9fefa2eebc27862e29c6c5b538d2a3f73be68",
+      "sha256": "a92a5982222b13e635fc8afa111c614a4b5c9e1f8d572471e4555b83397b6215",
+      "bytes": 796,
+      "snippet": "# Camera's position and direction 02",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "magalhaesm/42-cursus-miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "images/img13.rt",
+      "url": "https://raw.githubusercontent.com/magalhaesm/42-cursus-miniRT/4acd36124ea01c64932ae6cde438f4c56b5dbbd6/images/img13.rt",
+      "blob": "18618a365cdbf1aae1aa89607a33577afa0c130e",
+      "sha256": "5385c8617ee776db9702321a4a4fcbca909f9387f6ec0e1576290a433f0ca7f1",
+      "bytes": 779,
+      "snippet": "#Brightness 2/2 01",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "Aprilistic/miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "rt/3sphere.rt",
+      "url": "https://raw.githubusercontent.com/Aprilistic/miniRT/8359648e7f5406f528649ecb310530699922d770/rt/3sphere.rt",
+      "blob": "3bf84628f65621323b3595429d0a5146f534a1d4",
+      "sha256": "2a5ff6f9bca4a48df43f3fbe64a7699139144dec642b4e236d87dd237716d3ac",
+      "bytes": 284,
+      "snippet": "A 0.2 0,0,0",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "Aprilistic/miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "rt/rainbow.rt",
+      "url": "https://raw.githubusercontent.com/Aprilistic/miniRT/8359648e7f5406f528649ecb310530699922d770/rt/rainbow.rt",
+      "blob": "f235c5f4e0fe719bf899b6bce557073bc81f1ed5",
+      "sha256": "cdb5ea8dbcc234f061862c0a340543039a3ae6ea2e6988b717f22888370bdc5b",
+      "bytes": 767,
+      "snippet": "A 1.0 0,0,0",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "Aprilistic/miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "rt/2plane.rt",
+      "url": "https://raw.githubusercontent.com/Aprilistic/miniRT/8359648e7f5406f528649ecb310530699922d770/rt/2plane.rt",
+      "blob": "85fcf24fd303444302ff6f720270ff1380996a41",
+      "sha256": "4935c6abeeb01f1f6afbfedaf50f6df663456895661c731321abe7b916230eb5",
+      "bytes": 1149,
+      "snippet": "A 0.1 255,255,255",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "Aprilistic/miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "rt/snowman.rt",
+      "url": "https://raw.githubusercontent.com/Aprilistic/miniRT/8359648e7f5406f528649ecb310530699922d770/rt/snowman.rt",
+      "blob": "a802011c1ce7717f0207ba09d24c2daf21bd778b",
+      "sha256": "98c654d796a2f2d12c1160437026bd6e21df8c71b6d47e626e6705606a374099",
+      "bytes": 606,
+      "snippet": "A 0.4 255,255,255",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "Aprilistic/miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "rt/test.rt",
+      "url": "https://raw.githubusercontent.com/Aprilistic/miniRT/8359648e7f5406f528649ecb310530699922d770/rt/test.rt",
+      "blob": "fac4d03cdcbe8824de7600c0a1bef3111609d5f9",
+      "sha256": "865f978ac4fc861ad6e987f47c080edcdecb9afcf711926a1adbbf45fb3dffc5",
+      "bytes": 189,
+      "snippet": "A 0.4 0,0,0",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "Aprilistic/miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "rt/candy.rt",
+      "url": "https://raw.githubusercontent.com/Aprilistic/miniRT/8359648e7f5406f528649ecb310530699922d770/rt/candy.rt",
+      "blob": "67f2e1fb3bf4dc20f3978968db628e50624745d4",
+      "sha256": "d27d4760c458f1c7189f7b728dfe9f9c3b0567a556794eaa4607cabcc27dce01",
+      "bytes": 593,
+      "snippet": "A 1.0 255,255,255",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "Aprilistic/miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "rt/complex.rt",
+      "url": "https://raw.githubusercontent.com/Aprilistic/miniRT/8359648e7f5406f528649ecb310530699922d770/rt/complex.rt",
+      "blob": "c00c33526bde6c9a290d2590a797fed51c269fd0",
+      "sha256": "d6502785b9259ffeb43208178c25e7439283833327cf329f171d439fe5d6084a",
+      "bytes": 1240,
+      "snippet": "A 0.2 0,0,0",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "Aprilistic/miniRT",
+      "family": "miniRT scenes",
+      "positive": false,
+      "path": "rt/pyramid.rt",
+      "url": "https://raw.githubusercontent.com/Aprilistic/miniRT/8359648e7f5406f528649ecb310530699922d770/rt/pyramid.rt",
+      "blob": "b3c444836fa9075e3834b54210a0476406c51cbe",
+      "sha256": "9b54a0fa1e800b2ec67b69539f2bc45aa9205ad7094649d30d53973913743677",
+      "bytes": 597,
+      "snippet": "A 0.1 255,255,255",
+      "matches": [
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/path.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/path.rt",
+      "blob": "ae467253dd5f7161c988ee1fcc9d86ee8b8a4929",
+      "sha256": "b7754771e21210661d31d9205a186e99f2d448f8d4485f20328840d44bc84af7",
+      "bytes": 743,
+      "snippet": "module path {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/heap.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/heap.rt",
+      "blob": "97c7c725885510508ce7122d05ec641d0163963b",
+      "sha256": "bc5987cdcd8be236ce1b4c11c0055abbbb2b67d92f0c1d4c8f239109c6003275",
+      "bytes": 675,
+      "snippet": "module heap {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/log.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/log.rt",
+      "blob": "43e865cd720ce13d204871adb3b6dda1d175109c",
+      "sha256": "432dfda43f9d1636b7afe382f7fafbe82e6f74fee92b59c8e1c230f0a9814acb",
+      "bytes": 608,
+      "snippet": "module log {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/bits.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/bits.rt",
+      "blob": "ac4dec600cdda925e047147ba100d1df24a36be2",
+      "sha256": "229a59c16f4f759fba018f49af6ecf094fb94e17639124c3167752a0492e2c20",
+      "bytes": 652,
+      "snippet": "module bits {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/env.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/env.rt",
+      "blob": "a57229d5ffedef50d7cbd31eb1ed46ee43c571cb",
+      "sha256": "504a2c210abe3a25d93d326d7a083015b2a85863f944cf4077d3a0f234d28db4",
+      "bytes": 239,
+      "snippet": "module env {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/process.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/process.rt",
+      "blob": "e21793778dff6e4c24a8c0ef5e76df1f5351dc59",
+      "sha256": "3035316a5778d5b333d56e9acf8905bec5c7a3a55902780a46b6a4c6fe9646be",
+      "bytes": 806,
+      "snippet": "module process {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/random.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/random.rt",
+      "blob": "0676edc067cd94e8ac38b15c191b0d88a0412a06",
+      "sha256": "5b36fa1d43a30cddfe620247ca0d0a146e7b37d8aaa3b72dbc7478697b14b8f4",
+      "bytes": 573,
+      "snippet": "module random {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/memory.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/memory.rt",
+      "blob": "384133a519617e13adf00e4bcb4329ac9360625d",
+      "sha256": "873b8a703a698a071a64896c31342f216a2bd19534a9c22afbfdec12f5b83d0c",
+      "bytes": 785,
+      "snippet": "module memory {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/deque.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/deque.rt",
+      "blob": "e70517244a388aecb7fed7103fc0345721472e3b",
+      "sha256": "68c175094ab97cc419bce7eef8a07d33ae3466dc5c6800e8ab23bae78a71ade7",
+      "bytes": 786,
+      "snippet": "module deque {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/file.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/file.rt",
+      "blob": "668c7c57760284abf4eb39ea354cdd1056446cc8",
+      "sha256": "5212092584f696d02f3a4697afa36cd09cf0218427692a981f986213af407a1e",
+      "bytes": 667,
+      "snippet": "module file {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/sync.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/sync.rt",
+      "blob": "096537d6749664f9585091511b43c99c6e9cc6d7",
+      "sha256": "097e049c56fb3ad083f90c064a51e130341214f43e6e52994e83ae678f9b4cc6",
+      "bytes": 722,
+      "snippet": "module sync {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/stream.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/stream.rt",
+      "blob": "eab1b62489fb222f3bcae2333a4b9705a92a1bc3",
+      "sha256": "e796461f6b4b3e957f1680af7985e47dc69213749c854e6a0cee993301b7829c",
+      "bytes": 872,
+      "snippet": "module stream {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/list.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/list.rt",
+      "blob": "bdf8ce7b8a12ee4f58c89884c0936a7ee145e348",
+      "sha256": "019bb730b09a53bea19a8fe073bbcf03139bf06787d49aab26a3d11d8f0c03a0",
+      "bytes": 598,
+      "snippet": "module list {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/set.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/set.rt",
+      "blob": "c40f8e5ff728e8715fad2adbffd318b8e685acbe",
+      "sha256": "023eeb97bb1601878700bf5abe2c84392505d8ae16415301bf7f701da315e567",
+      "bytes": 626,
+      "snippet": "module set {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/time.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/time.rt",
+      "blob": "f0948aa2547db859042228c9661a3928877f66e0",
+      "sha256": "862a72a673fc2c3dfdac987a82761649aafc1c4d568d9584ba63e72087d829d9",
+      "bytes": 515,
+      "snippet": "module time {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/index.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/index.rt",
+      "blob": "2e8e1522cad10984680376f664681ab2f7f4206c",
+      "sha256": "d2046f72fe0b07319afa60a58604a0280a5a6e41832cab5ecfa34bb92afb35f2",
+      "bytes": 735,
+      "snippet": "module index {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/net.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/net.rt",
+      "blob": "a40e952df793871e2362b859b96cedf1a397ca70",
+      "sha256": "f158da491286e7b8c4b1e938193150712db2defa8d98414611ea967ca7b8bdfc",
+      "bytes": 1083,
+      "snippet": "module net {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/map.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/map.rt",
+      "blob": "b1bebb4129ab285d148b2e99d30a23c349b1fd22",
+      "sha256": "bf328038c812ac27fbdd75dbda5d541f3c6215d29e4c28a5499bc5cb5a457eb6",
+      "bytes": 729,
+      "snippet": "module map {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/format.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/format.rt",
+      "blob": "9bd322ab5d91a0789981c896583757d8764c3ee1",
+      "sha256": "d19ce90f4fe37d270f2bd0a308774d2fa222fca4bbec59ab25481e7a96d5e2d1",
+      "bytes": 400,
+      "snippet": "module format {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "repo": "radiiplus/tratio",
+      "family": "Tratio",
+      "positive": true,
+      "path": "std/thread.rt",
+      "url": "https://raw.githubusercontent.com/radiiplus/tratio/00052d25f282733cf710f01e711cc2bbfd27b202/std/thread.rt",
+      "blob": "2b592fa1781d16df3573f00fd43df55797520097",
+      "sha256": "e9ebae7666b22c26c030b7b1066df4a4e2dc7659c255ff9582b790dee373fecb",
+      "bytes": 368,
+      "snippet": "module thread {",
+      "matches": [
+        true,
+        true,
+        true
+      ]
+    }
+  ],
+  "skipped": [
+    {
+      "repo": "contact-discovery/rt_phone_numbers",
+      "path": "bin/out/sha256_5_1000x1000000_DE_mobile.rt",
+      "url": "https://raw.githubusercontent.com/contact-discovery/rt_phone_numbers/bbcf83a93d30eb821b0ee41900fff7b5969f55f0/bin/out/sha256_5_1000x1000000_DE_mobile.rt",
+      "bytes": 16000000,
+      "reason": "Exceeds 1 MiB audit download limit; inventoried but not classified."
+    },
+    {
+      "repo": "contact-discovery/rt_phone_numbers",
+      "path": "bin/out/sha256_1_1000x1000000_DE_mobile.rt",
+      "url": "https://raw.githubusercontent.com/contact-discovery/rt_phone_numbers/bbcf83a93d30eb821b0ee41900fff7b5969f55f0/bin/out/sha256_1_1000x1000000_DE_mobile.rt",
+      "bytes": 16000000,
+      "reason": "Exceeds 1 MiB audit download limit; inventoried but not classified."
+    },
+    {
+      "repo": "contact-discovery/rt_phone_numbers",
+      "path": "bin/out/sha256_3_1000x1000000_DE_mobile.rt",
+      "url": "https://raw.githubusercontent.com/contact-discovery/rt_phone_numbers/bbcf83a93d30eb821b0ee41900fff7b5969f55f0/bin/out/sha256_3_1000x1000000_DE_mobile.rt",
+      "bytes": 16000000,
+      "reason": "Exceeds 1 MiB audit download limit; inventoried but not classified."
+    },
+    {
+      "repo": "contact-discovery/rt_phone_numbers",
+      "path": "bin/out/sha256_4_1000x1000000_DE_mobile.rt",
+      "url": "https://raw.githubusercontent.com/contact-discovery/rt_phone_numbers/bbcf83a93d30eb821b0ee41900fff7b5969f55f0/bin/out/sha256_4_1000x1000000_DE_mobile.rt",
+      "bytes": 16000000,
+      "reason": "Exceeds 1 MiB audit download limit; inventoried but not classified."
+    },
+    {
+      "repo": "contact-discovery/rt_phone_numbers",
+      "path": "bin/out/sha256_2_1000x1000000_DE_mobile.rt",
+      "url": "https://raw.githubusercontent.com/contact-discovery/rt_phone_numbers/bbcf83a93d30eb821b0ee41900fff7b5969f55f0/bin/out/sha256_2_1000x1000000_DE_mobile.rt",
+      "bytes": 16000000,
+      "reason": "Exceeds 1 MiB audit download limit; inventoried but not classified."
+    },
+    {
+      "repo": "contact-discovery/rt_phone_numbers",
+      "path": "bin/out/sha1_1_1000x1000000_DE_mobile.rt",
+      "url": "https://raw.githubusercontent.com/contact-discovery/rt_phone_numbers/bbcf83a93d30eb821b0ee41900fff7b5969f55f0/bin/out/sha1_1_1000x1000000_DE_mobile.rt",
+      "bytes": 16000000,
+      "reason": "Exceeds 1 MiB audit download limit; inventoried but not classified."
+    }
+  ],
+  "failures": [
+    {
+      "repo": "SubtitleEdit/subtitleedit",
+      "error": "The operation was aborted due to timeout"
+    }
+  ],
+  "metrics": [
+    {
+      "candidate": "module",
+      "tp": 20,
+      "fp": 0,
+      "tn": 68,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "candidate": "phrases",
+      "tp": 20,
+      "fp": 0,
+      "tn": 68,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "candidate": "combined",
+      "tp": 20,
+      "fp": 0,
+      "tn": 68,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "unique": {
+    "files": 88,
+    "positive": 20,
+    "negative": 68,
+    "metrics": [
+      {
+        "candidate": "module",
+        "tp": 20,
+        "fp": 0,
+        "tn": 68,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      {
+        "candidate": "phrases",
+        "tp": 20,
+        "fp": 0,
+        "tn": 68,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1
+      },
+      {
+        "candidate": "combined",
+        "tp": 20,
+        "fp": 0,
+        "tn": 68,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1
+      }
+    ]
+  }
+}
