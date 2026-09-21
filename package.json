@@ -15,6 +15,7 @@
     "test:editor": "node test/editor/run.mjs && node test/editor/snapshots.mjs && node test/editor/theme.mjs && node test/editor/probe.mjs",
     "test:host": "node test/editor/editor.mjs",
     "build": "node tools/build.mjs",
+    "build:installers": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-installers.ps1",
     "native:build": "node tools/native.mjs",
     "test:native": "node test/native/run.mjs"
   },

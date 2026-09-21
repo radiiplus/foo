@@ -25,7 +25,19 @@ start() {
 
 ## Install
 
-Download the archive for your system from the [latest GitHub release](https://github.com/radiiplus/foo/releases/latest). FOO currently ships production binaries for Windows x64 and Linux x64.
+Download the installer for your system from the [latest GitHub release](https://github.com/radiiplus/foo/releases/latest):
+
+- **Windows x64:** run `foo-v0.1.0-windows-x64-setup.exe` and follow the setup wizard.
+- **Linux x64:** open `foo-v0.1.0-linux-x64.deb` in your software installer, or run `sudo apt install ./foo-v0.1.0-linux-x64.deb`.
+
+After installation, open a new terminal and check the setup:
+
+```sh
+foo version
+foo doctor
+```
+
+Portable `.zip` and `.tar.gz` archives are also available for systems where you do not want to install FOO.
 
 The release also includes an npm package. With Node.js 22.13 or newer installed, download `foo-0.1.0.tgz` and run:
 
@@ -35,7 +47,7 @@ foo version
 foo doctor
 ```
 
-To use a platform archive without installing it globally:
+To use a portable archive:
 
 ```powershell
 # Windows

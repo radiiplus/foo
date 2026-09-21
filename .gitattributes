@@ -1,1 +1,2 @@
 *.iv linguist-language=FOO
+*.sh text eol=lf

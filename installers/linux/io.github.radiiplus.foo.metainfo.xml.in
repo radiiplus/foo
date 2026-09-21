@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.github.radiiplus.foo</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <name>FOO</name>
+  <summary>Readable systems programming with native output</summary>
+  <description>
+    <p>FOO is a systems programming language for clear, sentence-like programs. It checks, formats, tests, builds, and runs projects from one command.</p>
+  </description>
+  <url type="homepage">https://github.com/radiiplus/foo</url>
+  <url type="bugtracker">https://github.com/radiiplus/foo/issues</url>
+  <provides>
+    <binary>foo</binary>
+  </provides>
+  <releases>
+    <release version="@VERSION@" date="2026-09-21"/>
+  </releases>
+</component>
