@@ -5,13 +5,15 @@
 - Replace the former mark with a clear numeral 4 across the Marketplace icon,
   file icons, and package screenshot.
 - Focus the Marketplace README on installation and everyday usage.
+- Publish the Marketplace package as `foo.iv` with the `radiiplus.foo-iv`
+  extension identity.
 - Replace the retired compiler fixture with complete library modules and usage
   tests, preserving a 200+ line corpus with token snapshots.
 
 ## 2.0.0 — 2026-09-14
 
 - Rename the language to FOO, the language ID to `foo`, the scope to `source.foo`,
-  and source files to `.iv`; the extension identity is now `radiiplus.foo`.
+  and source files to `.iv`; the extension identity is now `radiiplus.foo-iv`.
 - Update the grammar, fixtures, icon, tests, and syntax palette selectors.
 - Preserve the user's selected theme and other languages' syntax colors.
 

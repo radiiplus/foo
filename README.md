@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo-dark.svg" alt="FOO logo" width="96" height="96">
+  <img src="assets/dark.svg" alt="FOO logo" width="96" height="96">
 </p>
 
 <h1 align="center">FOO</h1>
@@ -22,38 +22,13 @@ start() {
 
 ## Install
 
-Download the installer for your system from the [latest GitHub release](https://github.com/radiiplus/foo/releases/latest):
-
-- **Windows x64:** run `foo-v0.1.0-windows-x64-setup.exe` and follow the setup wizard.
-- **Linux x64:** open `foo-v0.1.0-linux-x64.deb` in your software installer, or run `sudo apt install ./foo-v0.1.0-linux-x64.deb`.
+Download FOO from the [latest release](https://github.com/radiiplus/foo/releases/latest) and follow the installation instructions provided with the release.
 
 After installation, open a new terminal and check the setup:
 
 ```sh
 foo version
 foo doctor
-```
-
-Portable `.zip` and `.tar.gz` archives are also available for systems where you do not want to install FOO.
-
-The release also includes an npm package. With Node.js 22.13 or newer installed, download `foo-0.1.0.tgz` and run:
-
-```sh
-npm install --global ./foo-0.1.0.tgz
-foo version
-foo doctor
-```
-
-To use a portable archive:
-
-```powershell
-# Windows
-.\bin\foo.cmd version
-```
-
-```sh
-# Linux
-./bin/foo version
 ```
 
 FOO manages the pinned Zig backend used for native builds. `foo doctor` shows the compiler, backend, C tools, and target support available on your computer.

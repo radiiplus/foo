@@ -31,7 +31,7 @@ find "$package_root/opt/foo" -type d -exec chmod 0755 {} +
 find "$package_root/opt/foo" -type f -exec chmod 0644 {} +
 chmod 0755 "$package_root/opt/foo/bin/foo"
 ln -s /opt/foo/bin/foo "$package_root/usr/bin/foo"
-install -m 0644 "$source_dir/assets/logo-dark.svg" \
+install -m 0644 "$source_dir/assets/dark.svg" \
   "$package_root/usr/share/icons/hicolor/scalable/apps/io.github.radiiplus.foo.svg"
 install -m 0644 "$source_dir/LICENSE" "$package_root/usr/share/doc/foo/copyright"
 install -m 0644 "$source_dir/LICENSE-MIT" "$package_root/usr/share/doc/foo/LICENSE-MIT"

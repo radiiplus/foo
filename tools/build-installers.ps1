@@ -14,7 +14,7 @@ if (-not $Version) {
 }
 
 if (-not $ReleaseDirectory) {
-  $ReleaseDirectory = Join-Path $projectRoot "release\v$Version"
+  $ReleaseDirectory = Join-Path $projectRoot "release\foo-v$Version"
 }
 $ReleaseDirectory = [IO.Path]::GetFullPath($ReleaseDirectory)
 

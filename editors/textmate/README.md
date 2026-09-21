@@ -2,7 +2,7 @@
   <img src="images/icon.png" alt="FOO 4 logo" width="128" height="128">
 </p>
 
-# FOO for VS Code
+# foo.iv for VS Code
 
 FOO language support for Visual Studio Code. Open any `.iv` file to get syntax highlighting, file icons, bracket handling, comment shortcuts, indentation, and ready-made snippets.
 
@@ -10,9 +10,9 @@ FOO language support for Visual Studio Code. Open any `.iv` file to get syntax h
 
 ## Install
 
-Open **Extensions** in Visual Studio Code, search for **FOO**, select the extension published by **radiiplus**, and choose **Install**.
+Open **Extensions** in Visual Studio Code, search for **foo.iv**, select the extension published by **radiiplus**, and choose **Install**.
 
-To install a downloaded package instead, open the Extensions view, choose **Install from VSIX**, and select `foo-2.0.0.vsix`.
+To install a downloaded package instead, open the Extensions view, choose **Install from VSIX**, and select `foo.iv-2.0.0.vsix`.
 
 ## Use FOO Files
 
