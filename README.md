@@ -97,3 +97,7 @@ Use `--backend c` or `--backend zig` to select a backend when a command supports
 - [FOO for VS Code](https://github.com/radiiplus/foo/tree/main/editors/textmate)
 
 The complete documentation starts at [docs/README.md](docs/README.md).
+
+## License
+
+FOO is dual-licensed under the [MIT License](LICENSE-MIT) or the [Apache License 2.0](LICENSE-APACHE), at your option.

@@ -45,7 +45,7 @@ if (-not $SkipWindows) {
     throw 'Inno Setup 6 is required. Install it with: winget install --id JRSoftware.InnoSetup --exact'
   }
 
-  & $isccCandidates[0] "/DAppVersion=$Version" "/DSourceDir=$windowsSource" "/DOutputDir=$ReleaseDirectory" (Join-Path $projectRoot 'installers\windows\foo.iss')
+  & $isccCandidates[0] "/DAppVersion=$Version" "/DSourceDir=$windowsSource" "/DOutputDir=$ReleaseDirectory" "/DProjectRoot=$projectRoot" (Join-Path $projectRoot 'installers\windows\foo.iss')
   if ($LASTEXITCODE -ne 0) { throw 'The Windows installer build failed.' }
 }
 

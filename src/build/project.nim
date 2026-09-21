@@ -53,6 +53,7 @@ proc manifest*(project: Project): Manifest =
   result = defaultManifest()
   result.name = field(node, "name", result.name).getStr()
   result.version = field(node, "version", result.version).getStr()
+  result.license = field(node, "license", "").getStr()
   result.language = field(node, "language", result.language).getStr()
   result.source = field(node, "source", "").getStr()
   result.entry = field(node, "entry", "").getStr()

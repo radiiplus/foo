@@ -10,6 +10,7 @@ The application version and configuration schema version are separate fields.
   "schema": 1,
   "name": "myapp",
   "version": "1.0.0",
+  "license": "MIT OR Apache-2.0",
   "language": "1",
   "requires": "base",
   "dependencies": { "http": "^1.2.0" }
@@ -28,6 +29,7 @@ Other schema or language versions require a matching specification.
 | schema | Integer, exactly 1 |
 | name | Nonempty ASCII package name; optional namespace separated by one `/`; each component matches `[a-z][a-z0-9-]*` |
 | version | Exact stable version `MAJOR.MINOR.PATCH`, nonnegative integers without leading zeros |
+| license | Optional SPDX license expression describing the project license |
 | language | String, exactly `"1"` |
 | requires | Exactly base, system, machine or hardware |
 | dependencies | Object from package names to dependency strings |

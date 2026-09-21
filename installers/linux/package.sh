@@ -21,6 +21,7 @@ install -d \
   "$package_root/DEBIAN" \
   "$package_root/opt/foo" \
   "$package_root/usr/bin" \
+  "$package_root/usr/share/doc/foo" \
   "$package_root/usr/share/icons/hicolor/scalable/apps" \
   "$package_root/usr/share/metainfo" \
   "$output_dir"
@@ -32,6 +33,9 @@ chmod 0755 "$package_root/opt/foo/bin/foo"
 ln -s /opt/foo/bin/foo "$package_root/usr/bin/foo"
 install -m 0644 "$source_dir/assets/logo-light.svg" \
   "$package_root/usr/share/icons/hicolor/scalable/apps/io.github.radiiplus.foo.svg"
+install -m 0644 "$source_dir/LICENSE" "$package_root/usr/share/doc/foo/copyright"
+install -m 0644 "$source_dir/LICENSE-MIT" "$package_root/usr/share/doc/foo/LICENSE-MIT"
+install -m 0644 "$source_dir/LICENSE-APACHE" "$package_root/usr/share/doc/foo/LICENSE-APACHE"
 
 installed_size=$(du -sk "$package_root/opt/foo" | cut -f1)
 cat > "$package_root/DEBIAN/control" <<EOF

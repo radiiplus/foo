@@ -2,7 +2,7 @@
 <component type="console-application">
   <id>io.github.radiiplus.foo</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>LicenseRef-proprietary</project_license>
+  <project_license>MIT OR Apache-2.0</project_license>
   <name>FOO</name>
   <summary>Readable systems programming with native output</summary>
   <description>

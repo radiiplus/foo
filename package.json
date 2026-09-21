@@ -25,6 +25,7 @@
     "vscode-textmate": "9.3.2"
   },
   "description": "FOO language compiler and managed native toolchain",
+  "license": "MIT OR Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/radiiplus/foo.git"
@@ -38,6 +39,9 @@
   },
   "dependencies": {},
   "files": [
+    "LICENSE",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
     "bin/",
     "assets/",
     "src/",

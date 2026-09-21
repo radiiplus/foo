@@ -54,6 +54,7 @@ type
   Manifest* = object
     name*: string
     version*: string
+    license*: string
     language*: string
     schema*: int
     requires*: string

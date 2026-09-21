@@ -6,6 +6,7 @@
 {
   "name": "app",
   "version": "1.0.0",
+  "license": "MIT OR Apache-2.0",
   "language": "1",
   "requires": "base",
   "dependencies": { "http": "^1.2.0" }
@@ -47,7 +48,7 @@ Another package may call `clean`, but it cannot depend on `trim_spaces`.
 
 ## A manifest in plain words
 
-`name` identifies the package. `version` tells users which release they have. `language` prevents a new compiler from guessing at an old file format. `requires` says which computer abilities the package needs. `dependencies` lists other packages and their allowed versions.
+`name` identifies the package. `version` tells users which release they have. `license` is an optional SPDX expression describing how others may use it. `language` prevents a new compiler from guessing at an old file format. `requires` says which computer abilities the package needs. `dependencies` lists other packages and their allowed versions.
 
 When you run `foo install`, FOO reads this file, downloads the requested packages, checks their recorded fingerprints, and stores the result in the cache. The lockfile records the exact choice so another computer can repeat it.
 

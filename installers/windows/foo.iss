@@ -10,6 +10,10 @@
   #define OutputDir "."
 #endif
 
+#ifndef ProjectRoot
+  #error ProjectRoot must point to the FOO repository root.
+#endif
+
 [Setup]
 AppId={{E3BFAEE7-920F-4D93-AEA4-32764273820C}
 AppName=FOO
@@ -21,6 +25,7 @@ AppUpdatesURL=https://github.com/radiiplus/foo/releases
 DefaultDirName={localappdata}\Programs\FOO
 DefaultGroupName=FOO
 DisableProgramGroupPage=yes
+LicenseFile={#ProjectRoot}\LICENSE
 OutputDir={#OutputDir}
 OutputBaseFilename=foo-v{#AppVersion}-windows-x64-setup
 Compression=lzma2/ultra64
@@ -43,6 +48,9 @@ Name: "addtopath"; Description: "Add FOO to my PATH"; GroupDescription: "Command
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#ProjectRoot}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ProjectRoot}\LICENSE-MIT"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#ProjectRoot}\LICENSE-APACHE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\FOO Command Prompt"; Filename: "{cmd}"; Parameters: "/K ""set PATH={app}\bin;%PATH%&& cd /d {userdocs}&& foo version"""; WorkingDir: "{userdocs}"
