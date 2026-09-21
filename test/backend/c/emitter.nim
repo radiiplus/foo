@@ -1,7 +1,7 @@
 import std/strutils
-import ../../src/backend/c/emitter
-import ../../src/ir/node
-import ../../src/ir/kind
+import ../../../src/backend/c/emitter
+import ../../../src/ir/node
+import ../../../src/ir/kind
 
 let function = Function(name: "main", params: @[], ret: `Type`(kind: TypeKind.Void), blocks: @[
   Block(label: "entry", instrs: @[], term: Instruction(kind: InstrKind.Return))

@@ -1,8 +1,8 @@
 import std/[os, strutils]
-import ../../src/backend/c/driver
-import ../../src/ir/node
-import ../../src/ir/kind
-import ../../src/build/options
+import ../../../src/backend/c/driver
+import ../../../src/ir/node
+import ../../../src/ir/kind
+import ../../../src/build/options
 
 doAssert dependencies("main.o: main.c helper.h") ==
   @[absolutePath("main.c"), absolutePath("helper.h")]

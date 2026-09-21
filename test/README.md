@@ -5,7 +5,7 @@ file under `test` is compiled and executed independently, and the complete resul
 set is written to `.artifacts/native-tests/results.json`.
 
 Fixtures and reviewed expectations live beside their suites. The backend and
-build suites compile real C and Zig programs, while `runner_execute.nim` exercises
+build suites compile real C and Zig programs, while `execute.nim` exercises
 the public test pipeline. `foo test std --backend c` and
 `foo test std --backend zig` run the six packaged standard-library programs.
 

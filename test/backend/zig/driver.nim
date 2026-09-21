@@ -1,8 +1,8 @@
 import std/strutils
 import std/os
-import ../../src/backend/zig/driver
-import ../../src/ir/node
-import ../../src/build/options
+import ../../../src/backend/zig/driver
+import ../../../src/ir/node
+import ../../../src/build/options
 
 let module = Module(name: "demo", funcs: @[], externs: @[])
 let result = build(module, "dev", ".artifacts/test-zig-driver", options = Native(name: "demo"))

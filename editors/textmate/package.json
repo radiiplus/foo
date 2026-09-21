@@ -2,12 +2,17 @@
   "name": "foo",
   "displayName": "FOO",
   "description": "FOO .iv syntax highlighting with Ultraviolet / Acid accents for any theme.",
+  "icon": "images/icon.png",
   "version": "2.0.0",
-  "publisher": "foo",
+  "publisher": "radiiplus",
   "repository": {
     "type": "git",
     "url": "https://github.com/radiiplus/foo.git",
     "directory": "editors/textmate"
+  },
+  "homepage": "https://github.com/radiiplus/foo/tree/main/editors/textmate#readme",
+  "bugs": {
+    "url": "https://github.com/radiiplus/foo/issues"
   },
   "license": "MIT",
   "engines": {
@@ -16,6 +21,17 @@
   "categories": [
     "Programming Languages"
   ],
+  "keywords": [
+    "foo",
+    "iv",
+    "language",
+    "syntax highlighting",
+    "snippets"
+  ],
+  "galleryBanner": {
+    "color": "#087F8C",
+    "theme": "dark"
+  },
   "contributes": {
     "languages": [
       {

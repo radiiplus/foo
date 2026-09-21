@@ -1,7 +1,7 @@
 import std/[os, strutils]
-import ../../src/backend/c/driver
-import ../../src/build/options
-import ../../src/ir/[kind, node]
+import ../../../src/backend/c/driver
+import ../../../src/build/options
+import ../../../src/ir/[kind, node]
 
 let boolean = `Type`(kind: TypeKind.Bool)
 let unsigned = `Type`(kind: TypeKind.Uint, width: 64)

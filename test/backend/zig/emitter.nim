@@ -1,7 +1,7 @@
 import std/strutils
-import ../../src/backend/zig/emitter
-import ../../src/ir/node
-import ../../src/ir/kind
+import ../../../src/backend/zig/emitter
+import ../../../src/ir/node
+import ../../../src/ir/kind
 
 let function = Function(name: "main", ret: `Type`(kind: TypeKind.Void), params: @[], blocks: @[])
 let module = Module(name: "demo", funcs: @[function], externs: @[])

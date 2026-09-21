@@ -67,7 +67,7 @@ if (-not $installers) { throw 'No installer artifacts were produced.' }
 $installers | ForEach-Object { Write-Host "Created $($_.FullName)" }
 
 $releaseFiles = Get-ChildItem $ReleaseDirectory -File | Where-Object {
-  $_.Name -match '\.(deb|exe|tgz|zip)$' -or $_.Name -match '\.tar\.gz$'
+  $_.Name -match '\.(deb|exe|tgz|vsix|zip)$' -or $_.Name -match '\.tar\.gz$'
 } | Sort-Object Name
 $checksumLines = $releaseFiles | ForEach-Object {
   $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()

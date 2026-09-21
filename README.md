@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <img src="assets/logo-light.svg" alt="FOO logo" width="96" height="96">
-  </picture>
+  <img src="assets/logo-dark.svg" alt="FOO logo" width="96" height="96">
 </p>
 
 <h1 align="center">FOO</h1>
