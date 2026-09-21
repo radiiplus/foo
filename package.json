@@ -1,13 +1,53 @@
 {
-  "name": "tratio",
+  "name": "foo",
   "version": "0.1.0",
+  "bin": {
+    "foo": "bin/foo.mjs"
+  },
   "scripts": {
-    "test": "tsx tests/lex/run.ts && tsx tests/diag/run.ts && tsx tests/parse/run.ts && tsx tests/sema/run.ts && tsx tests/types/run.ts && tsx tests/ir/run.ts && tsx tests/backend/run.ts && tsx tests/stdlib/run.ts && tsx tests/pkg/run.ts && tsx tests/generics/run.ts"
+    "test": "node test/native/run.mjs",
+    "test:stdlib": "node bin/foo.mjs test std --backend c",
+    "test:build": "node test/native/run.mjs",
+    "foo": "node bin/foo.mjs",
+    "postinstall": "node tools/toolchain.mjs",
+    "check": "node tools/native.mjs --check",
+    "export": "node tools/export.mjs",
+    "test:editor": "node test/editor/run.mjs && node test/editor/snapshots.mjs && node test/editor/theme.mjs && node test/editor/probe.mjs",
+    "test:host": "node test/editor/editor.mjs",
+    "build": "node tools/build.mjs",
+    "native:build": "node tools/native.mjs",
+    "test:native": "node test/native/run.mjs"
   },
   "devDependencies": {
-    "tsx": "^4.7.0"
+    "@vscode/test-electron": "3.1.0",
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.3.2"
   },
-  "workspaces": [
-    "units/*"
+  "description": "FOO language compiler and managed native toolchain",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/radiiplus/foo.git"
+  },
+  "homepage": "https://github.com/radiiplus/foo#readme",
+  "bugs": {
+    "url": "https://github.com/radiiplus/foo/issues"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {},
+  "files": [
+    "bin/",
+    "assets/",
+    "src/",
+    "std/",
+    "docs/",
+    "tools/toolchain.mjs",
+    "tools/native.mjs",
+    "toolchain.json",
+    "project.json",
+    "specs/",
+    "test/stdlib/",
+    "test/native/service.c"
   ]
 }

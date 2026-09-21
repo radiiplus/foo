@@ -1,0 +1,36 @@
+-- Combines, trims, and splits text using byte offsets and ASCII whitespace.
+use sequence as items.
+public use "text" function concatenate(left of type text, right of type text) of type fallible text.
+public use "text" function trim(content of type text) of type fallible text.
+public use "text" function length(content of type text) of type unsigned 64.
+public use "text" function slice(content of type text, first of type unsigned 64, last of type unsigned 64) of type fallible text.
+public use "text" function release(content of type text) of type fallible nothing.
+public function split(content of type text, separator of type text) of type fallible sequence of text {
+  when length(separator) is 0 { give fail(Error.EmptySeparator). }
+  mutable result is items.create[text]().
+  after error { for each part in result { release(part) catch nothing. } items.release[text](result) catch nothing. }
+  mutable first of type unsigned 64 is 0.
+  mutable cursor of type unsigned 64 is 0.
+  while cursor plus length(separator) is at most length(content) {
+    mutable matches is true.
+    mutable index of type unsigned 64 is 0.
+    while index less than length(separator) {
+      when content at (cursor plus index) is not separator at index { set matches to false. break. }
+      set index to index plus 1.
+    }
+    when matches {
+      constant part is try slice(content, first, cursor).
+      after error { release(part) catch nothing. }
+      constant next is try items.append[text](result, part).
+      try items.release[text](result).
+      set result to next.
+      set cursor to cursor plus length(separator).
+      set first to cursor.
+    } otherwise { set cursor to cursor plus 1. }
+  }
+  constant part is try slice(content, first, length(content)).
+  after error { release(part) catch nothing. }
+  constant next is try items.append[text](result, part).
+  try items.release[text](result).
+  give next.
+}

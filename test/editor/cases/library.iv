@@ -1,0 +1,246 @@
+-- Source: std/sequence.iv
+-- Builds typed sequences and applies ordering, searching, and transformations.
+public use "sequence" function create[T]() of type sequence of T.
+public use "sequence" function append[T](items of type sequence of T, value of type T) of type fallible sequence of T.
+public use "sequence" function remove[T](items of type sequence of T, index of type unsigned 64) of type fallible sequence of T.
+public use "sequence" function copy[T](items of type sequence of T) of type fallible sequence of T.
+public use "sequence" function length[T](items of type sequence of T) of type unsigned 64.
+public use "sequence" function release[T](items of type sequence of T) of type fallible nothing.
+
+public function find[T](items of type sequence of T, value of type T) of type optional unsigned 64 where T is Equatable {
+  mutable index of type unsigned 64 is 0.
+  for each item in items {
+    when item is value { give index. }
+    set index to index plus 1.
+  }
+  give nothing.
+}
+
+public function sort[T](items of type sequence of T) of type fallible sequence of T where T is Ord {
+  mutable result is try copy[T](items).
+  mutable index of type unsigned 64 is 1.
+  while index less than length[T](result) {
+    constant value is result at index.
+    mutable cursor is index.
+    while cursor greater than 0 {
+      when result at (cursor minus 1) greater than value {
+        set result at cursor to result at (cursor minus 1).
+        set cursor to cursor minus 1.
+      } otherwise { break. }
+    }
+    set result at cursor to value.
+    set index to index plus 1.
+  }
+  give result.
+}
+
+public function filter[T](items of type sequence of T, predicate of type function taking (T) giving boolean) of type fallible sequence of T {
+  mutable result is create[T]().
+  after error { release[T](result) catch nothing. }
+  for each item in items {
+    when predicate(item) {
+      constant next is try append[T](result, item).
+      try release[T](result).
+      set result to next.
+    }
+  }
+  give result.
+}
+
+public function map[T, U](items of type sequence of T, transform of type function taking (T) giving U) of type fallible sequence of U {
+  mutable result is create[U]().
+  after error { release[U](result) catch nothing. }
+  for each item in items {
+    constant next is try append[U](result, transform(item)).
+    try release[U](result).
+    set result to next.
+  }
+  give result.
+}
+
+-- Source: std/text.iv
+-- Combines, trims, and splits text using byte offsets and ASCII whitespace.
+use sequence as items.
+public use "text" function concatenate(left of type text, right of type text) of type fallible text.
+public use "text" function trim(content of type text) of type fallible text.
+public use "text" function length(content of type text) of type unsigned 64.
+public use "text" function slice(content of type text, first of type unsigned 64, last of type unsigned 64) of type fallible text.
+public use "text" function release(content of type text) of type fallible nothing.
+public function split(content of type text, separator of type text) of type fallible sequence of text {
+  when length(separator) is 0 { give fail(Error.EmptySeparator). }
+  mutable result is items.create[text]().
+  after error { for each part in result { release(part) catch nothing. } items.release[text](result) catch nothing. }
+  mutable first of type unsigned 64 is 0.
+  mutable cursor of type unsigned 64 is 0.
+  while cursor plus length(separator) is at most length(content) {
+    mutable matches is true.
+    mutable index of type unsigned 64 is 0.
+    while index less than length(separator) {
+      when content at (cursor plus index) is not separator at index { set matches to false. break. }
+      set index to index plus 1.
+    }
+    when matches {
+      constant part is try slice(content, first, cursor).
+      after error { release(part) catch nothing. }
+      constant next is try items.append[text](result, part).
+      try items.release[text](result).
+      set result to next.
+      set cursor to cursor plus length(separator).
+      set first to cursor.
+    } otherwise { set cursor to cursor plus 1. }
+  }
+  constant part is try slice(content, first, length(content)).
+  after error { release(part) catch nothing. }
+  constant next is try items.append[text](result, part).
+  try items.release[text](result).
+  give next.
+}
+
+-- Source: test/stdlib/collections.iv
+-- Exercises typed sequence operations and function-valued transformations.
+use sequence as sequence.
+use testing as check.
+use map as mapping.
+use set as unique.
+use queue as queue.
+use stack as stack.
+function double(value of type integer) of type integer { give value times 2. }
+function positive(value of type integer) of type boolean { give value greater than 0. }
+type Person is record { name of type text. age of type integer. } derives Equatable, Ord.
+start() {
+  constant empty is sequence.create[integer]().
+  constant first is try sequence.append[integer](empty, 4).
+  constant second is try sequence.append[integer](first, 2).
+  constant sorted is try sequence.sort(second).
+  after { sequence.release[integer](first) catch nothing. sequence.release[integer](second) catch nothing. sequence.release[integer](sorted) catch nothing. }
+  check.expect(sorted at 0 is 2).
+  check.expect(second at 0 is 4).
+  check.expect(sequence.find[integer](sorted, 4) is not nothing).
+  constant mapped is try sequence.map[integer, integer](sorted, double).
+  constant filtered is try sequence.filter[integer](mapped, positive).
+  after { sequence.release[integer](mapped) catch nothing. sequence.release[integer](filtered) catch nothing. }
+  check.expect(filtered at 1 is 8).
+  constant table is mapping.create[text, integer]().
+  constant entry is try mapping.put[text, integer](table, "answer", 44).
+  constant replaced is try mapping.put[text, integer](entry, "answer", 42).
+  after { mapping.release[text, integer](entry) catch nothing. mapping.release[text, integer](replaced) catch nothing. }
+  check.expect((try mapping.get[text, integer](entry, "answer")) is 44).
+  check.expect((try mapping.get[text, integer](replaced, "answer")) is 42).
+  check.expect(mapping.length[text, integer](replaced) is 1).
+  constant set is unique.create[integer]().
+  constant member is try unique.insert[integer](set, 44).
+  constant duplicate is try unique.insert[integer](member, 44).
+  after { unique.release[integer](member) catch nothing. unique.release[integer](duplicate) catch nothing. }
+  check.expect(unique.length[integer](duplicate) is 1).
+  constant line is queue.create[integer]().
+  constant front is try queue.append[integer](line, 44).
+  after { queue.release[integer](front) catch nothing. }
+  check.expect((try queue.first[integer](front)) is 44).
+  constant pile is stack.create[text]().
+  constant top is try stack.push[text](pile, "FOO").
+  after { stack.release[text](top) catch nothing. }
+  check.same(try stack.top[text](top), "FOO").
+  constant people is unique.create[Person]().
+  constant person is try unique.insert[Person](people, Person("Ada", 44)).
+  after { unique.release[Person](person) catch nothing. }
+  check.expect(unique.contains[Person](person, Person("Ada", 44))).
+  check.expect(not unique.contains[Person](person, Person("Ada", 43))).
+  constant removed is try mapping.remove[text, integer](entry, "answer").
+  constant absent is try unique.remove[integer](duplicate, 44).
+  after { mapping.release[text, integer](removed) catch nothing. unique.release[integer](absent) catch nothing. }
+  check.expect(mapping.length[text, integer](removed) is 0).
+  check.expect(unique.length[integer](absent) is 0).
+  check.expect(sequence.find[integer](empty, 0) is nothing).
+  constant back is try queue.append(front, 42).
+  constant tail is try queue.remove[integer](back).
+  after { queue.release[integer](back) catch nothing. queue.release[integer](tail) catch nothing. }
+  check.expect((try queue.first[integer](back)) is 44).
+  check.expect((try queue.first[integer](tail)) is 42).
+  constant peak is try stack.push[text](top, "IV").
+  constant lower is try stack.remove[text](peak).
+  after { stack.release[text](peak) catch nothing. stack.release[text](lower) catch nothing. }
+  check.same(try stack.top[text](peak), "IV").
+  check.same(try stack.top[text](lower), "FOO").
+  constant records is sequence.create[Person]().
+  constant older is try sequence.append(records, Person("Ada", 44)).
+  constant younger is try sequence.append(older, Person("Ada", 43)).
+  constant ordered is try sequence.sort(younger).
+  after { sequence.release(older) catch nothing. sequence.release(younger) catch nothing. sequence.release(ordered) catch nothing. }
+  check.expect(ordered at 0 is Person("Ada", 43)).
+  check.expect((mapping.get[text, integer](entry, "absent") catch 99) is 99).
+  check.expect((stack.top[text](pile) catch "empty") is "empty").
+}
+
+-- Source: test/stdlib/services.iv
+-- Exercises portable files, text, clocks, threads, and TCP connections.
+use io as io.
+use fs as files.
+use net as network.
+use process as process.
+use thread as tasks.
+use time as clock.
+use text as words.
+use sequence as items.
+use log as log.
+use testing as check.
+use "c" function verify() of type nothing.
+mutable count of type integer is 0.
+function work() of type nothing { set count to count plus 1. give. }
+start() {
+  constant joined is try words.concatenate("FO", "O").
+  constant trimmed is try words.trim("  FOO  ").
+  after { words.release(joined) catch nothing. words.release(trimmed) catch nothing. }
+  check.same(joined, trimmed).
+  constant parts is try words.split("four::four::", "::").
+  after { for each part in parts { words.release(part) catch nothing. } items.release[text](parts) catch nothing. }
+  check.expect(items.length[text](parts) is 3).
+  check.same(parts at 0, "four").
+  check.same(parts at 2, "").
+  try files.directory(".artifacts/service").
+  constant path is try files.join(".artifacts/service", "message.txt").
+  after { words.release(path) catch nothing. }
+  try files.write(path, "FOO" plus newline plus "44").
+  constant content is try files.read(path).
+  after { words.release(content) catch nothing. }
+  check.same(content, "FOO" plus newline plus "44").
+  constant file is try files.open(path, "read").
+  after { io.close(file) catch nothing. }
+  constant line is try io.line(file).
+  after { words.release(line) catch nothing. }
+  check.same(line, "FOO").
+  constant missing is files.read(".artifacts/service/missing") catch "missing".
+  check.same(missing, "missing").
+  check.expect(process.count() greater than 0).
+  check.expect((try process.run("exit 7")) is 7).
+  check.same(process.environment("FOO_MISSING_VARIABLE_7F19") catch "missing", "missing").
+  constant argument is try process.argument(0).
+  after { words.release(argument) catch nothing. }
+  check.expect(words.length(argument) greater than 0).
+  constant before is try clock.current().
+  try clock.sleep(1000000).
+  check.expect((try clock.current()) greater than before).
+  constant task is try tasks.spawn(work).
+  try tasks.wait(task).
+  check.expect(count is 1).
+  try clock.measure(work).
+  check.expect(count is 2).
+  constant mutex is try tasks.mutex().
+  constant condition is try tasks.condition().
+  try tasks.lock(mutex).
+  try tasks.signal(condition).
+  try tasks.unlock(mutex).
+  try tasks.close(mutex).
+  try tasks.close(condition).
+  constant listener is try network.listen("127.0.0.1", 0).
+  after { network.close(listener) catch nothing. }
+  constant client is try network.connect("127.0.0.1", try network.port(listener)).
+  after { network.close(client) catch nothing. }
+  constant server is try network.accept(listener).
+  after { network.close(server) catch nothing. }
+  check.expect((try network.send(client, "44")) is 2).
+  constant received is try network.receive(server, 2).
+  after { words.release(received) catch nothing. }
+  check.same(received, "44").
+  try log.message("services passed").
+  verify().
+}

@@ -4,11 +4,19 @@ node_modules/
 # TypeScript/JavaScript build and tool caches
 dist/
 build/
+!src/build/
+!src/build/**
+!test/build/
+!test/build/**
 coverage/
 .cache/
 .tsbuildinfo
 
-# Tratio generated outputs and local toolchains
+# FOO generated outputs and local toolchains
+.artifacts/
+release/
+.foo/
+# Pre-rename local caches and recovery snapshots
 .tratio-build/
 .tratio/
 tmp-backend-test/

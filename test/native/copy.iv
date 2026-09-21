@@ -1,0 +1,7 @@
+-- Copies caller-owned bytes without changing their lifetime.
+use memory.
+
+public function move(source of type sequence of constant byte, destination of type sequence of byte) of type fallible nothing {
+  try copy source into destination.
+  give.
+}

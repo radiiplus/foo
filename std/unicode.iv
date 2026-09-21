@@ -1,0 +1,9 @@
+-- Declares Unicode validation and conversion.
+public type Cursor is opaque.
+public use "unicode" function scan(value of type text) of type fallible pointer to Cursor.
+public use "unicode" function next(value of type pointer to Cursor) of type optional unsigned 32.
+public use "unicode" function release(value of type pointer to Cursor) of type nothing.
+public use "unicode" function valid(value of type text) of type boolean.
+public use "unicode" function points(value of type text) of type fallible sequence of unsigned 32.
+public use "unicode" function wide(value of type text) of type fallible sequence of unsigned 16.
+public use "unicode" function narrow(value of type sequence of unsigned 16) of type fallible text.

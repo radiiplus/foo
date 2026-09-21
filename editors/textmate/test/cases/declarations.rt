@@ -1,9 +1,0 @@
-module sample {
-  type Box[T] is record {
-    value of type T.
-  } derives Eq, Hash.
-
-  function identity[T](value of type T) {
-    give value.
-  }
-}

@@ -1,8 +1,0 @@
-module dup {
-  use math.
-  use math.
-  
-  start() {
-    give.
-  }
-}

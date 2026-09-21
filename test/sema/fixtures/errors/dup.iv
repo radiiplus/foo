@@ -1,0 +1,8 @@
+-- Exercises sema fixtures errors behavior.
+
+  use math.
+  use math.
+  
+  start() {
+    give.
+  }

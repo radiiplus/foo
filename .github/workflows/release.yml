@@ -1,0 +1,122 @@
+name: Release FOO
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install Nim 2.2.12
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://nim-lang.org/download/nim-2.2.12_x64.zip -OutFile nim.zip
+          Expand-Archive nim.zip -DestinationPath .nim
+          "$PWD\.nim\nim-2.2.12\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Package Windows release
+        shell: pwsh
+        run: |
+          $name = "foo-$env:GITHUB_REF_NAME-windows-x64"
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Copy-Item .artifacts/compiler "dist/$name" -Recurse
+          Remove-Item "dist/$name/bin/foo" -Force -ErrorAction SilentlyContinue
+          $manifest = Get-Content "dist/$name/foo.artifact.json" | ConvertFrom-Json
+          $manifest.native = "bin/foo.exe"
+          $manifest.binaries = [ordered]@{ win32 = "bin/foo.exe" }
+          $manifest.platform = "win32"
+          $manifest.architecture = "x64"
+          $manifest | ConvertTo-Json -Depth 10 | Set-Content "dist/$name/foo.artifact.json"
+          Compress-Archive -Path "dist/$name" -DestinationPath "dist/$name.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: dist/*.zip
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install Nim 2.2.12
+        run: |
+          curl -fsSL https://nim-lang.org/download/nim-2.2.12-linux_x64.tar.xz -o nim.tar.xz
+          tar -xf nim.tar.xz
+          echo "$PWD/nim-2.2.12/bin" >> "$GITHUB_PATH"
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Package Linux release
+        run: |
+          name="foo-${GITHUB_REF_NAME}-linux-x64"
+          mkdir -p dist
+          cp -a .artifacts/compiler "dist/$name"
+          rm -f "dist/$name/bin/foo.exe" "dist/$name/bin/foo.cmd"
+          chmod +x "dist/$name/bin/foo" "dist/$name/bin/foo.mjs"
+          node - "$name" <<'NODE'
+          const fs = require("node:fs");
+          const name = process.argv[2];
+          const path = `dist/${name}/foo.artifact.json`;
+          const manifest = JSON.parse(fs.readFileSync(path, "utf8"));
+          manifest.native = "bin/foo";
+          manifest.binaries = { linux: "bin/foo" };
+          manifest.platform = "linux";
+          manifest.architecture = "x64";
+          fs.writeFileSync(path, JSON.stringify(manifest, null, 2) + "\n");
+          NODE
+          tar -C dist -czf "dist/$name.tar.gz" "$name"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-release
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  publish:
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Build npm package
+        run: |
+          mkdir package
+          unzip -q dist/foo-${GITHUB_REF_NAME}-windows-x64.zip -d package/windows
+          tar -xzf dist/foo-${GITHUB_REF_NAME}-linux-x64.tar.gz -C package
+          cp package/foo-${GITHUB_REF_NAME}-linux-x64/bin/foo package/windows/foo-${GITHUB_REF_NAME}-windows-x64/bin/foo
+          node - "package/windows/foo-${GITHUB_REF_NAME}-windows-x64/foo.artifact.json" <<'NODE'
+          const fs = require("node:fs");
+          const path = process.argv[2];
+          const manifest = JSON.parse(fs.readFileSync(path, "utf8"));
+          manifest.binaries = { win32: "bin/foo.exe", linux: "bin/foo" };
+          fs.writeFileSync(path, JSON.stringify(manifest, null, 2) + "\n");
+          NODE
+          npm pack "package/windows/foo-${GITHUB_REF_NAME}-windows-x64" --pack-destination dist
+          cd dist
+          sha256sum *.zip *.tar.gz *.tgz > SHA256SUMS.txt
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes=".github/releases/${GITHUB_REF_NAME}.md"
+          if [ -f "$notes" ]; then
+            gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --title "FOO ${GITHUB_REF_NAME#v}" --notes-file "$notes"
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --title "FOO ${GITHUB_REF_NAME#v}" --generate-notes
+          fi

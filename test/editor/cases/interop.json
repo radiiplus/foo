@@ -1,0 +1,4 @@
+[
+  {"line":"-- Exercises interop syntax.","tokens":[[0,2,"source.foo comment.line.double-dash.foo punctuation.definition.comment.foo"],[2,28,"source.foo comment.line.double-dash.foo"]]},
+  {"line":"use c \"curl/curl.h\".","tokens":[[0,3,"source.foo keyword.other.foo"],[3,4,"source.foo"],[4,5,"source.foo variable.other.foo"],[5,6,"source.foo"],[6,7,"source.foo string.quoted.double.foo punctuation.definition.string.begin.foo"],[7,18,"source.foo string.quoted.double.foo"],[18,19,"source.foo string.quoted.double.foo punctuation.definition.string.end.foo"],[19,20,"source.foo punctuation.terminator.foo"]]}
+]

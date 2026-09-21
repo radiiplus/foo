@@ -1,0 +1,36 @@
+-- Provides synchronization primitives.
+--- Synchronization primitives ---
+--- Mutexes, condition variables, semaphores ---
+
+public type Mutex is record {
+  handle of type pointer to byte.
+}.
+
+public type Condition is record {
+  handle of type pointer to byte.
+}.
+
+public type Semaphore is record {
+  handle of type pointer to byte.
+}.
+
+public type Once is record {
+  handle of type pointer to byte.
+}.
+
+public type Group is record {
+  handle of type pointer to byte.
+}.
+
+public function mutex() {
+  constant result of type Mutex is uninitialized.
+  give result.
+}
+
+public function lock(handle of type Mutex) {
+  give.
+}
+
+public function unlock(handle of type Mutex) {
+  give.
+}

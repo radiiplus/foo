@@ -1,0 +1,25 @@
+-- Provides filesystem path operations.
+public function merge(first of type pointer to byte, second of type pointer to byte) {
+  constant result of type pointer to byte is uninitialized.
+  give result.
+}
+
+public function parent(path of type pointer to byte) {
+  constant result of type pointer to byte is uninitialized.
+  give result.
+}
+
+public function name(path of type pointer to byte) {
+  constant result of type pointer to byte is uninitialized.
+  give result.
+}
+
+public function suffix(path of type pointer to byte) {
+  constant result of type pointer to byte is uninitialized.
+  give result.
+}
+
+public function absolute(path of type pointer to byte) {
+  constant result of type boolean is false.
+  give result.
+}

@@ -1,0 +1,3 @@
+-- Declares zlib and gzip compression.
+public use "compress" function pack(value of type text, format of type text) of type fallible text.
+public use "compress" function unpack(value of type text, format of type text, limit of type unsigned 32) of type fallible text.

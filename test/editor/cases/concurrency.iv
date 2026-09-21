@@ -1,0 +1,9 @@
+-- Exercises concurrency syntax.
+use task.
+function worker(value of type integer 64) for c { give. }
+start() {
+  constant group is scope().
+  launch(group, worker, 1).
+  join(group).
+  give.
+}

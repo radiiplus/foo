@@ -1,0 +1,31 @@
+-- Checks isolated native code, constrained assembly, and explicit FFI signatures.
+use testing as check.
+native c {
+  #include <stdio.h>
+  int number(void) { return 44; }
+}
+extern "C" function number() giving integer 32.
+native c function increment(value of type integer 32) of type integer 32 {
+  return value + 1;
+}
+native c function step() of type integer 32 {
+  static int counter = 0;
+  return ++counter;
+}
+native asm function mirror(value of type unsigned 64) of type unsigned 64 {
+  "movq %[value], %[result]" : [result] "=r"(result) : [value] "r"(value) : "memory", "cc"
+}
+#[repr(C)] type Point is record { x of type integer 32. y of type integer 32. }.
+native c function sum(point of type Point) of type integer 32 { return point.x + point.y; }
+start() {
+  check.expect(number() is 44).
+  check.expect(increment(43) is 44).
+  check.expect(step() is 1).
+  check.expect(step() is 2).
+  step().
+  check.expect(step() is 4).
+  check.expect(mirror(44) is 44).
+  check.expect(sum(Point(20, 24)) is 44).
+  native c { volatile int value = 44; if (value != 44) abort(); }
+  native asm { movq $44, %rax }
+}

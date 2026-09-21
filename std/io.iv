@@ -1,0 +1,10 @@
+-- Reads and writes text through standard streams and open files.
+public type Stream is opaque.
+public use "io" function input() of type pointer to Stream.
+public use "io" function output() of type pointer to Stream.
+public use "io" function report() of type pointer to Stream.
+public use "io" function read(stream of type pointer to Stream, size of type unsigned 64) of type fallible text.
+public use "io" function line(stream of type pointer to Stream) of type fallible text.
+public use "io" function write(stream of type pointer to Stream, content of type text) of type fallible nothing.
+public use "io" function close(stream of type pointer to Stream) of type fallible nothing.
+public function display(content of type text) of type fallible nothing { try write(output(), content). give. }

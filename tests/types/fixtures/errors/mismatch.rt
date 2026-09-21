@@ -1,6 +1,0 @@
-module mismatch {
-  start() {
-    constant x of type integer 32 is "hello".
-    give.
-  }
-}

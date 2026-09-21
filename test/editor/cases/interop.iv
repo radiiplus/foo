@@ -1,0 +1,2 @@
+-- Exercises interop syntax.
+use c "curl/curl.h".

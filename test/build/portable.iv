@@ -1,0 +1,98 @@
+-- Exercises build behavior.
+
+  use testing as check.
+  use crypto as secret.
+  use compress as zip.
+  use unicode as letters.
+  use json as data.
+  use system as machine.
+  use atomic as atom.
+  use buffer as memory.
+
+  function twice(value of type unsigned 64) of type unsigned 64 { give value times 2. }
+  function line() of type text { give newline. }
+  function greeting(value of type text) of type text { give value plus newline plus "World". }
+  function recover() of type text { give zip.unpack("bad", "gzip", 8) catch "recovered". }
+  function digest() of type fallible text { give secret.hash("abc"). }
+  function fail() of type text { check.expect(false). give "bad". }
+
+  start() {
+    check.same(newline, "\n").
+    check.same(line(), "\n").
+    check.same("Hello" plus newline plus "World", "Hello\nWorld").
+    check.same(greeting("Hello"), "Hello\nWorld").
+    check.same("" plus newline plus newline plus "λ\0", "\n\nλ\0").
+    check.number(twice(21), 42).
+    constant left of type vector[4, decimal 64] is splat(2.0).
+    constant right of type vector[4, decimal 64] is splat(3.0).
+    constant result is reduce(left times right, "add").
+    check.real(result, 24.0).
+    check.same(try digest(), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad").
+    check.same(secret.hash("abc") catch fail(), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad").
+    constant key is "01234567890123456789012345678901".
+    constant nonce is "012345678901234567890123".
+    constant encrypted is try secret.seal("hello", key, nonce, "context").
+    check.same(try secret.open(encrypted, key, nonce, "context"), "hello").
+    check.same(secret.open(encrypted, key, nonce, "wrong") catch "rejected", "rejected").
+    constant signer is try secret.key(key).
+    constant signature is try secret.sign("message", key).
+    check.expect(secret.verify("message", signature, signer)).
+    constant password is try secret.password("correct horse").
+    check.expect(try secret.confirm("correct horse", password)).
+    constant entropy is try secret.random(32).
+    unsafe { try memory.free(entropy). }
+    constant encoded is try zip.pack("hello hello hello", "gzip").
+    check.same(try zip.unpack(encoded, "gzip", 17), "hello hello hello").
+    check.same(zip.unpack(encoded, "gzip", 3) catch "limited", "limited").
+    constant zlib is try zip.pack("zlib", "zlib").
+    check.same(try zip.unpack(zlib, "zlib", 4), "zlib").
+    check.same(recover(), "recovered").
+    check.expect(letters.valid("aé😀")).
+    constant units is try letters.wide("aé😀").
+    check.same(try letters.narrow(units), "aé😀").
+    unsafe { try memory.words(units). }
+    constant cursor is try letters.scan("aé😀").
+    after { letters.release(cursor). }
+    check.point(letters.next(cursor), 97).
+    check.point(letters.next(cursor), 233).
+    check.point(letters.next(cursor), 128512).
+    constant document is try data.parse("{\"number\":123456789012345678901234567890,\"nested\":[true,null,\"é\"]}").
+    after { data.release(document). }
+    check.same(try data.field(document, "number"), "123456789012345678901234567890").
+    check.same(data.kind(document), "object").
+    try data.set(document, "number", "42").
+    check.same(try data.field(document, "number"), "42").
+    check.same(try data.quote("a\"b"), "\"a\\\"b\"").
+    check.same(try data.quote("a\nb"), "\"a\\nb\"").
+    constant items is try data.parse("[]").
+    after { data.release(items). }
+    try data.append(items, "123456789012345678901234567890").
+    check.same(try data.item(items, 0), "123456789012345678901234567890").
+    check.same(try data.write(items), "[123456789012345678901234567890]").
+    check.same(data.item(items, 9) catch "missing", "missing").
+    constant stream is try data.stream().
+    after { data.close(stream). }
+    try data.feed(stream, "[", false).
+    check.same(try data.next(stream), "array_begin").
+    check.same(try data.next(stream), "more").
+    try data.feed(stream, "42,\"hello\",true,null]", true).
+    check.same(try data.next(stream), "number").
+    check.same(try data.data(stream), "42").
+    check.same(try data.next(stream), "string").
+    check.same(try data.data(stream), "hello").
+    check.same(try data.next(stream), "true").
+    check.same(try data.next(stream), "null").
+    check.same(try data.next(stream), "array_end").
+    check.same(try data.next(stream), "end_of_document").
+    constant counter is try atom.create(7).
+    after { atom.release(counter). }
+    check.number(try atom.add(counter, 2, "relaxed"), 7).
+    check.number(try atom.load(counter, "acquire"), 9).
+    check.expect(try atom.replace(counter, 9, 42, "both")).
+    check.number(try atom.swap(counter, 0, "sequential"), 42).
+    check.positive(machine.page()).
+    constant hostname is try machine.host().
+    check.expect(letters.valid(hostname)).
+    give.
+  }
+

@@ -1,0 +1,4 @@
+-- Writes application messages and errors to the diagnostic stream.
+use io as output.
+public function message(content of type text) of type fallible nothing { try output.write(output.report(), "INFO  " plus content plus newline). give. }
+public function error(content of type text) of type fallible nothing { try output.write(output.report(), "ERROR " plus content plus newline). give. }

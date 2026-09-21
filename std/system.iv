@@ -1,0 +1,4 @@
+-- Declares host system information.
+public use "system" function cores() of type fallible unsigned 32.
+public use "system" function host() of type fallible text.
+public use "system" function page() of type unsigned 64.

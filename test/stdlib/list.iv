@@ -1,0 +1,37 @@
+-- Checks list growth, order, bounds and borrowed-item ownership.
+use "../../std/list.iv".
+use "../../std/memory.iv" as heap.
+use testing.
+function bounds(collection of type pointer to List) of type fallible text {
+  constant item is try get(collection, 10).
+  give "unexpected".
+}
+start() {
+  constant allocator is heap.system().
+  constant first is try heap.allocate(allocator, 4).
+  constant second is try heap.allocate(allocator, 4).
+  try heap.copy(allocator, first, "FOO!").
+  try heap.copy(allocator, second, "list").
+  constant collection is try create().
+  number(try length(collection), 0).
+  try push(collection, first).
+  try push(collection, second).
+  try push(collection, first).
+  try push(collection, second).
+  try push(collection, first).
+  try push(collection, second).
+  try push(collection, first).
+  try push(collection, second).
+  try push(collection, first).
+  try push(collection, second).
+  number(try length(collection), 10).
+  same(try heap.view(allocator, try get(collection, 0), 4), "FOO!").
+  same(try heap.view(allocator, try get(collection, 9), 4), "list").
+  same(bounds(collection) catch "bounds", "bounds").
+  try close(collection).
+  number(length(collection) catch 44, 44).
+  same(try heap.view(allocator, first, 4), "FOO!").
+  try heap.release(allocator, first).
+  try heap.release(allocator, second).
+  give.
+}

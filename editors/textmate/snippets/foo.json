@@ -1,0 +1,32 @@
+{
+  "function": {
+    "prefix": "function",
+    "body": ["function ${1:name}(${2:value of type integer}) of type ${3:integer} {", "  $0", "}"],
+    "description": "FOO function"
+  },
+  "test": {
+    "prefix": "test",
+    "body": ["test \"${1:name}\" {", "  $0", "}"],
+    "description": "FOO test block"
+  },
+  "when": {
+    "prefix": "when",
+    "body": ["when ${1:condition} {", "  $0", "} otherwise {", "  ", "}"],
+    "description": "FOO when/otherwise"
+  },
+  "for each": {
+    "prefix": "for each",
+    "body": ["for each ${1:item} in ${2:items} {", "  $0", "}"],
+    "description": "FOO for each loop"
+  },
+  "constant": {
+    "prefix": "constant",
+    "body": ["constant ${1:name} is ${0:value}."],
+    "description": "FOO constant"
+  },
+  "native": {
+    "prefix": "native",
+    "body": ["native ${1:c} {", "  $0", "}"],
+    "description": "FOO native block"
+  }
+}

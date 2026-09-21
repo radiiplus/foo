@@ -1,0 +1,58 @@
+-- Builds typed sequences and applies ordering, searching, and transformations.
+public use "sequence" function create[T]() of type sequence of T.
+public use "sequence" function append[T](items of type sequence of T, value of type T) of type fallible sequence of T.
+public use "sequence" function remove[T](items of type sequence of T, index of type unsigned 64) of type fallible sequence of T.
+public use "sequence" function copy[T](items of type sequence of T) of type fallible sequence of T.
+public use "sequence" function length[T](items of type sequence of T) of type unsigned 64.
+public use "sequence" function release[T](items of type sequence of T) of type fallible nothing.
+
+public function find[T](items of type sequence of T, value of type T) of type optional unsigned 64 where T is Equatable {
+  mutable index of type unsigned 64 is 0.
+  for each item in items {
+    when item is value { give index. }
+    set index to index plus 1.
+  }
+  give nothing.
+}
+
+public function sort[T](items of type sequence of T) of type fallible sequence of T where T is Ord {
+  mutable result is try copy[T](items).
+  mutable index of type unsigned 64 is 1.
+  while index less than length[T](result) {
+    constant value is result at index.
+    mutable cursor is index.
+    while cursor greater than 0 {
+      when result at (cursor minus 1) greater than value {
+        set result at cursor to result at (cursor minus 1).
+        set cursor to cursor minus 1.
+      } otherwise { break. }
+    }
+    set result at cursor to value.
+    set index to index plus 1.
+  }
+  give result.
+}
+
+public function filter[T](items of type sequence of T, predicate of type function taking (T) giving boolean) of type fallible sequence of T {
+  mutable result is create[T]().
+  after error { release[T](result) catch nothing. }
+  for each item in items {
+    when predicate(item) {
+      constant next is try append[T](result, item).
+      try release[T](result).
+      set result to next.
+    }
+  }
+  give result.
+}
+
+public function map[T, U](items of type sequence of T, transform of type function taking (T) giving U) of type fallible sequence of U {
+  mutable result is create[U]().
+  after error { release[U](result) catch nothing. }
+  for each item in items {
+    constant next is try append[U](result, transform(item)).
+    try release[U](result).
+    set result to next.
+  }
+  give result.
+}

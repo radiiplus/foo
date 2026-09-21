@@ -1,0 +1,7 @@
+-- Opens files, transfers their contents, creates directories, and joins paths.
+use io as streams.
+public use "fs" function open(path of type text, mode of type text) of type fallible pointer to streams.Stream.
+public use "fs" function read(path of type text) of type fallible text.
+public use "fs" function write(path of type text, content of type text) of type fallible nothing.
+public use "fs" function directory(path of type text) of type fallible nothing.
+public use "fs" function join(left of type text, right of type text) of type fallible text.

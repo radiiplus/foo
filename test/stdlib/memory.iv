@@ -1,0 +1,35 @@
+-- Checks allocation contents, resizing, ownership and arena cleanup.
+use "../../std/memory.iv".
+use testing.
+function drop(allocator of type pointer to Allocator, buffer of type pointer to byte) of type fallible text {
+  try release(allocator, buffer).
+  give "released".
+}
+start() {
+  constant allocator is system().
+  constant buffer is try allocate(allocator, 4).
+  same(try view(allocator, buffer, 4), "\0\0\0\0").
+  try copy(allocator, buffer, "FOO!").
+  constant grown is try expand(allocator, buffer, 8).
+  same(try view(allocator, grown, 8), "FOO!\0\0\0\0").
+  constant smaller is try expand(allocator, grown, 2).
+  same(try view(allocator, smaller, 2), "FO").
+  same(view(allocator, smaller, 3) catch "bounds", "bounds").
+  constant unchanged is expand(allocator, smaller, 18446744073709551615) catch smaller.
+  same(try view(allocator, unchanged, 2), "FO").
+  constant group is try arena().
+  same(view(group, smaller, 2) catch "owner", "owner").
+  same(drop(group, smaller) catch "owner", "owner").
+  same(try view(allocator, smaller, 2), "FO").
+  constant temporary is try allocate(group, 8).
+  try copy(group, temporary, "arena").
+  try close(group).
+  same(view(group, temporary, 5) catch "closed", "closed").
+  try release(allocator, smaller).
+  same(drop(allocator, smaller) catch "stale", "stale").
+  same(view(allocator, smaller, 0) catch "released", "released").
+  constant empty is try allocate(allocator, 0).
+  same(try view(allocator, empty, 0), "").
+  try release(allocator, empty).
+  give.
+}

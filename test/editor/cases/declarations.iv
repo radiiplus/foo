@@ -1,0 +1,17 @@
+-- Exercises declarations syntax.
+type Box[T] is record {
+  value of type T.
+} derives Equatable, Hash.
+
+function identity[T](value of type T) {
+  give value.
+}
+
+function sort[T](items of type sequence of T)
+  where T is Ord {
+  give.
+}
+
+function visit(value of type pointer to byte) {
+  give.
+}

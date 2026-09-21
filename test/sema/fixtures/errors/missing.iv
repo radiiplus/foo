@@ -1,0 +1,6 @@
+-- Exercises sema fixtures errors behavior.
+
+  start() {
+    constant result is undefined_symbol.
+    give.
+  }

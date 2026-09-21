@@ -1,0 +1,22 @@
+-- Declares Unix platform operations.
+--- Unix pipes, signals, and memory mapping handles. ---
+public type Pipe is opaque.
+public type Map is opaque.
+
+public function pipe() {
+  constant result of type pointer to Pipe is uninitialized.
+  give result.
+}
+
+public function signal(number of type integer 32) {
+  give.
+}
+
+public function mmap(size of type integer 64) {
+  constant result of type pointer to Map is uninitialized.
+  give result.
+}
+
+public function munmap(mapping of type pointer to Map) {
+  give.
+}

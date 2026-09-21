@@ -1,0 +1,8 @@
+-- Exercises sema fixtures basic behavior.
+
+  use math.
+  
+  start() {
+    constant result is add(1, 2).
+    give.
+  }

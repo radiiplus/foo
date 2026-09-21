@@ -1,0 +1,14 @@
+-- Calls an installed C library through generated bindings without editing them.
+use c "/usr/include/sodium/crypto_verify_16.h".
+use memory as heap.
+use testing as check.
+start() {
+  check.expect(crypto_verify_16_bytes() is crypto_verify_16_BYTES).
+  constant owner is heap.system().
+  constant left is try heap.allocate(owner, 16).
+  constant right is try heap.allocate(owner, 16).
+  after { heap.release(owner, left) catch nothing. heap.release(owner, right) catch nothing. }
+  check.expect(crypto_verify_16(left, right) is 0).
+  try heap.copy(owner, right, "FOO").
+  check.expect(crypto_verify_16(left, right) is not 0).
+}

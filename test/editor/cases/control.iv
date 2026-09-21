@@ -1,0 +1,60 @@
+-- Exercises lexical tokens and literal forms.
+--- this is a
+multiline comment ---
+  public constant x of type integer 32 is 42.
+  mutable y of type decimal 64 is 3.14.
+  constant greeting of type text is "I'm saying \"hello\"".
+  constant message of type text is "line one" plus newline plus "line two".
+  constant c of type character is 'a'.
+
+  public function add(a of type integer 32, b of type integer 32) {
+      give a plus b.
+  }
+
+  type Point is record {
+      x of type decimal 64.
+      y of type decimal 64.
+  }.
+
+  type Color is choice {
+      Red.
+      Green is 5.
+      Blue.
+  }.
+
+  use "c" function puts(s of type pointer to byte) of type integer 32.
+
+  start() {
+      when true {
+          constant z is 1.
+      } otherwise {
+          constant z is 2.
+      }
+
+      while false {
+      }
+
+      for each item in items {
+          process item.
+      }
+
+      match x {
+          case 1 {
+              give.
+          }
+          case anything {
+              unreachable.
+          }
+      }
+
+      constant maybe_number of type optional integer 32 is uninitialized.
+      constant result is maybe_number catch 0.
+
+      on leave close file.
+
+      unsafe {
+          constant memory_address of type pointer to integer 64 is 0.
+      }
+
+      give.
+  }

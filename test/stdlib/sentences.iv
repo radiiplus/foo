@@ -1,0 +1,28 @@
+-- Exercises sentence calls and bounded byte copying without backend syntax.
+use "../../std/memory.iv".
+use io as io.
+use text as words.
+use testing as check.
+mutable rejected is false.
+function caught() of type nothing { set rejected to true. give. }
+start() {
+  constant destination is try allocate 4.
+  try copy "FOO!" into destination.
+  check.expect(destination at 0 is 70).
+  check.expect(destination at 3 is 33).
+  try copy destination into destination.
+  check.expect(destination at 3 is 33).
+  constant smaller is try allocate 2.
+  copy "too long" into smaller catch caught().
+  check.expect(rejected).
+  check.expect(smaller at 0 is 0).
+  clear destination.
+  check.expect(destination at 0 is 0).
+  check.expect((compare "FOO" with "FOO") is 0).
+  constant size is words.length of "FOO".
+  check.expect(size is 3).
+  constant joined is try words.concatenate "FO" with "O".
+  after { words.release(joined) catch nothing. }
+  check.same(joined, "FOO").
+  try io.display "sentences passed" plus newline.
+}

@@ -1,0 +1,5 @@
+public type Box[T] is record {
+  value of type T.
+} derives Equatable.
+public function append[T](items of type sequence of T, value of type T) of type fallible sequence of T.
+public function sort[T](items of type sequence of T) of type sequence of T where T is Ord.

@@ -1,0 +1,14 @@
+use testing as check.
+mutable counter of type unsigned 64 is 43.
+start() {
+  atomic add counter by 1.
+  check.expect(counter equals 44).
+  mutable flag of type unsigned 64 is 0.
+  bits set flag at position 4.
+  check.expect(flag equals 16).
+  bits clear flag at position 4.
+  check.expect(flag equals 0).
+  mutable buffer is try allocate 64.
+  memory align buffer to 1.
+  register rax is 44.
+}

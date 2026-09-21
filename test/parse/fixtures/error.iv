@@ -1,0 +1,7 @@
+-- Exercises parse fixtures behavior.
+
+    constant x of type integer 32 is .
+    function missing() {
+        constant y is .
+    }
+    constant z is 42

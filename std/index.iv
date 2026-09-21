@@ -1,0 +1,27 @@
+-- Exports standard library modules.
+--- String-keyed map ---
+--- Fast text-based lookup ---
+
+public type Index is record {
+  data of type pointer to byte.
+  size of type integer 64.
+}.
+
+public function create() {
+  constant result of type Index is uninitialized.
+  give result.
+}
+
+public function register(collection of type Index, key of type pointer to byte, value of type pointer to byte) {
+  give.
+}
+
+public function lookup(collection of type Index, key of type pointer to byte) {
+  constant result of type pointer to byte is uninitialized.
+  give result.
+}
+
+public function known(collection of type Index, key of type pointer to byte) {
+  constant result of type boolean is false.
+  give result.
+}

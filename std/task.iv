@@ -1,0 +1,37 @@
+-- Declares task execution and asynchronous networking.
+--- Runtime-selected concurrency without function coloring ---
+--- The backend is epoll on Linux, kqueue on Darwin/BSD, and IOCP on Windows. ---
+
+public type Executor is opaque.
+public type Channel is opaque.
+public type Scope is opaque.
+public type Pool is opaque.
+public type Net is opaque.
+public type Socket is opaque.
+
+public use "task" function backend() of type integer 8.
+public use "task" function which() of type pointer to byte.
+public use "task" function executor() of type pointer to Executor.
+public use "task" function block(callback of type function() of type nothing for c) of type nothing.
+
+public use "task" function channel() of type pointer to Channel.
+public use "task" function send(channel of type pointer to Channel, value of type integer 64) of type boolean.
+public use "task" function receive(channel of type pointer to Channel, output of type pointer to integer 64) of type boolean.
+
+public use "task" function scope() of type pointer to Scope.
+public use "task" function launch(scope of type pointer to Scope, callback of type function(integer 64) of type nothing for c, argument of type integer 64) of type boolean.
+public use "task" function join(scope of type pointer to Scope) of type nothing.
+
+public use "task" function pool() of type pointer to Pool.
+public use "task" function submit(pool of type pointer to Pool, callback of type function(integer 64) of type nothing for c, argument of type integer 64) of type boolean.
+public use "task" function wait(pool of type pointer to Pool) of type nothing.
+
+public use "task" function affinity(cpu of type integer 64) of type boolean.
+public use "task" function label(name of type pointer to byte) of type boolean.
+
+public use "task" function net(executor of type pointer to Executor) of type pointer to Net.
+public use "task" function kind(net of type pointer to Net) of type integer 8.
+public use "task" function listen(net of type pointer to Net, port of type integer 32) of type pointer to Socket.
+public use "task" function connect(net of type pointer to Net, host of type pointer to byte, port of type integer 32) of type pointer to Socket.
+public use "task" function pull(socket of type pointer to Socket, buffer of type pointer to byte, size of type integer 64) of type integer 64.
+public use "task" function push(socket of type pointer to Socket, buffer of type pointer to byte, size of type integer 64) of type boolean.

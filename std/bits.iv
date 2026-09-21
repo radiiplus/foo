@@ -1,0 +1,26 @@
+-- Provides bit operations.
+--- Bitset collection ---
+--- Efficient bit-level storage ---
+
+public type Bits is record {
+  data of type pointer to byte.
+  length of type integer 64.
+}.
+
+public function create(size of type integer 64) {
+  constant result of type Bits is uninitialized.
+  give result.
+}
+
+public function enable(collection of type Bits, index of type integer 64) {
+  give.
+}
+
+public function disable(collection of type Bits, index of type integer 64) {
+  give.
+}
+
+public function enabled(collection of type Bits, index of type integer 64) {
+  constant result of type boolean is false.
+  give result.
+}

@@ -1,0 +1,5 @@
+-- Runs shell commands and reads process arguments and environment values.
+public use "process" function run(command of type text) of type fallible unsigned 64.
+public use "process" function count() of type unsigned 64.
+public use "process" function argument(index of type unsigned 64) of type fallible text.
+public use "process" function environment(name of type text) of type fallible text.

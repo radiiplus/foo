@@ -1,0 +1,4 @@
+-- Declares owned byte buffers.
+public use "buffer" function free(value of type text) of type fallible nothing.
+public use "buffer" function words(value of type sequence of unsigned 16) of type fallible nothing.
+public use "buffer" function points(value of type sequence of unsigned 32) of type fallible nothing.

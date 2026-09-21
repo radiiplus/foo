@@ -1,0 +1,22 @@
+-- Keeps each typed value once using equality-based membership.
+use sequence as items.
+public type Set[T] is record { values of type sequence of T. }.
+public function create[T]() of type Set[T] { give Set[T](items.create[T]()). }
+public function length[T](collection of type Set[T]) of type unsigned 64 { give items.length[T](collection.values). }
+public function contains[T](collection of type Set[T], value of type T) of type boolean where T is Equatable {
+  for each item in collection.values { when item is value { give true. } }
+  give false.
+}
+public function insert[T](collection of type Set[T], value of type T) of type fallible Set[T] where T is Equatable {
+  when contains[T](collection, value) { give Set[T](try items.copy[T](collection.values)). }
+  give Set[T](try items.append[T](collection.values, value)).
+}
+public function remove[T](collection of type Set[T], value of type T) of type fallible Set[T] where T is Equatable {
+  mutable index of type unsigned 64 is 0.
+  for each item in collection.values {
+    when item is value { give Set[T](try items.remove[T](collection.values, index)). }
+    set index to index plus 1.
+  }
+  give Set[T](try items.copy[T](collection.values)).
+}
+public function release[T](collection of type Set[T]) of type fallible nothing { try items.release[T](collection.values). give. }

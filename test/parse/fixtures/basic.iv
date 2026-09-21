@@ -1,0 +1,58 @@
+-- Exercises parse fixtures behavior.
+
+  public constant x of type integer 32 is 42.
+  public mutable y of type decimal 64 is 3.14.
+  mutable counter of type integer 32 is 0.
+  
+  public function add(a of type integer 32, b of type integer 32) {
+    give a plus b.
+  }
+  
+  type Point is record {
+    x of type decimal 64.
+    y of type decimal 64.
+  }.
+  
+  type Color is choice {
+    Red.
+    Green is 5.
+    Blue.
+  }.
+  
+  use filesystem.
+  
+  start() {
+    when true {
+      constant z is 1.
+    } otherwise {
+      constant z is 2.
+    }
+    
+    repeat until counter reaches 10 {
+      advance counter.
+    }
+    
+    for each item in items {
+      process item.
+    }
+    
+    match x {
+      case 1 {
+        give.
+      }
+      case anything {
+        unreachable.
+      }
+    }
+    
+    constant maybe_number of type optional integer 32 is uninitialized.
+    constant result is maybe_number catch 0.
+    
+    after { close file. }
+    
+    unsafe {
+      constant memory_address of type pointer to integer 64 is 0.
+    }
+    
+    give.
+  }

@@ -1,11 +1,47 @@
 # Changelog
 
+## Unreleased
+
+- Replace the retired compiler fixture with complete library modules and usage
+  tests, preserving a 200+ line corpus with token snapshots.
+
+## 2.0.0 — 2026-09-14
+
+- Rename the language to FOO, the language ID to `foo`, the scope to `source.foo`,
+  and source files to `.iv`; the extension identity is now `foo.foo`.
+- Update the grammar, fixtures, icon, tests, and syntax palette selectors.
+- Preserve the user's selected theme and other languages' syntax colors.
+
+## 1.1.1 — 2026-09-14
+
+- Replace the full Ultraviolet theme with Tratio-only syntax color defaults
+  that apply alongside the user's selected theme.
+- Remove interface, terminal, diagnostic, and other-language color overrides.
+  Ordinary identifiers inherit their theme's colors.
+- Verify the palette on stock dark and light themes and preserve theme selection.
+
+## 1.1.0 — 2026-09-14
+
+- Add the optional Tratio Ultraviolet / Acid theme, including editor diagnostics,
+  Debug Console, terminal ANSI, and standard log severity colors.
+- Highlight constant declaration names and adjacent property access separately;
+  preserve neutral unresolved references and existing language syntax.
+- Use brighter slate comments and reserve red for invalid syntax and failures.
+- Add resolved color assertions and verify the actual palette in VS Code.
+
+## 1.0.1 — 2026-09-13
+
+- Color `of` and `to` as word operators and split `of type` into separate
+  operator and type annotation scopes, replacing neutral connective highlighting.
+- Verify three visible color groups in stock Dark Modern and Light Modern themes;
+  update scope snapshots and the real editor screenshot.
+
 ## 1.0.0 — 2026-09-13
 
 - Distinguish neutral type connectives, primitive types, type modifiers, and
   named types using standard TextMate scope families. No theme is bundled.
 - Add nine real-source fixture families with full per-line scope snapshots,
-  including the complete 210-line self-hosted compiler.
+  including a complete 200+ line code example.
 - Add push and pull-request CI for tokenization, regression detection, and
   isolated VS Code editor behavior.
 - Add light/dark SVG file icons, language-specific bracket colorization,

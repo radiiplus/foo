@@ -1,0 +1,11 @@
+[
+  {"cpu":"x86-64","arch":"x86_64","vector":128,"call":8,"multiply":3,"divide":12,"flags":["-march=x86-64"],"copy":"rep"},
+  {"cpu":"x86-64-v2","arch":"x86_64","vector":128,"call":8,"multiply":3,"divide":12,"flags":["-march=x86-64-v2"],"copy":"rep"},
+  {"cpu":"x86-64-v3","arch":"x86_64","vector":256,"call":10,"multiply":3,"divide":12,"flags":["-march=x86-64-v3"],"copy":"avx"},
+  {"cpu":"x86-64-v4","arch":"x86_64","vector":512,"call":10,"multiply":3,"divide":12,"flags":["-march=x86-64-v4"],"copy":"avx"},
+  {"cpu":"arm64","arch":"aarch64","vector":128,"call":10,"multiply":2,"divide":12,"flags":["-march=armv8-a"],"copy":"intrinsic"},
+  {"cpu":"apple_m1","arch":"aarch64","vector":128,"call":10,"multiply":2,"divide":12,"flags":["-mcpu=apple-m1"],"copy":"intrinsic"},
+  {"cpu":"arm64-sve","arch":"aarch64","vector":0,"call":10,"multiply":2,"divide":12,"flags":["-march=armv8.2-a+sve"],"copy":"intrinsic"},
+  {"cpu":"rv64g","arch":"riscv64","vector":0,"call":6,"multiply":3,"divide":16,"flags":["-march=rv64g","-mabi=lp64d"],"copy":"portable"},
+  {"cpu":"rv64gcv","arch":"riscv64","vector":0,"call":6,"multiply":3,"divide":16,"flags":["-march=rv64gcv","-mabi=lp64d"],"copy":"portable"}
+]

@@ -1,0 +1,10 @@
+-- Exercises sema fixtures basic behavior.
+
+  public function add(a of type integer 32, b of type integer 32) {
+    give a plus b.
+  }
+  
+  public type Point is record {
+    x of type decimal 64.
+    y of type decimal 64.
+  }.

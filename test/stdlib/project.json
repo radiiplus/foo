@@ -1,0 +1,7 @@
+{
+  "language": "1",
+  "name": "library",
+  "tests": {
+    "services": { "sources": ["../native/service.c"] }
+  }
+}

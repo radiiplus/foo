@@ -1,0 +1,18 @@
+-- Declares JSON trees and streaming tokens.
+public type Value is opaque.
+public type Stream is opaque.
+public use "json" function parse(source of type text) of type fallible pointer to Value.
+public use "json" function write(value of type pointer to Value) of type fallible text.
+public use "json" function field(value of type pointer to Value, name of type text) of type fallible text.
+public use "json" function item(value of type pointer to Value, index of type unsigned 32) of type fallible text.
+public use "json" function quote(value of type text) of type fallible text.
+public use "json" function kind(value of type pointer to Value) of type text.
+public use "json" function size(value of type pointer to Value) of type fallible unsigned 32.
+public use "json" function set(value of type pointer to Value, name of type text, source of type text) of type fallible nothing.
+public use "json" function append(value of type pointer to Value, source of type text) of type fallible nothing.
+public use "json" function release(value of type pointer to Value) of type nothing.
+public use "json" function stream() of type fallible pointer to Stream.
+public use "json" function feed(value of type pointer to Stream, chunk of type text, final of type boolean) of type fallible nothing.
+public use "json" function next(value of type pointer to Stream) of type fallible text.
+public use "json" function data(value of type pointer to Stream) of type fallible text.
+public use "json" function close(value of type pointer to Stream) of type nothing.

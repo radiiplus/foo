@@ -1,0 +1,6 @@
+-- Exercises sema fixtures errors behavior.
+
+  type Bad is record {
+    x of type integer 32.
+    x of type integer 32.
+  }.

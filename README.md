@@ -1,125 +1,87 @@
-# Tratio
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <img src="assets/logo-light.svg" alt="FOO logo" width="96" height="96">
+  </picture>
+</p>
 
-Tratio is an experimental systems programming language with the `.rt` file
-extension. The compiler frontend and tooling are written in TypeScript, use a
-typed SSA intermediate representation, and currently generate Zig as the
-backend target.
+<h1 align="center">FOO</h1>
 
-The project is under active development. Its syntax, APIs, and compiler stages
-may change while the first language version is being defined.
+<p align="center">Readable systems programming with sentence-like syntax and native output.</p>
 
-## Requirements
+FOO is a systems programming language for writing clear `.iv` programs without giving up control over native targets. The `foo` command checks, formats, tests, builds, and runs projects, with C and Zig available as output backends.
 
-- Node.js with npm
-- Zig 0.16.x for backend tests and generated programs
+```iv
+function greet(name of type text) of type nothing {
+  display "Hello, " plus name.
+  give nothing.
+}
 
-## Setup
+start() {
+  greet("world").
+  give nothing.
+}
+```
 
-Install the JavaScript dependencies:
+## Install
+
+Download the archive for your system from the [latest GitHub release](https://github.com/radiiplus/foo/releases/latest). FOO currently ships production binaries for Windows x64 and Linux x64.
+
+The release also includes an npm package. With Node.js 22.13 or newer installed, download `foo-0.1.0.tgz` and run:
 
 ```sh
-npm ci
+npm install --global ./foo-0.1.0.tgz
+foo version
+foo doctor
 ```
 
-Run the complete test suite:
+To use a platform archive without installing it globally:
+
+```powershell
+# Windows
+.\bin\foo.cmd version
+```
 
 ```sh
-npm test
+# Linux
+./bin/foo version
 ```
 
-The suite covers lexing, diagnostics, parsing, semantic analysis, type
-checking, IR, Zig code generation, the standard library, package management,
-and generics.
+FOO manages the pinned Zig backend used for native builds. `foo doctor` shows the compiler, backend, C tools, and target support available on your computer.
 
-## Language Example
+## Create A Project
 
-```rt
-module example {
-  type Point is record {
-    x of type decimal 64.
-    y of type decimal 64.
-  }.
-
-  function add(a of type integer 32, b of type integer 32) {
-    give a plus b.
-  }
-
-  start() {
-    constant answer of type integer 32 is add(20, 22).
-    give.
-  }
-}
+```sh
+foo new hello
+cd hello
+foo check
+foo run
 ```
 
-Tratio also has work in progress support for generic declarations and derived
-operations:
+A FOO project contains a `project.json` manifest and one or more `.iv` files. `start()` is the default entry point.
 
-```rt
-module containers {
-  #[derive(Eq, Hash)]
-  type Box[T] is record {
-    value of type T.
-  }.
+## Everyday Commands
 
-  function identity[T](value of type T) {
-    give value.
-  }
-}
-```
+| Command | Purpose |
+| --- | --- |
+| `foo check` | Check syntax, names, types, and ownership without building |
+| `foo run` | Build and run the current project |
+| `foo build` | Produce the configured native artifact |
+| `foo test` | Discover and run named test blocks |
+| `foo fmt file.iv` | Format a source file |
+| `foo watch` | Recheck the project when files change |
+| `foo doc sequence` | Show documentation for a library module |
+| `foo doctor` | Inspect the installed toolchain and target support |
 
-## Intermediate Representation
+Use `--backend c` or `--backend zig` to select a backend when a command supports it. Use `--target` and `-mcpu` for target-specific builds.
 
-The compiler uses a backend-neutral, typed SSA representation. A small IR
-module looks like this:
+## Learn FOO
 
-```text
-module app {
-  fn @add(%a: int, %b: int) -> int {
-  entry:
-    %1 = add %a, %b
-    return %1
-  }
-}
-```
+- [Getting started](docs/start.md)
+- [Language guide](docs/language.md)
+- [Syntax reference](docs/syntax.md)
+- [Standard library](docs/library.md)
+- [Platforms and targets](docs/platforms.md)
+- [FOO for VS Code](https://github.com/radiiplus/foo/tree/main/editors/textmate)
 
-The Zig backend turns this representation into a standalone generated module
-and runtime shim. Keeping Zig details behind the emitter allows other backends
-to be introduced without changing the language frontend.
-
-## Repository Layout
-
-```text
-src/ast/          AST definitions and printing
-src/diag/         Diagnostic codes, spans, and rendering
-src/lex/          Lexer and token definitions
-src/parse/        Source parser
-src/sema/         Name and module resolution
-src/types/        Type checking and safety analyses
-src/ir/           IR model, parser, printer, validation, and monomorphization
-src/backend/zig/  Zig emitter, runtime shim, and compiler driver
-src/pkg/          Package resolution, cache, lockfile, and vendoring support
-src/cli/          CLI workflows
-src/lsp/          Language server support
-std/              Tratio standard library modules
-spec/             Language and compiler specifications
-tests/            Stage-specific and integration tests
-```
-
-## Project Configuration
-
-The current CLI reads `tratio.json`. A minimal configuration is:
-
-```json
-{
-  "name": "myapp",
-  "version": "1.0.0",
-  "language": "1",
-  "build": {
-    "target": ["linux-x64"],
-    "optimize": "dev"
-  }
-}
-```
-
-See [`spec/`](spec/) for the evolving language, type system, ABI, memory,
-configuration, target, and IR contracts.
+The complete documentation starts at [docs/README.md](docs/README.md).

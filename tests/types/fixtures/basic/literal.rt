@@ -1,9 +1,0 @@
-module literals {
-  start() {
-    constant x of type integer 32 is 42.
-    constant y of type decimal 64 is 3.14.
-    constant z of type text is "hello".
-    constant b of type boolean is true.
-    give.
-  }
-}

@@ -1,0 +1,7 @@
+-- Declares shared static storage with checked updates.
+mutable total of type unsigned 64 is 40 plus 4.
+
+function next() of type unsigned 64 {
+  set total to total plus 1.
+  give total.
+}

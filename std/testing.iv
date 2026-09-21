@@ -1,0 +1,7 @@
+-- Declares executable test assertions.
+public use "testing" function expect(value of type boolean) of type nothing.
+public use "testing" function same(actual of type text, expected of type text) of type nothing.
+public use "testing" function number(actual of type unsigned 64, expected of type unsigned 64) of type nothing.
+public use "testing" function positive(value of type unsigned 64) of type nothing.
+public use "testing" function real(actual of type decimal 64, expected of type decimal 64) of type nothing.
+public use "testing" function point(actual of type optional unsigned 32, expected of type unsigned 32) of type nothing.

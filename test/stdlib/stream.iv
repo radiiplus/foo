@@ -1,0 +1,11 @@
+-- Checks actual output and length-aware writes including embedded zero bytes.
+use "../../std/stream.iv".
+start() {
+  constant out is output().
+  try print(out, "Hello from FOO!" plus newline).
+  try write(out, "A\0B").
+  try write(out, "").
+  try close(out).
+  try write(out, newline).
+  give.
+}

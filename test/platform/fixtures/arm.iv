@@ -1,0 +1,12 @@
+-- Writes a serial marker on the AArch64 virtual board without a runtime.
+type Device is record {
+  #[volatile]
+  data of type pointer to unsigned 32.
+}.
+
+#[start]
+#[naked]
+function boot() {
+  asm { "mov x0, #0x09000000; mov w1, #65; strb w1, [x0]; 1: wfe; b 1b" }
+  give.
+}

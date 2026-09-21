@@ -1,12 +1,12 @@
 {
-  "name": "tratio",
-  "displayName": "Tratio",
-  "description": "Lexical highlighting for Tratio .rt source files.",
-  "version": "1.0.0",
-  "publisher": "tratio",
+  "name": "foo",
+  "displayName": "FOO",
+  "description": "FOO .iv syntax highlighting with Ultraviolet / Acid accents for any theme.",
+  "version": "2.0.0",
+  "publisher": "foo",
   "repository": {
     "type": "git",
-    "url": "https://github.com/radiiplus/tratio.git",
+    "url": "https://github.com/radiiplus/foo.git",
     "directory": "editors/textmate"
   },
   "license": "MIT",
@@ -19,13 +19,13 @@
   "contributes": {
     "languages": [
       {
-        "id": "tratio",
+        "id": "foo",
         "aliases": [
-          "Tratio",
-          "tratio"
+          "FOO",
+          "foo"
         ],
         "extensions": [
-          ".rt"
+          ".iv"
         ],
         "configuration": "./language-configuration.json",
         "icon": {
@@ -35,26 +35,242 @@
       }
     ],
     "configurationDefaults": {
-      "[tratio]": {
+      "[foo]": {
         "editor.bracketPairColorization.enabled": true
+      },
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "name": "Language and type words",
+            "scope": [
+              "source.foo storage",
+              "source.foo keyword.other",
+              "source.foo keyword.other.operator.of.foo",
+              "source.foo storage.type.annotation.foo",
+              "source.foo keyword.other.operator.to.foo",
+              "source.foo keyword.other.foo",
+              "source.foo storage.type.foo",
+              "source.foo storage.modifier.foo",
+              "source.foo storage.modifier.type.foo",
+              "source.foo keyword.other.unit.foo"
+            ],
+            "settings": {
+              "foreground": "#FFD23F"
+            }
+          },
+          {
+            "name": "Operators",
+            "scope": [
+              "source.foo keyword.operator",
+              "source.foo keyword.operator.foo"
+            ],
+            "settings": {
+              "foreground": "#FF79C6"
+            }
+          },
+          {
+            "name": "Control flow",
+            "scope": [
+              "source.foo keyword.control",
+              "source.foo keyword.control.foo"
+            ],
+            "settings": {
+              "foreground": "#F15BB5"
+            }
+          },
+          {
+            "name": "Linking words",
+            "scope": [
+              "source.foo keyword.other.operator.of.foo",
+              "source.foo keyword.other.operator.to.foo"
+            ],
+            "settings": {
+              "foreground": "#FF3CAC"
+            }
+          },
+          {
+            "name": "Types",
+            "scope": [
+              "source.foo support.type",
+              "source.foo support.class",
+              "source.foo entity.name.type",
+              "source.foo entity.name.class",
+              "source.foo entity.name.type.foo",
+              "source.foo support.type.primitive.foo"
+            ],
+            "settings": {
+              "foreground": "#39FF88"
+            }
+          },
+          {
+            "name": "Functions",
+            "scope": [
+              "source.foo entity.name.function",
+              "source.foo variable.function",
+              "source.foo entity.name.function.foo"
+            ],
+            "settings": {
+              "foreground": "#FF7043"
+            }
+          },
+          {
+            "name": "Built-ins",
+            "scope": [
+              "source.foo support.function"
+            ],
+            "settings": {
+              "foreground": "#7DF9FF"
+            }
+          },
+          {
+            "name": "Strings and characters",
+            "scope": [
+              "source.foo string",
+              "source.foo constant.character",
+              "source.foo constant.character.escape.foo",
+              "source.foo string.quoted.double.foo",
+              "source.foo string.quoted.single.foo",
+              "source.foo string.quoted.double.zig",
+              "source.foo constant.character.escape.zig",
+              "source.foo string.quoted.single.zig"
+            ],
+            "settings": {
+              "foreground": "#00E5FF"
+            }
+          },
+          {
+            "name": "Escapes",
+            "scope": [
+              "source.foo constant.character.escape",
+              "source.foo constant.character.escape.foo",
+              "source.foo constant.character.escape.zig"
+            ],
+            "settings": {
+              "foreground": "#7DF9FF"
+            }
+          },
+          {
+            "name": "Constants",
+            "scope": [
+              "source.foo constant.language",
+              "source.foo constant.other",
+              "source.foo variable.other.constant",
+              "source.foo variable.other.constant.foo",
+              "source.foo constant.language.foo"
+            ],
+            "settings": {
+              "foreground": "#D66BFF"
+            }
+          },
+          {
+            "name": "Numbers",
+            "scope": [
+              "source.foo constant.numeric",
+              "source.foo keyword.other.unit",
+              "source.foo constant.numeric.foo",
+              "source.foo keyword.other.unit.foo"
+            ],
+            "settings": {
+              "foreground": "#B6FF00"
+            }
+          },
+          {
+            "name": "Properties",
+            "scope": [
+              "source.foo variable.other.property",
+              "source.foo variable.other.member",
+              "source.foo variable.other.property.foo"
+            ],
+            "settings": {
+              "foreground": "#8BD3FF"
+            }
+          },
+          {
+            "name": "Attributes",
+            "scope": [
+              "source.foo entity.name.tag",
+              "source.foo entity.other.attribute-name",
+              "source.foo punctuation.definition.annotation",
+              "source.foo punctuation.definition.annotation.foo",
+              "source.foo entity.name.tag.foo"
+            ],
+            "settings": {
+              "foreground": "#C792EA"
+            }
+          },
+          {
+            "name": "Comments",
+            "scope": [
+              "source.foo comment",
+              "source.foo comment.block.documentation.foo",
+              "source.foo comment.block.foo",
+              "source.foo comment.line.documentation.foo",
+              "source.foo comment.line.double-dash.foo",
+              "source.foo comment.line.double-slash.zig"
+            ],
+            "settings": {
+              "foreground": "#8A9099"
+            }
+          },
+          {
+            "name": "Documentation",
+            "scope": [
+              "source.foo comment.line.documentation",
+              "source.foo comment.block.documentation",
+              "source.foo comment.block.documentation.foo",
+              "source.foo comment.line.documentation.foo"
+            ],
+            "settings": {
+              "foreground": "#8FBCBB"
+            }
+          },
+          {
+            "name": "Invalid syntax",
+            "scope": [
+              "source.foo invalid",
+              "source.foo invalid.illegal.foo"
+            ],
+            "settings": {
+              "foreground": "#FF3864"
+            }
+          }
+        ]
+      },
+      "editor.semanticTokenColorCustomizations": {
+        "rules": {
+          "variable.readonly:foo": "#D66BFF",
+          "property:foo": "#8BD3FF",
+          "type:foo": "#39FF88",
+          "class:foo": "#39FF88",
+          "struct:foo": "#39FF88",
+          "enum:foo": "#39FF88",
+          "typeParameter:foo": "#39FF88",
+          "enumMember:foo": "#D66BFF",
+          "function:foo": "#FF7043",
+          "method:foo": "#FF7043",
+          "function.defaultLibrary:foo": "#7DF9FF",
+          "method.defaultLibrary:foo": "#7DF9FF",
+          "decorator:foo": "#C792EA"
+        }
       }
     },
     "grammars": [
       {
-        "language": "tratio",
-        "scopeName": "source.tratio",
-        "path": "./grammars/tratio.tmLanguage.json"
+        "language": "foo",
+        "scopeName": "source.foo",
+        "path": "./grammars/foo.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "foo",
+        "path": "./snippets/foo.json"
       }
     ]
   },
   "scripts": {
-    "test": "node tests/run.mjs && node tests/snapshots.mjs",
-    "test:editor": "node tests/editor.mjs",
-    "snapshots": "node tests/snapshots.mjs --update"
-  },
-  "devDependencies": {
-    "@vscode/test-electron": "3.1.0",
-    "vscode-oniguruma": "2.0.1",
-    "vscode-textmate": "9.3.2"
+    "test": "node ../../test/editor/run.mjs && node ../../test/editor/snapshots.mjs && node ../../test/editor/theme.mjs",
+    "test:editor": "node ../../test/editor/editor.mjs",
+    "snapshots": "node ../../test/editor/snapshots.mjs --update"
   }
 }

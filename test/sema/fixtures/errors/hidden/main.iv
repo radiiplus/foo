@@ -1,0 +1,8 @@
+-- Exercises sema fixtures errors hidden behavior.
+
+  use secret.
+  
+  start() {
+    constant x is hidden_value.
+    give.
+  }

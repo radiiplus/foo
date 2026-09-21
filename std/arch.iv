@@ -1,0 +1,4 @@
+-- Declares guarded CPU intrinsics.
+public use "arch" function count(value of type unsigned 64) of type unsigned 32.
+public use "arch" function pause() of type nothing.
+public use "arch" function ticks() of type unsigned 64.

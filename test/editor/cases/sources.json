@@ -1,0 +1,63 @@
+{
+  "declarations": {
+    "source": "docs/editors/naming.md",
+    "sourceSha256": "fcb5f54bea50fe82f82619dea362f6030b345fe6e568a83beda63bb6e0ac765a",
+    "fixtureSha256": "eb5b914a5bb30602156f91bd41c030c6a649d4b70d6ddcb6043a95bd0aebeed4"
+  },
+  "types": {
+    "source": "specs/types.md",
+    "sourceSha256": "c82c279d4627fe5bf1a0eaef1f44ebaa71221f3158e050bf61cc6f981461366a",
+    "fixtureSha256": "426d8773883c8b8b32a36e554b1be491fc5e8d6c31a9b670810ce5a83417e3ee"
+  },
+  "interop": {
+    "source": "specs/native.md",
+    "sourceSha256": "3dd0b3c4ba3fc1be610322498193cf92c74b9b4c8ac39b1f0d2f73e0415cb13e",
+    "fixtureSha256": "2f79eacce4d93b09d4c16c457b9885fac4468c9d9b50ee7b09d10fa2930f09c1"
+  },
+  "concurrency": {
+    "source": "specs/concurrency.md",
+    "sourceSha256": "ac08c9ef4da1f14623d232660490fd77c6c055f06c20cf060cc67ccc8485d6fa",
+    "fixtureSha256": "a315cba69fb2cd7d6fa0fc2f179a5d4323749802c23434448ce4bb5a12305500"
+  },
+  "control": {
+    "source": "test/lex/fixtures/sample.iv",
+    "sourceSha256": "7021422a9d50f075b955ed5b98cf0e058974164222058800318275bf1b1f03b9",
+    "fixtureSha256": "6c06d08341e38a60e7dd77107ba3be8fa5ac267eef5c935f6682df44d7957790"
+  },
+  "pointers": {
+    "source": "std/deque.iv",
+    "sourceSha256": "c840a1d55b8e99f718ec79b25c4babca3be7f3f922aa286a9f28a88eb56b168a",
+    "fixtureSha256": "c840a1d55b8e99f718ec79b25c4babca3be7f3f922aa286a9f28a88eb56b168a"
+  },
+  "errors": {
+    "source": "std/crypto.iv",
+    "sourceSha256": "95294a73f6b24cd674e181ff1d10ee2271c7fbc5cb6b916b804b063fca38ee28",
+    "fixtureSha256": "95294a73f6b24cd674e181ff1d10ee2271c7fbc5cb6b916b804b063fca38ee28"
+  },
+  "platforms": {
+    "source": "std/os/windows.iv",
+    "sourceSha256": "f0041b50d481a56324c45c3ab6df3c66e06de38c9ae5f5e4cfdd57a87aab17ac",
+    "fixtureSha256": "f0041b50d481a56324c45c3ab6df3c66e06de38c9ae5f5e4cfdd57a87aab17ac"
+  },
+  "library": {
+    "sources": [
+      {
+        "source": "std/sequence.iv",
+        "sourceSha256": "2e9a2b57b784511e447dd8df017ae77bb62c17932de34f68e247bf408fa3a321"
+      },
+      {
+        "source": "std/text.iv",
+        "sourceSha256": "29103de6de6e4d1fe6f873d8cf2d2f20235fc755f01684a110df8e1d6a0b02a4"
+      },
+      {
+        "source": "test/stdlib/collections.iv",
+        "sourceSha256": "aee0af971a168ddfa75c0abe94637459c915e4a0c364a00f20f50ab418ab7f57"
+      },
+      {
+        "source": "test/stdlib/services.iv",
+        "sourceSha256": "73ce831291a1bd80bcf8ecd7e5bedc2a717ad7a1e75c67e691683d82e62cc007"
+      }
+    ],
+    "fixtureSha256": "b254b3caea6c58279e1e09ffcc83bba1ffee2b9d334dbcb111010ecf7cd83e45"
+  }
+}

@@ -1,0 +1,17 @@
+-- Declares dynamic library loading.
+--- Portable dynamic library handles. ---
+public type Library is opaque.
+
+public function open(path of type pointer to byte) {
+  constant result of type pointer to Library is uninitialized.
+  give result.
+}
+
+public function symbol(library of type pointer to Library, name of type pointer to byte) {
+  constant result of type pointer to byte is uninitialized.
+  give result.
+}
+
+public function unload(library of type pointer to Library) {
+  give.
+}

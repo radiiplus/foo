@@ -1,0 +1,73 @@
+-- Exercises typed sequence operations and function-valued transformations.
+use sequence as sequence.
+use testing as check.
+use map as mapping.
+use set as unique.
+use queue as queue.
+use stack as stack.
+function double(value of type integer) of type integer { give value times 2. }
+function positive(value of type integer) of type boolean { give value greater than 0. }
+type Person is record { name of type text. age of type integer. } derives Equatable, Ord.
+start() {
+  constant empty is sequence.create[integer]().
+  constant first is try sequence.append[integer](empty, 4).
+  constant second is try sequence.append[integer](first, 2).
+  constant sorted is try sequence.sort(second).
+  after { sequence.release[integer](first) catch nothing. sequence.release[integer](second) catch nothing. sequence.release[integer](sorted) catch nothing. }
+  check.expect(sorted at 0 is 2).
+  check.expect(second at 0 is 4).
+  check.expect(sequence.find[integer](sorted, 4) is not nothing).
+  constant mapped is try sequence.map[integer, integer](sorted, double).
+  constant filtered is try sequence.filter[integer](mapped, positive).
+  after { sequence.release[integer](mapped) catch nothing. sequence.release[integer](filtered) catch nothing. }
+  check.expect(filtered at 1 is 8).
+  constant table is mapping.create[text, integer]().
+  constant entry is try mapping.put[text, integer](table, "answer", 44).
+  constant replaced is try mapping.put[text, integer](entry, "answer", 42).
+  after { mapping.release[text, integer](entry) catch nothing. mapping.release[text, integer](replaced) catch nothing. }
+  check.expect((try mapping.get[text, integer](entry, "answer")) is 44).
+  check.expect((try mapping.get[text, integer](replaced, "answer")) is 42).
+  check.expect(mapping.length[text, integer](replaced) is 1).
+  constant set is unique.create[integer]().
+  constant member is try unique.insert[integer](set, 44).
+  constant duplicate is try unique.insert[integer](member, 44).
+  after { unique.release[integer](member) catch nothing. unique.release[integer](duplicate) catch nothing. }
+  check.expect(unique.length[integer](duplicate) is 1).
+  constant line is queue.create[integer]().
+  constant front is try queue.append[integer](line, 44).
+  after { queue.release[integer](front) catch nothing. }
+  check.expect((try queue.first[integer](front)) is 44).
+  constant pile is stack.create[text]().
+  constant top is try stack.push[text](pile, "FOO").
+  after { stack.release[text](top) catch nothing. }
+  check.same(try stack.top[text](top), "FOO").
+  constant people is unique.create[Person]().
+  constant person is try unique.insert[Person](people, Person("Ada", 44)).
+  after { unique.release[Person](person) catch nothing. }
+  check.expect(unique.contains[Person](person, Person("Ada", 44))).
+  check.expect(not unique.contains[Person](person, Person("Ada", 43))).
+  constant removed is try mapping.remove[text, integer](entry, "answer").
+  constant absent is try unique.remove[integer](duplicate, 44).
+  after { mapping.release[text, integer](removed) catch nothing. unique.release[integer](absent) catch nothing. }
+  check.expect(mapping.length[text, integer](removed) is 0).
+  check.expect(unique.length[integer](absent) is 0).
+  check.expect(sequence.find[integer](empty, 0) is nothing).
+  constant back is try queue.append(front, 42).
+  constant tail is try queue.remove[integer](back).
+  after { queue.release[integer](back) catch nothing. queue.release[integer](tail) catch nothing. }
+  check.expect((try queue.first[integer](back)) is 44).
+  check.expect((try queue.first[integer](tail)) is 42).
+  constant peak is try stack.push[text](top, "IV").
+  constant lower is try stack.remove[text](peak).
+  after { stack.release[text](peak) catch nothing. stack.release[text](lower) catch nothing. }
+  check.same(try stack.top[text](peak), "IV").
+  check.same(try stack.top[text](lower), "FOO").
+  constant records is sequence.create[Person]().
+  constant older is try sequence.append(records, Person("Ada", 44)).
+  constant younger is try sequence.append(older, Person("Ada", 43)).
+  constant ordered is try sequence.sort(younger).
+  after { sequence.release(older) catch nothing. sequence.release(younger) catch nothing. sequence.release(ordered) catch nothing. }
+  check.expect(ordered at 0 is Person("Ada", 43)).
+  check.expect((mapping.get[text, integer](entry, "absent") catch 99) is 99).
+  check.expect((stack.top[text](pile) catch "empty") is "empty").
+}

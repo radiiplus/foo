@@ -1,0 +1,8 @@
+-- Exercises sema fixtures basic behavior.
+
+  use "./sub/module".
+  
+  start() {
+    constant result is nested_add(1, 2).
+    give.
+  }

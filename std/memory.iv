@@ -1,0 +1,13 @@
+-- Declares owned allocations and grouped arena lifetimes.
+public type Allocator is opaque.
+public use "memory" function system() of type pointer to Allocator.
+public use "memory" function arena() of type fallible pointer to Allocator.
+public use "memory" function allocate(allocator of type pointer to Allocator, size of type unsigned 64) of type fallible pointer to byte.
+public use "memory" function release(allocator of type pointer to Allocator, buffer of type pointer to byte) of type fallible nothing.
+public use "memory" function expand(allocator of type pointer to Allocator, buffer of type pointer to byte, size of type unsigned 64) of type fallible pointer to byte.
+public use "memory" function copy(allocator of type pointer to Allocator, buffer of type pointer to byte, content of type text) of type fallible nothing.
+public use "memory" function view(allocator of type pointer to Allocator, buffer of type pointer to byte, size of type unsigned 64) of type fallible text.
+public use "memory" function close(allocator of type pointer to Allocator) of type fallible nothing.
+public use "memory" function transfer(source of type sequence of constant byte, destination of type sequence of byte) of type fallible nothing.
+public use "memory" function clear(buffer of type sequence of byte) of type nothing.
+public use "memory" function compare(left of type sequence of constant byte, right of type sequence of constant byte) of type integer.

@@ -1,0 +1,9 @@
+-- Opens TCP connections and transfers bytes with explicit connection lifetimes.
+public type Connection is opaque.
+public use "net" function connect(host of type text, port of type unsigned 64) of type fallible pointer to Connection.
+public use "net" function listen(host of type text, port of type unsigned 64) of type fallible pointer to Connection.
+public use "net" function accept(listener of type pointer to Connection) of type fallible pointer to Connection.
+public use "net" function port(listener of type pointer to Connection) of type fallible unsigned 64.
+public use "net" function send(connection of type pointer to Connection, content of type text) of type fallible unsigned 64.
+public use "net" function receive(connection of type pointer to Connection, size of type unsigned 64) of type fallible text.
+public use "net" function close(connection of type pointer to Connection) of type fallible nothing.

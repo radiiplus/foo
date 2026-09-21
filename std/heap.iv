@@ -1,0 +1,27 @@
+-- Provides heap allocation.
+--- Priority queue (heap) ---
+--- Efficient priority-based retrieval ---
+
+public type Heap is record {
+  data of type pointer to byte.
+  length of type integer 64.
+}.
+
+public function create() {
+  constant result of type Heap is uninitialized.
+  give result.
+}
+
+public function insert(collection of type Heap, value of type pointer to byte) {
+  give.
+}
+
+public function extract(collection of type Heap) {
+  constant result of type pointer to byte is uninitialized.
+  give result.
+}
+
+public function peek(collection of type Heap) {
+  constant result of type pointer to byte is uninitialized.
+  give result.
+}

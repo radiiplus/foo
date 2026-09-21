@@ -1,0 +1,6 @@
+-- Demonstrates functions, typed values and application startup.
+function answer() of type unsigned 64 { give 42. }
+start() {
+  constant value is answer().
+  give.
+}

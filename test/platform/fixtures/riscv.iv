@@ -1,0 +1,17 @@
+-- Writes a serial marker on the RISC-V virtual board without a runtime.
+type Device is record {
+  #[volatile]
+  data of type pointer to unsigned 32.
+}.
+
+#[start]
+#[naked]
+function boot() {
+  asm { "li t0, 0x10000000; li t1, 65; sb t1, 0(t0); 1: wfi; j 1b" }
+  give.
+}
+
+#[interrupt]
+function irq() {
+  give.
+}

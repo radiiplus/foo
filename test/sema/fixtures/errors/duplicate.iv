@@ -1,0 +1,4 @@
+-- Exercises sema fixtures errors behavior.
+
+  constant x is 1.
+  constant x is 2.
