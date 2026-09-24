@@ -97,7 +97,7 @@ start() {
 
 ---
 
-## 6. Cryptography (`crypto`)
+## 5. Cryptography (`crypto`)
 
 Security is serious business. FOO’s `crypto` module wraps industry-standard C libraries to give you secure hashing and encryption with zero configuration. You don't need to be a cryptographer to use safe, modern algorithms.
 
