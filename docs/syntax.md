@@ -1,43 +1,199 @@
-# Chapter 11 — Every syntax form
+# Chapter 13: Syntax Guide (The Complete FOO Dictionary)
 
-Each entry below names one FOO form, shows it in use, and explains the result.
+Welcome to the complete syntax reference for FOO. This chapter is a plain-language dictionary of every keyword, operator, and sentence structure in the language. 
 
-## Files
+Use this guide when you know *what* you want to do, but just need to remember the exact FOO word to do it.
 
-**File:** every `.iv` file is one unit; write `start() { give nothing. }`. **Comment:** `-- explain this line` is ignored. **Use:** `use "math.iv".` imports public names. **As:** `use testing as check.` gives an import a local name.
+---
 
-## Declarations
+## 1. Declarations (Creating Things)
 
-**Constant:** `constant answer is 44.` creates a name that cannot change. **Mutable:** `mutable count of type integer is 0.` creates a name that can change. **Set:** `set count to count plus 1.` changes a mutable name. **Public:** `public constant version is "1".` allows other files to import it. **Function:** `function add(a of type integer, b of type integer) of type integer { give a plus b. }` names reusable work. **Start:** `start() { display "ready". give nothing. }` begins a program.
+| Syntax | Plain Meaning | Example |
+| :--- | :--- | :--- |
+| `constant` | Creates a value that cannot be changed. | `constant pi is 3.14.` |
+| `mutable` | Creates a value that can be changed. | `mutable score is 0.` |
+| `function` | Defines a reusable block of code. | `function greet() { ... }` |
+| `public` | Makes a declaration visible to other files. | `public constant max_users is 100.` |
+| `use` | Imports another file or module. | `use io.` or `use "math.iv".` |
+| `type` | Creates a nickname (alias) for a complex type. | `type UserID is integer 64.` |
+| `record` | Groups related fields together. | `record Point { x of type integer. y of type integer. }` |
+| `choice` | Defines a value that can be one of several variants. | `choice Color { case red. case blue. }` |
 
-## Values and types
+---
 
-**Integer:** `constant n of type integer is 4.` stores a whole number. **Unsigned:** `constant n of type unsigned 64 is 4.` stores a non-negative number with a chosen size. **Decimal:** `constant n of type decimal is 1.5.` stores a fraction. **Boolean:** `constant yes of type boolean is true.` stores true or false. **Text:** `constant word of type text is "FOO".` stores text. **Character:** `constant letter of type character is 'F'.` stores one character. **Byte:** `constant mark of type byte is 33.` stores one small number. **Nothing:** `function stop() of type nothing { give nothing. }` returns no value.
+## 2. Core Types
 
-**Optional:** `mutable name of type optional text is nothing.` may contain text or no text. **Fallible:** `function load() of type fallible text { give file read "a.txt". }` may contain text or an error. **Pointer:** `mutable address of type pointer to byte is nothing.` stores a memory location. **Sequence:** `constant values of type sequence of integer is sequence create().` stores ordered values. **Function type:** `constant op of type function taking (integer) giving integer is double.` stores a function.
+| Type | Plain Meaning | Example |
+| :--- | :--- | :--- |
+| `integer` | Whole numbers (defaults to 64-bit). | `42` or `-10` |
+| `unsigned` | Whole numbers, positive only. | `100` |
+| `decimal` | Numbers with fractions (defaults to 64-bit). | `3.14` |
+| `boolean` | True or false. | `true` or `false` |
+| `byte` | A single 8-bit unsigned number. | `255` |
+| `text` | A string of characters. | `"hello world"` |
+| `nothing` | The absence of a value (like void). | `nothing` |
+| `pointer to` | A memory address pointing to a value. | `pointer to integer` |
+| `sequence of` | A dynamic list of values. | `sequence of text` |
+| `optional` | A value that might be missing. | `optional text` |
+| `fallible` | A value that might be an error. | `fallible integer` |
+| `vector` | A fixed-size array for SIMD math. | `vector[4, decimal]` |
 
-**Record:** `record User { name of type text. }` groups named fields. **Choice:** `choice Reply { ok of type integer. failed of type text. }` lists possible cases. **Union:** `#[repr(C)] union Word { number of type integer. }` shares a C-compatible memory location. **Opaque:** `opaque Handle.` lets code pass a value without seeing inside it. **Vector:** `constant lanes of type vector 4 of integer is splat 0.` stores four values together.
+---
 
-## Operators
+## 3. Math and Logic (Word Operators)
 
-**Arithmetic:** `total plus fee`, `total minus fee`, `price times count`, `total divided by count`, and `total remainder count` calculate numbers. **Comparison:** `age is 18`, `age is not 18`, `age greater than 18`, `age less than 18`, `age at least 18`, and `age at most 18` compare values. **Logic:** `ready and open`, `ready or forced`, and `not locked` combine boolean values. **Index:** `values at 0` reads an item. **Field:** `user.name` reads a record field.
+| Instead of... | Write this... | Example |
+| :--- | :--- | :--- |
+| `+` | `plus` | `5 plus 5` |
+| `-` | `minus` | `10 minus 2` |
+| `*` | `times` | `4 times 4` |
+| `/` | `divided by` | `20 divided by 4` |
+| `%` | `remainder` | `10 remainder 3` |
+| `==` | `is` | `x is 10` |
+| `!=` | `is not` | `x is not 0` |
+| `>` | `greater than` | `health greater than 0` |
+| `<` | `less than` | `ammo less than 5` |
+| `>=` | `is at least` | `age is at least 18` |
+| `<=` | `is at most` | `speed is at most 100` |
+| `&&` | `and` | `true and false` |
+| `\|\|` | `or` | `true or false` |
+| `!` | `not` | `not ready` |
 
-## Flow
+---
 
-**When:** `when ready { display "go". }` chooses a block. **Otherwise:** `otherwise { display "wait". }` handles the other choice. **While:** `while count less than 10 { set count to count plus 1. }` repeats while true. **For each:** `for each item in values { display item. }` visits every item. **Repeat:** `repeat index until index reaches 10 { display index. }` counts toward a limit. **Break:** `break.` leaves a loop. **Continue:** `continue.` skips to its next pass. **Give:** `give result.` returns a value; `give nothing.` returns no value.
+## 4. Control Flow (Making Decisions)
 
-## Errors and special flow
+### Conditionals (`when` / `otherwise`)
+Use this when you are checking if a condition is true or false.
+```foo
+when condition {
+  -- runs if true
+}
+otherwise when other_condition {
+  -- runs if first was false, second is true
+}
+otherwise {
+  -- runs if everything above was false
+}
+```
 
-**Try:** `constant text is try file read "a.txt".` returns early if reading fails. **Catch:** `file read "a.txt" catch error { display error. give "". }` handles that failure here. **After:** `after { file close handle. }` cleans up at block exit. `cleanup` and `finally` are accepted names for `after`. **Unsafe:** `unsafe { set raw at 0 to 1. }` marks work the compiler cannot fully check. **Uninitialized:** `mutable result of type integer is uninitialized.` reserves space until it is assigned. **Unreachable:** `unreachable.` marks a path that cannot happen.
+### Matching (`match` / `case`)
+Use this when you are checking a single variable against specific values. It is cleaner and safer than using long `when/otherwise` chains.
 
-## Types, tests, and building
+```foo
+match status_code {
+  case 200 { display "OK". }
+  case 404 { display "Not Found". }
+  case _   { display "Unknown". } -- The underscore catches anything else
+}
+```
 
-**Generic type:** `function first[T](items of type sequence of T) of type T { give items at 0. }` works for many types. **Where:** `where T is Ord` says what that type must support. **Test:** `test "addition" { expect add(2, 2) is 4. }` creates a runnable check. **Eval:** `constant port is eval { 8000 plus 1 }.` calculates during building. **Reflect:** `reflect[integer 64]().size` asks about a type. **Embed:** `embed "assets/logo.txt" of type text` includes a file.
+**The Superpower: Exhaustiveness Checking**
+FOO's compiler mathematically guarantees that you haven't forgotten a possible outcome. If you use `match` on a `boolean` and forget to include a `case` for either `true` or `false`, FOO will stop the build and throw an error. You are forced to handle every edge case!
 
-## Boundaries and attributes
+**Advanced Guards (`when` inside `case`)**
+You can add an extra condition to a specific case:
+```foo
+match user_role {
+  case "admin" when user_level is 99 { 
+    display "Super Admin". 
+  }
+  case "admin" { 
+    display "Regular Admin". 
+  }
+  case _ { 
+    display "Guest". 
+  }
+}
+```
 
-**Derive:** `#[derive(Eq, Hash)] record Key { value of type integer. }` requests common generated behavior. **C layout:** `#[repr(C)] record Header { size of type integer. }` matches C field layout. **Packed:** `#[packed] record Bits { flags of type byte. }` removes padding. **Native:** `native c { #include <stdio.h> }` places code at a low-level boundary. **Extern:** `extern "C" function puts(value of type pointer to byte) of type integer.` declares an outside function. **Export:** `export function entry() of type nothing { give nothing. }` makes a symbol available outside the program.
+### Loops
+```foo
+-- Repeat while a condition is true
+while health greater than 0 { ... }
 
-## Choices and machine work
+-- Loop over every item in a list
+for each item in shopping_cart { ... }
 
-**Match:** `match reply { case ok(value) { display value. } case failed(message) { display message. } }` handles every choice. **Atomic:** `atomic add counter by 1.` changes a shared number safely. **Bits:** `bits set flags at position 4.` and `bits clear flags at position 7.` change individual bits. **Align:** `memory align buffer to 64.` requests a memory boundary. **Register:** `register rax is value.` writes a processor register. **System call:** `call system 1 with value.` asks the operating system directly. These last forms require the project's machine or hardware permission.
+-- Stop a loop completely
+break.
+
+-- Skip to the next iteration
+continue.
+```
+
+---
+
+## 5. Functions and Returns
+
+```foo
+-- A function that returns nothing
+function do_work() of type nothing {
+  -- Do work here
+  give nothing.
+}
+
+-- A function that returns an integer
+function add(a of type integer, b of type integer) of type integer {
+  give a plus b.
+}
+```
+
+---
+
+## 6. Error Handling
+
+| Keyword | Plain Meaning | Example |
+| :--- | :--- | :--- |
+| `try` | Unwraps a fallible value, or bails out if it fails. | `try file read "data.txt".` |
+| `catch` | Provides a fallback value if the left side fails. | `load() catch "default".` |
+| `after` | Runs cleanup code when the scope ends (success or fail). | `after { close(file). }` |
+
+---
+
+## 7. Built-in Commands & Units
+
+### Output
+```foo
+display "Hello!".
+log message "System started.".
+log error "Something went wrong.".
+```
+
+### Units of Measurement (Quantity Literals)
+FOO automatically converts these into their base numerical values at compile time.
+
+*   **Time:** `seconds`, `milliseconds`, `microseconds`, `nanoseconds`
+*   **Data:** `bytes`, `kilobytes`, `megabytes`, `gigabytes`, `terabytes`
+
+```foo
+time sleep 2 seconds.
+constant ram is 16 gigabytes.
+```
+
+---
+
+## 8. Native Interoperability
+
+```foo
+-- Import a C function directly
+use "c" function printf(fmt of type pointer to byte) of type integer.
+
+-- Write a raw C block
+native c function fast_math(a of type integer) of type integer {
+  return a * a;
+}
+
+-- Write raw Assembly
+asm {
+  // hardware instructions here
+}
+```
+
+---
+
+## Summary
+
+That’s the entire FOO language in a nutshell! It is a small, highly readable vocabulary that compiles down to incredibly powerful machine code. 
+
+Thank you for reading the FOO Book. Now go build something amazing!
