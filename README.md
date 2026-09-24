@@ -98,4 +98,4 @@ FOO is distributed as a standalone binary. No complex package managers required.
 
 ## 📚 Documentation
 
-Ready to learn more? The [FOO Book](docs/intro.md) is the best place to start. It will take you from your first "Hello World" to advanced systems programming, step-by-step.
+Ready to learn more? The [FOO Book](docs/README.md) is the best place to start. It will take you from your first "Hello World" to advanced systems programming, step-by-step.
