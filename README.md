@@ -6,9 +6,6 @@
 
 <p align="center">Readable systems programming with sentence-like syntax and native output.</p>
 
-
-# FOO
-
 ### The systems language that reads like English and runs like lightning. ⚡
 
 For too long, programmers have been forced to make a choice: Do you want a language that is easy to read (like Python), or do you want a language that is blazing fast and gives you total control over the hardware (like C or Rust)?
