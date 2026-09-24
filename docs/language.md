@@ -208,6 +208,31 @@ function process_data() {
 
 ---
 
+
+## 8. Quality of Life: Human-Readable Units
+
+FOO’s parser is so smart it understands **Units of Measurement**. You never have to write confusing math like `1024 * 1024` or `1000 * 1000`. You just write what you mean.
+
+```foo
+-- Wait for 2 seconds (FOO converts this to nanoseconds automatically)
+time sleep 2 seconds.
+
+-- Allocate 5 megabytes of memory
+constant buffer is try memory.allocate(5 megabytes).
+
+-- Set a timeout
+constant timeout is 500 milliseconds.
+```
+
+**Supported Units:**
+*   **Time:** `seconds`, `milliseconds`, `microseconds`, `nanoseconds`
+*   **Data:** `bytes`, `kilobytes`, `megabytes`, `gigabytes`, `terabytes`
+
+This makes your code self-documenting. `sleep(2000000000)` is hard to read. `sleep 2 seconds.` is impossible to misunderstand.
+
+
+---
+
 ## Summary: The FOO Philosophy
 
 Every feature in FOO is designed to reduce **Cognitive Load** (the mental energy you spend just trying to read the code). 
