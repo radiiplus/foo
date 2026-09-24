@@ -96,6 +96,16 @@ FOO is distributed as a standalone binary. No complex package managers required.
 
 ---
 
+## 💻 Editor Support (VS Code)
+
+Write FOO in your favorite editor with first-class support! The official **FOO extension for Visual Studio Code** provides beautiful syntax highlighting, real-time error checking (via the Language Server Protocol), auto-completion, and one-click code formatting.
+
+👉 **[Install the FOO VS Code Extension](https://marketplace.visualstudio.com/items?itemName=radiiplus.foo-iv)**
+
+Get red squiggly lines for type mismatches, hover tooltips for function signatures, and instant formatting just by saving your file.
+
+---
+
 ## 📚 Documentation
 
 Ready to learn more? The [FOO Book](docs/README.md) is the best place to start. It will take you from your first "Hello World" to advanced systems programming, step-by-step.
