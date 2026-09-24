@@ -19,7 +19,7 @@ FOO is a "sentence-like" systems language. It uses a brilliant parser to underst
 
 ---
 
-## 🚀 Hello, World (3 Ways)
+## 🚀 Hello, World (2 Ways)
 
 FOO adapts to your style. Whether you want maximum readability or Python-like brevity, FOO has you covered.
 
