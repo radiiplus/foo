@@ -21,7 +21,7 @@ FOO is a "sentence-like" systems language. It uses a brilliant parser to underst
 
 ## 🚀 Hello, World (2 Ways)
 
-FOO adapts to your style. Whether you want maximum readability or Python-like brevity, FOO has you covered.
+FOO adapts to your style. Whether you want maximum readability, FOO has you covered.
 
 ### 1. The Readable Way (Standard)
 Perfect for learning and clear documentation.
@@ -51,12 +51,10 @@ FOO is packed with features that make it unique in the programming world:
 
 ### 🧠 The Parser: Reads Like a Book
 FOO understands natural language. Instead of `if (x >= 10 && y != 0)`, you write:
-
 ```foo
 when x is at least 10 and y is not 0 { ... }
 ```
 Instead of `x = x + 1`, you write:
-
 ```foo
 set x to x plus 1.
 ```
