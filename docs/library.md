@@ -97,9 +97,19 @@ start() {
 
 ---
 
-## 5. Cryptography (`crypto`)
+## 6. Cryptography (`crypto`)
 
-Security is serious business. FOO’s `crypto` module wraps industry-standard C libraries (like OpenSSL or libsodium) to give you secure hashing and encryption with zero configuration.
+Security is serious business. FOO’s `crypto` module wraps industry-standard C libraries to give you secure hashing and encryption with zero configuration. You don't need to be a cryptographer to use safe, modern algorithms.
+
+**Supported Libraries:**
+*   **libsodium:** The default backend for modern, high-speed cryptography (NaCl).
+*   **OpenSSL:** Used for TLS/SSL networking and legacy support.
+
+**Available Algorithms:**
+*   **Hashing:** `sha256`, `sha512`, `blake2b`
+*   **Encryption:** `chacha20-poly1305`, `aes-256-gcm`
+*   **Signatures:** `ed25519`
+*   **Key Exchange:** `x25519`
 
 ```foo
 use crypto.
