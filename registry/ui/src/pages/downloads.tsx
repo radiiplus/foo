@@ -31,13 +31,13 @@ type Platform = {
 
 const compilerRelease = /^foo-v\d/;
 const refreshInterval = 15 * 60 * 1_000;
-const fallbackTag = "foo-v0.2.1";
+const fallbackTag = "foo-v0.2.2";
 const fallbackBase = `https://github.com/radiiplus/foo/releases/download/${fallbackTag}`;
 const fallbackRelease: GitHubRelease = {
   tag_name: fallbackTag,
   html_url: `https://github.com/radiiplus/foo/releases/tag/${fallbackTag}`,
   assets: [
-    "foo-0.2.1.tgz",
+    "foo-0.2.2.tgz",
     "foo-amd64.deb",
     "foo-arm64.deb",
     "foo-linux-x64.tar.gz",
@@ -55,7 +55,7 @@ const platforms: Platform[] = [
   {
     name: "Windows x64",
     detail: "Windows 10 or newer",
-    note: "Use the installer for normal setup or the ZIP for a portable toolchain.",
+    note: "Use the installer for normal setup. Remove FOO later from Windows Installed Apps or its Start Menu shortcut.",
     warning: "Code signing is pending. Windows may temporarily show Unknown publisher; verify the SHA-256 checksum before running the download.",
     assets: [
       { label: "Installer", icon: Download, matches: (name) => isWindows(name) && name.endsWith(".exe") },
@@ -65,7 +65,7 @@ const platforms: Platform[] = [
   {
     name: "Linux x64",
     detail: "Ubuntu and Debian, amd64",
-    note: "The Debian package installs the foo command system-wide.",
+    note: "The Debian package installs system-wide. Remove it and its managed backend with sudo apt remove foo.",
     assets: [
       { label: "Debian package", icon: Package, matches: (name) => isLinuxX64(name) && name.endsWith(".deb") },
       { label: "Tar archive", icon: Archive, matches: (name) => isLinuxX64(name) && name.endsWith(".tar.gz") },
@@ -74,7 +74,7 @@ const platforms: Platform[] = [
   {
     name: "Linux ARM64",
     detail: "Ubuntu ARM64, including Termux/proot",
-    note: "Run this inside the Ubuntu environment. It targets glibc, not Android directly.",
+    note: "Run this inside Ubuntu, not Android directly. Remove it later with sudo apt remove foo.",
     assets: [
       { label: "Debian package", icon: Package, matches: (name) => isLinuxArm64(name) && name.endsWith(".deb") },
       { label: "Tar archive", icon: Archive, matches: (name) => isLinuxArm64(name) && name.endsWith(".tar.gz") },

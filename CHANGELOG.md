@@ -3,6 +3,16 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## 0.2.2 - 2026-09-25
+
+### Installation
+
+- Add a dedicated Windows Start Menu uninstaller while retaining removal from
+  Windows Installed Apps and automatic cleanup of the installer-added PATH.
+- Remove the system-managed Zig backend during Debian package removal as well
+  as purge, without touching projects or per-user FOO configuration.
+- Document the supported uninstall paths on the website and in the setup guide.
+
 ## 0.2.1 - 2026-09-25
 
 ### Tooling And Distribution

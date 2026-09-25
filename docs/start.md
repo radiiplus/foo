@@ -22,6 +22,13 @@ foo doctor
 
 **Why this is useful:** `foo doctor` runs a complete health check on your computer. The Debian installer provisions the pinned Zig backend automatically, and `foo run` or `foo build` retries that managed installation on first use when setup happened offline. `foo doctor` reports what is ready and gives the exact repair command when something is missing. Clang is optional unless a project imports C headers.
 
+### Uninstalling FOO
+
+On Windows, uninstall FOO from **Settings > Apps > Installed apps** or use the
+**Uninstall FOO** shortcut in the FOO Start Menu group. On Ubuntu and Debian,
+run `sudo apt remove foo`. The uninstallers remove the compiler and its
+installer-managed backend without deleting projects or `~/.foo` user data.
+
 ---
 
 ## 2. Creating Your First Project

@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "0.2.1"
+  #define AppVersion "0.2.2"
 #endif
 
 #ifndef SourceDir
@@ -34,6 +34,8 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\bin\foo.exe
+UninstallDisplayName=FOO
+Uninstallable=yes
 SetupIconFile=..\assets\logo-installer.ico
 WizardStyle=modern
 WizardSizePercent=110
@@ -55,6 +57,10 @@ Source: "{#ProjectRoot}\LICENSE-APACHE"; DestDir: "{app}"; Flags: ignoreversion
 [Icons]
 Name: "{group}\FOO Command Prompt"; Filename: "{cmd}"; Parameters: "/K ""set PATH={app}\bin;%PATH%&& cd /d {userdocs}&& foo version"""; WorkingDir: "{userdocs}"
 Name: "{group}\FOO Documentation"; Filename: "https://github.com/radiiplus/foo/tree/v{#AppVersion}/docs"
+Name: "{group}\Uninstall FOO"; Filename: "{uninstallexe}"
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\.artifacts\toolchain"
 
 [Run]
 Filename: "{cmd}"; Parameters: "/K ""set PATH={app}\bin;%PATH%&& cd /d {userdocs}&& foo version"""; Description: "Open a FOO command prompt"; WorkingDir: "{userdocs}"; Flags: postinstall nowait skipifsilent unchecked

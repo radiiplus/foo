@@ -98,9 +98,12 @@ cat > "$package_root/DEBIAN/postrm" <<'EOF'
 #!/bin/sh
 set -u
 
-if [ "${1:-}" = "purge" ]; then
-  rm -rf /opt/foo/.artifacts/toolchain
-fi
+case "${1:-}" in
+  remove|purge)
+    rm -rf /opt/foo/.artifacts/toolchain
+    rmdir /opt/foo/.artifacts /opt/foo 2>/dev/null || true
+    ;;
+esac
 exit 0
 EOF
 

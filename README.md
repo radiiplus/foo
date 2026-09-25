@@ -88,6 +88,19 @@ FOO is distributed as a standalone binary. No complex package managers required.
 
 Ubuntu running through Termux/proot on an ARM64 Android device uses `foo-arm64.deb`. Inside Ubuntu, confirm `uname -m` reports `aarch64`, then install it with `sudo apt install ./foo-arm64.deb`. The package targets Ubuntu's glibc environment, not Termux's Android environment, so run `foo` from the Ubuntu session.
 
+### Uninstall
+
+On Windows, open **Settings > Apps > Installed apps**, choose **FOO**, and
+select **Uninstall**. The FOO Start Menu group also includes an uninstall
+shortcut. On Ubuntu or Debian, run:
+
+```sh
+sudo apt remove foo
+```
+
+Uninstalling removes the compiler, its system-managed backend, and installer
+PATH changes. It does not remove FOO projects or per-user data under `~/.foo`.
+
 ---
 
 ## 💻 Editor Support (VS Code)
