@@ -329,7 +329,7 @@
         },
         {
           "name": "meta.type.foo",
-          "begin": "\\b(type)([ \\t]+)((?!(?:integer|unsigned|decimal|boolean|byte|character|text|array|sequence|nothing|record|choice|union|opaque|vector|function|optional|pointer|address|reference|fallible)\\b)[A-Za-z_][A-Za-z0-9_]*)(?=[ \\t]*(?:\\[|is\\b))",
+          "begin": "\\b(define|type)([ \\t]+)((?!(?:integer|unsigned|decimal|boolean|byte|character|text|array|sequence|nothing|record|choice|union|opaque|vector|function|optional|pointer|address|reference|fallible)\\b)[A-Za-z_][A-Za-z0-9_]*)(?=[ \\t]*(?:\\[|as\\b|is\\b))",
           "beginCaptures": {
             "1": {
               "name": "storage.type.foo"
@@ -338,7 +338,7 @@
               "name": "entity.name.type.foo"
             }
           },
-          "end": "(?=\\bis\\b|$)",
+          "end": "(?=\\b(?:as|is)\\b|$)",
           "patterns": [
             {
               "include": "#generics"
@@ -353,7 +353,7 @@
           }
         },
         {
-          "match": "\\b(mutable)([ \\t]+)([A-Za-z_][A-Za-z0-9_]*)",
+          "match": "\\b(dynamic|mutable)([ \\t]+)([A-Za-z_][A-Za-z0-9_]*)",
           "captures": {
             "1": {
               "name": "storage.modifier.foo"
@@ -454,19 +454,19 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(?:give|when|otherwise|for|each|in|while|repeat|until|reaches|advance|match|case|break|continue|unsafe|native|asm|evaluate|on|leave|after|cleanup|finally|try|catch|test|eval|reflect|embed|start)\\b",
+          "match": "\\b(?:give|when|otherwise|for|each|in|while|repeat|until|reaches|advance|match|case|stop|skip|break|continue|unsafe|native|asm|evaluate|on|leave|after|cleanup|finally|try|fallback|catch|test|eval|reflect|embed|start)\\b",
           "name": "keyword.control.foo"
         },
         {
-          "match": "\\b(?:is|and|or|not|plus|minus|times|divided|by|equals|does|equal|greater|than|less|at|least|most)\\b",
+          "match": "\\b(?:is|and|or|not|plus|subtract|multiply|divide|minus|times|divided|by|equals|does|equal|greater|than|less|at|least|most)\\b",
           "name": "keyword.operator.foo"
         },
         {
-          "match": "\\b(?:module|use|where|type|giving|context|derives|as)\\b",
+          "match": "\\b(?:module|use|where|define|type|giving|context|derives|as)\\b",
           "name": "keyword.other.foo"
         },
         {
-          "match": "\\b(?:constant|mutable|public|packed)\\b",
+          "match": "\\b(?:constant|dynamic|mutable|public|packed)\\b",
           "name": "storage.modifier.foo"
         },
         {

@@ -21,4 +21,21 @@ let sequence = Extern(name: "append", symbol: "append", abi: "runtime.sequence",
 let sequenceCode = runtime(@[sequence], printType, printName).code
 doAssert sequenceCode.contains("foo_owned")
 doAssert sequenceCode.contains("items[p0.len] = p1")
+doAssert sequenceCode.contains("foo_transfer(items, p0.data")
+doAssert sequenceCode.contains("foo_hashmap_put")
+
+let http = Extern(name: "client", symbol: "client", abi: "runtime.http",
+  params: @[], ret: `Type`(kind: TypeKind.Fallible,
+    elem: `Type`(kind: TypeKind.Ptr)))
+let httpRuntime = runtime(@[http], printType, printName)
+when defined(windows):
+  doAssert httpRuntime.libraries == @["winhttp", "ws2_32"]
+  doAssert httpRuntime.code.contains("WinHttpOpen")
+else:
+  doAssert httpRuntime.libraries == @["curl"]
+doAssert not httpRuntime.code.contains("openssl/")
+doAssert httpRuntime.code.contains("CURLOPT_CAINFO")
+let windowsHttp = runtime(@[http], printType, printName, "windows-x64")
+doAssert windowsHttp.libraries == @["winhttp", "ws2_32"]
+doAssert windowsHttp.code.contains("WinHttpOpen")
 echo "C runtime parity: ok"

@@ -1,0 +1,10 @@
+-- Mutable open-addressed maps for hot text-keyed lookup paths.
+-- Values are shallow-copied into backend-owned storage.
+public define HashMap as opaque.
+public use "hashmap" function create[V]() giving fallible pointer to HashMap.
+public use "hashmap" function put[V](collection pointer to HashMap, key text, value V) giving fallible nothing.
+public use "hashmap" function get[V](collection pointer to HashMap, key text) giving fallible V.
+public use "hashmap" function contains[V](collection pointer to HashMap, key text) giving fallible boolean.
+public use "hashmap" function remove[V](collection pointer to HashMap, key text) giving fallible boolean.
+public use "hashmap" function length[V](collection pointer to HashMap) giving fallible unsigned 64.
+public use "hashmap" function close[V](collection pointer to HashMap) giving fallible nothing.

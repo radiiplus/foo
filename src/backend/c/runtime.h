@@ -2,6 +2,9 @@
  * here. */
 #include <stdatomic.h>
 #if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -50,6 +53,165 @@ static void *foo_owned(size_t size) {
   foo_leave();
   return pointer;
 }
+static FOOResult foo_error(const char *error);
+typedef struct {
+  uint64_t hash;
+  uint8_t state;
+  uint8_t *key;
+  size_t key_size;
+  uint8_t *value;
+  size_t value_size;
+} FOOHashEntry;
+typedef struct FOOHashMap {
+  FOOHashEntry *entries;
+  size_t capacity, length, value_size;
+  bool alive;
+  struct FOOHashMap *next;
+} FOOHashMap;
+static FOOHashMap *foo_hashmaps;
+static uint64_t foo_hash_bytes(const uint8_t *data, size_t size) {
+  uint64_t hash = UINT64_C(14695981039346656037);
+  for (size_t index = 0; index < size; index++) {
+    hash ^= data[index];
+    hash *= UINT64_C(1099511628211);
+  }
+  return hash ? hash : 1;
+}
+static bool foo_hash_key(FOOHashEntry *entry, uint64_t hash, FOOText key) {
+  return entry->state == 1 && entry->hash == hash &&
+         entry->key_size == key.len &&
+         (!key.len || !memcmp(entry->key, key.data, key.len));
+}
+static FOOHashEntry *foo_hash_slot(FOOHashMap *map, uint64_t hash,
+                                   FOOText key, bool insert) {
+  size_t index = (size_t)hash & (map->capacity - 1), first_removed = SIZE_MAX;
+  for (;;) {
+    FOOHashEntry *entry = &map->entries[index];
+    if (!entry->state)
+      return insert && first_removed != SIZE_MAX ?
+          &map->entries[first_removed] : entry;
+    if (foo_hash_key(entry, hash, key)) return entry;
+    if (insert && entry->state == 2 && first_removed == SIZE_MAX)
+      first_removed = index;
+    index = (index + 1) & (map->capacity - 1);
+  }
+}
+static bool foo_hash_grow(FOOHashMap *map) {
+  size_t capacity = map->capacity ? map->capacity * 2 : 16;
+  if (capacity < map->capacity || capacity > SIZE_MAX / sizeof(FOOHashEntry))
+    return false;
+  FOOHashEntry *entries = calloc(capacity, sizeof(*entries));
+  if (!entries) return false;
+  FOOHashEntry *previous = map->entries;
+  size_t previous_capacity = map->capacity;
+  map->entries = entries;
+  map->capacity = capacity;
+  for (size_t index = 0; index < previous_capacity; index++) {
+    FOOHashEntry *entry = &previous[index];
+    if (entry->state != 1) continue;
+    FOOText key = {entry->key, entry->key_size};
+    *foo_hash_slot(map, entry->hash, key, true) = *entry;
+  }
+  free(previous);
+  return true;
+}
+static FOOHashMap *foo_hashmap_value(void *handle) {
+  for (FOOHashMap *map = foo_hashmaps; map; map = map->next)
+    if (map == handle) return map->alive ? map : NULL;
+  return NULL;
+}
+static FOOResult foo_hashmap_create(void) {
+  FOOHashMap *map = calloc(1, sizeof(*map));
+  if (!map) return foo_error("OutOfMemory");
+  map->alive = true;
+  map->next = foo_hashmaps;
+  foo_hashmaps = map;
+  return (FOOResult){.pointer = map};
+}
+static FOOResult foo_hashmap_put(void *handle, FOOText key,
+                                 const void *value, size_t value_size) {
+  FOOHashMap *map = foo_hashmap_value(handle);
+  if (!map) return foo_error("Closed");
+  if (map->value_size && map->value_size != value_size)
+    return foo_error("InvalidValue");
+  if (!map->capacity || (map->length + 1) * 4 >= map->capacity * 3)
+    if (!foo_hash_grow(map)) return foo_error("OutOfMemory");
+  uint64_t hash = foo_hash_bytes(key.data, key.len);
+  FOOHashEntry *entry = foo_hash_slot(map, hash, key, true);
+  uint8_t *copy = malloc(value_size ? value_size : 1);
+  if (!copy) return foo_error("OutOfMemory");
+  if (value_size) foo_transfer(copy, value, value_size);
+  if (entry->state == 1) {
+    free(entry->value);
+    entry->value = copy;
+    entry->value_size = value_size;
+    return (FOOResult){0};
+  }
+  uint8_t *name = malloc(key.len ? key.len : 1);
+  if (!name) { free(copy); return foo_error("OutOfMemory"); }
+  if (key.len) foo_transfer(name, key.data, key.len);
+  *entry = (FOOHashEntry){hash, 1, name, key.len, copy, value_size};
+  map->value_size = value_size;
+  map->length++;
+  return (FOOResult){0};
+}
+static FOOResult foo_hashmap_get(void *handle, FOOText key) {
+  FOOHashMap *map = foo_hashmap_value(handle);
+  if (!map) return foo_error("Closed");
+  if (!map->capacity) return foo_error("MissingKey");
+  FOOHashEntry *entry = foo_hash_slot(map, foo_hash_bytes(key.data, key.len), key, false);
+  return entry->state == 1 ? (FOOResult){.pointer = entry->value} :
+                            foo_error("MissingKey");
+}
+static FOOResult foo_hashmap_contains(void *handle, FOOText key) {
+  FOOHashMap *map = foo_hashmap_value(handle);
+  if (!map) return foo_error("Closed");
+  if (!map->capacity) return (FOOResult){.boolean = false};
+  FOOHashEntry *entry = foo_hash_slot(map, foo_hash_bytes(key.data, key.len), key, false);
+  return (FOOResult){.boolean = entry->state == 1};
+}
+static FOOResult foo_hashmap_remove(void *handle, FOOText key) {
+  FOOHashMap *map = foo_hashmap_value(handle);
+  if (!map) return foo_error("Closed");
+  if (!map->capacity) return (FOOResult){.boolean = false};
+  FOOHashEntry *entry = foo_hash_slot(map, foo_hash_bytes(key.data, key.len), key, false);
+  if (entry->state != 1) return (FOOResult){.boolean = false};
+  free(entry->key);
+  free(entry->value);
+  entry->key = entry->value = NULL;
+  entry->state = 2;
+  map->length--;
+  return (FOOResult){.boolean = true};
+}
+static FOOResult foo_hashmap_length(void *handle) {
+  FOOHashMap *map = foo_hashmap_value(handle);
+  return map ? (FOOResult){.number = map->length} : foo_error("Closed");
+}
+static void foo_hashmap_clear(FOOHashMap *map) {
+  for (size_t index = 0; index < map->capacity; index++)
+    if (map->entries[index].state == 1) {
+      free(map->entries[index].key);
+      free(map->entries[index].value);
+    }
+  free(map->entries);
+  map->entries = NULL;
+  map->capacity = map->length = 0;
+}
+static FOOResult foo_hashmap_close(void *handle) {
+  FOOHashMap *map = foo_hashmap_value(handle);
+  if (!map) return foo_error("Closed");
+  foo_hashmap_clear(map);
+  map->alive = false;
+  return (FOOResult){0};
+}
+static void foo_hashmap_shutdown(void) {
+  while (foo_hashmaps) {
+    FOOHashMap *map = foo_hashmaps;
+    foo_hashmaps = map->next;
+    if (map->alive) foo_hashmap_clear(map);
+    free(map);
+  }
+}
 #if defined(FOO_MEMORY) || defined(FOO_LIST) || defined(FOO_STREAM)
 static void foo_storage_shutdown(void);
 #endif
@@ -57,6 +219,7 @@ static void foo_shutdown(void) {
 #ifdef FOO_SERVICE
   foo_service_close();
 #endif
+  foo_hashmap_shutdown();
   foo_enter();
 #if defined(FOO_MEMORY) || defined(FOO_LIST) || defined(FOO_STREAM)
   foo_storage_shutdown();
@@ -79,8 +242,8 @@ static FOOText foo_join(FOOText a, FOOText b) {
   if (b.len > SIZE_MAX - a.len) foo_panic("Overflow");
   uint8_t *bytes = foo_owned(a.len + b.len);
   if (!bytes) foo_panic("OutOfMemory");
-  if (a.len) memcpy(bytes, a.data, a.len);
-  if (b.len) memcpy(bytes + a.len, b.data, b.len);
+  if (a.len) foo_transfer(bytes, a.data, a.len);
+  if (b.len) foo_transfer(bytes + a.len, b.data, b.len);
   return (FOOText){bytes, a.len + b.len};
 }
 static bool foo_equal(FOOText a, const char *b) {
@@ -116,7 +279,7 @@ static FOOResult foo_copy(const void *value, size_t length) {
   if (!copy)
     return foo_error("OutOfMemory");
   if (length)
-    memcpy(copy, value, length);
+    foo_transfer(copy, value, length);
   return (FOOResult){.text = {copy, length}};
 }
 static FOOResult foo_free(const void *pointer, size_t size) {
@@ -234,7 +397,7 @@ static FOOResult foo_unicode_scan(FOOText value) {
     free(data);
     return foo_error("OutOfMemory");
   }
-  memcpy(data, value.data, value.len);
+  foo_transfer(data, value.data, value.len);
   cursor->text = (FOOText){data, value.len};
   return (FOOResult){.pointer = cursor};
 }
@@ -523,7 +686,7 @@ static FOOResult foo_crypto_confirm(FOOText value, FOOText encoded) {
       memchr(encoded.data, 0, encoded.len))
     return foo_error("InvalidEncoding");
   char copy[crypto_pwhash_STRBYTES];
-  memcpy(copy, encoded.data, encoded.len);
+  foo_transfer(copy, encoded.data, encoded.len);
   copy[encoded.len] = 0;
   return (FOOResult){
       .boolean = crypto_pwhash_str_verify(copy, (const char *)value.data,

@@ -1,6 +1,6 @@
 -- Declares dynamic library loading.
 --- Portable dynamic library handles. ---
-public type Library is opaque.
+public define Library as opaque.
 
 public function open(path of type pointer to byte) {
   constant result of type pointer to Library is uninitialized.

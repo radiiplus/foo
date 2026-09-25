@@ -144,6 +144,8 @@ fn serve(server: *lib.http.Server) void {
         if (!std.mem.eql(u8, method, "POST")) @panic("wrong method");
         const length = lib.http.header(peer, "Content-Length") catch @panic("header failed");
         if (!std.mem.eql(u8, length, "5")) @panic("wrong length");
+        const advanced = lib.http.header(peer, "X-Test") catch @panic("advanced header failed");
+        if (!std.mem.eql(u8, advanced, "44")) @panic("wrong advanced header");
         const content = lib.http.read(peer, 1024) catch @panic("body failed");
         lib.http.reply(peer, 200, content, true) catch @panic("reply failed");
     }
@@ -152,11 +154,14 @@ fn serve(server: *lib.http.Server) void {
 test "HTTP client and server reuse one TCP connection for two requests" {
     defer lib.deinit();
     const server = try lib.http.listen("127.0.0.1", 0);
-    defer lib.http.stop(server);
+    defer lib.http.closeServer(server);
     const worker = try std.Thread.spawn(.{}, serve, .{server});
     defer worker.join();
     const client = try lib.http.client();
     defer lib.http.close(client);
+    try lib.http.addHeader(client, "X-Test", "44");
+    try lib.http.redirects(client, 2);
+    lib.http.reuse(client, true);
     var buffer: [100]u8 = undefined;
     const url = try std.fmt.bufPrint(&buffer, "http://127.0.0.1:{d}/echo", .{lib.http.port(server)});
     for (0..2) |_| {
@@ -164,6 +169,6 @@ test "HTTP client and server reuse one TCP connection for two requests" {
         defer lib.http.release(response);
         try expect(lib.http.status(response) == 200);
         try equal("hello", try lib.http.body(response));
-        try expect(client.connection_pool.free_len == 1);
+        try expect(client.inner.connection_pool.free_len == 1);
     }
 }

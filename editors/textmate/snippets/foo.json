@@ -1,7 +1,7 @@
 {
   "function": {
     "prefix": "function",
-    "body": ["function ${1:name}(${2:value of type integer}) of type ${3:integer} {", "  $0", "}"],
+    "body": ["function ${1:name}(${2:value integer}) giving ${3:integer} {", "  $0", "}"],
     "description": "FOO function"
   },
   "test": {
@@ -23,6 +23,16 @@
     "prefix": "constant",
     "body": ["constant ${1:name} is ${0:value}."],
     "description": "FOO constant"
+  },
+  "dynamic": {
+    "prefix": "dynamic",
+    "body": ["dynamic ${1:name} is ${0:value}."],
+    "description": "FOO dynamic binding"
+  },
+  "define": {
+    "prefix": "define",
+    "body": ["define ${1:Name} as ${0:integer}."],
+    "description": "FOO named type"
   },
   "native": {
     "prefix": "native",

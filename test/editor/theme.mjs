@@ -26,7 +26,8 @@ const checks = [
   ['give value.', { give: '#F15BB5', value: '#D4D4D4' }],
   ['data of type pointer to byte.', { data: '#D4D4D4', of: '#FF3CAC', type: '#FFD23F', pointer: '#FFD23F', to: '#FF3CAC', byte: '#39FF88' }],
   ['constant limit is 42.', { constant: '#FFD23F', limit: '#D66BFF', is: '#FF79C6', '42': '#B6FF00' }],
-  ['mutable count is limit.', { count: '#D4D4D4', limit: '#D4D4D4' }],
+  ['dynamic count is limit.', { dynamic: '#FFD23F', count: '#D4D4D4', limit: '#D4D4D4' }],
+  ['define UserID as integer 64.', { define: '#FFD23F', UserID: '#39FF88', as: '#FFD23F', integer: '#39FF88' }],
   ['give data.length plus data.front().', { length: '#8BD3FF', front: '#FF7043', plus: '#FF79C6' }],
   ['give "hello" plus newline.', { hello: '#00E5FF', newline: '#D66BFF' }],
   ['give "bad\\q".', { '\\q': '#FF3864' }],
@@ -35,7 +36,7 @@ const checks = [
   ['--! Documentation', { Documentation: '#8FBCBB' }],
   ['#[packed]', { packed: '#C792EA' }],
   // These are not reserved FOO words. A palette must not invent syntax.
-  ['define from with into', { define: '#D4D4D4', from: '#D4D4D4', with: '#D4D4D4', into: '#D4D4D4' }],
+  ['from with into', { from: '#D4D4D4', with: '#D4D4D4', into: '#D4D4D4' }],
 ];
 let count = 0;
 for (const [source, expected] of checks) {

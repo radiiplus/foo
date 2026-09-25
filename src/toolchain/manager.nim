@@ -44,6 +44,7 @@ proc pin*(project = getCurrentDir()): string =
   let lock = project / "foo.lock"
   if not fileExists(lock): return version
   let selected = parseJson(readFile(lock)).getOrDefault("zig").getStr()
+  if selected.len == 0: return version
   if selected != version:
     raise newException(ValueError, "This FOO compiler requires Zig " & version & "; project foo.lock requests " & selected & ".")
   selected

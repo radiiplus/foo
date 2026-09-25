@@ -5,9 +5,11 @@ public use "sequence" function remove[T](items of type sequence of T, index of t
 public use "sequence" function copy[T](items of type sequence of T) of type fallible sequence of T.
 public use "sequence" function length[T](items of type sequence of T) of type unsigned 64.
 public use "sequence" function release[T](items of type sequence of T) of type fallible nothing.
+use "sequence" function sized[T](length unsigned 64) giving fallible sequence of T.
+use "sequence" function compact[T](items sequence of T, length unsigned 64) giving fallible sequence of T.
 
 public function find[T](items of type sequence of T, value of type T) of type optional unsigned 64 where T is Equatable {
-  mutable index of type unsigned 64 is 0.
+  dynamic index of type unsigned 64 is 0.
   for each item in items {
     when item is value { give index. }
     set index to index plus 1.
@@ -16,16 +18,16 @@ public function find[T](items of type sequence of T, value of type T) of type op
 }
 
 public function sort[T](items of type sequence of T) of type fallible sequence of T where T is Ord {
-  mutable result is try copy[T](items).
-  mutable index of type unsigned 64 is 1.
+  dynamic result is try copy[T](items).
+  dynamic index of type unsigned 64 is 1.
   while index less than length[T](result) {
     constant value is result at index.
-    mutable cursor is index.
+    dynamic cursor is index.
     while cursor greater than 0 {
-      when result at (cursor minus 1) greater than value {
-        set result at cursor to result at (cursor minus 1).
-        set cursor to cursor minus 1.
-      } otherwise { break. }
+      when result at (cursor subtract 1) greater than value {
+        set result at cursor to result at (cursor subtract 1).
+        set cursor to cursor subtract 1.
+      } otherwise { stop. }
     }
     set result at cursor to value.
     set index to index plus 1.
@@ -34,25 +36,51 @@ public function sort[T](items of type sequence of T) of type fallible sequence o
 }
 
 public function filter[T](items of type sequence of T, predicate of type function taking (T) giving boolean) of type fallible sequence of T {
-  mutable result is create[T]().
-  after error { release[T](result) catch nothing. }
+  dynamic result is try sized[T](length[T](items)).
+  after error { release[T](result) fallback nothing. }
+  dynamic count of type unsigned 64 is 0.
   for each item in items {
     when predicate(item) {
-      constant next is try append[T](result, item).
-      try release[T](result).
-      set result to next.
+      set result at count to item.
+      set count to count plus 1.
     }
+  }
+  give try compact[T](result, count).
+}
+
+public function map[T, U](items of type sequence of T, transform of type function taking (T) giving U) of type fallible sequence of U {
+  dynamic result is try sized[U](length[T](items)).
+  after error { release[U](result) fallback nothing. }
+  dynamic index is 0.
+  for each item in items {
+    set result at index to transform(item).
+    set index to index plus 1.
   }
   give result.
 }
 
-public function map[T, U](items of type sequence of T, transform of type function taking (T) giving U) of type fallible sequence of U {
-  mutable result is create[U]().
-  after error { release[U](result) catch nothing. }
+public function deduplicate[T](items sequence of T) giving fallible sequence of T where T is Equatable {
+  dynamic result is try sized[T](length[T](items)).
+  after error { release[T](result) fallback nothing. }
+  dynamic count of type unsigned 64 is 0.
   for each item in items {
-    constant next is try append[U](result, transform(item)).
-    try release[U](result).
-    set result to next.
+    dynamic present is false.
+    dynamic cursor of type unsigned 64 is 0.
+    while cursor less than count {
+      when result at cursor is item {
+        set present to true.
+        stop.
+      }
+      set cursor to cursor plus 1.
+    }
+    when not present {
+      set result at count to item.
+      set count to count plus 1.
+    }
   }
-  give result.
+  give try compact[T](result, count).
+}
+
+public function dedup[T](items sequence of T) giving fallible sequence of T where T is Equatable {
+  give try deduplicate[T](items).
 }

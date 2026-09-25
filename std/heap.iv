@@ -2,7 +2,7 @@
 --- Priority queue (heap) ---
 --- Efficient priority-based retrieval ---
 
-public type Heap is record {
+public define Heap as record {
   data of type pointer to byte.
   length of type integer 64.
 }.

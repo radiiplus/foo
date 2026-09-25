@@ -106,9 +106,10 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
         for origins in arguments: result = merge(result, origins)
         return
       if callee != nil and callee.kind == "function" and
-          callee.abi in ["runtime.crypto", "runtime.unicode", "runtime.compress",
+          callee.abi in ["runtime", "runtime.crypto", "runtime.unicode", "runtime.compress",
             "runtime.json", "runtime.http", "runtime.system", "runtime.arch",
             "runtime.atomic", "runtime.list", "runtime.memory", "runtime.stream",
+            "runtime.hashmap",
             "runtime.io", "runtime.fs", "runtime.net", "runtime.process",
             "runtime.thread", "runtime.time", "runtime.text"]:
         return

@@ -17,16 +17,17 @@ Most languages force you to learn a secret code. FOO’s parser (the part of the
 Here is a complete, working FOO program:
 
 ```foo
-function greet(name of type text) of type text {
-  give "Hello, " plus name plus "!"
+function greet(name text) giving text {
+  give "Hello, " plus name plus "!".
 }
 
-start() {
-  display greet("vibes").
-}
+display greet("vibes").
 ```
 
-Notice what’s missing? There are no semicolons at the end of every line. There are no weird `()` parentheses wrapping every single condition. You use intuitive words like `give` (instead of `return`), `plus` (instead of `+`), and `start()` to kick things off. 
+Notice what is missing: there are no semicolons, no entry-point wrapper, and no
+parentheses around every condition. Top-level statements run in source order;
+functions use words such as `give` and `plus` when a value must be returned or
+combined.
 
 But don't let the friendly syntax fool you. When you build this, FOO doesn't use a slow interpreter. It translates your English sentences directly into **Native Code** (the actual 1s and 0s your computer's processor understands), making it run at maximum speed.
 
@@ -72,4 +73,4 @@ This documentation is designed to take you from a complete beginner to a systems
 *   We will explore **Systems and Concurrency** (how to talk to the internet and do multiple things at once).
 *   Finally, we will look at the **Compiler and Advanced** features (how to bend the hardware to your will).
 
-You don't need to memorize everything today. Just open your editor, type `display "Hello, world!".`, and let's get started!
+You don't need to memorize everything today. Start with `display "Hello, world!".`, and let's get started!

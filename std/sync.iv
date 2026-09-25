@@ -2,23 +2,23 @@
 --- Synchronization primitives ---
 --- Mutexes, condition variables, semaphores ---
 
-public type Mutex is record {
+public define Mutex as record {
   handle of type pointer to byte.
 }.
 
-public type Condition is record {
+public define Condition as record {
   handle of type pointer to byte.
 }.
 
-public type Semaphore is record {
+public define Semaphore as record {
   handle of type pointer to byte.
 }.
 
-public type Once is record {
+public define Once as record {
   handle of type pointer to byte.
 }.
 
-public type Group is record {
+public define Group as record {
   handle of type pointer to byte.
 }.
 

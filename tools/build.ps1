@@ -3,7 +3,8 @@ param(
   [string]$Version,
   [string]$ReleaseDirectory,
   [switch]$SkipWindows,
-  [switch]$SkipLinux
+  [switch]$SkipLinux,
+  [switch]$SkipLinuxArm64
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,7 +20,10 @@ if (-not $ReleaseDirectory) {
 $ReleaseDirectory = [IO.Path]::GetFullPath($ReleaseDirectory)
 
 $windowsSource = Join-Path $ReleaseDirectory "foo-v$Version-windows-x64"
-$linuxSource = Join-Path $ReleaseDirectory "foo-v$Version-linux-x64"
+$linuxTargets = @(
+  [PSCustomObject]@{ Name = 'linux-x64'; DebianArchitecture = 'amd64' },
+  [PSCustomObject]@{ Name = 'linux-arm64'; DebianArchitecture = 'arm64' }
+)
 
 function ConvertTo-WslPath([string]$Path) {
   $fullPath = [IO.Path]::GetFullPath($Path)
@@ -50,19 +54,21 @@ if (-not $SkipWindows) {
 }
 
 if (-not $SkipLinux) {
-  if (-not (Test-Path (Join-Path $linuxSource 'bin\foo'))) {
-    throw "Linux release staging directory is missing: $linuxSource"
-  }
-
   $linuxScript = ConvertTo-WslPath (Join-Path $projectRoot 'installers\linux\package.sh')
-  $linuxInput = ConvertTo-WslPath $linuxSource
   $linuxOutput = ConvertTo-WslPath $ReleaseDirectory
-
-  & wsl -d Ubuntu-22.04 -- sh $linuxScript $Version $linuxInput $linuxOutput
-  if ($LASTEXITCODE -ne 0) { throw 'The Linux installer build failed.' }
+  foreach ($target in $linuxTargets) {
+    if ($target.Name -eq 'linux-arm64' -and $SkipLinuxArm64) { continue }
+    $linuxSource = Join-Path $ReleaseDirectory "foo-v$Version-$($target.Name)"
+    if (-not (Test-Path (Join-Path $linuxSource 'bin\foo'))) {
+      throw "Linux release staging directory is missing: $linuxSource"
+    }
+    $linuxInput = ConvertTo-WslPath $linuxSource
+    & wsl -d Ubuntu-22.04 -- sh $linuxScript $Version $linuxInput $linuxOutput $target.DebianArchitecture
+    if ($LASTEXITCODE -ne 0) { throw "The $($target.Name) installer build failed." }
+  }
 }
 
-$installers = Get-ChildItem $ReleaseDirectory -File | Where-Object { $_.Name -match '-setup\.exe$|\.deb$' }
+$installers = Get-ChildItem $ReleaseDirectory -File | Where-Object { $_.Name -match '\.exe$|\.deb$' }
 if (-not $installers) { throw 'No installer artifacts were produced.' }
 $installers | ForEach-Object { Write-Host "Created $($_.FullName)" }
 

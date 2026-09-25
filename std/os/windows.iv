@@ -1,8 +1,8 @@
 -- Declares Windows platform operations.
 --- Windows-only handles with portable FOO names. ---
-public type Handle is opaque.
-public type Registry is opaque.
-public type Winrt is opaque.
+public define Handle as opaque.
+public define Registry as opaque.
+public define Winrt as opaque.
 
 public function handle() {
   constant result of type pointer to Handle is uninitialized.

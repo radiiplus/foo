@@ -79,7 +79,7 @@ proc print*(value: Node; depth: int = 0): string =
       (if item.`type` != nil: " of type " & print(item.`type`) else: "") & " is " & print(item.value) & "."
   of "mutable":
     let item = Mutable(value)
-    result = indent(depth) & (if item.public: "public " else: "") & "mutable " & item.name.text &
+    result = indent(depth) & (if item.public: "public " else: "") & "dynamic " & item.name.text &
       (if item.`type` != nil: " of type " & print(item.`type`) else: "") & " is " & print(item.value) & "."
   of "function":
     let item = Function(value)
@@ -88,13 +88,13 @@ proc print*(value: Node; depth: int = 0): string =
     let name = if item.name.text == "start": "start" else: "function " & item.name.text
     result = indent(depth) & printAttributes(item.attributes) & (if item.public: "public " else: "") & name &
       printTypeParams(item.typeParams) & "(" & params.join(", ") & ")" &
-      (if item.returnType != nil: " of type " & print(item.returnType) else: "") &
+      (if item.returnType != nil: " giving " & print(item.returnType) else: "") &
       (if item.abi.len > 0: " for " & item.abi else: "") & constraints(item.typeParams, item.constraints) & " " & printBlock(item.body, depth)
   of "alias":
     let item = Alias(value)
     var body = print(item.body, depth)
-    result = indent(depth) & printAttributes(item.attributes) & (if item.public: "public " else: "") & "type " & item.name.text &
-      printTypeParams(item.typeParams) & " is " & body
+    result = indent(depth) & printAttributes(item.attributes) & (if item.public: "public " else: "") & "define " & item.name.text &
+      printTypeParams(item.typeParams) & " as " & body
     if item.derives != nil:
       var traits: seq[string]
       for trait in item.derives.traits: traits.add(trait.text)
@@ -111,10 +111,10 @@ proc print*(value: Node; depth: int = 0): string =
     let prefix = indent(depth) & (if item.public: "public " else: "")
     if item.native.code.len > 0:
       result = prefix & "native" & (if item.native.substrate == "foo": "" else: " " & item.native.substrate) & " function " & item.name.text &
-        "(" & params.join(", ") & ") of type " & print(item.returnType) & " {" & item.native.code & "}"
+        "(" & params.join(", ") & ") giving " & print(item.returnType) & " {" & item.native.code & "}"
     else:
       result = prefix & "use \"" & escapeText(provider(item.abi)) & "\" function " & item.name.text & printTypeParams(item.typeParams) &
-        "(" & params.join(", ") & ") of type " & print(item.returnType) & "."
+        "(" & params.join(", ") & ") giving " & print(item.returnType) & "."
   of "c-import": result = indent(depth) & "use c \"" & escapeText(CImport(value).header) & "\"."
   of "native-zig": result = indent(depth) & "native zig {" & NativeZig(value).code & "}"
   of "native":
@@ -134,9 +134,9 @@ proc print*(value: Node; depth: int = 0): string =
     var cases: seq[string]
     for branch in item.cases: cases.add(print(branch, depth + 1))
     result = indent(depth) & "match " & print(item.scrutinee) & " {\n" & cases.join("\n") & "\n" & indent(depth) & "}"
-  of "break": result = indent(depth) & "break."
-  of "continue": result = indent(depth) & "continue."
-  of "try": result = indent(depth) & "try " & print(`Try`(value).expr) & "."
+  of "break": result = indent(depth) & "stop."
+  of "continue": result = indent(depth) & "skip."
+  of "try": result = indent(depth) & print(`Try`(value).expr) & " try."
   of "defer":
     let item = `Defer`(value)
     result = indent(depth) & "after" & (if item.error: " error" else: "") & " "
@@ -169,8 +169,19 @@ proc print*(value: Node; depth: int = 0): string =
     for arg in item.args: args.add(print(arg))
     for kind in item.types: types.add(print(kind))
     result = print(item.callee) & (if types.len > 0: "[" & types.join(", ") & "]" else: "") & "(" & args.join(", ") & ")"
-  of "unary": result = Unary(value).op & " " & print(Unary(value).operand)
-  of "binary": result = print(Binary(value).left) & " " & Binary(value).op & " " & print(Binary(value).right)
+  of "unary":
+    let item = Unary(value)
+    result = if item.op == "try": print(item.operand) & " try" else: item.op & " " & print(item.operand)
+  of "binary":
+    let operation = case Binary(value).op
+      of "catch": "fallback"
+      of "minus": "subtract"
+      of "times": "multiply"
+      of "divided by": "divide"
+      of "is at least": "greater than or equal to"
+      of "is at most": "less than or equal to"
+      else: Binary(value).op
+    result = print(Binary(value).left) & " " & operation & " " & print(Binary(value).right)
   of "group": result = "(" & print(Group(value).expr) & ")"
   of "field": result = print(Field(value).`object`) & "." & Field(value).field.text
   of "index": result = print(Index(value).`object`) & "[" & print(Index(value).index) & "]"
@@ -193,7 +204,7 @@ proc print*(value: Node; depth: int = 0): string =
     for param in FunctionType(value).params: params.add(print(param))
     result = "function taking (" & params.join(", ") & ") giving " & print(FunctionType(value).ret) &
       (if FunctionType(value).abi.len > 0: " for " & FunctionType(value).abi else: "")
-  of "parameter": result = Parameter(value).name.text & " of type " & print(Parameter(value).`type`)
+  of "parameter": result = Parameter(value).name.text & " " & print(Parameter(value).`type`)
   of "constraint": result = Constraint(value).subject.text & " is " & Constraint(value).trait.text
   of "case":
     let item = `Case`(value)

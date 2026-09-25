@@ -2,25 +2,32 @@
 use sequence as sequence.
 use testing as check.
 use map as mapping.
+use hashmap as fastmap.
 use set as unique.
 use queue as queue.
 use stack as stack.
 function double(value of type integer) of type integer { give value times 2. }
 function positive(value of type integer) of type boolean { give value greater than 0. }
+function negative(value of type integer) of type boolean { give value less than 0. }
 type Person is record { name of type text. age of type integer. } derives Equatable, Ord.
 start() {
   constant empty is sequence.create[integer]().
   constant first is try sequence.append[integer](empty, 4).
   constant second is try sequence.append[integer](first, 2).
+  constant repeated is try sequence.append[integer](second, 4).
   constant sorted is try sequence.sort(second).
-  after { sequence.release[integer](first) catch nothing. sequence.release[integer](second) catch nothing. sequence.release[integer](sorted) catch nothing. }
+  constant deduplicated is try sequence.dedup[integer](repeated).
+  after { sequence.release[integer](first) catch nothing. sequence.release[integer](second) catch nothing. sequence.release[integer](repeated) catch nothing. sequence.release[integer](sorted) catch nothing. sequence.release[integer](deduplicated) catch nothing. }
   check.expect(sorted at 0 is 2).
   check.expect(second at 0 is 4).
   check.expect(sequence.find[integer](sorted, 4) is not nothing).
+  check.expect(sequence.length[integer](deduplicated) is 2).
   constant mapped is try sequence.map[integer, integer](sorted, double).
   constant filtered is try sequence.filter[integer](mapped, positive).
-  after { sequence.release[integer](mapped) catch nothing. sequence.release[integer](filtered) catch nothing. }
+  constant rejected is try sequence.filter[integer](mapped, negative).
+  after { sequence.release[integer](mapped) catch nothing. sequence.release[integer](filtered) catch nothing. sequence.release[integer](rejected) catch nothing. }
   check.expect(filtered at 1 is 8).
+  check.expect(sequence.length[integer](rejected) is 0).
   constant table is mapping.create[text, integer]().
   constant entry is try mapping.put[text, integer](table, "answer", 44).
   constant replaced is try mapping.put[text, integer](entry, "answer", 42).
@@ -28,6 +35,15 @@ start() {
   check.expect((try mapping.get[text, integer](entry, "answer")) is 44).
   check.expect((try mapping.get[text, integer](replaced, "answer")) is 42).
   check.expect(mapping.length[text, integer](replaced) is 1).
+  constant fast is try fastmap.create[integer]().
+  after { fastmap.close[integer](fast) fallback nothing. }
+  try fastmap.put[integer](fast, "answer", 44).
+  try fastmap.put[integer](fast, "answer", 42).
+  check.expect((try fastmap.get[integer](fast, "answer")) is 42).
+  check.expect((try fastmap.length[integer](fast)) is 1).
+  check.expect(try fastmap.contains[integer](fast, "answer")).
+  check.expect(try fastmap.remove[integer](fast, "answer")).
+  check.expect((try fastmap.length[integer](fast)) is 0).
   constant set is unique.create[integer]().
   constant member is try unique.insert[integer](set, 44).
   constant duplicate is try unique.insert[integer](member, 44).

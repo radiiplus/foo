@@ -298,8 +298,9 @@ proc signature(checker: Checker; node: ast.Node): semantic.Type =
   checker.parameters = savedParameters
   semantic.Type(kind: "function", params: params, ret: returnType,
     abi: abi, generics: generics, constraints: constraints,
-    borrows: if node.tag == "extern-function" and abi == "runtime.memory" and
-      ast.ExternFunction(node).symbol in ["transfer", "clear", "compare"]:
+    borrows: if node.tag == "extern-function" and
+      ((abi == "runtime.memory" and ast.ExternFunction(node).symbol in
+        ["transfer", "clear", "compare"]) or abi in ["runtime", "runtime.hashmap"]):
         toSeq(0 ..< params.len) else: @[])
 
 proc boolean(checker: Checker; value: semantic.Type; at: Span) =
@@ -373,12 +374,12 @@ proc machine(checker: Checker; expression: ast.Machine; environment: Environment
   let target = expression.target
   let targetType = checker.infer(target, environment)
   if target.tag != "name" or not environment.mutable(ast.Name(target).text):
-    checker.diag.emit(Code.Invalid, target.span, "Machine updates need a mutable binding")
+    checker.diag.emit(Code.Invalid, target.span, "Machine updates need a dynamic binding")
   if expression.operation == "align":
     if targetType.kind notin ["pointer", "sequence"]:
       checker.diag.emit(Code.Invalid, target.span, "Alignment requires a pointer or sequence")
     if targetType.kind == "sequence" and targetType.constant:
-      checker.diag.emit(Code.Invalid, target.span, "Alignment requires a mutable sequence view")
+      checker.diag.emit(Code.Invalid, target.span, "Alignment requires a dynamic sequence view")
     discard checker.infer(expression.value, environment, unsigned)
     var valid = expression.value != nil and expression.value.tag == "integer"
     if valid:
@@ -559,7 +560,7 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
     elif unary.op == "try":
       if checker.leaving > 0:
         checker.diag.emit(Code.Invalid, node.span,
-          "after cannot propagate an error; handle it with catch")
+          "after cannot propagate an error; handle it with fallback")
       if not checker.propagates:
         checker.diag.emit(Code.Invalid, node.span,
           "This function needs a fallible return type to use try")
@@ -760,7 +761,7 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
       checker.diag.emit(Code.Invalid, node.span,
         "unsupported function source '" & provider(external.abi) &
         "'; expected 'c' or a supported library name")
-    if not external.abi.startsWith("runtime."):
+    if external.abi != "runtime" and not external.abi.startsWith("runtime."):
       for index, parameter in functionType.params:
         if not compatible(parameter, false):
           checker.diag.emit(Code.Invalid, external.params[index].type.span,
@@ -824,7 +825,7 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
       let name = ast.Name(assignment.target).text
       let found = environment.lookup(name)
       if found != nil: targetType = found
-      if not environment.mutable(name): checker.diag.emit(Code.Invalid, assignment.target.span, "Assignment needs a mutable binding")
+      if not environment.mutable(name): checker.diag.emit(Code.Invalid, assignment.target.span, "Assignment needs a dynamic binding")
       discard checker.infer(assignment.value, environment, targetType)
       environment.initialize(name)
     else:
@@ -841,7 +842,7 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
         while root.tag == "field": root = ast.Field(root).object
         if root.tag == "name" and not environment.mutable(ast.Name(root).text):
           checker.diag.emit(Code.Invalid, assignment.target.span,
-            "Changing a field needs a mutable binding")
+            "Changing a field needs a dynamic binding")
       elif assignment.target.tag notin ["index", "field"]:
         checker.diag.emit(Code.Invalid, assignment.target.span,
           "This destination cannot be assigned")
@@ -853,7 +854,7 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
   of "try":
     if checker.leaving > 0:
       checker.diag.emit(Code.Invalid, node.span,
-        "after cannot propagate an error; handle it with catch")
+        "after cannot propagate an error; handle it with fallback")
     let value = checker.infer(ast.`Try`(node).expr, environment)
     if value.kind != "error": checker.diag.emit(Code.Invalid, node.span, "try needs a fallible value")
     if not checker.propagates:
@@ -873,7 +874,7 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
       if value.kind != "unknown" and not
           (value.kind == "primitive" and value.name == "nothing"):
         checker.diag.emit(Code.Invalid, node.span,
-          "after needs a cleanup returning nothing; handle errors with catch")
+          "after needs a cleanup returning nothing; handle errors with fallback")
     dec checker.leaving
   of "test":
     let savedPropagates = checker.propagates
@@ -897,13 +898,13 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
       actionType = checker.infer(call, environment)
     if actionType != nil and actionType.kind == "error":
       checker.diag.emit(Code.Invalid, node.span,
-        "This call can fail. Use try or catch to handle its error")
+        "This call can fail. Use try or fallback to handle its error")
   of "machine": discard checker.infer(node, environment)
   of "advance":
     let target = ast.AdvanceStatement(node).target
     if not environment.mutable(target.text):
       checker.diag.emit(Code.Invalid, node.span,
-        "Advance needs a mutable binding")
+        "Advance needs a dynamic binding")
     discard checker.infer(target, environment)
   else: discard
 

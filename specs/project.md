@@ -33,6 +33,9 @@ Other schema or language versions require a matching specification.
 | language | String, exactly `"1"` |
 | requires | Exactly base, system, machine or hardware |
 | dependencies | Object from package names to dependency strings |
+| devDependencies | Development-only dependency object |
+| optionalDependencies | Dependency object whose unavailable entries may be omitted |
+| platformDependencies | Object from platform selectors to dependency objects |
 | source | Optional project-relative source directory; defaults to src if that directory exists, otherwise the project directory |
 | entry | Optional project-relative .iv entry file; must belong to the discovered source files |
 | build | Optional object defined below |
@@ -42,16 +45,25 @@ A dependency string is one of the following disjoint forms:
 | Form | Resolution |
 | --- | --- |
 | `1.2.3` | Exact version from the configured registry |
-| `^1.2.3` | Highest permitted stable registry version |
+| `^1.2.3` | Compatible version below the next breaking major (with zero-major rules) |
+| `~1.2.3` | Compatible patch version within minor 1.2 |
 | `path+../library` | A local package path relative to project.json |
 | `git+https://host/project.git#COMMIT` | HTTPS Git source at a full 40-hex-digit commit |
 
-Caret ranges use the next major as their exclusive upper bound for a nonzero
-major. For `^0.MINOR.PATCH` with nonzero MINOR, use the next minor.
-For `^0.0.PATCH`, use the next patch. No prereleases, tags, branch names,
-wildcards, disjunctions or implicit latest version occur in v1.
+Registry dependencies accept exact, caret, and tilde constraints. Tags, branch
+names, wildcards, and disjunctions are not valid registry constraints.
+`foo add NAME` records a caret constraint from the current release, while
+`foo add NAME@VERSION` records the supplied constraint. `foo install` resolves
+the manifest and writes the exact selected graph to `foo.lock`.
+
+`platformDependencies` keys select an operating system or target prefix, such
+as `linux`, `macos`, `windows`, or `wasm`. Development dependencies participate
+only in development installs. Optional dependencies participate when a matching
+release exists and otherwise do not enter the exact lock.
 
 Dependency names bind package identities, not arbitrary source aliases.
+Registry identities may be unscoped (`package`) or GitHub-owned
+(`@github-login/package`). A publisher cannot claim another account's scope.
 Source imports may supply a local alias. A local package's declared name must
 match the dependency key. Registry and Git packages additionally bind exact
 content digests. A graph requiring two incompatible identities under one
@@ -68,6 +80,7 @@ All build properties are optional; unknown properties are errors.
 | products | Object from single-word product names to product records |
 | resources | Array of project-relative glob strings; default empty |
 | native | Object from project-relative .iv paths to native-interface dependency names; default empty |
+| hooks | Optional root-only `prebuild` and `postbuild` command strings |
 
 Without products, the project builds one executable, selecting the unique
 discovered start unless entry selects its file explicitly. A product record has entry
@@ -81,6 +94,10 @@ Only libraries may satisfy needs. Product dependency cycles and links against
 an executable are errors. Each executable's source graph contains exactly one
 start; a library's graph contains none. Public declarations form its FOO API;
 foreign symbol exports use the ABI contract.
+
+Build hooks execute only from the root project's reviewed manifest. Installing
+a dependency never executes dependency hooks. A nonzero hook exit status fails
+the build, and hook-produced inputs participate in the normal build fingerprint.
 
 ```json
 {
@@ -128,11 +145,11 @@ outside the package are invalid resource selections.
 
 ## Dependency lock and capability closure
 
-`project.lock` is JSON with format `foo.lock`, version 1, a digest of relevant
-project declarations, and a packages array sorted by package identity. Every
-package entry records name, exact version, source identity, content digest,
-requires and exact dependency identities. No resolution ranges remain in a lock.
-Local packages record a source-content digest and are revalidated after edits.
+`foo.lock` is JSON with format `foo.lock`, version 1, the registry index
+revision, and a packages array sorted by package identity. Every registry
+package entry records its name, exact version, immutable registry source
+bundle, content digest, direct status, and exact dependency identities. The
+repository URL and commit remain provenance metadata.
 
 The project's requires value is an upper bound on the capabilities its source
 and dependency interfaces may require. A higher-level dependency is an error

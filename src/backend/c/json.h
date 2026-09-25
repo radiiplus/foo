@@ -221,7 +221,7 @@ static FOOJson *foo_node(FOOParser *p) {
       p->error = "OutOfMemory";
       goto failed;
     }
-    memcpy(data, p->source.data + start, length);
+    foo_transfer(data, p->source.data + start, length);
     node->raw = (FOOText){data, length};
   }
   p->depth--;
@@ -268,7 +268,7 @@ static void foo_put(FOOWriter *w, const void *data, size_t length) {
     w->capacity = capacity;
   }
   if (length)
-    memcpy(w->data + w->length, data, length);
+    foo_transfer(w->data + w->length, data, length);
   w->length = need;
 }
 static void foo_quote(FOOWriter *w, FOOText value) {
@@ -395,7 +395,7 @@ static FOOResult foo_json_set(void *value, FOOText name, FOOText source) {
     foo_json_release(replacement);
     return foo_error("OutOfMemory");
   }
-  memcpy(key, name.data, name.len);
+  foo_transfer(key, name.data, name.len);
   replacement->key = (FOOText){key, name.len};
   FOOJson **cursor = &node->child;
   while (*cursor && ((*cursor)->key.len != name.len ||
@@ -456,9 +456,9 @@ static FOOResult foo_json_feed(void *value, FOOText chunk, bool final) {
   if (!bytes)
     return foo_error("OutOfMemory");
   if (remaining)
-    memcpy(bytes, stream->bytes + stream->index, remaining);
+    foo_transfer(bytes, stream->bytes + stream->index, remaining);
   if (chunk.len)
-    memcpy(bytes + remaining, chunk.data, chunk.len);
+    foo_transfer(bytes + remaining, chunk.data, chunk.len);
   free(stream->bytes);
   free((void *)stream->token.data);
   stream->token = (FOOText){0};

@@ -8,6 +8,8 @@ doAssert directory().len > 0
 let root = getTempDir() / "foo-toolchain-manager-test"
 if dirExists(root): removeDir(root)
 createDir(root)
+writeFile(root / "foo.lock", "{\"format\":\"foo.lock\",\"version\":1}")
+doAssert pin(root) == version
 writeFile(root / "foo.lock", "{\"zig\":\"0.16.0\"}")
 doAssert pin(root) == version
 writeFile(root / "foo.lock", "{\"zig\":\"0.15.0\"}")

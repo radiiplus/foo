@@ -16,29 +16,12 @@ FOO is a "sentence-like" systems language. It uses a brilliant parser to underst
 
 ---
 
-## 🚀 Hello, World (2 Ways)
+## 🚀 Hello, World
 
-FOO adapts to your style. Whether you want maximum readability, FOO has you covered.
-
-### 1. The Readable Way (Standard)
-Perfect for learning and clear documentation.
+Most programs can execute statements directly. Put `try` after a fallible
+operation to propagate its error, or use `fallback` to recover locally.
 ```foo
-use io.
-
-start() {
-  display "Hello, world!".
-  give nothing.
-}
-```
-
-### 2. The Clean Way (No Boilerplate)
-Because `start()` returns `nothing`, FOO is smart enough to know that when the block ends, the function is finished. You can drop the `give nothing.` entirely!
-```foo
-use io.
-
-start() {
-  display "Hello, world!".
-}
+display "Hello, world!".
 ```
 ---
 
@@ -49,7 +32,7 @@ FOO is packed with features that make it unique in the programming world:
 ### 🧠 The Parser: Reads Like a Book
 FOO understands natural language. Instead of `if (x >= 10 && y != 0)`, you write:
 ```foo
-when x is at least 10 and y is not 0 { ... }
+when x greater than or equal to 10 and y is not 0 { ... }
 ```
 Instead of `x = x + 1`, you write:
 ```foo
@@ -73,23 +56,37 @@ Why waste time doing heavy math or reading config files every time your app star
 ### 🤝 Interoperability
 The world runs on C. FOO can read C header files and automatically generate safe, English-like wrappers. You get to use the massive ecosystem of C libraries, but you get to write your app in beautiful FOO.
 
+### 🔧 Progressive Standard Library
+Begin with compact `file`, `http`, `json`, and `task` operations. When a system
+needs more control, the same modules expose headers, redirects, partial socket
+sends, file positioning, streaming JSON, explicit allocators, atomics, dynamic
+libraries, and OS-specific facilities without leaking backend handles.
+
+### 📦 Packages Without Registry Syntax
+Use `foo add package` or `foo add package@version` for registry dependencies.
+Pass a URL or local path as the second argument for external code, then run
+`foo install` to resolve and lock the complete dependency graph.
+
 ---
 
 ## 🛠️ Quick Start
 
 FOO is distributed as a standalone binary. No complex package managers required.
 
-1.  **Install:** Download the installer for your OS from the [Releases](https://github.com/radiiplus/foo/releases) page.
+1.  **Install:** Download the installer for your OS from the [Releases](https://github.com/radiiplus/foo/releases) page. Linux PCs use `foo-amd64.deb`; ARM64 Linux devices use `foo-arm64.deb`.
 2.  **Verify:** Run `foo doctor` to ensure your toolchain is ready.
 3.  **Create:**
     ```sh
-    foo new my_app
-    cd my_app
+    foo new my-app
+    cd my-app
     ```
+    To use an existing directory, change into it and run `foo new .`.
 4.  **Run:**
     ```sh
     foo run
     ```
+
+Ubuntu running through Termux/proot on an ARM64 Android device uses `foo-arm64.deb`. Inside Ubuntu, confirm `uname -m` reports `aarch64`, then install it with `sudo apt install ./foo-arm64.deb`. The package targets Ubuntu's glibc environment, not Termux's Android environment, so run `foo` from the Ubuntu session.
 
 ---
 
@@ -106,3 +103,5 @@ Get red squiggly lines for type mismatches, hover tooltips for function signatur
 ## 📚 Documentation
 
 Ready to learn more? The [FOO Book](docs/README.md) is the best place to start. It will take you from your first "Hello World" to advanced systems programming, step-by-step.
+
+Release history is maintained in the [changelog](CHANGELOG.md).

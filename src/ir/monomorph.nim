@@ -1,4 +1,4 @@
-import std/[sets, strutils, tables]
+import std/[sequtils, sets, strutils, tables]
 import ./[kind, node, valid]
 
 type
@@ -214,7 +214,10 @@ proc typeKey(value: `Type`; seen: var HashSet[pointer]): string =
   let identity = cast[pointer](value)
   if identity in seen: return value.name
   seen.incl(identity)
-  result = $value.kind & (if value.name.len > 0: "_" & value.name else: "")
+  var typeName = ""
+  for character in value.name:
+    typeName.add(if character.isAlphaNumeric: character else: '_')
+  result = $value.kind & (if typeName.len > 0: "_" & typeName else: "")
   if value.width > 0: result.add("_" & $value.width)
   if value.constant: result.add("_const")
   if value.elem != nil: result.add("_" & typeKey(value.elem, seen))
@@ -282,6 +285,7 @@ proc monomorphize*(input: Module): Module =
   proc isGeneric(name: string): bool =
     genericFunctions.hasKey(name) or genericExterns.hasKey(name)
   var instances = initTable[string, string]()
+  var specializedTraces: seq[Trace]
   var queue: seq[Instruction]
   for function in functions:
     function.walk(proc(instruction: Instruction) =
@@ -325,6 +329,14 @@ proc monomorphize*(input: Module): Module =
         specializeFunction(clone, bindings)
         functions.add(clone)
         clone.walk(proc(instruction: Instruction) =
+          if instruction.trace.len > 0:
+            let suffix = if instruction.trace.startsWith(originalName):
+              instruction.trace[originalName.len .. ^1]
+            else: ".trace"
+            instruction.trace = instanceName & suffix
+            if not specializedTraces.anyIt(it.id == instruction.trace):
+              specializedTraces.add(Trace(id: instruction.trace,
+                `function`: instanceName))
           if instruction.kind == InstrKind.Call and isGeneric(instruction.func):
             queue.add(instruction))
     call.func = instances[key]
@@ -337,6 +349,7 @@ proc monomorphize*(input: Module): Module =
   var traces: seq[Trace]
   for trace in result.traces:
     if trace.function notin genericNames: traces.add(trace)
+  traces.add(specializedTraces)
   result.traces = traces
 
   var visited = initHashSet[pointer]()

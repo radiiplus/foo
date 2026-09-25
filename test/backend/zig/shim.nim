@@ -3,4 +3,9 @@ import ../../../src/backend/zig/shim as zigShim
 
 doAssert len(zigShim.`shim`) > 0 and zigShim.`shim`[0] == '\n'
 doAssert zigShim.`shim`.contains("foo_")
+doAssert zigShim.`shim`.contains("library.memory.copyExact")
+doAssert zigShim.storage.contains("pub fn copyExact")
+doAssert zigShim.storage.contains("FOO_TRANSFER_BLOCK")
+doAssert zigShim.library.contains("fn hashmap")
+doAssert zigShim.library.contains("fn cloneBytes")
 echo "Zig shim parity: ok"

@@ -779,7 +779,7 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
       runtimeExterns.add(state.externs[called])
   let runtimeResult = runtime(runtimeExterns,
     proc(value: `Type`): string = state.types.get(value),
-    proc(value: string): string = name(value))
+    proc(value: string): string = name(value), options.target)
   var seen = initTable[string, string]()
   for external in module.externs:
     if external.name notin state.called or external.abi.startsWith("runtime"): continue

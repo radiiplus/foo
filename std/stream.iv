@@ -1,5 +1,5 @@
 -- Declares length-aware input, output and diagnostic streams.
-public type Stream is opaque.
+public define Stream as opaque.
 public use "stream" function input() of type pointer to Stream.
 public use "stream" function output() of type pointer to Stream.
 public use "stream" function report() of type pointer to Stream.

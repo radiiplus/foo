@@ -226,13 +226,13 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       let pointer = place(field.object)
       if pointer.type == nil or pointer.type.elem == nil or
           not pointer.type.elem.fields.hasKey(field.field.text):
-        raise newException(ValueError, "Unknown mutable field '" & field.field.text & "'")
+        raise newException(ValueError, "Unknown dynamic field '" & field.field.text & "'")
       let dest = fresh(`Type`(kind: TypeKind.Ptr,
         elem: pointer.type.elem.fields[field.field.text]))
       emit(Instruction(kind: InstrKind.Extract, op: "address", dest: dest,
         `ptr`: pointer, field: field.field.text))
       return dest
-    raise newException(ValueError, "Assignment requires a mutable place")
+    raise newException(ValueError, "Assignment requires a dynamic place")
   proc expression(node: ast.Expression; expected: `Type` = nil): Value =
     if node == nil: return Value(kind: ValueKind.Const, name: "null", `type`: expected)
     case node.tag
@@ -357,7 +357,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       if binary.op == "catch":
         let left = expression(binary.left)
         if left.type == nil or left.type.kind != TypeKind.Fallible:
-          raise newException(ValueError, "catch needs a fallible value")
+          raise newException(ValueError, "fallback needs a fallible value")
         inc serial
         let errorLabel = "catch_" & $serial
         let success = "success_" & $serial
@@ -955,7 +955,7 @@ proc lower*(program: ast.Program; typed: Table[pointer, semantic.Type] = initTab
             if declaration.abi == "runtime.atomic":
               instruction.effects = @["read", "write", "synchronize"]
               instruction.op = "atomic"
-            elif declaration.abi in ["runtime.thread", "runtime.task"]:
+            elif declaration.abi in ["runtime", "runtime.thread", "runtime.task"]:
               instruction.effects = @["read", "write", "synchronize"]
               instruction.op = "thread"
             elif declaration.abi == "runtime.memory" and declaration.symbol == "copy":

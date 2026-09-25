@@ -1,36 +1,49 @@
 -- Combines, trims, and splits text using byte offsets and ASCII whitespace.
 use sequence as items.
+use "sequence" function sized[T](length unsigned 64) giving fallible sequence of T.
 public use "text" function concatenate(left of type text, right of type text) of type fallible text.
 public use "text" function trim(content of type text) of type fallible text.
 public use "text" function length(content of type text) of type unsigned 64.
 public use "text" function slice(content of type text, first of type unsigned 64, last of type unsigned 64) of type fallible text.
 public use "text" function release(content of type text) of type fallible nothing.
 public function split(content of type text, separator of type text) of type fallible sequence of text {
-  when length(separator) is 0 { give fail(Error.EmptySeparator). }
-  mutable result is items.create[text]().
-  after error { for each part in result { release(part) catch nothing. } items.release[text](result) catch nothing. }
-  mutable first of type unsigned 64 is 0.
-  mutable cursor of type unsigned 64 is 0.
-  while cursor plus length(separator) is at most length(content) {
-    mutable matches is true.
-    mutable index of type unsigned 64 is 0.
-    while index less than length(separator) {
-      when content at (cursor plus index) is not separator at index { set matches to false. break. }
+  constant separatorLength is length(separator).
+  constant contentLength is length(content).
+  when separatorLength is 0 { give fail(Error.EmptySeparator). }
+  dynamic count of type unsigned 64 is 1.
+  dynamic cursor of type unsigned 64 is 0.
+  while cursor plus separatorLength is at most contentLength {
+    dynamic matches is true.
+    dynamic index of type unsigned 64 is 0.
+    while index less than separatorLength {
+      when content at (cursor plus index) is not separator at index { set matches to false. stop. }
+      set index to index plus 1.
+    }
+    when matches {
+      set count to count plus 1.
+      set cursor to cursor plus separatorLength.
+    } otherwise { set cursor to cursor plus 1. }
+  }
+  dynamic result is try sized[text](count).
+  after error { for each part in result { release(part) fallback nothing. } items.release[text](result) fallback nothing. }
+  dynamic first of type unsigned 64 is 0.
+  set cursor to 0.
+  dynamic resultIndex of type unsigned 64 is 0.
+  while cursor plus separatorLength is at most contentLength {
+    dynamic matches is true.
+    dynamic index of type unsigned 64 is 0.
+    while index less than separatorLength {
+      when content at (cursor plus index) is not separator at index { set matches to false. stop. }
       set index to index plus 1.
     }
     when matches {
       constant part is try slice(content, first, cursor).
-      after error { release(part) catch nothing. }
-      constant next is try items.append[text](result, part).
-      try items.release[text](result).
-      set result to next.
-      set cursor to cursor plus length(separator).
+      set result at resultIndex to part.
+      set resultIndex to resultIndex plus 1.
+      set cursor to cursor plus separatorLength.
       set first to cursor.
     } otherwise { set cursor to cursor plus 1. }
   }
-  constant part is try slice(content, first, length(content)).
-  after error { release(part) catch nothing. }
-  constant next is try items.append[text](result, part).
-  try items.release[text](result).
-  give next.
+  set result at resultIndex to try slice(content, first, contentLength).
+  give result.
 }

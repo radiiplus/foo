@@ -129,7 +129,7 @@ proc keywordKind(text: string): Kind =
   case text
   of "module": Module
   of "constant": Constant
-  of "mutable": Mutable
+  of "dynamic", "mutable": Mutable
   of "is": Is
   of "give": Give
   of "when": When
@@ -144,8 +144,8 @@ proc keywordKind(text: string): Kind =
   of "advance": Advance
   of "match": Match
   of "case": Case
-  of "break": Break
-  of "continue": Continue
+  of "stop", "break": Break
+  of "skip", "continue": Continue
   of "use": Use
   of "public": Public
   of "unsafe": Unsafe
@@ -154,18 +154,18 @@ proc keywordKind(text: string): Kind =
   of "on": On
   of "leave": Leave
   of "try": Try
-  of "catch": Catch
+  of "fallback", "catch": Catch
   of "after", "cleanup", "finally": After
   of "and": And
   of "or": Or
   of "not": Not
   of "where": Where
   of "of": Of
-  of "type": Type
+  of "define", "type": Type
   of "plus": Plus
-  of "minus": Minus
-  of "times": Times
-  of "divided": Divided
+  of "subtract", "minus": Minus
+  of "multiply", "times": Times
+  of "divide", "divided": Divided
   of "by": By
   of "equals": Equals
   of "does": Does

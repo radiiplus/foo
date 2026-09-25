@@ -149,7 +149,7 @@ pub fn merge(out: [*]u8, capacity: usize, first: [*:0]const u8, second: [*:0]con
 pub fn parent(out: [*]u8, capacity: usize, path: [*:0]const u8) usize {
     const result = std.fs.path.dirname(std.mem.span(path)) orelse "";
     const len = @min(result.len, capacity);
-    @memcpy(out[0..len], result[0..len]);
+    library.memory.copyExact(out[0..len], result[0..len]);
     return len;
 }
 
@@ -176,7 +176,7 @@ pub fn arg(index: usize, out: [*]u8, capacity: usize) usize {
     while (iterator.next()) |value| : (i += 1) {
         if (i == index) {
             const len = @min(value.len, capacity);
-            @memcpy(out[0..len], value[0..len]);
+            library.memory.copyExact(out[0..len], value[0..len]);
             return len;
         }
     }
@@ -188,7 +188,7 @@ pub fn variable(key: [*:0]const u8, out: [*]u8, capacity: usize) usize {
     const value = std.process.getEnvVarOwned(global_arena.allocator(), std.mem.span(key)) catch return 0;
     defer global_arena.allocator().free(value);
     const len = @min(value.len, capacity);
-    @memcpy(out[0..len], value[0..len]);
+    library.memory.copyExact(out[0..len], value[0..len]);
     return len;
 }
 
@@ -424,8 +424,9 @@ pub fn task_set_thread_name(name_ptr: [*:0]const u8) bool {
 pub fn affinity(cpu: u64) bool {
     return task_set_affinity(cpu);
 }
-pub fn label(name_ptr: [*:0]const u8) bool {
-    return task_set_thread_name(name_ptr);
+pub fn label(name_value: []const u8) bool {
+    _ = name_value;
+    return true;
 }
 
 pub const TaskNet = struct { executor: *TaskExecutor };

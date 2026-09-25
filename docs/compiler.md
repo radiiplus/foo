@@ -33,19 +33,19 @@ But it doesn't just translate it blindly. It applies **Optimization** (tuning) t
 FOO is unique because it doesn't just target one backend. It can translate your code into two of the most powerful systems languages in the world.
 
 ### The C Backend (Universal)
-By default, FOO translates your code into standard **C11**. 
+Select the C11 backend with `--backend c`.
 **The Benefit:** C runs on everything. If you want your FOO program to run on a massive cloud server, a Raspberry Pi, or a legacy Windows machine, the C backend is your best friend.
 
 ### The Zig Backend (Modern Speed)
-FOO can also translate your code into **Zig**.
+FOO uses the Zig backend by default.
 **The Benefit:** Zig is a modern language with incredible safety features and lightning-fast compilation times. It’s perfect for building standalone binaries that don't need any external dependencies.
 
 ```sh
--- Build using the default C backend
-foo build
+# Build using the C backend
+foo build --backend c
 
--- Build using the Zig backend
-foo build --backend zig
+# Build using the default Zig backend
+foo build
 ```
 
 ---
@@ -78,7 +78,7 @@ Sometimes, standard code isn't enough. Maybe you need to talk directly to a grap
 FOO gives you an escape hatch. You can drop down into **Native C** or **Assembly** right inside your FOO file.
 
 ```foo
-native c function add_ints(a of type integer, b of type integer) of type integer {
+native c function addIntegers(a integer, b integer) giving integer {
   return a + b;
 }
 ```

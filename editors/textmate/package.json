@@ -3,7 +3,7 @@
   "displayName": "foo.iv",
   "description": "FOO .iv syntax highlighting with Ultraviolet / Acid accents for any theme.",
   "icon": "images/icon.png",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "publisher": "radiiplus",
   "repository": {
     "type": "git",

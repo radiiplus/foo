@@ -69,17 +69,36 @@ var retained: std.AutoHashMap(usize, Allocation) = .init(allocator);
 var lock: std.atomic.Value(bool) = .init(false);
 var threaded: std.Io.Threaded = undefined;
 var started = false;
+const FastEntry = struct {
+    hash: u64 = 0,
+    state: enum(u8) { empty, occupied, removed } = .empty,
+    key: []u8 = &.{},
+    value: []u8 = &.{},
+};
+const FastMap = struct {
+    entries: []FastEntry = &.{},
+    count: usize = 0,
+    alive: bool = true,
+    next: ?*FastMap = null,
+};
+var fast_maps: ?*FastMap = null;
 
 fn acquire() void {
     while (lock.cmpxchgWeak(false, true, .acquire, .monotonic) != null) std.atomic.spinLoopHint();
 }
 fn retain(comptime T: type, bytes: []const T) ![]T {
     if (bytes.len == 0) return &.{};
-    const result = try allocator.dupe(T, bytes);
+    const result = try allocator.alloc(T, bytes.len);
     errdefer allocator.free(result);
+    managed.memory.copyExact(std.mem.sliceAsBytes(result), std.mem.sliceAsBytes(bytes));
     acquire();
     defer lock.store(false, .release);
     try retained.put(@intFromPtr(result.ptr), .{ .bytes = std.mem.sliceAsBytes(result), .alignment = .of(T) });
+    return result;
+}
+fn cloneBytes(bytes: []const u8) ![]u8 {
+    const result = try allocator.alloc(u8, bytes.len);
+    managed.memory.copyExact(result, bytes);
     return result;
 }
 fn io() std.Io {
@@ -91,6 +110,75 @@ fn io() std.Io {
     }
     return threaded.io();
 }
+fn hashBytes(bytes: []const u8) u64 {
+    var hash: u64 = 14695981039346656037;
+    for (bytes) |byte| {
+        hash ^= byte;
+        hash *%= 1099511628211;
+    }
+    return if (hash == 0) 1 else hash;
+}
+fn fastMap(handle: anytype) !*FastMap {
+    const pointer: *FastMap = @ptrCast(@alignCast(handle));
+    var cursor = fast_maps;
+    while (cursor) |map| : (cursor = map.next)
+        if (map == pointer) return if (map.alive) map else error.Closed;
+    return error.Closed;
+}
+fn fastSlot(map: *FastMap, hash: u64, key: []const u8, insert: bool) *FastEntry {
+    var index: usize = @intCast(hash & @as(u64, @intCast(map.entries.len - 1)));
+    var removed: ?usize = null;
+    while (true) {
+        const entry = &map.entries[index];
+        if (entry.state == .empty) return if (insert and removed != null) &map.entries[removed.?] else entry;
+        if (entry.state == .occupied and entry.hash == hash and std.mem.eql(u8, entry.key, key)) return entry;
+        if (insert and entry.state == .removed and removed == null) removed = index;
+        index = (index + 1) & (map.entries.len - 1);
+    }
+}
+fn fastGrow(map: *FastMap) !void {
+    const capacity = if (map.entries.len == 0) 16 else try std.math.mul(usize, map.entries.len, 2);
+    const previous = map.entries;
+    map.entries = try allocator.alloc(FastEntry, capacity);
+    @memset(map.entries, .{});
+    for (previous) |entry| {
+        if (entry.state == .occupied)
+            fastSlot(map, entry.hash, entry.key, true).* = entry;
+    }
+    if (previous.len > 0) allocator.free(previous);
+}
+fn fastCreate() !*FastMap {
+    const map = try allocator.create(FastMap);
+    map.* = .{ .next = fast_maps };
+    fast_maps = map;
+    return map;
+}
+fn fastPut(map: *FastMap, key: []const u8, bytes: []const u8) !void {
+    if (map.entries.len == 0 or (map.count + 1) * 4 >= map.entries.len * 3) try fastGrow(map);
+    const hash = hashBytes(key);
+    const entry = fastSlot(map, hash, key, true);
+    const value = try cloneBytes(bytes);
+    errdefer allocator.free(value);
+    if (entry.state == .occupied) {
+        allocator.free(entry.value);
+        entry.value = value;
+        return;
+    }
+    const name = try cloneBytes(key);
+    entry.* = .{ .hash = hash, .state = .occupied, .key = name, .value = value };
+    map.count += 1;
+}
+fn fastClear(map: *FastMap) void {
+    for (map.entries) |entry| {
+        if (entry.state == .occupied) {
+            allocator.free(entry.key);
+            allocator.free(entry.value);
+        }
+    }
+    if (map.entries.len > 0) allocator.free(map.entries);
+    map.entries = &.{};
+    map.count = 0;
+}
 pub fn deinit() void {
     streams.deinit();
     managed.deinit();
@@ -100,6 +188,11 @@ pub fn deinit() void {
     while (iterator.next()) |allocation| allocator.rawFree(allocation.bytes, allocation.alignment, @returnAddress());
     retained.deinit();
     retained = .init(allocator);
+    while (fast_maps) |map| {
+        fast_maps = map.next;
+        if (map.alive) fastClear(map);
+        allocator.destroy(map);
+    }
 }
 
 pub const buffers = struct {
@@ -217,6 +310,7 @@ pub fn call(comptime module: []const u8, comptime name: []const u8, comptime Res
         if (comptime std.mem.eql(u8, module, namespace)) return @import("service.zig").call(module, name, Result, args);
     }
     if (comptime std.mem.eql(u8, module, "sequence")) return sequence(name, Result, args);
+    if (comptime std.mem.eql(u8, module, "hashmap")) return hashmap(name, Result, args);
     const locked = comptime std.mem.eql(u8, module, "list") or std.mem.eql(u8, module, "memory") or std.mem.eql(u8, module, "stream");
     if (locked) managed.enter();
     defer if (locked) managed.leave();
@@ -229,17 +323,76 @@ pub fn call(comptime module: []const u8, comptime name: []const u8, comptime Res
     return convert(Result, @call(.auto, function, converted));
 }
 
+fn hashmap(comptime name: []const u8, comptime Result: type, args: anytype) Result {
+    acquire();
+    defer lock.store(false, .release);
+    const Payload = @typeInfo(Result).error_union.payload;
+    if (comptime std.mem.eql(u8, name, "create")) return @ptrCast(try fastCreate());
+    const map = try fastMap(args[0]);
+    if (comptime std.mem.eql(u8, name, "put")) {
+        var value = args[2];
+        try fastPut(map, args[1], std.mem.asBytes(&value));
+        return {};
+    }
+    if (comptime std.mem.eql(u8, name, "length")) return @intCast(map.count);
+    if (comptime std.mem.eql(u8, name, "close")) {
+        fastClear(map);
+        map.alive = false;
+        return {};
+    }
+    if (map.entries.len == 0) {
+        if (comptime std.mem.eql(u8, name, "contains") or std.mem.eql(u8, name, "remove")) return false;
+        return error.MissingKey;
+    }
+    const entry = fastSlot(map, hashBytes(args[1]), args[1], false);
+    if (comptime std.mem.eql(u8, name, "contains")) return entry.state == .occupied;
+    if (comptime std.mem.eql(u8, name, "remove")) {
+        if (entry.state != .occupied) return false;
+        allocator.free(entry.key);
+        allocator.free(entry.value);
+        entry.* = .{ .state = .removed };
+        map.count -= 1;
+        return true;
+    }
+    if (comptime std.mem.eql(u8, name, "get")) {
+        if (entry.state != .occupied or entry.value.len != @sizeOf(Payload)) return error.MissingKey;
+        const pointer: *align(1) const Payload = @ptrCast(entry.value.ptr);
+        return pointer.*;
+    }
+    @compileError("Unknown hashmap operation");
+}
+
 fn sequence(comptime name: []const u8, comptime Result: type, args: anytype) Result {
     if (comptime std.mem.eql(u8, name, "create")) return &.{};
     if (comptime std.mem.eql(u8, name, "length")) return @intCast(args[0].len);
+    if (comptime std.mem.eql(u8, name, "sized")) {
+        const Slice = @typeInfo(Result).error_union.payload;
+        const T = @typeInfo(Slice).pointer.child;
+        const count: usize = std.math.cast(usize, args[0]) orelse return error.Overflow;
+        const temporary = try allocator.alloc(T, count);
+        defer allocator.free(temporary);
+        @memset(temporary, std.mem.zeroes(T));
+        return retain(T, temporary);
+    }
     const T = @typeInfo(@TypeOf(args[0])).pointer.child;
+    if (comptime std.mem.eql(u8, name, "compact")) {
+        const count: usize = std.math.cast(usize, args[1]) orelse return error.Overflow;
+        if (count > args[0].len) return error.Bounds;
+        if (count == args[0].len) return args[0];
+        const result = try retain(T, args[0][0..count]);
+        buffers.discard(T, args[0]) catch |err| {
+            buffers.discard(T, result) catch {};
+            return err;
+        };
+        return result;
+    }
     if (comptime std.mem.eql(u8, name, "release")) return buffers.discard(T, args[0]);
     if (comptime std.mem.eql(u8, name, "copy")) return retain(T, args[0]);
     if (comptime std.mem.eql(u8, name, "append")) {
         const count = std.math.add(usize, args[0].len, 1) catch return error.Overflow;
         const items = try allocator.alloc(T, count);
         defer allocator.free(items);
-        @memcpy(items[0..args[0].len], args[0]);
+        managed.memory.copyExact(std.mem.sliceAsBytes(items[0..args[0].len]), std.mem.sliceAsBytes(args[0]));
         items[count - 1] = args[1];
         return retain(T, items);
     }
@@ -248,8 +401,8 @@ fn sequence(comptime name: []const u8, comptime Result: type, args: anytype) Res
         const index: usize = @intCast(args[1]);
         const items = try allocator.alloc(T, args[0].len - 1);
         defer allocator.free(items);
-        @memcpy(items[0..index], args[0][0..index]);
-        @memcpy(items[index..], args[0][index + 1 ..]);
+        managed.memory.copyExact(std.mem.sliceAsBytes(items[0..index]), std.mem.sliceAsBytes(args[0][0..index]));
+        managed.memory.copyExact(std.mem.sliceAsBytes(items[index..]), std.mem.sliceAsBytes(args[0][index + 1 ..]));
         return retain(T, items);
     }
     @compileError("Unknown sequence operation");
@@ -345,7 +498,7 @@ pub const unicode = struct {
     }
     pub fn scan(value: []const u8) !*Cursor {
         if (!valid(value)) return error.InvalidUtf8;
-        const bytes = try allocator.dupe(u8, value);
+        const bytes = try cloneBytes(value);
         errdefer allocator.free(bytes);
         const result = try allocator.create(Cursor);
         result.* = .{ .bytes = bytes, .iterator = std.unicode.Utf8View.initUnchecked(bytes).iterator() };
@@ -443,7 +596,13 @@ pub const system = struct {
 };
 
 pub const http = struct {
-    pub const Client = std.http.Client;
+    const StoredHeader = struct { name: []u8, value: []u8 };
+    pub const Client = struct {
+        inner: std.http.Client,
+        headers: []StoredHeader = &.{},
+        redirects: u16 = 10,
+        reuse_connections: bool = true,
+    };
     pub const Response = struct { code: u16, bytes: []u8 };
     pub const Server = std.Io.net.Server;
     pub const Peer = struct {
@@ -458,36 +617,77 @@ pub const http = struct {
     };
     pub fn client() !*Client {
         const result = try allocator.create(Client);
-        result.* = .{ .allocator = allocator, .io = io() };
+        result.* = .{ .inner = .{ .allocator = allocator, .io = io() } };
         return result;
     }
     pub fn close(value: *Client) void {
-        value.deinit();
+        clearHeaders(value);
+        value.inner.deinit();
         allocator.destroy(value);
     }
     pub fn trust(value: *Client, path: []const u8) !void {
-        const now = std.Io.Clock.real.now(value.io);
-        value.ca_bundle_lock.lockUncancelable(value.io);
-        defer value.ca_bundle_lock.unlock(value.io);
-        if (value.now == null) try value.ca_bundle.rescan(value.allocator, value.io, now);
-        try value.ca_bundle.addCertsFromFilePath(value.allocator, value.io, now, .cwd(), path);
-        value.now = now;
+        const now = std.Io.Clock.real.now(value.inner.io);
+        value.inner.ca_bundle_lock.lockUncancelable(value.inner.io);
+        defer value.inner.ca_bundle_lock.unlock(value.inner.io);
+        if (value.inner.now == null) try value.inner.ca_bundle.rescan(value.inner.allocator, value.inner.io, now);
+        try value.inner.ca_bundle.addCertsFromFilePath(value.inner.allocator, value.inner.io, now, .cwd(), path);
+        value.inner.now = now;
+    }
+    fn validHeader(name: []const u8, content: []const u8) bool {
+        if (name.len == 0) return false;
+        for (name) |byte| if (!(std.ascii.isAlphanumeric(byte) or std.mem.indexOfScalar(u8, "!#$%&'*+-.^_`|~", byte) != null)) return false;
+        for (content) |byte| if (byte == '\r' or byte == '\n') return false;
+        return true;
+    }
+    pub fn addHeader(value: *Client, name: []const u8, content: []const u8) !void {
+        if (!validHeader(name, content)) return error.InvalidHeader;
+        const stored_name = try cloneBytes(name);
+        errdefer allocator.free(stored_name);
+        const stored_value = try cloneBytes(content);
+        errdefer allocator.free(stored_value);
+        const next = try allocator.alloc(StoredHeader, value.headers.len + 1);
+        if (value.headers.len > 0) {
+            managed.memory.copyExact(std.mem.sliceAsBytes(next[0..value.headers.len]), std.mem.sliceAsBytes(value.headers));
+            allocator.free(value.headers);
+        }
+        next[value.headers.len] = .{ .name = stored_name, .value = stored_value };
+        value.headers = next;
+    }
+    pub fn clearHeaders(value: *Client) void {
+        for (value.headers) |entry| {
+            allocator.free(entry.name);
+            allocator.free(entry.value);
+        }
+        if (value.headers.len > 0) allocator.free(value.headers);
+        value.headers = &.{};
+    }
+    pub fn redirects(value: *Client, limit: u16) !void {
+        if (limit > 100) return error.InvalidRedirectLimit;
+        value.redirects = limit;
+    }
+    pub fn reuse(value: *Client, enabled: bool) void {
+        value.reuse_connections = enabled;
     }
     pub fn request(value: *Client, url: []const u8, verbname: []const u8, content: []const u8, limit: u32) !*Response {
         const verb = std.meta.stringToEnum(std.http.Method, verbname) orelse return error.InvalidMethod;
         const buffer = try allocator.alloc(u8, limit);
         defer allocator.free(buffer);
         var writer: std.Io.Writer = .fixed(buffer);
-        const response = try value.fetch(.{
+        const headers = try allocator.alloc(std.http.Header, value.headers.len);
+        defer allocator.free(headers);
+        for (value.headers, 0..) |entry, index| headers[index] = .{ .name = entry.name, .value = entry.value };
+        const response = try value.inner.fetch(.{
             .location = .{ .url = url },
             .method = verb,
             .payload = if (verb.requestHasBody()) content else null,
             .response_writer = &writer,
-            .keep_alive = true,
+            .keep_alive = value.reuse_connections,
+            .redirect_behavior = if (value.redirects == 0) .not_allowed else .init(value.redirects),
+            .extra_headers = headers,
         });
         const result = try allocator.create(Response);
         errdefer allocator.destroy(result);
-        result.* = .{ .code = @intFromEnum(response.status), .bytes = try allocator.dupe(u8, writer.buffered()) };
+        result.* = .{ .code = @intFromEnum(response.status), .bytes = try cloneBytes(writer.buffered()) };
         return result;
     }
     pub fn status(value: *Response) u16 {
@@ -510,7 +710,7 @@ pub const http = struct {
     pub fn port(value: *Server) u16 {
         return value.socket.address.getPort();
     }
-    pub fn stop(value: *Server) void {
+    pub fn closeServer(value: *Server) void {
         value.deinit(io());
         allocator.destroy(value);
     }
@@ -551,10 +751,10 @@ pub const http = struct {
         _ = try input.streamRemaining(&output);
         return retain(u8, output.buffered());
     }
-    pub fn reply(value: *Peer, code: u16, content: []const u8, reuse: bool) !void {
+    pub fn reply(value: *Peer, code: u16, content: []const u8, keep_alive: bool) !void {
         if (code < 200 or code > 599) return error.InvalidStatus;
         const current = if (value.request) |*r| r else return error.RequestRequired;
-        try current.respond(content, .{ .status = @enumFromInt(code), .keep_alive = reuse });
+        try current.respond(content, .{ .status = @enumFromInt(code), .keep_alive = keep_alive });
         value.request = null;
     }
     pub fn disconnect(value: *Peer) void {
@@ -635,7 +835,7 @@ pub const json = struct {
     }
     pub fn feed(value: *Stream, chunk: []const u8, final: bool) !void {
         if (!value.ready or value.ended or value.failed) return error.InvalidState;
-        const owned = try allocator.dupe(u8, chunk);
+        const owned = try cloneBytes(chunk);
         allocator.free(value.chunk);
         value.chunk = owned;
         value.token = .end_of_document;

@@ -1,5 +1,6 @@
 const std = @import("std");
 const heap = std.heap.page_allocator;
+const transfer_block: usize = FOO_TRANSFER_BLOCK;
 var mutex: std.atomic.Value(bool) = .init(false);
 pub fn enter() void {
     while (mutex.cmpxchgWeak(false, true, .acquire, .monotonic) != null) std.atomic.spinLoopHint();
@@ -51,11 +52,32 @@ fn collection(value: *List) !void {
 }
 
 pub const memory = struct {
+    pub fn copyExact(destination: []u8, source: []const u8) void {
+        std.debug.assert(destination.len >= source.len);
+        if (source.len == 0 or destination.ptr == source.ptr) return;
+        if (@intFromPtr(destination.ptr) < @intFromPtr(source.ptr)) {
+            var index: usize = 0;
+            while (index + transfer_block <= source.len) : (index += transfer_block) {
+                const chunk: [transfer_block]u8 = source[index..][0..transfer_block].*;
+                destination[index..][0..transfer_block].* = chunk;
+            }
+            while (index < source.len) : (index += 1) destination[index] = source[index];
+        } else {
+            var index = source.len;
+            while (index >= transfer_block) {
+                index -= transfer_block;
+                const chunk: [transfer_block]u8 = source[index..][0..transfer_block].*;
+                destination[index..][0..transfer_block].* = chunk;
+            }
+            while (index > 0) {
+                index -= 1;
+                destination[index] = source[index];
+            }
+        }
+    }
     pub fn transfer(source: []const u8, destination: []u8) !void {
         if (source.len > destination.len) return error.Bounds;
-        if (source.len == 0) return;
-        if (@intFromPtr(destination.ptr) <= @intFromPtr(source.ptr)) std.mem.copyForwards(u8, destination[0..source.len], source)
-        else std.mem.copyBackwards(u8, destination[0..source.len], source);
+        copyExact(destination[0..source.len], source);
     }
     pub fn clear(buffer: []u8) void { @memset(buffer, 0); }
     pub fn compare(left: []const u8, right: []const u8) i64 { return switch (std.mem.order(u8, left, right)) { .lt => -1, .eq => 0, .gt => 1 }; }
@@ -94,7 +116,7 @@ pub const memory = struct {
         const data = try heap.alloc(u8, @max(1, length));
         @memset(data, 0);
         const kept = @min(length, entry.size);
-        @memcpy(data[0..kept], entry.data[0..kept]);
+        copyExact(data[0..kept], entry.data[0..kept]);
         heap.free(entry.data);
         entry.data = data;
         entry.size = length;
@@ -103,7 +125,7 @@ pub const memory = struct {
     pub fn copy(value: *Allocator, pointer: *u8, content: []const u8) !void {
         const entry = try block(value, pointer);
         if (content.len > entry.size) return error.Bounds;
-        std.mem.copyForwards(u8, entry.data[0..content.len], content);
+        copyExact(entry.data[0..content.len], content);
     }
     pub fn view(value: *Allocator, pointer: *u8, size: u64) ![]const u8 {
         const entry = try block(value, pointer);

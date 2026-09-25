@@ -29,7 +29,7 @@ proc setBindProvider*(provider: BindProvider) =
 proc safeName(name: string): string =
   for character in name:
     result.add(if character.isAlphaNumeric or character == '_': character else: '_')
-  if result.len == 0 or not result[0].isAlphaAscii or result in ["c", "type", "function", "constant", "mutable"]:
+  if result.len == 0 or not result[0].isAlphaAscii or result in ["c", "define", "type", "function", "constant", "dynamic", "mutable", "fallback", "stop", "skip"]:
     result = "c_" & result
 
 proc mapType(raw: string; diagnostics: var seq[BindDiagnostic]; declaration = ""): string =

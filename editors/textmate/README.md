@@ -1,40 +1,65 @@
 <p align="center">
-  <img src="images/icon.png" alt="FOO 4 logo" width="128" height="128">
+  <img src="https://raw.githubusercontent.com/radiiplus/foo/main/editors/textmate/images/icon.png" alt="FOO logo" width="128" height="128">
 </p>
 
-# foo.iv for VS Code
+<h1 align="center">foo.iv</h1>
 
-FOO language support for Visual Studio Code. Open any `.iv` file to get syntax highlighting, file icons, bracket handling, comment shortcuts, indentation, and ready-made snippets.
+<p align="center">FOO language support that makes sentence-like systems code feel at home in Visual Studio Code.</p>
 
-![FOO source in VS Code with the 4 file icon and syntax highlighting](images/highlight.png)
+### Read FOO as clearly as you write it.
 
-## Install
+FOO replaces dense punctuation with readable, sentence-like syntax. Your editor
+should understand that syntax too, without replacing your favorite theme or
+changing how the rest of your workspace looks.
 
-Open **Extensions** in Visual Studio Code, search for **foo.iv**, select the extension published by **radiiplus**, and choose **Install**.
+**foo.iv brings FOO into focus.**
 
-To install a downloaded package instead, open the Extensions view, choose **Install from VSIX**, and select `foo.iv-2.0.0.vsix`.
+Open any `.iv` file for expressive syntax highlighting, distinct file icons,
+smart brackets and indentation, comment shortcuts, and ready-made snippets.
 
-## Use FOO Files
+---
 
-Files ending in `.iv` open in FOO language mode automatically. The active language appears as **FOO** in the status bar.
+## See FOO Clearly
+
+![FOO source in VS Code with syntax highlighting](https://raw.githubusercontent.com/radiiplus/foo/main/editors/textmate/images/highlight.png)
+
+The extension recognizes declarations, control flow, types, functions,
+constants, strings, numbers, comments, properties, attributes, native blocks,
+and invalid syntax. Its FOO-specific accents work alongside your selected VS
+Code theme.
 
 ```iv
-function greet(name of type text) of type nothing {
+function greet(name text) {
   display "Hello, " plus name.
-  give nothing.
 }
 
-start() {
-  greet("world").
-  give nothing.
-}
+greet("world").
 ```
 
-The extension highlights declarations, control flow, types, functions, constants, strings, numbers, comments, properties, attributes, native blocks, and invalid syntax. Its FOO-specific colors work alongside the selected VS Code theme.
+---
 
-## Snippets
+## Why foo.iv?
 
-Start typing one of these names and select the FOO suggestion:
+### Syntax That Follows the Language
+
+FOO words are highlighted by purpose, so types, functions, control flow, and
+operators remain easy to scan even when code reads like prose. Invalid syntax
+stands apart before it gets lost in a larger file.
+
+### Your Theme, With FOO Accents
+
+foo.iv adds an Ultraviolet / Acid palette to FOO tokens while leaving your
+chosen VS Code theme in control of the editor, interface, and other languages.
+
+### Editing That Feels Native
+
+Quotes, brackets, and braces close automatically. Indentation follows FOO
+blocks, line and block comments use the right delimiters, and `.iv` files carry
+recognizable icons in tabs and the Explorer.
+
+### Snippets for Everyday Code
+
+Start typing a prefix and select the FOO suggestion:
 
 | Prefix | Inserts |
 | --- | --- |
@@ -45,11 +70,27 @@ Start typing one of these names and select the FOO suggestion:
 | `constant` | Constant declaration |
 | `native` | Native block |
 
-Use `--` for line comments and `--- ... ---` for block comments. Quotes, brackets, and braces close automatically, and indentation follows FOO blocks.
+Use `--` for line comments and `--- ... ---` for block comments.
+
+---
+
+## Quick Start
+
+1. Open **Extensions** in Visual Studio Code.
+2. Search for **foo.iv** and choose the extension published by **radiiplus**.
+3. Select **Install**, then open any `.iv` file.
+
+FOO appears as the active language in the status bar. To install a downloaded
+package instead, choose **Install from VSIX** in the Extensions view and select
+`foo.iv-2.1.0.vsix`.
+
+---
 
 ## Mixed `.iv` Projects
 
-If another extension also claims `.iv` files, open the language selector in the status bar and choose **FOO**. You can keep that choice for a workspace with a file association:
+If another extension also claims `.iv` files, open the language selector in the
+status bar and choose **FOO**. Keep that choice for a workspace with a file
+association:
 
 ```json
 {
@@ -59,13 +100,15 @@ If another extension also claims `.iv` files, open the language selector in the 
 }
 ```
 
-## Documentation And Support
+---
 
-- [Get started with FOO](../../docs/start.md)
-- [Language guide](../../docs/language.md)
-- [Syntax reference](../../docs/syntax.md)
-- [Report an issue](https://github.com/radiiplus/foo/issues)
+## Documentation
 
-## License
+Learn the language in the [FOO documentation](https://github.com/radiiplus/foo/tree/main/docs),
+begin with the [getting-started guide](https://github.com/radiiplus/foo/blob/main/docs/start.md),
+or keep the [syntax reference](https://github.com/radiiplus/foo/blob/main/docs/syntax.md)
+nearby while you work.
 
-FOO for VS Code is available under the [MIT License](LICENSE).
+Found an editor issue? [Report it on GitHub](https://github.com/radiiplus/foo/issues).
+
+foo.iv is available under the [MIT License](LICENSE).

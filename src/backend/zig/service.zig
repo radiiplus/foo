@@ -40,6 +40,7 @@ fn result(comptime T: type, value: c.FooResult) T {
 fn argument(comptime T: type, value: anytype) T {
     if (T == c.FooText) return .{ .data = value.ptr, .len = value.len };
     return switch (@typeInfo(T)) {
+        .bool => value,
         .int => @intCast(value),
         .optional, .pointer => @ptrCast(@constCast(value)),
         else => @compileError("Unsupported service argument"),

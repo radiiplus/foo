@@ -2,7 +2,7 @@
 --- String-keyed map ---
 --- Fast text-based lookup ---
 
-public type Index is record {
+public define Index as record {
   data of type pointer to byte.
   size of type integer 64.
 }.

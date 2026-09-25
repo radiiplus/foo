@@ -18,7 +18,7 @@ cleanup conditions are meaningful parameters, not alternate names for one type.
 | `equals` | `is` in an expression | One equality operator |
 | `does not equal` | `is not` | One inequality operator |
 | `is less than`, `is greater than` | `less than`, `greater than` | One comparison spelling each |
-| `is at least`, `is at most` | `not (a less than b)`, `not (a greater than b)` | Avoid duplicate ordered comparisons; valid for totally ordered operands |
+| `is at least`, `is at most` | `greater than or equal to`, `less than or equal to` | State the positive comparison directly instead of negating another relation |
 | `value[index]` | `value at index` | Indexing is separate from type arguments |
 | Bare action calls such as `display value.` | `display(value).` | One call grammar, including calls within expressions |
 | Bare `give.` | `give nothing.` | Unit is an explicit value |

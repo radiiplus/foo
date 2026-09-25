@@ -40,7 +40,7 @@ proc build*(module: Module; mode: string; outDir: string;
     if options.docs or options.threads:
       raise newException(ValueError, "C backend does not yet support docs or WASI threads")
     createDir(outDir)
-    let selection = Selection(target: options.target, cpu: options.cpu,
+    let selection = Selection(backend: "c", target: options.target, cpu: options.cpu,
       level: options.level, mode: mode, substrate: options.substrate,
       native: substrate.NativeSelection(substrate: options.native.substrate,
         clobbers: options.native.clobbers))

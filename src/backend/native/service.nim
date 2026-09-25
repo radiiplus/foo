@@ -2,11 +2,13 @@ import std/sets
 import std/strutils
 import ../..//ir/node
 
-const services* = ["io", "fs", "net", "process", "thread", "time", "text"]
+const services* = ["io", "fs", "net", "process", "thread", "task", "time", "text"]
 
 proc hosted*(module: Module): bool =
   for declaration in module.externs:
-    if declaration.abi.startsWith("runtime.") and declaration.abi[8 .. ^1] in services: return true
+    if declaration.abi == "runtime" or
+        (declaration.abi.startsWith("runtime.") and declaration.abi[8 .. ^1] in services):
+      return true
   false
 
 proc libraries*(target = ""): seq[string] =

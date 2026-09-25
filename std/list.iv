@@ -1,5 +1,5 @@
 -- Declares growable lists of borrowed byte pointers.
-public type List is opaque.
+public define List as opaque.
 public use "list" function create() of type fallible pointer to List.
 public use "list" function push(collection of type pointer to List, item of type pointer to byte) of type fallible nothing.
 public use "list" function get(collection of type pointer to List, index of type unsigned 64) of type fallible pointer to byte.

@@ -4,6 +4,7 @@ use fs as files.
 use net as network.
 use process as process.
 use thread as tasks.
+use task as async_tasks.
 use time as clock.
 use text as words.
 use sequence as items.
@@ -12,6 +13,7 @@ use testing as check.
 use "c" function verify() of type nothing.
 mutable count of type integer is 0.
 function work() of type nothing { set count to count plus 1. give. }
+function scoped_work(value of type integer 64) of type nothing for c { set count to count plus value. give. }
 start() {
   constant joined is try words.concatenate("FO", "O").
   constant trimmed is try words.trim("  FOO  ").
@@ -31,6 +33,15 @@ start() {
   check.same(content, "FOO" plus newline plus "44").
   constant file is try files.open(path, "read").
   after { io.close(file) catch nothing. }
+  check.expect((try files.position(file)) is 0).
+  check.expect((try files.size(file)) is 6).
+  try files.seek(file, (0 subtract 2), "end").
+  check.expect((try files.position(file)) is 4).
+  constant tail is try io.read(file, 2).
+  after { words.release(tail) fallback nothing. }
+  check.same(tail, "44").
+  try files.seek(file, 0, "start").
+  try files.flush(file).
   constant line is try io.line(file).
   after { words.release(line) catch nothing. }
   check.same(line, "FOO").
@@ -48,8 +59,15 @@ start() {
   constant task is try tasks.spawn(work).
   try tasks.wait(task).
   check.expect(count is 1).
+  constant executor is try async_tasks.executor().
+  constant scope is try async_tasks.scope().
+  check.expect(async_tasks.backend() is at least 0).
+  check.expect(async_tasks.launch(scope, scoped_work, 2)).
+  async_tasks.join(scope).
+  check.expect(count is 3).
+  check.expect(async_tasks.label("foo-test")).
   try clock.measure(work).
-  check.expect(count is 2).
+  check.expect(count is 4).
   constant mutex is try tasks.mutex().
   constant condition is try tasks.condition().
   try tasks.lock(mutex).
@@ -61,9 +79,12 @@ start() {
   after { network.close(listener) catch nothing. }
   constant client is try network.connect("127.0.0.1", try network.port(listener)).
   after { network.close(client) catch nothing. }
+  try network.nodelay(client, true).
+  try network.keepalive(client, true).
   constant server is try network.accept(listener).
   after { network.close(server) catch nothing. }
-  check.expect((try network.send(client, "44")) is 2).
+  check.expect((try network.sendSome(client, "44")) is 2).
+  try network.shutdown(client, "write").
   constant received is try network.receive(server, 2).
   after { words.release(received) catch nothing. }
   check.same(received, "44").

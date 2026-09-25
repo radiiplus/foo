@@ -15,42 +15,24 @@ Working with strings is a daily task for every programmer. FOO’s `text` module
 ```foo
 use text.
 
-start() {
-  constant sentence is "  Hello, FOO World!  ".
-  
-  -- Remove extra spaces from the ends
-  constant clean is text.trim(sentence).
-  
-  -- Split the text into a list of words
-  constant words is text.split(clean, " ").
-  
-  display words.
-  give nothing.
-}
+constant sentence is "  Hello, FOO World!  ".
+constant clean is text.trim(sentence) try.
+after { text.release(clean) fallback nothing. }
+display clean.
 ```
 
 ---
 
-## 2. Files and Paths (`fs`, `path`)
+## 2. Files and Paths (`file`, `path`)
 
-The `fs` module handles reading and writing files, while the `path` module helps you build file paths safely (without worrying about slashes `/` vs backslashes `\`).
+The `file` module handles reading and writing files, while the `path` module helps you build file paths safely (without worrying about slashes `/` vs backslashes `\`).
 
 ```foo
-use fs.
-use path.
+use file.
 
-start() {
-  -- Build a path safely: "data/config.json"
-  constant config_path is path.join("data", "config.json").
-  
-  -- Read the file (returns a fallible result)
-  constant content is try fs.read(config_path).
-  
-  -- Write it back
-  try fs.write(config_path, content).
-  
-  give nothing.
-}
+constant configPath is file.join("data", "config.json") try.
+constant content is file.read(configPath) try.
+file.write(configPath, content) try.
 ```
 
 ---
@@ -60,18 +42,22 @@ start() {
 FOO makes web requests incredibly simple. The `http` module handles all the complex TCP/IP and header parsing for you.
 
 ```foo
-use http.
+use http as web.
 
-start() {
-  -- Perform a simple GET request
-  constant response is try http.get("https://example.com").
-  
-  display response.status.
-  display response.body.
-  
-  give nothing.
-}
+constant client is web.client() try.
+after { web.close(client). }
+constant response is web.request(client, "https://example.com", "GET", "", 1048576) try.
+after { web.release(response). }
+constant body is web.body(response) try.
+display body.
 ```
+
+The same module exposes the lower-level client lifecycle: create a client,
+install a custom trust certificate, choose the method, body, and response limit,
+read the status and body separately, then release the response and close the
+client. Servers can `listen`, `accept`, inspect `method` and `header`, stream
+with `read`, and control connection reuse with `reply`. Both levels use the same
+runtime contract on the C and Zig backends.
 
 ---
 
@@ -80,19 +66,13 @@ start() {
 Talking to APIs usually means working with JSON. FOO has a built-in JSON parser and encoder that is both fast and type-safe.
 
 ```foo
-use json.
+use json as documents.
 
-start() {
-  constant raw_json is "{ \"name\": \"vibes\", \"level\": 99 }".
-  
-  -- Parse the JSON string into a FOO value
-  constant data is try json.parse(raw_json).
-  
-  -- Access the data (assuming dynamic access or pattern matching)
-  display data.
-  
-  give nothing.
-}
+constant rawJson is "{ \"name\": \"vibes\", \"level\": 99 }".
+constant value is documents.parse(rawJson) try.
+after { documents.release(value). }
+constant encoded is documents.write(value) try.
+display encoded.
 ```
 
 ---
@@ -103,26 +83,21 @@ Security is serious business. FOO’s `crypto` module wraps industry-standard C 
 
 **Supported Libraries:**
 *   **libsodium:** The default backend for modern, high-speed cryptography (NaCl).
-*   **OpenSSL:** Used for TLS/SSL networking and legacy support.
+*   **Platform TLS:** WinHTTP and the Windows certificate store on Windows;
+    libcurl-backed transport on Linux and macOS.
 
 **Available Algorithms:**
-*   **Hashing:** `sha256`, `sha512`, `blake2b`
-*   **Encryption:** `chacha20-poly1305`, `aes-256-gcm`
-*   **Signatures:** `ed25519`
-*   **Key Exchange:** `x25519`
+*   **Hashing:** SHA-256 through `crypto.hash`.
+*   **Encryption:** XChaCha20-Poly1305 through `crypto.seal` and `crypto.open`.
+*   **Signatures:** Ed25519 through `crypto.sign` and `crypto.verify`.
+*   **Passwords:** Argon2id through `crypto.password` and `crypto.confirm`.
 
 ```foo
 use crypto.
 
-start() {
-  constant secret is "my_password".
-  
-  -- Generate a secure SHA-256 hash
-  constant hash is crypto.sha256(secret).
-  
-  display "Hash: " plus hash.
-  give nothing.
-}
+constant secret is "correct horse battery staple".
+constant hash is crypto.hash(secret) try.
+display "Hash: " plus hash.
 ```
 
 ---
@@ -131,17 +106,51 @@ start() {
 
 You might be wondering: *"How does FOO implement all these features so quickly?"*
 
-This is where FOO’s **Interoperability** shines. Most of the standard library modules (like `net`, `crypto`, and `fs`) are actually elegant FOO wrappers around highly optimized C code (the `service.c` layer we saw in the compiler source).
+This is where FOO’s **Interoperability** shines. Modules such as `net`, `crypto`, and `file` target stable runtime contracts. Each backend can provide a tuned native implementation while FOO code keeps one portable API.
 
-This means you get the safety and readability of FOO, with the raw, bare-metal performance of C. You never have to choose between the two.
+Bulk copy, task scheduling, networking, and collection storage are selected through backend-neutral runtime contracts. C and Zig provide their own implementations without changing application source.
+
+Advanced users can stay inside those portable contracts while controlling more of the underlying service. `http` exposes persistent request headers, redirect limits, and connection reuse. `net` exposes partial sends, half-close, TCP_NODELAY, and keepalive. `file` exposes flush, byte seeking, position, and size. These are explicit operations on the same handles used by the simpler APIs; no backend object leaks into FOO code.
+
+The transfer contract is used throughout the runtime, including sequences, text, JSON, HTTP buffers, and allocator growth. Release builds choose an AVX2, AArch64, machine, or portable C implementation from the target profile. Zig builds use an overlap-safe block transfer sized for the selected CPU.
+
+`sequence.map` allocates its result once. `sequence.filter` and `sequence.dedup`
+reserve once and compact once instead of reallocating for each accepted element.
+`text.split` counts fields before allocating its result sequence. Deduplication
+still performs O(n²) equality comparisons; its allocation and copying work is
+O(n).
+
+```foo
+use sequence as sequences.
+
+function unique(values sequence of integer) giving fallible sequence of integer {
+  give sequences.dedup[integer](values) try.
+}
+```
+
+For lookup-heavy mutable workloads, use the backend-native open-addressed
+`hashmap` with text keys and typed values:
+
+```foo
+use hashmap.
+
+constant cache is hashmap.create[integer]() try.
+after { hashmap.close[integer](cache) fallback nothing. }
+hashmap.put[integer](cache, "answer", 42) try.
+constant answer is hashmap.get[integer](cache, "answer") try.
+when answer is 42 { display "Cached answer found". }
+```
+
+The ordinary `map` remains an immutable, insertion-ordered generic map for code that needs value semantics or non-text keys. `hashmap` is mutable, does not promise iteration order, and shallow-copies values.
 
 ---
 
 ## Summary: The Library Philosophy
 
 The FOO Standard Library is designed to be **Predictable**. 
-*   Every function returns `fallible` types, so you are forced to handle errors.
+*   Operations that can fail return `fallible`; simple queries and releases stay
+    infallible when their contracts allow it.
 *   Every module uses the same naming conventions.
-*   Every function is optimized for your specific hardware by the `opt` engine.
+*   Proven hot-path contracts can select backend and CPU-specific implementations through the `opt` engine.
 
 In the next chapter, we will look at **Packages**, where we will learn how to install libraries from the community and publish our own!

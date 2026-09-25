@@ -2,7 +2,7 @@
 --- Bitset collection ---
 --- Efficient bit-level storage ---
 
-public type Bits is record {
+public define Bits as record {
   data of type pointer to byte.
   length of type integer 64.
 }.

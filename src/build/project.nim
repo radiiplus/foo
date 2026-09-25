@@ -1,4 +1,4 @@
-import std/[json, os, strutils, tables]
+import std/[json, os, osproc, strutils, tables]
 import ./[compiler, config, files, options]
 import ../targets/presets as targetPresets
 import ../ir/node
@@ -94,6 +94,12 @@ proc config*(project: Project): BuildConfig =
           needs: strings(product, "needs"), soname: product.getOrDefault("soname").getStr(), version: product.getOrDefault("version").getStr(),
           script: product.getOrDefault("script").getStr(), exports: product.getOrDefault("exports").getStr(), rpath: strings(product, "rpath"))
     result.tasks = build.getOrDefault("tasks")
+    result.hooks = build.getOrDefault("hooks")
+    if result.hooks != nil and result.hooks.kind != JNull:
+      if result.hooks.kind != JObject: raise newException(ValueError, "build.hooks must be an object")
+      for name, command in result.hooks:
+        if name notin ["prebuild", "postbuild"] or command.kind != JString or command.getStr().len == 0:
+          raise newException(ValueError, "build.hooks supports nonempty prebuild and postbuild commands")
     result.resources = strings(build, "resources")
     if build.hasKey("native") and build["native"].kind == JObject:
       result.native.substrate = field(build["native"], "substrate", "").getStr()
@@ -166,11 +172,19 @@ proc entryPath(project: Project; entry = ""): string =
   elif project.manifest().entry.len > 0:
     selected = absolutePath(project.root / project.manifest().entry)
   else:
+    let sourceRoot = project.manifest().source
+    let conventional = if sourceRoot.len > 0:
+      project.root / sourceRoot / "main.iv" else: project.root / "main.iv"
+    if fileExists(conventional): selected = absolutePath(conventional)
     for file in project.files():
       if readFile(file).contains("start("):
-        if selected.len > 0: raise newException(ValueError, "Multiple start() entries found")
+        if selected.len > 0 and selected != file:
+          raise newException(ValueError, "Multiple application entries found")
         selected = file
-  if selected.len == 0: raise newException(ValueError, "No start() entry found in project sources")
+    if selected.len == 0 and project.files().len == 1: selected = project.files()[0]
+  if selected.len == 0:
+    raise newException(ValueError,
+      "No application entry found; set 'entry' in project.json or add main.iv")
   selected
 
 proc ir*(project: Project; entry = ""): Module =
@@ -178,13 +192,24 @@ proc ir*(project: Project; entry = ""): Module =
 
 proc check*(project: Project; entry = "") =
   project.prepare(project.config())
-  if project.options.progress != nil: project.options.progress("check", "project", entry, false)
+  if project.options.progress != nil:
+    let name = project.manifest().name
+    project.options.progress("check", if name.len > 0: name else: "project", entry, false)
   if entry.len > 0:
     discard project.compiler().check(if isAbsolute(entry): entry else: absolutePath(project.root / entry))
   else:
     for file in project.files(): discard project.compiler().check(file)
 
+proc runHook(project: Project; config: BuildConfig; name: string) =
+  if config.hooks == nil or config.hooks.kind != JObject or not config.hooks.hasKey(name): return
+  let response = execCmdEx(config.hooks[name].getStr(), workingDir = project.root)
+  if response.output.len > 0: stderr.write(response.output)
+  if response.exitCode != 0:
+    raise newException(OSError, "Build hook '" & name & "' failed")
+
 proc build*(project: Project; entry = ""): Table[string, string] =
+  let config = project.config()
+  project.runHook(config, "prebuild")
   project.check(entry)
   let artifacts = new(Table[string, string])
   artifacts[] = initTable[string, string]()
@@ -194,7 +219,6 @@ proc build*(project: Project; entry = ""): Table[string, string] =
     products["app"] = ProductConfig(entry: entry,
       kind: if project.config().`type`.len > 0:
         project.config().`type` else: "exe")
-  let config = project.config()
   let backend = if project.options.backend.len > 0: project.options.backend else: (if config.backend.len > 0: config.backend else: "zig")
   project.prepare(config)
   let tool = if backend == "zig": install(pin(project.root)).path else: ""
@@ -270,4 +294,5 @@ proc build*(project: Project; entry = ""): Table[string, string] =
     if project.options.progress != nil: project.options.progress("done", name, artifactPath, false)
     active.del(name)
   for name in products.keys: visit(name)
+  project.runHook(config, "postbuild")
   result = artifacts[]

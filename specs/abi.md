@@ -97,10 +97,10 @@ same external symbol with incompatible signatures.
 ## C boundaries
 
 ```iv
-extern "C" function receive(data of type pointer to byte, size of type unsigned)
-  of type integer 32.
+extern "C" function receive(data pointer to byte, size unsigned)
+  giving integer 32.
 
-extern "C" function answer(value of type integer 32) of type integer 32 {
+extern "C" function answer(value integer 32) giving integer 32 {
   give value plus 1.
 }
 ```

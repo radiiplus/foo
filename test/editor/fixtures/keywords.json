@@ -443,5 +443,45 @@
     "line": 90,
     "text": "finally",
     "scope": "keyword.control.foo"
+  },
+  {
+    "line": 91,
+    "text": "dynamic",
+    "scope": "storage.modifier.foo"
+  },
+  {
+    "line": 92,
+    "text": "fallback",
+    "scope": "keyword.control.foo"
+  },
+  {
+    "line": 93,
+    "text": "subtract",
+    "scope": "keyword.operator.foo"
+  },
+  {
+    "line": 94,
+    "text": "multiply",
+    "scope": "keyword.operator.foo"
+  },
+  {
+    "line": 95,
+    "text": "divide",
+    "scope": "keyword.operator.foo"
+  },
+  {
+    "line": 96,
+    "text": "define",
+    "scope": "keyword.other.foo"
+  },
+  {
+    "line": 97,
+    "text": "stop",
+    "scope": "keyword.control.foo"
+  },
+  {
+    "line": 98,
+    "text": "skip",
+    "scope": "keyword.control.foo"
   }
 ]

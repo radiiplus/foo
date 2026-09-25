@@ -12,20 +12,33 @@ Let’s look at the building blocks of FOO, and how to write them as quickly as 
 
 In many languages, you have to choose between safety (strict types) and speed (typing less). FOO gives you both using **Type Inference** (where the compiler guesses the type for you based on the value).
 
-### The "Explicit" Way (For maximum clarity)
-If you want to be 100% precise, you can state the type explicitly:
-```foo
-constant title of type text is "Daily Report".
-mutable count of type integer is 0.
-```
-
-### The "Fast" Way (How you'll actually code)
-FOO looks at `"Daily Report"`, sees the quotes, and knows it's text. It looks at `0` and knows it's an integer. You can drop the `of type` completely!
+### The usual way
+FOO looks at `"Daily Report"`, sees the quotes, and knows it is text. It looks
+at `0` and knows it is an integer, so most declarations need no repeated type
+phrase.
 ```foo
 constant title is "Daily Report".
-mutable count is 0.
+dynamic count is 0.
 ```
+
+Use an explicit annotation only when the exact representation matters:
+
+```foo
+constant retryLimit of type unsigned 16 is 3.
+```
+
+Function parameters use the shorter `name Type` form. Record fields retain
+`of type` because they describe a stored layout rather than bind a value.
 **Why this is awesome:** You get the bulletproof safety of a compiled language (the compiler will still stop you from adding text to a number later), but your code looks as clean as a dynamic language like Python.
+
+### Named types
+
+Use `define ... as ...` when a domain value deserves its own name:
+
+```foo
+define UserID as unsigned 64.
+define Handler[T] as function taking (T) giving nothing.
+```
 
 ---
 
@@ -35,19 +48,19 @@ Functions in FOO are defined with the word `function`. To keep your public API (
 
 ```foo
 -- Explicit and clear for public APIs
-function multiply(left of type integer, right of type integer) of type integer {
-  give left times right.
+function multiply(left integer, right integer) giving integer {
+  give left multiply right.
 }
 ```
 
 But inside the function, you can still use inference!
 ```foo
-function calculate_tax(price of type decimal) of type decimal {
+function calculateTax(price decimal) giving decimal {
   -- 'rate' is inferred as decimal automatically
   constant rate is 0.05. 
   
   -- 'total' is inferred as decimal
-  mutable total is price plus (price times rate). 
+  dynamic total is price plus (price multiply rate).
   
   give total.
 }
@@ -58,8 +71,8 @@ What if you want a function that works for *any* type of data? You can use **Gen
 
 ```foo
 -- This works for integers, decimals, or text, as long as they can be compared!
-function max_value[left of type T, right of type T] of type T 
-  where T is Comparable {
+function maxValue[T](left T, right T) giving T
+  where T is Ord {
   
   when left greater than right { give left. }
   otherwise { give right. }
@@ -75,25 +88,21 @@ FOO gives you two beautiful ways to handle logic, depending on what you are chec
 ### Option A: `when` / `otherwise` (For conditions)
 Use this when you are checking if something is true or false (like "is health > 0?").
 ```foo
-when health is 0 {
-  display "Game Over".
-}
+when health is 0 { display "Game Over". }
 otherwise when health less than 20 {
   display "Critical!".
 }
-otherwise {
-  display "Keep going!".
-}
+otherwise { display "Keep going!". }
 ```
 
 ### Option B: `match` (For specific values)
 Use this when you are checking a variable against a list of specific options (like a switch statement). It’s cleaner and faster to read.
 ```foo
-match status_code {
+match statusCode {
   case 200 { display "Success". }
   case 404 { display "Not Found". }
   case 500 { display "Server Error". }
-  case _   { display "Unknown Status". } -- The underscore matches anything else
+  case anything { display "Unknown Status". }
 }
 ```
 
@@ -106,7 +115,9 @@ FOO replaces confusing symbols with English words. This makes your logic impossi
 | Instead of this... | Write this... |
 | :--- | :--- |
 | `x + y` | `x plus y` |
-| `x * y` | `x times y` |
+| `x - y` | `x subtract y` |
+| `x * y` | `x multiply y` |
+| `x / y` | `x divide y` |
 | `x == y` | `x is y` |
 | `x != y` | `x is not y` |
 | `x && y` | `x and y` |
@@ -114,10 +125,10 @@ FOO replaces confusing symbols with English words. This makes your logic impossi
 
 **Example:**
 ```foo
--- Hard to read: if (user.age >= 18 && user.has_id)
+-- Hard to read: if (user.age >= 18 && user.hasId)
 -- Easy to read:
-when user.age is at least 18 and user.has_id {
-  grant_access().
+when user.age greater than or equal to 18 and user.hasId {
+  grantAccess().
 }
 ```
 
@@ -136,12 +147,16 @@ for each fruit in basket {
 ### The `while` Loop (For conditions)
 When you want to repeat something until a condition changes.
 ```foo
-mutable battery is 100.
+dynamic battery is 100.
 while battery greater than 0 {
-  run_motor().
-  set battery to battery minus 1.
+  set battery to battery subtract 1.
+  when battery is 10 { skip. }
+  runMotor().
+  when battery is 1 { stop. }
 }
 ```
+
+`skip` moves directly to the next iteration. `stop` leaves the loop completely.
 
 ---
 
@@ -152,40 +167,45 @@ In FOO, errors aren't hidden surprises that crash your app. They are **First-Cla
 You have two ways to handle these errors:
 
 ### Way 1: The `try` Keyword (Pass the buck)
-If you don't want to handle the error right now, use `try`. If the function fails, your *entire* function stops and passes the error up to whoever called it.
+If you don't want to handle the error right now, put `try` after the operation.
+If the operation fails, your *entire* function stops and passes the error up to whoever called it.
 ```foo
-function load_config() of type fallible text {
-  -- If file.read fails, this whole function fails immediately.
-  give try file read "config.json".
+use file as files.
+function loadConfig() giving fallible text {
+  give files.read("config.json") try.
 }
 ```
 
-### Way 2: The `catch` Operator (Provide a fallback)
-In FOO, `catch` is an operator (just like `plus` or `times`). It doesn't create a new variable; it simply expects you to provide a **fallback value** of the exact same type as the success case. 
+### Way 2: The `fallback` Operator (Provide an Alternative)
+In FOO, `fallback` expects an alternative value of the exact same type as the success case.
 
 If you just want to provide a backup string, you do this:
 ```foo
-constant config is load_config() catch "Default Settings".
+constant config is loadConfig() fallback "Default Settings".
 ```
 
-If you want to run some code (like logging the error) *and then* provide the backup string, you use a block `{ ... }`. In FOO, a block automatically evaluates to its last expression. 
+The fallback is an expression of the same success type. Log separately when the
+calling workflow needs an explicit diagnostic.
 
 ```foo
-start() {
-  -- If load_config() fails, the block runs, logs the error, 
-  -- and evaluates to the fallback text "Default Settings".
-  constant config is load_config() catch {
-    log error "Failed to load file!".
-    "Default Settings"
-  }.
-  
-  display config.
-  
-  -- Because start() returns 'nothing', we must explicitly give it.
-  give nothing.
-}
+constant config is loadConfig() fallback "Default Settings".
+display config.
 ```
-*Why `give nothing.` at the end?* Because FOO is strictly typed, every function must explicitly `give` a value that matches its signature. Since `start()` is the entry point and returns `nothing` (FOO's version of `void`), the compiler mathematically requires you to end the function with `give nothing.` to prove you finished it safely.
+
+Top-level statements form the program entry automatically. A function that
+gives `nothing` also completes when it reaches the closing brace, so neither an
+empty `start()` wrapper nor `give nothing.` is routine boilerplate.
+
+When a fallible result must be captured, the declaration and propagation remain
+two explicit operations:
+
+```foo
+constant config is files.read("config.json") try.
+```
+
+Here `is` only binds `config`; the postfix `try` applies to `files.read(...)`
+and propagates a read failure. Use `fallback` instead
+when the current scope can provide a useful replacement.
 
 ---
 
@@ -194,41 +214,43 @@ start() {
 When you open a file or a network connection, you *must* close it, even if your code crashes. FOO makes this effortless with the `after` block.
 
 ```foo
-function process_data() {
-  constant file is try open("data.txt").
+use file as files.
+use io as streams.
+
+function processData() giving fallible nothing {
+  constant stream is files.open("data.txt", "read") try.
   
   -- This block runs NO MATTER WHAT happens next.
   -- Success? It runs. Error? It runs.
-  after { close(file). }
+  after { streams.close(stream) fallback nothing. }
   
   -- Do risky work here...
-  constant data is try file read_all().
+  constant data is streams.read(stream, 1048576) try.
 }
 ```
 
 ---
 
 
-## 8. Quality of Life: Human-Readable Units
+## 8. Named Quantities
 
-FOO’s parser is so smart it understands **Units of Measurement**. You never have to write confusing math like `1024 * 1024` or `1000 * 1000`. You just write what you mean.
+Library APIs document their base units. Use ordinary word-based arithmetic and
+give converted values descriptive names at the boundary.
 
 ```foo
--- Wait for 2 seconds (FOO converts this to nanoseconds automatically)
-time sleep 2 seconds.
+use memory.
+use time.
 
--- Allocate 5 megabytes of memory
-constant buffer is try memory.allocate(5 megabytes).
+constant twoSeconds is 2000000000.
+time.sleep(twoSeconds) try.
 
--- Set a timeout
-constant timeout is 500 milliseconds.
+constant allocator is memory.system().
+constant fiveMegabytes is 5 multiply 1024 multiply 1024.
+constant buffer is memory.allocate(allocator, fiveMegabytes) try.
 ```
 
-**Supported Units:**
-*   **Time:** `seconds`, `milliseconds`, `microseconds`, `nanoseconds`
-*   **Data:** `bytes`, `kilobytes`, `megabytes`, `gigabytes`, `terabytes`
-
-This makes your code self-documenting. `sleep(2000000000)` is hard to read. `sleep 2 seconds.` is impossible to misunderstand.
+Name converted values such as `twoSeconds` and `fiveMegabytes` so their units
+stay clear at the call site.
 
 
 ---
@@ -237,6 +259,6 @@ This makes your code self-documenting. `sleep(2000000000)` is hard to read. `sle
 
 Every feature in FOO is designed to reduce **Cognitive Load** (the mental energy you spend just trying to read the code). 
 
-By allowing you to drop `of type` when the compiler can guess it, using English words for math, and forcing you to handle errors explicitly, FOO lets you write code that is safe, fast, and incredibly easy to read.
+By using compact parameter types, English words for math, and explicit failure handling, FOO keeps code safe, fast, and easy to read.
 
 In the next chapter, we will look at **Data and Memory**, where you will learn how FOO manages RAM so efficiently that you almost never have to think about it!

@@ -1,101 +1,72 @@
-# Chapter 8: Packages (Sharing Code with the World)
+# Chapter 8: Packages
 
-No programmer is an island. Eventually, you will want to use code that someone else wrote, or share your own brilliant library with the world. 
+Foo's package registry is a public Git repository. Package records live under `packages/`, while deterministic discovery shards live under `indexes/`. Package search and installation read those files directly from GitHub; the serverless service is used only for GitHub authentication and publication.
 
-FOO has a powerful, built-in **Package Manager**. You don't need to install separate tools like npm, pip, or cargo. The `foo` command handles everything for you, from downloading dependencies to publishing your own creations.
+## Creating a package
 
-Let’s look at how the FOO package ecosystem works.
-
----
-
-## 1. The Project Manifest (`project.json`)
-
-Every FOO project is defined by a `project.json` file in the root directory. Think of this as the "ID card" for your project. It tells the compiler who you are, what version you are, and what other code you need to run.
-
-```json
-{
-  "name": "my_awesome_app",
-  "version": "1.0.0",
-  "language": "1",
-  "dependencies": {
-    "http_client": "registry+http_client@1.2.0",
-    "math_utils": "git+https://github.com/user/math_utils.git"
-  }
-}
-```
-
----
-
-## 2. Adding Dependencies
-
-You can add new libraries to your project using the `foo add` command. FOO supports three types of dependency sources:
-
-### A. The Official Registry (`registry+`)
-This is the safest and fastest way. Packages are downloaded from the official FOO registry, cryptographically signed, and verified.
 ```sh
-foo add http_client registry+http_client@1.2.0
+foo init my-package
+cd my-package
 ```
 
-### B. Git Repositories (`git+`)
-If a library is hosted on GitHub or GitLab, you can pull it directly from the repository.
+The scaffold contains `project.json`, `README.md`, `src/main.iv`, and `.gitignore`. Before publication, set the repository URL and package metadata in `project.json`, write at least 100 non-empty lines of documentation, and commit every source change.
+
+## Authentication and publication
+
 ```sh
-foo add math_utils git+https://github.com/user/math_utils.git
+foo login
+foo publish
 ```
 
-### C. Local Folders (`path+`)
-If you are working on two projects at the same time, you can link them together locally.
+`foo login` uses GitHub's device flow and stores the resulting token in the user's Foo configuration directory. GitHub leaves its device authorization page open after approval, so return to the terminal once authorization succeeds. `foo publish` first checks the package with the compiler, then reports its packaging and upload stages. It formats and bundles the Foo source alongside metadata and documentation. The package README remains author-owned: publication reads it without generating or rewriting the local file, and the registry materializes its browsable mirror from that content. Separately, the compiler derives a `foo.api/v1` JSON index from the AST and adjacent source comments, so every release records the library modules, types, functions, constants, values, signatures, and API documentation it exposes. The serverless endpoint validates the token with GitHub, derives a stable opaque HMAC ownership signature from the numeric GitHub ID, discards the raw ID, checks ownership, verifies the bundle digest and API paths, and commits the immutable expanded release record plus the browsable README/source mirror to the registry repository. It never executes package code.
+
+The published release points to the repository and the full Git commit SHA from the clean local checkout. Published versions cannot be replaced.
+
+An unscoped name belongs to its first publisher. If that basename is already owned by someone else, publish under `@github-login/package`; the scope must match the GitHub account authenticated by `foo login`.
+
+## Finding packages
+
 ```sh
-foo add my_library path+../my_library
+foo search http
+foo info foo-http
+foo info foo-http@1.4.2
 ```
 
----
+These commands read the public index shards and package records without calling the serverless function.
 
-## 3. The Lockfile (`foo.lock`)
+The registry website reads the same public Git manifest, shards, and package records as the compiler; discovery does not pass through the publication service. It searches packages, standard modules, and exported symbol names. Every bundled standard module is indexed under `std/<module>` and appears in the default catalog. Open `/package/:package` directly to browse a release and filter its public API; for example, `/package/foo-http` or `/package/std%2Fjson`. These are normal browser paths, not hash routes.
 
-When you run `foo install`, FOO downloads your dependencies and creates a **Lockfile** (`foo.lock`).
+## Adding dependencies
 
-**Why this is awesome:**
-The lockfile records the *exact* cryptographic hash of every single file in your dependencies. This guarantees that if you send your project to a friend, they will get the *exact same code* you used. No more "but it works on my machine!" surprises.
+```sh
+foo add foo-http
+foo add foo-http@1.4.2
+foo add local-tools ../local-tools
+foo add widgets https://github.com/example/widgets.git
+```
+
+The registry is configured internally. Use `name` or `name@version` for a
+registry package; do not write an internal `registry+...` locator. The optional
+second argument is reserved for an external URL, Git repository, or local path.
+
+`foo add foo-http` selects the current indexed release. Exact versions and
+compatible `^` or `~` constraints are also accepted. The dependency is written
+to `project.json`; install the complete graph afterward:
 
 ```sh
 foo install
 ```
 
----
+FOO resolves runtime dependencies transitively, applies development, optional,
+and platform constraints, and rejects incompatible graphs. It verifies and
+extracts the source bundle stored in each canonical registry record. Resolution
+chooses one compatible version per package and records the exact result in the
+lockfile.
 
-## 4. Publishing Your Code
+Installed sources live under `.foo/packages/`. The generated `foo.lock` is deterministic and records the registry revision, exact package version, source digest, direct status, and dependency identities for every package. Adding, removing, or changing a dependency constraint directly in `project.json` makes `foo install` resolve the changed graph and rewrite the lockfile. An unchanged manifest installs from the lock exactly; `foo update` resolves newer compatible releases within the existing constraints, `foo outdated` reports them, and `foo remove` prunes the graph.
 
-When you are ready to share your library with the world, FOO makes it easy.
-
-### Step 1: Sign Your Package
-FOO uses cryptographic keys to ensure that packages haven't been tampered with. You generate a private key, and FOO uses it to sign your release.
-
-### Step 2: Publish
-Run the publish command. FOO will bundle your `.iv` files, sign them, and upload them to the registry.
-
-```sh
-foo publish --key my_private_key.pem
-```
-
----
-
-## 5. Vendoring (Offline Mode)
-
-Sometimes you need to build your project on a computer with no internet connection (like a secure server or a spaceship). FOO supports **Vendoring**.
-
-This command downloads all your dependencies and stores them directly inside your project folder, so you can build anywhere.
-
-```sh
-foo vendor
-```
-
----
-
-## Summary: The Package Philosophy
-
-FOO’s package system is designed to be **Secure** and **Reproducible**.
-*   **Signed Packages:** You know exactly who wrote the code.
-*   **Locked Versions:** You know exactly what code is running.
-*   **Native Integration:** It’s all built into the `foo` command.
-
-In the next chapter, we will look at the **Compiler**, where we will peek under the hood to see how FOO turns your English sentences into lightning-fast machine code!
+Registry indexes are sharded for large package counts. Release metadata can
+mark versions deprecated, provide mirrors, and carry platform compatibility;
+installation still verifies the canonical bundle digest. Owners can deprecate a
+version with `foo deprecate package@version message`; the source remains
+available so existing lockfiles never break.

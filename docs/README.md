@@ -11,38 +11,13 @@ This book will take you from your very first line of code to writing advanced, h
 
 ---
 
-## 🚀 The Parser is Brilliant: Hello World in 3 Ways
+## 🚀 Hello World
 
-Before we dive into the chapters, look at how FOO adapts to *your* coding style. Because FOO's Type Checker is so smart, and the parser is so flexible, you can write the exact same program in three completely different ways:
-
-### 1. The Readable Way (Standard)
-Perfect for learning, teaching, and clear documentation.
+Top-level statements run directly. Fallible operations use `try` to propagate
+failure or `fallback` to recover locally.
 ```foo
-use io.
-
-start() {
-  display "Hello, world!".
-  give nothing.
-}
+display "Hello, world!".
 ```
-
-### 2. The Clean Way (Zero Boilerplate)
-Because `start()` returns `nothing`, FOO is smart enough to know that when the block ends, the function is finished. You can drop the `give nothing.` entirely!
-```foo
-use io.
-
-start() {
-  display "Hello, world!".
-}
-```
-
-### 3. The One-Liner (Python Style)
-FOO's parser doesn't care about whitespace between sentences. You can write the entire program on a single line if you want to feel like a hacker.
-```foo
-use io. start() { display "Hello, world!". }
-```
-
-No matter which style you choose, FOO compiles it down to the exact same lightning-fast machine code.
 
 ---
 
@@ -50,12 +25,14 @@ No matter which style you choose, FOO compiles it down to the exact same lightni
 
 As you read through these chapters, keep an eye out for the core superpowers that make FOO unique:
 
-*   **🧠 The Parser:** Learn how to write logic that reads like a book (`when x is at least 10` instead of `if (x >= 10)`).
+*   **🧠 The Parser:** Learn how to write logic that reads like a book (`when x greater than or equal to 10` instead of `if (x >= 10)`).
 *   **🏎️ Multiple Backends:** Discover how FOO translates your code into **C11** (for universal compatibility) or **Zig** (for cutting-edge speed).
 *   **⚡ Hardware Optimization (`opt`):** See how FOO automatically tunes your math to use **AVX** vector instructions on Intel chips or **NEON** on ARM chips.
 *   **🛡️ Bulletproof Safety (Sealing):** Learn how FOO mathematically tracks your memory to eliminate invisible bugs before your app even runs.
 *   **🪄 Compile-Time Magic (`eval`):** Learn how to run heavy math and logic *while the program is being built* for zero runtime cost.
 *   **🤝 Interoperability:** See how easily FOO talks to the massive, decades-old ecosystem of C libraries.
+*   **🔧 Progressive control:** Start with concise file, HTTP, JSON, and task APIs, then opt into headers, sockets, allocators, atomics, and OS-specific controls when needed.
+*   **📦 Direct packages:** Add registry packages by name, or use a URL or local path without exposing registry internals in application manifests.
 
 ---
 
@@ -65,7 +42,7 @@ Read this book from the beginning when learning FOO, or use the chapter links as
 
 1.  **[Introduction](intro.md)** — The problem FOO is designed to solve, and why the world needs a sentence-like systems language.
 2.  **[Getting Started](start.md)** — Install the toolchain, create your first project in 60 seconds, and run your first app.
-3.  **[The Language](language.md)** — Master variables, functions, `match/case` decisions, loops, and bulletproof error handling (`try`/`catch`).
+3.  **[The Language](language.md)** — Master variables, functions, `match/case` decisions, loops, and bulletproof error handling (`try`/`fallback`).
 4.  **[Data and Memory](memory.md)** — Understand records, **Regions** (bulk memory cleanup), and how **Sealing** keeps your RAM safe.
 5.  **[Systems](systems.md)** — Talk to files, networks, and the operating system. Learn how to call C code directly from FOO.
 6.  **[Concurrency](concurrency.md)** — Do multiple things at once safely using lightweight Tasks, heavy Threads, and Channels.

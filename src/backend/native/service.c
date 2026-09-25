@@ -1,3 +1,6 @@
+#ifndef _WIN32
+#define _GNU_SOURCE
+#endif
 #define _POSIX_C_SOURCE 200809L
 #include "service.h"
 #include <errno.h>
@@ -17,20 +20,29 @@
 typedef SOCKET Socket;
 #define INVALID INVALID_SOCKET
 #define disconnect closesocket
+#define FOO_SHUT_READ SD_RECEIVE
+#define FOO_SHUT_WRITE SD_SEND
+#define FOO_SHUT_BOTH SD_BOTH
 #else
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <pthread.h>
+#include <sched.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
 typedef int Socket;
 #define INVALID (-1)
 #define disconnect close
+#define FOO_SHUT_READ SHUT_RD
+#define FOO_SHUT_WRITE SHUT_WR
+#define FOO_SHUT_BOTH SHUT_RDWR
 #endif
 
 enum { OK, MEMORY, ARGUMENT, IO, CLOSED, MISSING, SYSTEM, BOUNDS };
-enum { TEXT = 1, FILES, SOCKETS, THREADS, MUTEX, CONDITION };
+enum { TEXT = 1, FILES, SOCKETS, THREADS, MUTEX, CONDITION,
+       TASK_EXECUTOR, TASK_CHANNEL, TASK_SCOPE };
 typedef struct Resource {
   void *data;
   size_t size;
@@ -273,6 +285,57 @@ FooResult foo_fs_open(FooText path, FooText mode) {
   result->file = handle;
   return (FooResult){.pointer = result};
 }
+FooResult foo_fs_flush(void *pointer) {
+  File *stream = file(pointer);
+  return !stream || !stream->file ? failure(CLOSED)
+                                  : fflush(stream->file) ? failure(IO)
+                                                        : (FooResult){0};
+}
+static int file_seek(FILE *stream, int64_t offset, int origin) {
+#ifdef _WIN32
+  return _fseeki64(stream, offset, origin);
+#else
+  return fseeko(stream, (off_t)offset, origin);
+#endif
+}
+static int64_t file_position(FILE *stream) {
+#ifdef _WIN32
+  return _ftelli64(stream);
+#else
+  return (int64_t)ftello(stream);
+#endif
+}
+FooResult foo_fs_seek(void *pointer, int64_t offset, FooText origin) {
+  File *stream = file(pointer);
+  if (!stream || !stream->file)
+    return failure(CLOSED);
+  int base = origin.len == 5 && !memcmp(origin.data, "start", 5)     ? SEEK_SET
+             : origin.len == 7 && !memcmp(origin.data, "current", 7) ? SEEK_CUR
+             : origin.len == 3 && !memcmp(origin.data, "end", 3)     ? SEEK_END
+                                                                       : -1;
+  return base < 0 ? failure(ARGUMENT)
+                  : file_seek(stream->file, offset, base) ? failure(IO)
+                                                          : (FooResult){0};
+}
+FooResult foo_fs_position(void *pointer) {
+  File *stream = file(pointer);
+  if (!stream || !stream->file)
+    return failure(CLOSED);
+  int64_t result = file_position(stream->file);
+  return result < 0 ? failure(IO) : (FooResult){.number = (uint64_t)result};
+}
+FooResult foo_fs_size(void *pointer) {
+  File *stream = file(pointer);
+  if (!stream || !stream->file)
+    return failure(CLOSED);
+  int64_t position = file_position(stream->file);
+  if (position < 0 || file_seek(stream->file, 0, SEEK_END))
+    return failure(IO);
+  int64_t result = file_position(stream->file);
+  if (file_seek(stream->file, position, SEEK_SET))
+    return failure(IO);
+  return result < 0 ? failure(IO) : (FooResult){.number = (uint64_t)result};
+}
 FooResult foo_fs_read(FooText path) {
   FooResult opened = foo_fs_open(path, (FooText){(const uint8_t *)"read", 4});
   if (opened.error)
@@ -484,6 +547,24 @@ FooResult foo_net_send(void *pointer, FooText value) {
   }
   return (FooResult){.number = sent};
 }
+FooResult foo_net_sendSome(void *pointer, FooText value) {
+  if (!resource(pointer, SOCKETS))
+    return failure(CLOSED);
+  if (!value.len)
+    return (FooResult){0};
+  size_t size = value.len > INT_MAX ? INT_MAX : value.len;
+#ifdef MSG_NOSIGNAL
+  int flags = MSG_NOSIGNAL;
+#else
+  int flags = 0;
+#endif
+  int sent;
+  do {
+    sent = (int)send(((Connection *)pointer)->socket,
+                     (const char *)value.data, (int)size, flags);
+  } while (sent < 0 && interrupted());
+  return sent <= 0 ? failure(IO) : (FooResult){.number = (uint64_t)sent};
+}
 FooResult foo_net_receive(void *pointer, uint64_t size) {
   if (!resource(pointer, SOCKETS))
     return failure(CLOSED);
@@ -502,6 +583,36 @@ FooResult foo_net_receive(void *pointer, uint64_t size) {
       received < 0 ? failure(IO) : text(buffer, (size_t)received);
   free(buffer);
   return result;
+}
+FooResult foo_net_shutdown(void *pointer, FooText direction) {
+  if (!resource(pointer, SOCKETS))
+    return failure(CLOSED);
+  int mode = direction.len == 4 && !memcmp(direction.data, "read", 4)    ? FOO_SHUT_READ
+             : direction.len == 5 && !memcmp(direction.data, "write", 5) ? FOO_SHUT_WRITE
+             : direction.len == 4 && !memcmp(direction.data, "both", 4)  ? FOO_SHUT_BOTH
+                                                                           : -1;
+  return mode < 0 ? failure(ARGUMENT)
+                  : shutdown(((Connection *)pointer)->socket, mode)
+                      ? failure(IO)
+                      : (FooResult){0};
+}
+FooResult foo_net_nodelay(void *pointer, bool enabled) {
+  if (!resource(pointer, SOCKETS))
+    return failure(CLOSED);
+  int value = enabled ? 1 : 0;
+  return setsockopt(((Connection *)pointer)->socket, IPPROTO_TCP, TCP_NODELAY,
+                    (const char *)&value, sizeof(value))
+             ? failure(IO)
+             : (FooResult){0};
+}
+FooResult foo_net_keepalive(void *pointer, bool enabled) {
+  if (!resource(pointer, SOCKETS))
+    return failure(CLOSED);
+  int value = enabled ? 1 : 0;
+  return setsockopt(((Connection *)pointer)->socket, SOL_SOCKET, SO_KEEPALIVE,
+                    (const char *)&value, sizeof(value))
+             ? failure(IO)
+             : (FooResult){0};
 }
 FooResult foo_net_close(void *pointer) {
   Resource *entry = resource(pointer, SOCKETS);
@@ -734,6 +845,145 @@ FooResult foo_thread_close(void *pointer) {
 #endif
   entry->closed = 1;
   return (FooResult){0};
+}
+
+typedef struct {
+  int64_t slots[256];
+  size_t head, tail, count;
+} TaskChannel;
+typedef struct {
+  void *threads[128];
+  size_t count;
+} TaskScope;
+typedef struct {
+  void (*callback)(int64_t);
+  int64_t argument;
+} ScopedCall;
+static void scoped_work(void *pointer) {
+  ScopedCall *call = pointer;
+  call->callback(call->argument);
+  free(call);
+}
+static uint64_t task_backend(void) {
+#ifdef _WIN32
+  return 3;
+#elif defined(__linux__)
+  return 1;
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+  return 2;
+#else
+  return 0;
+#endif
+}
+FooResult foo_task_backend(void) { return (FooResult){.number = task_backend()}; }
+FooResult foo_task_which(void) {
+  static const char *names[] = {"threaded", "epoll", "kqueue", "iocp"};
+  return (FooResult){.pointer = (void *)names[task_backend()]};
+}
+FooResult foo_task_executor(void) {
+  uint64_t *executor = owned(sizeof(*executor), TASK_EXECUTOR);
+  if (!executor) return failure(MEMORY);
+  *executor = task_backend();
+  return (FooResult){.pointer = executor};
+}
+FooResult foo_task_block(void (*callback)(void)) {
+  callback();
+  return (FooResult){0};
+}
+FooResult foo_task_channel(void) {
+  TaskChannel *channel = owned(sizeof(*channel), TASK_CHANNEL);
+  return channel ? (FooResult){.pointer = channel} : failure(MEMORY);
+}
+FooResult foo_task_send(void *pointer, int64_t value) {
+  TaskChannel *channel = resource(pointer, TASK_CHANNEL) ? pointer : NULL;
+  if (!channel) return failure(CLOSED);
+  enter();
+  if (channel->count == 256) { leave(); return (FooResult){.number = 0}; }
+  channel->slots[channel->tail] = value;
+  channel->tail = (channel->tail + 1) % 256;
+  channel->count++;
+  leave();
+  return (FooResult){.number = 1};
+}
+FooResult foo_task_receive(void *pointer, int64_t *output) {
+  TaskChannel *channel = resource(pointer, TASK_CHANNEL) ? pointer : NULL;
+  if (!channel || !output) return failure(CLOSED);
+  enter();
+  if (!channel->count) { leave(); return (FooResult){.number = 0}; }
+  *output = channel->slots[channel->head];
+  channel->head = (channel->head + 1) % 256;
+  channel->count--;
+  leave();
+  return (FooResult){.number = 1};
+}
+static FooResult task_scope(void) {
+  TaskScope *scope = owned(sizeof(*scope), TASK_SCOPE);
+  return scope ? (FooResult){.pointer = scope} : failure(MEMORY);
+}
+FooResult foo_task_scope(void) { return task_scope(); }
+FooResult foo_task_pool(void) { return task_scope(); }
+static FooResult task_launch(void *pointer, void (*callback)(int64_t),
+                             int64_t argument) {
+  TaskScope *scope = resource(pointer, TASK_SCOPE) ? pointer : NULL;
+  if (!scope) return failure(CLOSED);
+  enter();
+  if (scope->count == 128) { leave(); return (FooResult){.number = 0}; }
+  leave();
+  ScopedCall *call = malloc(sizeof(*call));
+  if (!call) return failure(MEMORY);
+  *call = (ScopedCall){callback, argument};
+  FooResult spawned = foo_thread_spawn(scoped_work, call);
+  if (spawned.error) { free(call); return spawned; }
+  enter();
+  scope->threads[scope->count++] = spawned.pointer;
+  leave();
+  return (FooResult){.number = 1};
+}
+FooResult foo_task_launch(void *scope, void (*callback)(int64_t), int64_t argument) {
+  return task_launch(scope, callback, argument);
+}
+FooResult foo_task_submit(void *pool, void (*callback)(int64_t), int64_t argument) {
+  return task_launch(pool, callback, argument);
+}
+static FooResult task_join(void *pointer) {
+  TaskScope *scope = resource(pointer, TASK_SCOPE) ? pointer : NULL;
+  if (!scope) return failure(CLOSED);
+  for (size_t index = 0; index < scope->count; index++) {
+    FooResult joined = foo_thread_wait(scope->threads[index]);
+    if (joined.error) return joined;
+  }
+  scope->count = 0;
+  return (FooResult){0};
+}
+FooResult foo_task_join(void *scope) { return task_join(scope); }
+FooResult foo_task_wait(void *pool) { return task_join(pool); }
+FooResult foo_task_affinity(uint64_t cpu) {
+#ifdef _WIN32
+  if (cpu >= sizeof(DWORD_PTR) * CHAR_BIT) return (FooResult){.number = 0};
+  return (FooResult){.number = SetThreadAffinityMask(GetCurrentThread(),
+      ((DWORD_PTR)1) << cpu) != 0};
+#elif defined(__linux__)
+  if (cpu >= CPU_SETSIZE) return (FooResult){.number = 0};
+  cpu_set_t set;
+  CPU_ZERO(&set);
+  CPU_SET((int)cpu, &set);
+  return (FooResult){.number = sched_setaffinity(0, sizeof(set), &set) == 0};
+#else
+  return (FooResult){.number = 0};
+#endif
+}
+FooResult foo_task_label(FooText name) {
+  char *value = string(name);
+  if (!value) return failure(ARGUMENT);
+#ifdef _WIN32
+  int ok = 1;
+#elif defined(__APPLE__)
+  int ok = pthread_setname_np(value) == 0;
+#else
+  int ok = pthread_setname_np(pthread_self(), value) == 0;
+#endif
+  free(value);
+  return (FooResult){.number = (uint64_t)ok};
 }
 void foo_service_close(void) {
   /* Join callbacks before reclaiming any memory they can still access. */

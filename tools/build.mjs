@@ -11,7 +11,7 @@ execFileSync(process.execPath, [join(root, "tools/native.mjs")], {
 });
 rmSync(output, { recursive: true, force: true });
 mkdirSync(join(output, "bin"), { recursive: true });
-for (const name of ["assets", "std", "docs", "test/stdlib", "test/native/service.c", "toolchain.json", "project.json", "README.md", "LICENSE", "LICENSE-MIT", "LICENSE-APACHE"])
+for (const name of ["assets", "std", "docs", "test/stdlib", "test/native/service.c", "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT", "LICENSE-APACHE"])
   cpSync(join(root, name), join(output, name), { recursive: true });
 rmSync(join(output, "test", "stdlib", ".artifacts"), { recursive: true, force: true });
 for (const name of ["foo.mjs", "foo.cmd", "version.mjs"])
@@ -33,7 +33,7 @@ delete manifest.devDependencies;
 delete manifest.dependencies;
 manifest.files = ["assets", "bin", "std", "docs", "test/stdlib/*.iv", "test/stdlib/project.json",
   "test/stdlib/public.txt", "test/native/service.c", "tools/toolchain.mjs",
-  "toolchain.json", "project.json", "README.md", "LICENSE", "LICENSE-MIT",
+  "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT",
   "LICENSE-APACHE", "foo.artifact.json"];
 manifest.scripts = { postinstall: "node tools/toolchain.mjs" };
 writeFileSync(join(output, "package.json"), JSON.stringify(manifest, null, 2) + "\n");

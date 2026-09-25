@@ -1,6 +1,6 @@
 -- Stores typed values in first-in, first-out order.
 use sequence as items.
-public type Queue[T] is record { values of type sequence of T. }.
+public define Queue[T] as record { values of type sequence of T. }.
 public function create[T]() of type Queue[T] { give Queue[T](items.create[T]()). }
 public function length[T](collection of type Queue[T]) of type unsigned 64 { give items.length[T](collection.values). }
 public function append[T](collection of type Queue[T], value of type T) of type fallible Queue[T] { give Queue[T](try items.append[T](collection.values, value)). }

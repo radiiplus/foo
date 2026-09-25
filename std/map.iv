@@ -1,7 +1,7 @@
 -- Stores typed key/value pairs with equality-based lookup.
 use sequence as items.
-public type Entry[K, V] is record { key of type K. value of type V. }.
-public type Map[K, V] is record { entries of type sequence of Entry[K, V]. }.
+public define Entry[K, V] as record { key of type K. value of type V. }.
+public define Map[K, V] as record { entries of type sequence of Entry[K, V]. }.
 public function create[K, V]() of type Map[K, V] { give Map[K, V](items.create[Entry[K, V]]()). }
 public function length[K, V](collection of type Map[K, V]) of type unsigned 64 { give items.length[Entry[K, V]](collection.entries). }
 public function get[K, V](collection of type Map[K, V], key of type K) of type fallible V where K is Equatable {
@@ -13,10 +13,10 @@ public function contains[K, V](collection of type Map[K, V], key of type K) of t
   give false.
 }
 public function put[K, V](collection of type Map[K, V], key of type K, value of type V) of type fallible Map[K, V] where K is Equatable {
-  mutable index of type unsigned 64 is 0.
+  dynamic index of type unsigned 64 is 0.
   for each entry in collection.entries {
     when entry.key is key {
-      mutable result is try items.copy[Entry[K, V]](collection.entries).
+      dynamic result is try items.copy[Entry[K, V]](collection.entries).
       set result at index to Entry[K, V](key, value).
       give Map[K, V](result).
     }
@@ -25,7 +25,7 @@ public function put[K, V](collection of type Map[K, V], key of type K, value of 
   give Map[K, V](try items.append[Entry[K, V]](collection.entries, Entry[K, V](key, value))).
 }
 public function remove[K, V](collection of type Map[K, V], key of type K) of type fallible Map[K, V] where K is Equatable {
-  mutable index of type unsigned 64 is 0.
+  dynamic index of type unsigned 64 is 0.
   for each entry in collection.entries {
     when entry.key is key { give Map[K, V](try items.remove[Entry[K, V]](collection.entries, index)). }
     set index to index plus 1.

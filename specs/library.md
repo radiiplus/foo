@@ -33,15 +33,17 @@ A module's exported declarations define its detailed API. This specification fix
 | --- | --- |
 | memory | Scope allocation; explicit owners; bounded byte transfer, clearing and comparison |
 | io | Standard streams, bounded reads, line reads, writes, display and close |
-| fs | Open, read and write files; create a directory; join paths |
-| net | TCP connect, listen, accept, port, send, receive and close |
+| file | Open, read and write files; create a directory; join paths; flush, seek, position and size controls |
+| net | TCP connect, listen, accept, port, complete or partial send, receive, half-close, socket policy and close |
+| http | Client requests and servers; request headers, redirects and connection reuse controls |
 | process | Run a shell command; count/read arguments; read environment variables |
 | thread | Spawn a function, wait for completion, mutexes and conditions |
 | time | Monotonic nanoseconds, sleep and measure a function's duration |
 | text | Concatenate, trim, split, byte length and copied byte ranges |
-| sequence | Typed creation, append, removal, copying, sorting, searching, filtering and mapping |
+| sequence | Typed creation, append, removal, copying, sorting, searching, deduplication, filtering and mapping |
 | log | Message and error output |
-| map, set, queue, stack | Typed key/value lookup, unique values, FIFO and LIFO collections |
+| map, set, queue, stack | Typed immutable key/value lookup, unique values, FIFO and LIFO collections |
+| hashmap | Mutable open-addressed text-key lookup with typed values |
 
 Use `foo doc memory`, `foo doc sequence`, or `foo doc file.iv` to read public declarations. Documentation contains signatures and public types, not function bodies or private declarations.
 
@@ -51,18 +53,26 @@ Sentence calls use the same exported functions as parenthesized calls. Imports a
 use memory.
 use io as io.
 start() {
-  constant destination is try allocate 4.
-  try copy "FOO!" into destination.
+  constant destination is allocate 4 try.
+  copy "FOO!" into destination try.
   clear destination.
-  try io.display "Ready" plus newline.
+  io.display("Ready" plus newline) try.
 }
 ```
 
 Byte transfer rejects a short destination before writing anything and permits overlapping source and destination. `compare` returns -1, 0 or 1 using unsigned byte order. The allocator-based `memory.copy(owner, pointer, content)` also remains available for explicitly owned raw allocations; sentence copying accepts bounded sequences instead.
 
-File modes are `"read"`, `"write"` and `"append"`. `read` returns up to the requested byte count; an empty result signals end of input. `line` removes the trailing line ending. `fs.read` reads a whole file. A missing file fails. `directory` accepts an existing directory, but fails for an existing non-directory. Joining paths does not access the filesystem. An absolute right path replaces the left path.
+File modes are `"read"`, `"write"` and `"append"`. `read` returns up to the requested byte count; an empty result signals end of input. `line` removes the trailing line ending. `file.read` reads a whole file. A missing file fails. `directory` accepts an existing directory, but fails for an existing non-directory. Joining paths does not access the filesystem. An absolute right path replaces the left path.
 
 Network operations are blocking TCP operations. Port zero asks the operating system to choose a port; `port` returns it. `send` completes the entire byte sequence or fails; `receive` may return fewer bytes than requested and returns empty at end of input. Closing a connection while another operation uses it requires caller synchronization.
+
+`sendSome` performs one operating-system send and may report fewer bytes than supplied. `shutdown` accepts `read`, `write`, or `both` and does not release the connection. `nodelay` controls TCP_NODELAY and `keepalive` controls SO_KEEPALIVE. These options fail when the target socket or platform cannot provide the requested behavior.
+
+File `seek` uses signed byte offsets relative to `start`, `current`, or `end`. `position` and `size` return byte counts; querying size preserves the current position. `flush` writes buffered output without closing the stream. Append-mode writes remain positioned by the operating system's append semantics.
+
+HTTP client headers added with `addHeader` persist across requests and repeated names are preserved. `clearHeaders` removes them. Redirect limits range from 0 through 100; zero rejects redirects. Disabling `reuse` prevents a completed request connection from being retained for another request. Persistent headers can cross redirect trust boundaries, so callers must clear credentials before changing domains.
+
+The Windows C backend uses WinHTTP and the operating-system trust store rather than requiring curl or OpenSSL. Its `trust` operation reports `CustomTrustUnavailable` because WinHTTP does not consume the portable PEM-file contract. Zig and POSIX HTTP clients support adding certificate files explicitly.
 
 `process.run` invokes the host's command shell and returns its exit status; command text follows that shell's syntax. Argument zero names the executable. An absent environment variable fails with `MissingValue`. Windows paths and environment access currently follow the process's native character encoding.
 
@@ -76,6 +86,8 @@ Sequence edits and collection edits return independently owned backing storage. 
 
 Maps and sets preserve insertion order and use linear equality searches. Updating an existing key preserves its position. Missing map keys fail with `MissingKey`. Queue `first` and stack `top` fail with `EmptyCollection`; removal from an empty collection fails. These collections prioritize predictable behavior over asymptotic performance. Edits copy O(n) elements.
 
-`sort[T]` requires `where T is Ord`, returns a stable sorted copy, and uses O(n²) comparisons in the worst case. `find[T]` requires `where T is Equatable` and returns an optional zero-based index. Map keys and set elements require `Equatable`. Records can derive `Equatable` when all their fields support equality; equality compares fields and sequence contents, not storage addresses. Derived `Ord` compares fields in declaration order; sequences compare lexicographically and an absent optional precedes a present value. `filter` and `map` accept ordinary function values; captured environments are not supported.
+`hashmap` is the lookup-optimized alternative. It uses text keys, shallow-copies typed values, has O(1) average lookup and mutation, and does not define iteration order. Its handle is mutable and must be closed. Implementations use the same open-addressing behavior and error contract across backends, while hashing, allocation and byte transfer remain backend-native.
 
-Text indexing and `length` count bytes, not characters. `trim` removes ASCII whitespace. `split` preserves empty fields, copies each field, and rejects an empty separator. Release each copied field with `text.release`, then the result sequence with `sequence.release`. Owned text returned by io, fs, net, process and text uses `text.release`. The v0 byte-oriented service interfaces also transport arbitrary bytes through the existing text representation; callers must validate untrusted bytes with `unicode.valid` before treating them as UTF-8. Byte ranges can split a multibyte character.
+`sort[T]` requires `where T is Ord`, returns a stable sorted copy, and uses O(n²) comparisons in the worst case. `find[T]` requires `where T is Equatable` and returns an optional zero-based index. `deduplicate[T]` and its short alias `dedup[T]` preserve the first occurrence of each value. Map keys and set elements require `Equatable`. Records can derive `Equatable` when all their fields support equality; equality compares fields and sequence contents, not storage addresses. Derived `Ord` compares fields in declaration order; sequences compare lexicographically and an absent optional precedes a present value. `filter` and `map` accept ordinary function values; captured environments are not supported. `sequence.map` performs one result allocation. `filter` and `dedup` reserve once and compact once, so their allocation and copying work is O(n); deduplication still performs O(n²) equality comparisons.
+
+Text indexing and `length` count bytes, not characters. `trim` removes ASCII whitespace. `split` preserves empty fields, copies each field, rejects an empty separator, and allocates its result sequence once after counting the fields. Release each copied field with `text.release`, then the result sequence with `sequence.release`. Owned text returned by io, file, net, process and text uses `text.release`. The v0 byte-oriented service interfaces also transport arbitrary bytes through the existing text representation; callers must validate untrusted bytes with `unicode.valid` before treating them as UTF-8. Byte ranges can split a multibyte character.

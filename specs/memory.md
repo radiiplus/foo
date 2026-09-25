@@ -13,8 +13,8 @@ Every function and lexical block has a scope arena. The current scope owns
 allocations made without an explicit allocator:
 
 ```iv
-function sample() of type fallible nothing {
-  constant data is try allocate 1024.
+function sample() giving fallible nothing {
+  constant data is allocate 1024 try.
   after { inspect(data). }
   give nothing.
 }
@@ -27,8 +27,8 @@ of zero bytes succeeds with an empty sequence and provides no dereferenceable
 element. Failure leaves existing allocations unchanged.
 
 `constant data is allocate 1024.` binds the fallible result itself; it does not
-silently handle failure. Use try or catch before accessing its successful value.
-A computed count uses parentheses: `allocate (count times 8)`.
+silently handle failure. Use try or fallback before accessing its successful value.
+A computed count uses parentheses: `allocate (count multiply 8)`.
 
 Scope storage is reclaimed after its deferred cleanup. Returning it, storing it
 in an outer scope, or passing it to an operation that retains it is an error.
@@ -42,8 +42,8 @@ System capability permits explicit Allocator values:
 ```iv
 use memory.
 
-function load(owner of type Allocator) of type fallible sequence of byte {
-  give try allocate 1024 using owner.
+function load(owner Allocator) giving fallible sequence of byte {
+  give allocate 1024 using owner try.
 }
 ```
 
@@ -88,7 +88,7 @@ otherwise. Public lifetime relationships must be expressible at the call site.
 Each normal return, propagated error, break and continue runs the registered
 cleanup of every scope being exited, in reverse registration order. Cleanup
 runs before arena reclamation. A cleanup block cannot return, break, continue
-or propagate a new error. It may catch errors locally.
+or propagate a new error. It may recover with fallback locally.
 
 Panic terminates execution; cleanup is not guaranteed after panic or forced
 process termination. Explicit close/release remains invalid while a safe borrow

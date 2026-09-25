@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.1.0 - 2026-09-25
 
 - Replace the former mark with a clear numeral 4 across the Marketplace icon,
   file icons, and package screenshot.
@@ -9,6 +9,12 @@
   extension identity.
 - Replace the retired compiler fixture with complete library modules and usage
   tests, preserving a 200+ line corpus with token snapshots.
+- Highlight the current `define`, `dynamic`, `stop`, `skip`, `fallback`,
+  `multiply`, `subtract`, and `divide` vocabulary.
+- Update snippets and fixtures for top-level statements, implicit completion,
+  concise type annotations, and camel-case standard-library calls.
+- Document postfix `try` and direct inclusive comparison phrases used by the
+  current compiler.
 
 ## 2.0.0 — 2026-09-14
 

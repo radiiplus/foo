@@ -2,7 +2,7 @@
 --- Random number generation ---
 --- OS-backed and PRNG implementations ---
 
-public type Random is record {
+public define Random as record {
   state of type pointer to byte.
 }.
 

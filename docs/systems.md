@@ -13,25 +13,19 @@ The simplest way to talk to the operating system is through the `io` module. Bec
 ### Reading a File
 FOO makes reading an entire file into memory a single, safe operation.
 ```foo
-use io.
+use file.
 
-start() {
-  -- try ensures we handle the error if the file is missing
-  constant content is try file read "notes.txt".
-  display content.
-  give nothing.
-}
+-- try propagates the error if the file is missing.
+constant content is file.read("notes.txt") try.
+display content.
 ```
 
 ### Writing to a File
 Writing is just as simple. FOO handles opening the file, writing the bytes, and closing it automatically.
 ```foo
-use io.
+use file.
 
-start() {
-  try file write "output.txt" with "Hello, hard drive!".
-  give nothing.
-}
+file.write("output.txt", "Hello, hard drive!") try.
 ```
 
 ### Reading User Input
@@ -39,12 +33,9 @@ You can also read directly from the keyboard.
 ```foo
 use io.
 
-start() {
-  display "What is your name?".
-  constant name is try io read line.
-  display "Nice to meet you, " plus name.
-  give nothing.
-}
+display "What is your name?".
+constant name is io.line(io.input()) try.
+display "Nice to meet you, " plus name.
 ```
 
 ---
@@ -56,21 +47,15 @@ FOO was built with the modern web in mind. The `net` module abstracts away the c
 **The Benefit:** FOO automatically detects your operating system (Windows, Mac, or Linux) and uses the fastest possible event system (`iocp`, `kqueue`, or `epoll`) under the hood. You write the code once; it runs at maximum speed everywhere.
 
 ```foo
-use net.
+use net as network.
 
-start() {
-  -- Connect to a server
-  constant socket is try net connect "example.com" with 80.
-  
-  -- Send a simple HTTP request
-  try net send socket "GET / HTTP/1.0\n\n".
-  
-  -- Receive the response
-  constant response is try net receive socket with 1024.
-  display response.
-  
-  give nothing.
-}
+-- Connect to a server and guarantee cleanup.
+constant socket is network.connect("example.com", 80) try.
+after { network.close(socket) fallback nothing. }
+
+constant sent is network.send(socket, "GET / HTTP/1.0\n\n") try.
+constant response is network.receive(socket, 1024) try.
+display response.
 ```
 
 ---
@@ -82,15 +67,11 @@ Sometimes you need to run an external command, like a database tool or a system 
 ```foo
 use process.
 
-start() {
-  -- Run a command and wait for it to finish
-  constant result is try process run "ping example.com".
-  
-  -- Get the arguments passed to your own FOO program
-  constant args is try process arguments.
-  display args.
-  
-  give nothing.
+constant exitCode is process.run("ping example.com") try.
+
+when process.count() greater than 0 {
+  constant first is process.argument(0) try.
+  display first.
 }
 ```
 
@@ -106,13 +87,8 @@ FOO doesn't make you rewrite it. FOO has built-in **Interoperability** (the abil
 You can declare a C function right inside your FOO code. FOO will link against the C library and call it directly.
 
 ```foo
--- Declare a standard C library function
-use "c" function printf(fmt of type pointer to byte, ...) of type integer.
-
-start() {
-  printf("This message is printed by C, but controlled by FOO!\n").
-  give nothing.
-}
+-- Declare a C ABI function. Use generated bindings for pointer conversion.
+extern "C" function puts(value pointer to byte) giving integer.
 ```
 
 ### The `foo bind` Tool
@@ -131,7 +107,7 @@ When you need absolute, raw control over the hardware—like writing a device dr
 ### Native C Blocks
 You can write raw C code directly inside a FOO function.
 ```foo
-native c function add_ints(a of type integer, b of type integer) of type integer {
+native c function addIntegers(a integer, b integer) giving integer {
   // This is raw C code
   return a + b;
 }
@@ -151,9 +127,9 @@ asm {
 ## Summary: The Systems Philosophy
 
 FOO’s systems layer is designed to be **Progressive**. 
-*   Most of the time, you use the high-level `io`, `net`, and `process` modules because they are safe and easy.
-*   When you need more control, you use `use "c"` to call existing libraries.
-*   When you need total control, you use `native` blocks.
+*   Most of the time, use the high-level `io`, `file`, `net`, `http`, and `process` operations.
+*   For protocol and resource control, use their advanced operations such as HTTP client headers, partial TCP sends, half-close, socket options, and file positioning.
+*   Use native bindings or explicit `native` blocks only when the portable runtime contract does not expose the required facility.
 
 You are never forced into a "walled garden." FOO gives you the keys to the entire computer.
 

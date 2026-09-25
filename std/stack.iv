@@ -1,15 +1,15 @@
 -- Stores typed values in last-in, first-out order.
 use sequence as items.
-public type Stack[T] is record { values of type sequence of T. }.
+public define Stack[T] as record { values of type sequence of T. }.
 public function create[T]() of type Stack[T] { give Stack[T](items.create[T]()). }
 public function length[T](collection of type Stack[T]) of type unsigned 64 { give items.length[T](collection.values). }
 public function push[T](collection of type Stack[T], value of type T) of type fallible Stack[T] { give Stack[T](try items.append[T](collection.values, value)). }
 public function top[T](collection of type Stack[T]) of type fallible T {
   when length[T](collection) is 0 { give fail(Error.EmptyCollection). }
-  give collection.values at (length[T](collection) minus 1).
+  give collection.values at (length[T](collection) subtract 1).
 }
 public function remove[T](collection of type Stack[T]) of type fallible Stack[T] {
   when length[T](collection) is 0 { give fail(Error.EmptyCollection). }
-  give Stack[T](try items.remove[T](collection.values, length[T](collection) minus 1)).
+  give Stack[T](try items.remove[T](collection.values, length[T](collection) subtract 1)).
 }
 public function release[T](collection of type Stack[T]) of type fallible nothing { try items.release[T](collection.values). give. }

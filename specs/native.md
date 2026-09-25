@@ -18,13 +18,13 @@ native c {
   #include <stdio.h>
   int answer(void) { return 44; }
 }
-extern "C" function answer() of type integer 32.
+extern "C" function answer() giving integer 32.
 ```
 
 A named native function binds only its declared parameters and result:
 
 ```iv
-native c function increment(value of type integer 32) of type integer 32 {
+native c function increment(value integer 32) giving integer 32 {
   return value + 1;
 }
 ```
@@ -50,7 +50,7 @@ For parameter/result bindings, use a native function and string constraints.
 `result` names its output value; parameters keep their declared names:
 
 ```iv
-native asm function mirror(value of type unsigned 64) of type unsigned 64 {
+native asm function mirror(value unsigned 64) giving unsigned 64 {
   "movq %[value], %[result]"
     : [result] "=r"(result)
     : [value] "r"(value)

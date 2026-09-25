@@ -1,6 +1,6 @@
 {
   "name": "foo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "bin": {
     "foo": "bin/foo.mjs"
   },
@@ -15,7 +15,7 @@
     "test:editor": "node test/editor/run.mjs && node test/editor/snapshots.mjs && node test/editor/theme.mjs && node test/editor/probe.mjs",
     "test:host": "node test/editor/editor.mjs",
     "build": "node tools/build.mjs",
-    "build:installers": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build-installers.ps1",
+    "build:installers": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build.ps1",
     "native:build": "node tools/native.mjs",
     "test:native": "node test/native/run.mjs"
   },
@@ -42,6 +42,7 @@
     "LICENSE",
     "LICENSE-MIT",
     "LICENSE-APACHE",
+    "CHANGELOG.md",
     "bin/",
     "assets/",
     "src/",

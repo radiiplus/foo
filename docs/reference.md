@@ -8,14 +8,22 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 
 | Command | What it does |
 | :--- | :--- |
+| `foo login` | Authenticates with GitHub through the device flow, printing the URL and code and opening the system browser when available. |
+| `foo init [directory\|.]` | Scaffolds a publishable package. |
+| `foo publish` | Validates and publishes the current committed package. |
+| `foo add <package[@version]> [url\|path]` | Adds a registry, URL, Git, or local dependency. |
+| `foo install` | Resolves the manifest, fetches exact commits, and writes `foo.lock`. |
+| `foo search <query>` | Searches the public Git registry index. |
+| `foo info <package[@version]>` | Shows a canonical package release. |
 | `foo new <name>` | Creates a brand new project folder. |
+| `foo new .` | Initializes the current directory without overwriting project files. |
 | `foo check` | Reads your code and checks for errors (without running it). |
 | `foo build` | Compiles your code into a final, optimized executable. |
 | `foo run` | Builds and immediately runs your app. |
 | `foo test` | Finds and runs all your test blocks. |
 | `foo fmt` | Automatically formats your code to look perfect. |
 | `foo watch` | Re-checks your code instantly every time you hit save. |
-| `foo doctor` | Checks your system and installs missing tools (like Zig/C). |
+| `foo doctor` | Reports installed and missing toolchain components. |
 | `foo bind <file.h>` | Automatically generates FOO bindings from a C header file. |
 
 ---
@@ -25,9 +33,10 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | Keyword | Meaning |
 | :--- | :--- |
 | `constant` | Creates a variable that **cannot** be changed. |
-| `mutable` | Creates a variable that **can** be changed. |
+| `dynamic` | Creates a variable that **can** be changed. |
 | `function` | Defines a reusable block of code. |
-| `start()` | The entry point of your application. |
+| `define ... as ...` | Introduces a named type. |
+| `start()` | Optionally groups an explicit entry point; top-level statements run without it. |
 | `give` | Returns a value from a function (like `return`). |
 | `use` | Imports another file or module. |
 | `public` | Makes a declaration visible to other files. |
@@ -42,8 +51,8 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | `otherwise` | Runs if the condition is false (like `else`). |
 | `for each` | Loops through every item in a list. |
 | `while` | Loops as long as a condition is true. |
-| `break` | Stops a loop completely. |
-| `continue` | Skips to the next loop iteration. |
+| `stop` | Stops a loop completely. |
+| `skip` | Skips the current iteration and moves to the next. |
 | `match` | Checks a value against specific cases (like `switch`). |
 | `after` | Runs cleanup code, even if the function fails (like `defer`). |
 
@@ -54,9 +63,9 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | Symbol | FOO Word |
 | :--- | :--- |
 | `+` | `plus` |
-| `-` | `minus` |
-| `*` | `times` |
-| `/` | `divided by` |
+| `-` | `subtract` |
+| `*` | `multiply` |
+| `/` | `divide` |
 | `%` | `remainder` |
 | `==` | `is` |
 | `!=` | `is not` |
@@ -71,21 +80,17 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | Keyword | Meaning |
 | :--- | :--- |
 | `fallible` | Marks a function as "can fail". |
-| `try` | Unwraps a fallible value, or stops the function if it fails. |
-| `catch` | Provides a fallback value if an operation fails. |
+| `try` | Follows a fallible value and unwraps it, or stops the function if it fails. |
+| `fallback` | Provides an alternative value if an operation fails. |
 | `Error` | The type used to represent failures. |
 
 ---
 
-## 6. Units of Measurement
+## 6. Quantities
 
-FOO understands these units natively! You can use them in any math expression.
-
-| Category | Units |
-| :--- | :--- |
-| **Time** | `seconds`, `milliseconds`, `microseconds`, `nanoseconds` |
-| **Data** | `bytes`, `kilobytes`, `megabytes`, `gigabytes`, `terabytes` |
-| **Bits** | `bits`, `kilobits`, `megabits`, `gigabits` |
+FOO v1 uses ordinary numeric expressions for quantities. Library APIs document
+their base units; give converted values names such as `twoSeconds` or
+`fiveMegabytes` at the call site.
 
 ---
 

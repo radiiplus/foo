@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+/footestlib/
+/testfoo/
 
 # TypeScript/JavaScript build and tool caches
 dist/
@@ -10,12 +12,16 @@ build/
 !test/build/**
 coverage/
 .cache/
+.firebase/
 .tsbuildinfo
 
 # FOO generated outputs and local toolchains
 .artifacts/
 release/
 .foo/
+*.exe
+*.ilk
+*.pdb
 # Pre-rename local caches and recovery snapshots
 .tratio-build/
 .tratio/
@@ -26,6 +32,9 @@ zig-out/
 # Logs and temporary files
 *.log
 *.tmp
+.env
+.env.*
+!.env.example
 tmp/
 temp/
 

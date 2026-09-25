@@ -24,25 +24,25 @@ type is bottom. Ordinary Error values never implicitly become failures, so
 `fallible Error` can carry a successful Error without ambiguity.
 
 ```iv
-function unavailable() of type fallible text {
+function unavailable() giving fallible text {
   give fail(Error.Unsupported).
 }
 
-function read() of type fallible text {
-  give try unavailable().
+function read() giving fallible text {
+  give unavailable() try.
 }
 
 start() {
-  constant value is read() catch "default".
+  constant value is read() fallback "default".
   give nothing.
 }
 ```
 
 Try unwraps success and propagates failure to the enclosing fallible function.
 Applying try in an explicitly infallible function is an error.
-Catch evaluates its fallback once, only on failure. Both success and fallback
+Fallback evaluates its alternative once, only on failure. Both success and alternative
 must have a common result type; a fallible fallback may preserve failure.
-Catch is an expression, not an exception-handler block.
+Fallback is an expression, not an exception-handler block.
 
 Every discarded fallible result must be handled. `start()` permits propagation:
 a propagated failure reports the error and exits unsuccessfully.
@@ -58,11 +58,11 @@ site. Local recovery consumes that failure; a new failure has its own origin.
 Trace storage must survive the scopes exited during propagation.
 
 ```iv
-function sample() of type fallible nothing {
-  constant handle is try open().
-  after { close(handle) catch nothing. }
+function sample() giving fallible nothing {
+  constant handle is open() try.
+  after { close(handle) fallback nothing. }
   after error { report("operation failed"). }
-  try consume(handle).
+  consume(handle) try.
   give nothing.
 }
 ```
@@ -74,7 +74,7 @@ not trigger error-only cleanup.
 
 Deferred blocks cannot propagate another error or alter control flow. Handle
 their own failures locally. All cleanup completes before scope storage is
-reclaimed. Panic is a separate, nonrecoverable edge: catch does not catch panic,
+reclaimed. Panic is a separate, nonrecoverable edge: fallback does not handle panic,
 and cleanup after panic is not guaranteed.
 
 Failure identity and human diagnostics are separate contracts. Foreign calls

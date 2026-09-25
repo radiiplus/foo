@@ -28,9 +28,10 @@ if (!existsSync(source)) throw Error("Missing src/main.nim");
 mkdirSync(join(root, ".artifacts", "native"), { recursive: true });
 mkdirSync(cache, { recursive: true });
 const checking = process.argv.includes("--check");
+const ssl = process.platform === "win32" ? [] : ["-d:ssl"];
 const args = checking
-  ? ["check", "--path:" + root, "--nimcache:" + cache, source]
-  : ["c", "-d:release", "--opt:size", "--nimcache:" + cache, "-o:" + output];
+  ? ["check", ...ssl, "--path:" + root, "--nimcache:" + cache, source]
+  : ["c", "-d:release", ...ssl, "--opt:size", "--nimcache:" + cache, "-o:" + output];
 if (!checking && process.platform === "win32") args.push("--cc:clang");
 if (!checking) args.push(source);
 const result = spawnSync(compiler, args, { cwd: root, stdio: "inherit", windowsHide: true });

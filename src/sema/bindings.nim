@@ -4,7 +4,7 @@ import std/strutils
 
 let libraries = toHashSet([
   "arch", "atomic", "buffer", "compress", "crypto", "http", "json",
-  "system", "testing", "unicode", "list", "memory", "stream", "sequence",
+  "system", "testing", "unicode", "list", "memory", "stream", "sequence", "hashmap",
   "io", "fs", "net", "process", "thread", "time", "text"
 ])
 

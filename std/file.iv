@@ -1,29 +1,12 @@
--- Provides file operations.
-public type File is record {
-  handle of type pointer to byte.
-}.
-
-public type Mode is choice {
-  Read.
-  Write.
-  Both.
-  Create.
-}.
-
-public function open(path of type pointer to byte, mode of type Mode) {
-  constant result of type File is uninitialized.
-  give result.
-}
-
-public function read(file of type File, buffer of type pointer to byte, size of type integer 64) {
-  constant result of type integer 64 is 0.
-  give result.
-}
-
-public function write(file of type File, data of type pointer to byte, size of type integer 64) {
-  give.
-}
-
-public function close(file of type File) {
-  give.
-}
+-- Opens files, transfers their contents, creates directories, and joins paths.
+use io as streams.
+public use "fs" function open(path text, mode text) giving fallible pointer to streams.Stream.
+public use "fs" function read(path text) giving fallible text.
+public use "fs" function write(path text, content text) giving fallible nothing.
+public use "fs" function directory(path text) giving fallible nothing.
+public use "fs" function join(left text, right text) giving fallible text.
+-- Advanced stream controls. Offsets are byte offsets; origin is start, current, or end.
+public use "fs" function flush(stream pointer to streams.Stream) giving fallible nothing.
+public use "fs" function seek(stream pointer to streams.Stream, offset integer 64, origin text) giving fallible nothing.
+public use "fs" function position(stream pointer to streams.Stream) giving fallible unsigned 64.
+public use "fs" function size(stream pointer to streams.Stream) giving fallible unsigned 64.

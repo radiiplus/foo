@@ -33,6 +33,7 @@ type
     compiler*: string
     products*: Table[string, ProductConfig]
     tasks*: JsonNode
+    hooks*: JsonNode
     resources*: seq[string]
     `type`*: string
     target*: seq[string]
@@ -73,4 +74,4 @@ proc defaultManifest*(): Manifest =
 proc hasBuild*(manifest: Manifest): bool =
   manifest.build.backend.len > 0 or manifest.build.compiler.len > 0 or
     manifest.build.products.len > 0 or manifest.build.resources.len > 0 or
-    manifest.build.tasks != nil
+    manifest.build.tasks != nil or manifest.build.hooks != nil

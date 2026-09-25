@@ -66,7 +66,7 @@ The names `text` and `sequence` are contextual library identifiers outside type 
 | filter items with predicate; map items with transform | the named function with both arguments |
 | log message content; log error content | log.message(content); log.error(content) |
 
-The formatter prints the corresponding call form. A sentence argument includes arithmetic and comparisons; use parentheses to delimit an argument before applying an operator to the call result. `catch` binds to the complete sentence call. Commas, closing brackets, braces, statement stops and physical newlines delimit sentence calls. Linking words shown in the table are required. A qualifier is preserved when a sentence changes the operation name, such as `io.read line` selecting `io.line`.
+The formatter prints the corresponding call form. A sentence argument includes arithmetic and comparisons; use parentheses to delimit an argument before applying an operator to the call result. `fallback` binds to the complete sentence call. Commas, closing brackets, braces, statement stops and physical newlines delimit sentence calls. Linking words shown in the table are required. A qualifier is preserved when a sentence changes the operation name, such as `io.read line` selecting `io.line`.
 
 After `native`, the next opening brace begins a NATIVE token. It includes a
 balanced brace-delimited payload. Braces inside single/double quoted strings,
@@ -82,29 +82,30 @@ CHAR, MEMBER, STOP, NATIVE and EOF are the lexical tokens defined above.
 
 ```ebnf
 File         = { Top }, EOF ;
-Top          = Import | Entry | Test | Eval | Native | [ "public" ], Definition ;
-Definition   = Function | Constant | Mutable | Alias | Foreign | NativeFunction ;
+Top          = Import | Entry | Test | Eval | Native | Statement | [ "public" ], Definition ;
+Definition   = Function | Constant | Dynamic | Alias | Foreign | NativeFunction ;
 Import       = "use", ( IDENT | TEXT ), [ "as", IDENT ], STOP | "use", "c", TEXT, STOP ;
 Entry        = "start", "(", ")", Block ;
 Test         = "test", TEXT, Block ;
 Eval         = "eval", "{", { Constant | Alias }, "}" ;
 
 Function     = "function", IDENT, [ Parameters ], "(", [ Formals ], ")",
-               [ Result ], [ Bounds ], Block ;
+               [ FunctionResult ], [ Bounds ], Block ;
 Parameters   = "[", IDENT, { ",", IDENT }, "]" ;
 Formals      = Formal, { ",", Formal } ;
-Formal       = IDENT, "of", "type", Type ;
-Result       = "of", "type", Type ;
+Formal       = IDENT, Type ;
+FunctionResult = "giving", Type ;
+Annotation   = "of", "type", Type ;
 Bounds       = "where", Bound, { ",", Bound } ;
 Bound        = IDENT, "is", Name ;
 Foreign      = "extern", TEXT, "function", IDENT, "(", [ Formals ], ")",
-               ( Result | "giving", Type ), ( STOP | Block ) ;
+               FunctionResult, ( STOP | Block ) ;
 Native       = "native", [ "c" | "asm" ], NATIVE ;
 NativeFunction = "native", [ "c" | "asm" ], "function", IDENT,
-                 "(", [ Formals ], ")", [ Result ], NATIVE ;
-Constant     = "constant", IDENT, [ Result ], "is", Expr, STOP ;
-Mutable      = "mutable", IDENT, [ Result ], "is", Expr, STOP ;
-Alias        = "type", IDENT, [ Parameters ], "is", DefinitionType,
+                 "(", [ Formals ], ")", [ FunctionResult ], NATIVE ;
+Constant     = "constant", IDENT, [ Annotation ], "is", Expr, STOP ;
+Dynamic      = "dynamic", IDENT, [ Annotation ], "is", Expr, STOP ;
+Alias        = "define", IDENT, [ Parameters ], "as", DefinitionType,
                [ Derives ], [ Bounds ], STOP ;
 Derives      = "derives", Name, { ",", Name } ;
 DefinitionType = Record | Packed | Choice | "opaque" | Type ;
@@ -128,8 +129,8 @@ ArgumentsType = "[", Types, "]" ;
 Types        = Type, { ",", Type } ;
 
 Block        = "{", { Statement }, "}" ;
-Statement    = Constant | Mutable | Alias | Set | Give | When | While | For
-             | Match | "break", STOP | "continue", STOP | After | Eval
+Statement    = Constant | Dynamic | Alias | Set | Give | When | While | For
+             | Match | "stop", STOP | "skip", STOP | After | Eval
              | "unsafe", Block | Native | Machine | Expr, STOP ;
 Machine      = "atomic", "add", IDENT, "by", Expr, STOP
              | "bits", ( "set" | "clear" ), IDENT, "at", "position", Expr, STOP
@@ -149,16 +150,18 @@ Pattern      = Name, [ "(", IDENT, ")" ]
              | INT | "true" | "false" | "nothing" | "anything" ;
 After        = ( "after" | "cleanup" | "finally" ), [ "error" ], Block ;
 
-Expr         = Or, [ "catch", Expr ] ;
+Expr         = Or, [ "fallback", Expr ] ;
 Or           = And, { "or", And } ;
 And          = Negation, { "and", Negation } ;
 Negation     = { "not" }, Relation ;
 Relation     = Sum, [ Comparison, Sum ] ;
-Comparison   = "is", [ "not" ] | "less", "than" | "greater", "than" ;
-Sum          = Product, { ( "plus" | "minus" ), Product } ;
-Product      = Prefix, { ( "times" | "divided", "by" | "remainder" ), Prefix } ;
-Prefix       = "try", Prefix | "allocate", Atom, [ "using", Atom ] | Postfix ;
-Postfix      = Atom, { Call | MEMBER, IDENT, [ ArgumentsType ] | "at", Atom } ;
+Comparison   = "is", [ "not" ]
+             | ( "less" | "greater" ), "than", [ "or", "equal", "to" ]
+             | "is", ( "less" | "greater" ), "than", [ "or", "equal", "to" ] ;
+Sum          = Product, { ( "plus" | "subtract" ), Product } ;
+Product      = Prefix, { ( "multiply" | "divide" | "remainder" ), Prefix } ;
+Prefix       = "allocate", Atom, [ "using", Atom ], { "try" } | Postfix ;
+Postfix      = Atom, { Call | MEMBER, IDENT, [ ArgumentsType ] | "at", Atom }, { "try" } ;
 Call         = "(", [ Values ], ")" ;
 Values       = Expr, { ",", Expr } ;
 Atom         = IDENT, [ ArgumentsType ] | Literal | "(", Expr, ")"
@@ -168,9 +171,10 @@ Atom         = IDENT, [ ArgumentsType ] | Literal | "(", Expr, ")"
 Literal      = INT | DECIMAL | TEXT | CHAR | "true" | "false" | "nothing" ;
 ```
 
-A file contains at most one `start()`; libraries contain none. An executable
-selects the unique start among discovered source files unless project entry or
-a product entry chooses its file explicitly. Its result is `fallible nothing`.
+A file contains at most one `start()`. Executable top-level statements are
+collected into an implicit entry when `start()` is absent. A project selects
+`src/main.iv` by default unless its manifest or product chooses another entry.
+The entry result is `fallible nothing`.
 Test bodies have the same result type. Reaching the end of a unit-returning
 body succeeds with nothing; a non-unit body must return on every reachable path.
 `give nothing.` returns unit. A function with no declared result infers a
@@ -183,7 +187,7 @@ a body defines a C-callable function. Foreign declarations have no generics.
 
 An expression statement must call an operation, perform allocation, propagate
 an error, or be `unreachable`. Discarding an unhandled fallible result is an
-error. `set` requires a mutable place; the final `to` separates its destination
+error. `set` requires a dynamic place; the final `to` separates its destination
 from its value. Reading an uninitialized place is forbidden.
 
 ## Binding and evaluation
@@ -194,18 +198,18 @@ Postfix operations associate left to right. An `at` operand is one Atom:
 `rows at (indices.current)` for a member-valued index.
 Square brackets exclusively carry type arguments or vector parameters.
 
-Precedence, tightest first: postfix; try/allocation; multiplication, division
-and remainder; addition/subtraction; comparison; not; and; or; catch.
-Arithmetic and Boolean chains associate left; catch associates right.
+Precedence, tightest first: calls/members/indexing; postfix try/allocation; multiplication, division
+and remainder; addition/subtraction; comparison; not; and; or; fallback.
+Arithmetic and Boolean chains associate left; fallback associates right.
 Comparisons do not chain: `a less than b less than c` is invalid.
 `a is not b` is inequality, while `a is (not b)` compares against a negation.
 `not a is b` means `not (a is b)`. Declaration `is` is consumed before its
 initializer expression, so `constant ready is not busy.` is unambiguous.
 
 Operands and arguments evaluate left to right. `and` and `or` short-circuit;
-catch evaluates its fallback only on failure. `try read() catch fallback`
-first propagates read's error; use `read() catch fallback` for local recovery.
-Try applied to an infallible value and catch applied to a non-fallible value are
+fallback evaluates its alternative only on failure. Use `read() try` to
+propagate read's error, or `read() fallback value` to recover locally.
+Try applied to an infallible value and fallback applied to a non-fallible value are
 type errors, not alternate interpretations.
 
 Calls always use parentheses, including zero-argument calls. A name followed by
@@ -226,34 +230,34 @@ pattern uses its name alone, without empty parentheses.
 
 | Expression | Required grouping |
 | --- | --- |
-| `a plus b times c` | `a plus (b times c)` |
-| `a minus b minus c` | `(a minus b) minus c` |
+| `a plus b multiply c` | `a plus (b multiply c)` |
+| `a subtract b subtract c` | `(a subtract b) subtract c` |
 | `not a is b` | `not (a is b)` |
 | `a is not b` | One inequality comparison |
 | `a or b and c` | `a or (b and c)` |
 | `rows at i at j` | `(rows at i) at j` |
 | `rows at i.name` | `(rows at i).name` |
-| `a catch b catch c` | `a catch (b catch c)` |
-| `try read()` | `try (read())` |
+| `a fallback b fallback c` | `a fallback (b fallback c)` |
+| `read() try` | Propagate failure from `read()` |
 | `allocate (size()) using owner` | One allocation with an explicit owner |
 
 ## Declaration scope
 
 File declarations are visible throughout their file; duplicate names in one
 scope are errors. Function parameters are visible throughout the function body.
-Local constants and mutable bindings become visible after their initializer;
+Local constants and dynamic bindings become visible after their initializer;
 local type and eval declarations are visible throughout their enclosing block.
 An inner block may shadow an outer binding. The same rules apply to imported
 namespace names, which cannot be redeclared in their file scope.
 
-File-level value initializers must be compile-time evaluable. Mutable file
+File-level value initializers must be compile-time evaluable. Dynamic file
 values receive that initial value separately in each process; they do not
 introduce an order-dependent startup script. A local constant means an immutable
-binding, not necessarily compile-time evaluation. A mutable binding permits
+binding, not necessarily compile-time evaluation. A dynamic binding permits
 assignment but does not by itself grant write access through a borrowed view.
 
 `when`, `while` and guards require Boolean conditions. `for each` visits a
-sequence's elements in increasing index order. A break or continue targets the
+sequence's elements in increasing index order. A stop or skip targets the
 innermost loop and cannot occur outside a loop. An unsafe or native block does
 not create a separate control-flow escape route.
 
@@ -267,18 +271,18 @@ errors.
 
 ```iv
 -- Calculates a total.
-public function add(left of type integer, right of type integer)
-  of type integer {
+public function add(left integer, right integer)
+  giving integer {
   give left plus right.
 }
 
-function sort[T](items of type sequence of T)
-  of type nothing where T is Ord {
+function sort[T](items sequence of T)
+  giving nothing where T is Ord {
   give nothing.
 }
 
 start() {
-  mutable count is 0.
+  dynamic count is 0.
   while count less than 4 {
     set count to count plus 1.
   }
@@ -292,7 +296,7 @@ operations require the level of their effects, at least system. Capability
 checks do not alter parsing. Removed spellings are listed in
 [consolidation](consolidation.md); they are not alternative v1 syntax.
 
-`#[repr(C)] type Name is record { ... }.` and the corresponding union declaration
+`#[repr(C)] define Name as record { ... }.` and the corresponding union declaration
 select C layout. Attribute parentheses belong to the declaration, not its body.
 `extern "C" function name(...) giving Type.` declares a C symbol. Native function
 headers use the ordinary function signature followed by an opaque native body;

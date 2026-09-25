@@ -101,7 +101,7 @@ static FOOResult foo_memory_expand(void *handle, uint8_t *pointer,
     return foo_error("OutOfMemory");
   size_t kept = size < entry->size ? (size_t)size : entry->size;
   if (kept)
-    memcpy(data, pointer, kept);
+    foo_transfer(data, pointer, kept);
   free(entry->data);
   entry->data = data;
   entry->size = (size_t)size;

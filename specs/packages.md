@@ -9,12 +9,12 @@ joined by `::`. For example, src/network/server.iv in myapp has namespace
 paths do not participate in public names. Paths differing only by ASCII case
 are rejected so names remain portable.
 
-Declarations are private unless prefixed with `public`. Public functions, constants, mutable values and types form the file's interface. Imports are private bindings; importing a file does not re-export it. A public signature can mention only publicly reachable types and capabilities. A file cannot access another file's private declarations.
+Declarations are private unless prefixed with `public`. Public functions, constants, dynamic values and types form the file's interface. Imports are private bindings; importing a file does not re-export it. A public signature can mention only publicly reachable types and capabilities. A file cannot access another file's private declarations.
 
 ```iv
 -- Arithmetic operations.
-public function add(left of type integer, right of type integer)
-  of type integer {
+public function add(left integer, right integer)
+  giving integer {
   give left plus right.
 }
 ```

@@ -12,6 +12,7 @@ type
     clobbers*: seq[string]
 
   Selection* = object
+    backend*: string
     target*: string
     cpu*: string
     level*: string
@@ -34,8 +35,15 @@ proc levelIndex(value: string): int =
 proc select*(operation: string; options: Selection): Decision =
   let arch = architecture(options.target)
   let cpu = profile(options.target, options.cpu)
+  let backend = if options.backend.len > 0: options.backend else: "c"
   let machine = levelIndex(if options.level.len > 0: options.level else: "base") >= levelIndex("machine")
   if operation == "copy":
+    if backend == "zig":
+      if options.mode == "release" and arch == "x86_64" and "avx2" in cpu.features:
+        return Decision(operation: operation, stage: "@zig", implementation: "block-32")
+      if options.mode == "release" and arch == "aarch64":
+        return Decision(operation: operation, stage: "@zig", implementation: "block-16")
+      return Decision(operation: operation, stage: "@zig", implementation: "word")
     if options.substrate != "c" and options.mode == "release" and arch == "x86_64" and "avx2" in cpu.features:
       return Decision(operation: operation, stage: "@c", implementation: "avx")
     if options.substrate != "c" and options.mode == "release" and machine and arch == "x86_64":
@@ -44,6 +52,18 @@ proc select*(operation: string; options: Selection): Decision =
       return Decision(operation: operation, stage: "@c", implementation: "intrinsic")
     return Decision(operation: operation, stage: "@c", implementation: "portable")
   if operation == "atomic": return Decision(operation: operation, stage: "@c", implementation: "c11")
+  if operation == "hashmap":
+    return Decision(operation: operation, stage: "@runtime", implementation: "open-addressing")
+  if operation == "sequence-transform":
+    return Decision(operation: operation, stage: "@runtime", implementation: "single-allocation")
+  if operation == "task":
+    let target = options.target.toLowerAscii()
+    let implementation =
+      if "windows" in target or "win32" in target: "iocp"
+      elif "macos" in target or "darwin" in target or "bsd" in target: "kqueue"
+      elif "linux" in target: "epoll"
+      else: "threaded"
+    return Decision(operation: operation, stage: "@runtime", implementation: implementation)
   raise newException(ValueError, "No substrate for operation '" & operation & "'")
 
 proc `bind`*(input: Module; options: Selection): tuple[module: Module, decisions: seq[Decision]] =
@@ -67,6 +87,9 @@ proc `bind`*(input: Module; options: Selection): tuple[module: Module, decisions
         elif instruction.`func`.len > 0 and instruction.`func` in foreign:
           let declaration = foreign[instruction.`func`]
           if declaration.abi == "runtime.atomic": operation = "atomic"
+          elif declaration.abi in ["runtime", "runtime.task"]: operation = "task"
+          elif declaration.abi == "runtime.hashmap": operation = "hashmap"
+          elif declaration.abi == "runtime.sequence" and declaration.symbol in ["sized", "compact"]: operation = "sequence-transform"
           elif declaration.abi == "runtime.memory" and (declaration.symbol == "copy" or declaration.symbol == "transfer"): operation = "copy"
         if operation.len > 0:
           var seen = false

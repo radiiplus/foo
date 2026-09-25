@@ -264,6 +264,24 @@ proc moduleName(resolver: Resolver; path: string): string =
   let packageName = lastPathPart(resolver.root)
   packageName & "::" & relative.replace(":", "::")
 
+proc packagePath(resolver: Resolver; name: string): string =
+  let packageRoot = resolver.root / ".foo" / "packages" / name
+  let manifestInput = resolver.read(packageRoot / "project.json")
+  if not manifestInput.found: return
+  try:
+    let manifest = parseJson(manifestInput.source)
+    var relative = manifest.getOrDefault("entry").getStr()
+    if relative.len == 0:
+      let source = manifest.getOrDefault("source").getStr()
+      relative = if source.len > 0: source / "main.iv" else: "main.iv"
+    if not relative.endsWith(".iv"): relative.add(".iv")
+    let candidate = absolutePath(packageRoot / relative)
+    let confined = relativePath(candidate, packageRoot).replace('\\', '/')
+    if confined == ".." or confined.startsWith("../") or confined.isAbsolute: return
+    if resolver.read(candidate).found: return candidate
+  except CatchableError:
+    discard
+
 proc modulePath(resolver: Resolver; useNode: ast.Use; current: string): string =
   let currentFile = if resolver.units.hasKey(current): resolver.units[current].file else: resolver.root / "main.iv"
   if useNode.path.len > 0:
@@ -272,7 +290,10 @@ proc modulePath(resolver: Resolver; useNode: ast.Use; current: string): string =
     if path.isAbsolute: path else: absolutePath(parentDir(currentFile) / path)
   else:
     let local = parentDir(currentFile) / (useNode.name.text & ".iv")
-    if resolver.read(local).found: local else: resolver.stdRoot / (useNode.name.text & ".iv")
+    if resolver.read(local).found: return local
+    let package = resolver.packagePath(useNode.name.text)
+    if package.len > 0: return package
+    resolver.stdRoot / (useNode.name.text & ".iv")
 
 proc symbols(resolver: Resolver; name: string): seq[Symbol] =
   if not resolver.units.hasKey(name): return

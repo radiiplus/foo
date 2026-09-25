@@ -17,30 +17,31 @@ FOO gives you three layout options depending on your needs:
 ### The Default `record` (Optimized for Speed)
 By default, FOO aligns your data to match your CPU's natural preferences (using the `opt` engine we discussed earlier). This makes reading and writing fields lightning-fast.
 ```foo
-public record User {
+public define User as record {
   id of type unsigned 64.
   name of type text.
   active of type boolean.
-}
+}.
 ```
 
 ### The `packed` Record (Optimized for Space)
 If you are talking to hardware or sending data over a network, you need every bit to be exactly where you expect it. A `packed` record strips out all the empty alignment space.
 ```foo
-public packed record NetworkHeader {
+public define NetworkHeader as packed record {
   version of type integer 4.
   flags of type integer 4.
   length of type integer 16.
-}
+}.
 ```
 
 ### The `c` Record (Optimized for Interoperability)
 If you need to talk to a C library, FOO can match the C memory layout perfectly so you can pass data back and forth seamlessly.
 ```foo
-public c record Point {
+#[repr(C)]
+public define Point as record {
   x of type integer.
   y of type integer.
-}
+}.
 ```
 
 ---
@@ -52,20 +53,19 @@ In languages like C or C++, if you allocate 100 objects, you have to manually fr
 FOO encourages **Region-Based Memory Management** (also known as Arenas). Think of a Region as a dedicated workbench. You build everything on that bench, and when you are done, you just sweep the entire bench clean in one motion.
 
 ```foo
-function process_request() of type fallible nothing {
+function processRequest() giving fallible nothing {
   -- 1. Create a temporary workspace (Region)
-  constant arena is try memory.create().
+  constant arena is memory.arena() try.
   
   -- 2. Guarantee cleanup! This runs even if the function fails.
-  after { memory.close(arena). }
+  after { memory.close(arena) fallback nothing. }
   
   -- 3. Allocate data INSIDE the arena
-  constant buffer is try memory.reserve(arena, 1024).
-  constant image is try load_image(arena, "photo.png").
+  constant buffer is memory.allocate(arena, 1024) try.
+  constant image is loadImage(arena, "photo.png") try.
   
   -- Do work...
   
-  give nothing.
   -- When we reach the end, 'memory.close(arena)' frees EVERYTHING at once!
 }
 ```
@@ -85,8 +85,8 @@ This is where FOO’s **Sealing** superpower kicks in. As the compiler builds yo
 If you try to access data after it has been sealed (closed), FOO will stop the build with a clear error:
 ```text
 main.iv:15:10
-  display buffer.
-          ^^^^^^
+  constant text is memory.view(arena, buffer, 16) try.
+                                 ^^^^^^
   Cannot use 'buffer' after its owning region has been closed.
 ```
 

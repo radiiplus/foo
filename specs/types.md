@@ -79,25 +79,25 @@ Signed arithmetic overflow, division by zero, invalid indexing and invalid
 conversions through unchecked operations panic. Unsigned arithmetic is checked
 too; wrapping operations require explicit library calls. Integer division
 truncates toward zero. Remainder satisfies
-`a is (a divided by b) times b plus (a remainder b)` when representable.
+`a is (a divide b) multiply b plus (a remainder b)` when representable.
 Floating-point arithmetic follows the selected precision, including NaNs and
 signed zero; algebraic rewrites must preserve those observable semantics.
 
 ## Records, choices and views
 
 ```iv
-type Person is record {
+define Person as record {
   name of type text.
   age of type unsigned 32.
 } derives Equatable, Hash.
 
-type Message is choice {
+define Message as choice {
   Data(text).
   Closed.
 }.
 
-type Handle is opaque.
-type Visitor is function taking (pointer to Handle, integer 32) giving nothing.
+define Handle as opaque.
+define Visitor as function taking (pointer to Handle, integer 32) giving nothing.
 ```
 
 Record constructors supply one value per field in declaration order.
@@ -120,12 +120,12 @@ only by `optional pointer to T`.
 ## Functions and constraints
 
 ```iv
-function choose[T, U](left of type T, right of type U)
-  of type T where T is Equatable, U is Hash {
+function choose[T, U](left T, right U)
+  giving T where T is Equatable, U is Hash {
   give left.
 }
 
-type Box[T] is record { value of type T. } where T is Equatable.
+define Box[T] as record { value of type T. } where T is Equatable.
 ```
 
 Generic parameters are introduced only in square brackets. Constraints appear

@@ -207,7 +207,10 @@ proc emitInstr(instruction: Instruction; used: HashSet[string]): string =
     else: finish(destination & valueStr(instruction.val) & " / " & valueStr(instruction.val2) & ";")
   of InstrKind.Call, InstrKind.Thread:
     var arguments: seq[string]
-    for argument in instruction.args: arguments.add(valueStr(argument))
+    for argument in instruction.args:
+      let value = valueStr(argument)
+      arguments.add(if instruction.abi.startsWith("runtime.") and argument.type != nil:
+        "@as(" & typeStr(argument.type) & ", " & value & ")" else: value)
     if instruction.callee.type == nil and instruction.abi.startsWith("runtime."):
       let provider = instruction.abi[8 .. ^1]
       if provider.anyIt(not it.isLowerAscii): raise newException(ValueError, "Invalid runtime module")

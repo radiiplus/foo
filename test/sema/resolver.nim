@@ -75,4 +75,29 @@ doAssert importedResolution.units.len == 2
 doAssert importedResolution.resolutions.hasKey(cast[pointer](importedField))
 doAssert importedResolution.resolutions[cast[pointer](importedField)].qualified.endsWith("::answer")
 
+let packageField = ast.Field(tag: "field", span: position,
+  `object`: name("package"), field: name("answer"))
+let packageImport = ast.Program(tag: "program", span: position, units: @[
+  ast.Unit(tag: "unit", span: position, name: name("main"),
+    body: ast.Block(tag: "block", span: position, stmts: @[
+      ast.Statement(ast.Use(tag: "use", span: position, name: name("lib"), alias: name("package"))),
+      ast.Statement(ast.Give(tag: "give", span: position, value: packageField))
+    ]))
+])
+proc readPackage(path: string): ReadResult =
+  let normalized = path.replace('\\', '/')
+  if normalized.endsWith("/.foo/packages/lib/project.json"):
+    (true, "{\"source\":\"source\"}")
+  elif normalized.endsWith("/.foo/packages/lib/source/main.iv"):
+    (true, "library")
+  else:
+    (false, "")
+let packageDiagnostics = newEngine()
+let packageResolution = newResolver(packageDiagnostics, getCurrentDir(),
+  read = readPackage, parse = parseModule).resolve(packageImport, "main")
+doAssert not packageDiagnostics.failed
+doAssert packageResolution.units.len == 2
+doAssert packageResolution.resolutions.hasKey(cast[pointer](packageField))
+doAssert packageResolution.resolutions[cast[pointer](packageField)].qualified.endsWith("::answer")
+
 echo "semantic resolver parity: ok"

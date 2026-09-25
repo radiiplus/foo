@@ -1,5 +1,5 @@
 -- Declares owned allocations and grouped arena lifetimes.
-public type Allocator is opaque.
+public define Allocator as opaque.
 public use "memory" function system() of type pointer to Allocator.
 public use "memory" function arena() of type fallible pointer to Allocator.
 public use "memory" function allocate(allocator of type pointer to Allocator, size of type unsigned 64) of type fallible pointer to byte.

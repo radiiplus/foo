@@ -1,6 +1,6 @@
 -- Declares JSON trees and streaming tokens.
-public type Value is opaque.
-public type Stream is opaque.
+public define Value as opaque.
+public define Stream as opaque.
 public use "json" function parse(source of type text) of type fallible pointer to Value.
 public use "json" function write(value of type pointer to Value) of type fallible text.
 public use "json" function field(value of type pointer to Value, name of type text) of type fallible text.

@@ -1,19 +1,42 @@
 #!/bin/sh
 set -eu
 
-if [ "$#" -ne 3 ]; then
-  echo "usage: build.sh VERSION SOURCE_DIR OUTPUT_DIR" >&2
+if [ "$#" -ne 4 ]; then
+  echo "usage: package.sh VERSION SOURCE_DIR OUTPUT_DIR DEBIAN_ARCHITECTURE" >&2
   exit 2
 fi
 
 version=$1
 source_dir=$(realpath "$2")
 output_dir=$(realpath -m "$3")
+architecture=$4
+case "$architecture" in
+  amd64)
+    release_arch=amd64
+    expected_machine='Advanced Micro Devices X86-64'
+    ;;
+  arm64)
+    release_arch=arm64
+    expected_machine='AArch64'
+    ;;
+  *)
+    echo "unsupported Debian architecture: $architecture" >&2
+    exit 2
+    ;;
+esac
 package_root=$(mktemp -d)
 trap 'rm -rf "$package_root"' EXIT INT TERM
 
 if [ ! -x "$source_dir/bin/foo" ]; then
   echo "missing executable: $source_dir/bin/foo" >&2
+  exit 1
+fi
+if ! command -v readelf >/dev/null 2>&1; then
+  echo "readelf is required to validate Linux release binaries" >&2
+  exit 1
+fi
+if ! LC_ALL=C readelf -h "$source_dir/bin/foo" | grep -F "Machine:" | grep -Fq "$expected_machine"; then
+  echo "binary architecture does not match Debian architecture $architecture: $source_dir/bin/foo" >&2
   exit 1
 fi
 
@@ -43,7 +66,7 @@ Package: foo
 Version: $version
 Section: devel
 Priority: optional
-Architecture: amd64
+Architecture: $architecture
 Installed-Size: $installed_size
 Maintainer: radiiplus <radiiplus@users.noreply.github.com>
 Homepage: https://github.com/radiiplus/foo
@@ -59,4 +82,4 @@ chmod 0644 "$package_root/DEBIAN/control" \
   "$package_root/usr/share/metainfo/io.github.radiiplus.foo.metainfo.xml"
 
 fakeroot dpkg-deb --build --root-owner-group "$package_root" \
-  "$output_dir/foo-v$version-linux-x64.deb"
+  "$output_dir/foo-$release_arch.deb"

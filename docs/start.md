@@ -10,7 +10,9 @@ Let’s get building!
 
 ## 1. The Magic Setup
 
-First, head over to the official FOO Releases page and download the installer for your operating system (Windows, macOS, or Linux). Run the installer, and within seconds, the `foo` command will be available in your terminal.
+First, head over to the official FOO Releases page and download the installer for your operating system (Windows, macOS, or Linux). Linux PCs use `foo-amd64.deb`, while ARM64 Linux systems use `foo-arm64.deb`. Run the installer, and within seconds, the `foo` command will be available in your terminal.
+
+For Ubuntu running through Termux/proot on an ARM64 Android device, open the Ubuntu session and confirm `uname -m` prints `aarch64`. Install the ARM package there with `sudo apt install ./foo-arm64.deb`. This package is built for Ubuntu's glibc environment and will not run directly in Termux's Android environment.
 
 Once it's installed, open your terminal (Command Prompt/PowerShell on Windows, or Terminal on Mac/Linux) and type this magic command:
 
@@ -27,42 +29,35 @@ foo doctor
 Let’s create a dedicated folder for our new app. FOO has a built-in **Scaffolding** tool (a command that instantly generates a clean, perfectly organized folder structure for you).
 
 ```sh
-foo new my_first_app
-cd my_first_app
+foo new my-first-app
+cd my-first-app
 ```
 
-If you look inside the `my_first_app` folder, you’ll see a `project.json` file (the ID card for your project) and a `main.iv` file. The `.iv` extension stands for FOO source code!
+If you look inside `my-first-app`, you’ll see a `project.json` file and `src/main.iv`. The `.iv` extension stands for FOO source code, and application source lives under `src/` by default.
 
 ---
 
 ## 3. Writing Your First Sentences
 
-Open `main.iv` in your favorite code editor. Let’s write a program that greets the user. 
+Open `src/main.iv` in your favorite code editor. Let’s write a program that greets the user.
 
 Because FOO’s **Parser** (the brilliant part of the compiler that reads your code) is designed to understand natural, flowing sentences, you don't need to clutter your screen with messy semicolons or excessive parentheses. 
 
 Type this out:
 
 ```foo
-use io.
-
-function greet(name of type text) of type nothing {
+function greet(name text) {
   display "Hello, " plus name plus "!".
-  give nothing.
 }
 
-start() {
-  constant my_name is "vibes".
-  greet(my_name).
-  give nothing.
-}
+constant myName is "vibes".
+greet(myName).
 ```
 
 ### Let’s break down the brilliance here:
-*   **`use io.`**: This tells FOO to import the Input/Output library, giving you access to the screen and keyboard.
-*   **`of type text`**: FOO is strictly **Typed** (meaning it keeps strict track of what kind of data is stored in a variable, preventing math errors on text). But as you'll learn later, FOO is so smart it can often guess the type for you!
+*   **`name text`**: FOO is strictly **Typed** (meaning it keeps strict track of what kind of data is stored in a variable, preventing math errors on text), without repeating `of type` in parameter lists.
 *   **`plus`**: Instead of forcing you to use the `+` symbol for everything, FOO lets you use the English word `plus` to glue text together.
-*   **`give nothing.`**: This is FOO's way of saying "this function is finished and has no data to hand back."
+*   **Implicit completion**: A function that gives nothing can simply end; use `give` when returning a value.
 *   **The Period (`.`)**: Notice how every action ends with a period? FOO reads your code like a book. A period tells the parser, *"This specific thought is complete."*
 
 ---
@@ -92,23 +87,19 @@ As your app grows, you’ll want to split your code into multiple files to keep 
 Create a new file named `math.iv` and add this:
 
 ```foo
-public function add(left of type integer, right of type integer) of type integer {
+public function add(left integer, right integer) giving integer {
   give left plus right.
 }
 ```
 *Notice the word `public`? This is the only way to let other files see this function. If you leave `public` off, the function becomes private and completely invisible to the rest of your app. This prevents messy "spaghetti code" (where everything is tangled together and hard to track).*
 
-Now, go back to `main.iv` and use it:
+Now, go back to `src/main.iv` and use it:
 
 ```foo
-use io.
-use "math". -- This brings in our new file!
+use "math.iv" as math. -- This brings in our new file!
 
-start() {
-  constant total is add(10, 20).
-  display total.
-  give nothing.
-}
+constant total is math.add(10, 20).
+when total is 30 { display "Total calculated". }
 ```
 
 ---

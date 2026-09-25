@@ -41,15 +41,16 @@ proc supported(provider, operation: string): bool =
     "compress": @["pack", "unpack"],
     "json": @["parse", "write", "field", "item", "quote", "kind", "size",
       "set", "append", "release", "stream", "feed", "next", "data", "close"],
-    "http": @["client", "trust", "request", "status", "body", "release",
-      "close", "listen", "port", "stop", "accept", "receive", "method",
+    "http": @["client", "trust", "addHeader", "clearHeaders", "redirects", "reuse", "request", "status", "body", "release",
+      "close", "listen", "port", "closeServer", "accept", "receive", "method",
       "header", "read", "reply", "disconnect"]
   }.toTable
   operations.hasKey(provider) and operation in operations[provider]
 
 proc runtime*(externs: seq[Extern];
     typePrinter: proc(value: `Type`): string;
-    namePrinter: proc(value: string): string): RuntimeResult =
+    namePrinter: proc(value: string): string;
+    target = ""): RuntimeResult =
   if externs.len == 0:
     return RuntimeResult(code: "static void foo_shutdown(void) {}", libraries: @[])
   let textType = `Type`(kind: TypeKind.Slice, constant: true,
@@ -65,8 +66,9 @@ proc runtime*(externs: seq[Extern];
   var wrappers: seq[string]
 
   for declaration in externs:
-    let provider = if declaration.abi.startsWith("runtime."):
-      declaration.abi[8 .. ^1] else: ""
+    let provider = if declaration.abi == "runtime": "task"
+      elif declaration.abi.startsWith("runtime."):
+        declaration.abi[8 .. ^1] else: ""
     let operation = if declaration.symbol.len > 0:
       declaration.symbol else: declaration.name
     var parameters: seq[string]
@@ -129,6 +131,31 @@ proc runtime*(externs: seq[Extern];
         wrappers.add(signature & " { return (" & typePrinter(declaration.ret) & "){0}; }")
       elif operation == "length":
         wrappers.add(signature & " { return p0.len; }")
+      elif operation == "sized":
+        let sliceType = typePrinter(declaration.ret.elem)
+        let elementType = typePrinter(declaration.ret.elem.elem)
+        wrappers.add(signature & " { if (p0 > SIZE_MAX / sizeof(" & elementType &
+          ")) return (" & typePrinter(declaration.ret) &
+          "){\"Overflow\", {0}}; size_t count = (size_t)p0; if (!count) return (" &
+          typePrinter(declaration.ret) & "){0}; " & elementType &
+          " *items = foo_owned(count * sizeof(*items)); if (!items) return (" &
+          typePrinter(declaration.ret) &
+          "){\"OutOfMemory\", {0}}; memset(items, 0, count * sizeof(*items)); return (" &
+          typePrinter(declaration.ret) & "){0, (" & sliceType & "){items, count}}; }")
+      elif operation == "compact":
+        let sliceType = typePrinter(declaration.ret.elem)
+        let elementType = typePrinter(declaration.ret.elem.elem)
+        wrappers.add(signature & " { if (p1 > p0.len) return (" &
+          typePrinter(declaration.ret) &
+          "){\"Bounds\", {0}}; if (p1 == p0.len) return (" &
+          typePrinter(declaration.ret) & "){0, p0}; size_t count = (size_t)p1; " &
+          elementType & " *items = 0; if (count) { items = foo_owned(count * sizeof(*items)); if (!items) return (" &
+          typePrinter(declaration.ret) &
+          "){\"OutOfMemory\", {0}}; foo_transfer(items, p0.data, count * sizeof(*items)); } " &
+          "FOOResult released = foo_buffer_free((FOOText){(const uint8_t*)p0.data, p0.len * sizeof(*p0.data)}); " &
+          "if (released.error) { if (items) (void)foo_buffer_free((FOOText){(const uint8_t*)items, count * sizeof(*items)}); return (" &
+          typePrinter(declaration.ret) & "){released.error, {0}}; } return (" &
+          typePrinter(declaration.ret) & "){0, (" & sliceType & "){items, count}}; }")
       elif operation == "release":
         wrappers.add(signature &
           " { FOOResult result = foo_buffer_free((FOOText){(const uint8_t*)p0.data, p0.len * sizeof(*p0.data)}); return (" &
@@ -147,9 +174,9 @@ proc runtime*(externs: seq[Extern];
             "){\"Bounds\", {0}};" else: ""
         let copying =
           if operation == "remove":
-            "if (p1) memcpy(items, p0.data, p1 * sizeof(*items)); if (p0.len > p1 + 1) memcpy(items + p1, p0.data + p1 + 1, (p0.len - p1 - 1) * sizeof(*items));"
+            "if (p1) foo_transfer(items, p0.data, p1 * sizeof(*items)); if (p0.len > p1 + 1) foo_transfer(items + p1, p0.data + p1 + 1, (p0.len - p1 - 1) * sizeof(*items));"
           else:
-            "if (p0.len) memcpy(items, p0.data, p0.len * sizeof(*items)); " &
+            "if (p0.len) foo_transfer(items, p0.data, p0.len * sizeof(*items)); " &
               (if operation == "append": "items[p0.len] = p1;" else: "")
         wrappers.add(signature & " { " & guard &
           " if (p0.len >= SIZE_MAX / sizeof(" & elementType &
@@ -162,6 +189,32 @@ proc runtime*(externs: seq[Extern];
           "){\"OutOfMemory\", {0}}; " & copying & " return (" &
           typePrinter(declaration.ret) & "){0, (" & sliceType &
           "){items, count}}; }")
+      continue
+
+    if provider == "hashmap":
+      modules.incl("hashmap")
+      let returnType = if declaration.ret.kind == TypeKind.Fallible:
+        declaration.ret.elem else: declaration.ret
+      var call = ""
+      case operation
+      of "create": call = "foo_hashmap_create()"
+      of "put":
+        call = "foo_hashmap_put(p0, (FOOText){p1.data, p1.len}, &p2, sizeof(p2))"
+      of "get": call = "foo_hashmap_get(p0, (FOOText){p1.data, p1.len})"
+      of "contains": call = "foo_hashmap_contains(p0, (FOOText){p1.data, p1.len})"
+      of "remove": call = "foo_hashmap_remove(p0, (FOOText){p1.data, p1.len})"
+      of "length": call = "foo_hashmap_length(p0)"
+      of "close": call = "foo_hashmap_close(p0)"
+      else: raise newException(ValueError, "Unknown hashmap operation '" & operation & "'")
+      var value = "0"
+      if operation == "create": value = "(" & typePrinter(returnType) & ")result.pointer"
+      elif operation == "get": value = "*(" & typePrinter(returnType) & "*)result.pointer"
+      elif operation in ["contains", "remove"]: value = "result.boolean"
+      elif operation == "length": value = "result.number"
+      let body = "foo_enter(); FOOResult result = " & call &
+        "; foo_leave(); return (" & typePrinter(declaration.ret) &
+        "){result.error, " & value & "};"
+      wrappers.add(signature & " { " & body & " }")
       continue
 
     if not supported(provider, operation):
@@ -213,4 +266,10 @@ proc runtime*(externs: seq[Extern];
     serviceCode & header & "\n" & wrappers.join("\n")
   if "crypto" in modules: result.libraries.add("sodium")
   if "compress" in modules: result.libraries.add("z")
-  if "http" in modules: result.libraries.add(@["curl", "ssl", "crypto"])
+  if "http" in modules:
+    if target.contains("windows") or target.contains("win32") or
+        (target.len == 0 and defined(windows)):
+      result.libraries.add("winhttp")
+      result.libraries.add("ws2_32")
+    else:
+      result.libraries.add("curl")

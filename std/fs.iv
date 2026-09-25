@@ -5,3 +5,8 @@ public use "fs" function read(path of type text) of type fallible text.
 public use "fs" function write(path of type text, content of type text) of type fallible nothing.
 public use "fs" function directory(path of type text) of type fallible nothing.
 public use "fs" function join(left of type text, right of type text) of type fallible text.
+-- Compatibility module for file; new code should import file.
+public use "fs" function flush(stream pointer to streams.Stream) giving fallible nothing.
+public use "fs" function seek(stream pointer to streams.Stream, offset integer 64, origin text) giving fallible nothing.
+public use "fs" function position(stream pointer to streams.Stream) giving fallible unsigned 64.
+public use "fs" function size(stream pointer to streams.Stream) giving fallible unsigned 64.

@@ -1,10 +1,15 @@
 -- Declares HTTP clients and servers.
-public type Client is opaque.
-public type Response is opaque.
-public type Server is opaque.
-public type Peer is opaque.
+public define Client as opaque.
+public define Response as opaque.
+public define Server as opaque.
+public define Peer as opaque.
 public use "http" function client() of type fallible pointer to Client.
 public use "http" function trust(value of type pointer to Client, certificate of type text) of type fallible nothing.
+-- Advanced client controls. Added headers persist until clearHeaders is called.
+public use "http" function addHeader(value pointer to Client, name text, content text) giving fallible nothing.
+public use "http" function clearHeaders(value pointer to Client) giving nothing.
+public use "http" function redirects(value pointer to Client, limit unsigned 16) giving fallible nothing.
+public use "http" function reuse(value pointer to Client, enabled boolean) giving nothing.
 public use "http" function request(value of type pointer to Client, url of type text, method of type text, content of type text, limit of type unsigned 32) of type fallible pointer to Response.
 public use "http" function status(value of type pointer to Response) of type unsigned 16.
 public use "http" function body(value of type pointer to Response) of type fallible text.
@@ -12,7 +17,7 @@ public use "http" function release(value of type pointer to Response) of type no
 public use "http" function close(value of type pointer to Client) of type nothing.
 public use "http" function listen(host of type text, port of type unsigned 16) of type fallible pointer to Server.
 public use "http" function port(value of type pointer to Server) of type unsigned 16.
-public use "http" function stop(value of type pointer to Server) of type nothing.
+public use "http" function closeServer(value pointer to Server) giving nothing.
 public use "http" function accept(value of type pointer to Server) of type fallible pointer to Peer.
 public use "http" function receive(value of type pointer to Peer) of type fallible text.
 public use "http" function method(value of type pointer to Peer) of type fallible text.

@@ -11,13 +11,13 @@ Use this guide when you know *what* you want to do, but just need to remember th
 | Syntax | Plain Meaning | Example |
 | :--- | :--- | :--- |
 | `constant` | Creates a value that cannot be changed. | `constant pi is 3.14.` |
-| `mutable` | Creates a value that can be changed. | `mutable score is 0.` |
+| `dynamic` | Creates a value that can be changed. | `dynamic score is 0.` |
 | `function` | Defines a reusable block of code. | `function greet() { ... }` |
-| `public` | Makes a declaration visible to other files. | `public constant max_users is 100.` |
+| `public` | Makes a declaration visible to other files. | `public constant maxUsers is 100.` |
 | `use` | Imports another file or module. | `use io.` or `use "math.iv".` |
-| `type` | Creates a nickname (alias) for a complex type. | `type UserID is integer 64.` |
-| `record` | Groups related fields together. | `record Point { x of type integer. y of type integer. }` |
-| `choice` | Defines a value that can be one of several variants. | `choice Color { case red. case blue. }` |
+| `define` | Introduces a named type. | `define UserID as integer 64.` |
+| `record` | Groups related fields together. | `define Point as record { x of type integer. y of type integer. }.` |
+| `choice` | Defines a value that can be one of several variants. | `define Color as choice { red. blue. }.` |
 
 ---
 
@@ -45,16 +45,16 @@ Use this guide when you know *what* you want to do, but just need to remember th
 | Instead of... | Write this... | Example |
 | :--- | :--- | :--- |
 | `+` | `plus` | `5 plus 5` |
-| `-` | `minus` | `10 minus 2` |
-| `*` | `times` | `4 times 4` |
-| `/` | `divided by` | `20 divided by 4` |
+| `-` | `subtract` | `10 subtract 2` |
+| `*` | `multiply` | `4 multiply 4` |
+| `/` | `divide` | `20 divide 4` |
 | `%` | `remainder` | `10 remainder 3` |
 | `==` | `is` | `x is 10` |
 | `!=` | `is not` | `x is not 0` |
 | `>` | `greater than` | `health greater than 0` |
 | `<` | `less than` | `ammo less than 5` |
-| `>=` | `is at least` | `age is at least 18` |
-| `<=` | `is at most` | `speed is at most 100` |
+| `>=` | `greater than or equal to` | `age greater than or equal to 18` |
+| `<=` | `less than or equal to` | `speed less than or equal to 100` |
 | `&&` | `and` | `true and false` |
 | `\|\|` | `or` | `true or false` |
 | `!` | `not` | `not ready` |
@@ -69,7 +69,7 @@ Use this when you are checking if a condition is true or false.
 when condition {
   -- runs if true
 }
-otherwise when other_condition {
+otherwise when otherCondition {
   -- runs if first was false, second is true
 }
 otherwise {
@@ -81,10 +81,10 @@ otherwise {
 Use this when you are checking a single variable against specific values. It is cleaner and safer than using long `when/otherwise` chains.
 
 ```foo
-match status_code {
+match statusCode {
   case 200 { display "OK". }
   case 404 { display "Not Found". }
-  case _   { display "Unknown". } -- The underscore catches anything else
+  case anything { display "Unknown". }
 }
 ```
 
@@ -94,15 +94,15 @@ FOO's compiler mathematically guarantees that you haven't forgotten a possible o
 **Advanced Guards (`when` inside `case`)**
 You can add an extra condition to a specific case:
 ```foo
-match user_role {
-  case "admin" when user_level is 99 { 
-    display "Super Admin". 
+match userLevel {
+  case 99 when accountActive {
+    display "Super Admin".
   }
-  case "admin" { 
-    display "Regular Admin". 
+  case 10 {
+    display "Regular Admin".
   }
-  case _ { 
-    display "Guest". 
+  case anything {
+    display "Guest".
   }
 }
 ```
@@ -113,13 +113,13 @@ match user_role {
 while health greater than 0 { ... }
 
 -- Loop over every item in a list
-for each item in shopping_cart { ... }
+for each item in shoppingCart { ... }
 
 -- Stop a loop completely
-break.
+stop.
 
 -- Skip to the next iteration
-continue.
+skip.
 ```
 
 ---
@@ -128,13 +128,12 @@ continue.
 
 ```foo
 -- A function that returns nothing
-function do_work() of type nothing {
+function doWork() {
   -- Do work here
-  give nothing.
 }
 
 -- A function that returns an integer
-function add(a of type integer, b of type integer) of type integer {
+function add(a integer, b integer) giving integer {
   give a plus b.
 }
 ```
@@ -145,9 +144,9 @@ function add(a of type integer, b of type integer) of type integer {
 
 | Keyword | Plain Meaning | Example |
 | :--- | :--- | :--- |
-| `try` | Unwraps a fallible value, or bails out if it fails. | `try file read "data.txt".` |
-| `catch` | Provides a fallback value if the left side fails. | `load() catch "default".` |
-| `after` | Runs cleanup code when the scope ends (success or fail). | `after { close(file). }` |
+| `try` | Unwraps the preceding fallible value, or bails out if it fails. | `file.read("data.txt") try.` |
+| `fallback` | Provides an alternative if the left side fails. | `load() fallback "default".` |
+| `after` | Runs cleanup code when the scope ends. | `after { io.close(stream) fallback nothing. }` |
 
 ---
 
@@ -155,20 +154,20 @@ function add(a of type integer, b of type integer) of type integer {
 
 ### Output
 ```foo
+use log.
+
 display "Hello!".
-log message "System started.".
-log error "Something went wrong.".
+log.showMessage("System started.").
+log.showError("Something went wrong.").
 ```
 
-### Units of Measurement (Quantity Literals)
-FOO automatically converts these into their base numerical values at compile time.
-
-*   **Time:** `seconds`, `milliseconds`, `microseconds`, `nanoseconds`
-*   **Data:** `bytes`, `kilobytes`, `megabytes`, `gigabytes`, `terabytes`
+### Quantities
+Use ordinary numeric expressions in the units required by the library.
 
 ```foo
-time sleep 2 seconds.
-constant ram is 16 gigabytes.
+constant twoSeconds is 2000000000.
+time.sleep(twoSeconds) try.
+constant sixteenGibibytes is 16 multiply 1024 multiply 1024 multiply 1024.
 ```
 
 ---
@@ -176,17 +175,17 @@ constant ram is 16 gigabytes.
 ## 8. Native Interoperability
 
 ```foo
--- Import a C function directly
-use "c" function printf(fmt of type pointer to byte) of type integer.
+-- Declare a C function directly
+extern "C" function puts(value pointer to byte) giving integer.
 
 -- Write a raw C block
-native c function fast_math(a of type integer) of type integer {
+native c function fastMath(a integer) giving integer {
   return a * a;
 }
 
 -- Write raw Assembly
 asm {
-  // hardware instructions here
+  /* hardware instructions here */
 }
 ```
 

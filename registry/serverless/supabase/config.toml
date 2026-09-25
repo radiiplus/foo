@@ -1,0 +1,12 @@
+project_id = "foo"
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+inspector_port = 8083
+
+[functions.registry]
+enabled = true
+verify_jwt = false
+import_map = "./functions/registry/deno.json"
+entrypoint = "./functions/registry/index.ts"

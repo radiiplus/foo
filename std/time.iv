@@ -4,5 +4,5 @@ public use "time" function sleep(duration of type unsigned 64) of type fallible 
 public function measure(task of type function taking () giving nothing) of type fallible unsigned 64 {
   constant first is try current().
   task().
-  give (try current()) minus first.
+  give (try current()) subtract first.
 }

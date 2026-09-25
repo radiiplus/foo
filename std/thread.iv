@@ -1,7 +1,7 @@
 -- Runs function-valued tasks and coordinates shared work with locks and conditions.
-public type Thread is opaque.
-public type Mutex is opaque.
-public type Condition is opaque.
+public define Thread as opaque.
+public define Mutex as opaque.
+public define Condition as opaque.
 public use "thread" function spawn(task of type function taking () giving nothing) of type fallible pointer to Thread.
 public use "thread" function wait(task of type pointer to Thread) of type fallible nothing.
 public use "thread" function mutex() of type fallible pointer to Mutex.

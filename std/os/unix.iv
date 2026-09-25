@@ -1,7 +1,7 @@
 -- Declares Unix platform operations.
 --- Unix pipes, signals, and memory mapping handles. ---
-public type Pipe is opaque.
-public type Map is opaque.
+public define Pipe as opaque.
+public define Map as opaque.
 
 public function pipe() {
   constant result of type pointer to Pipe is uninitialized.

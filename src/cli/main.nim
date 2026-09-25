@@ -5,13 +5,14 @@ import ../build/project as buildProject
 import ../build/compiler as buildCompiler
 import ../diag/render
 import ../diag/engine
+import ../diag/palette
 import ../toolchain/manager as toolchainManager
 import ../toolchain/doctor as toolchainDoctor
-import ../pkg/[hash, registry as packageRegistry, vendor as packageVendor]
+import ../pkg/[hash, registry as packageRegistry]
 import "../interop/bind.nim" as interopBind
 import ../lsp/server as lspServer
 
-const usage = "usage: foo <new|check|build|run|watch|graph|ir|test|fmt|doc|add|remove|install|toolchain|clean|doctor|version|task|lsp|bind|cc|publish|audit|mirror> [file] [--backend zig|c] [--target target] [-mcpu profile] [--watch]"
+const usage = "usage: foo <login|init|publish|install|update|outdated|remove|deprecate|search|info|new|check|build|run|watch|graph|ir|test|fmt|doc|add|toolchain|clean|doctor|version|task|lsp|bind|cc> [options]"
 const packageText = staticRead("../../package.json")
 const projectText = staticRead("../../project.json")
 
@@ -43,12 +44,30 @@ proc watch(root: string; action: proc() {.closure.}) =
 
 proc progress(jsonOutput, verbose: bool):
     proc(phase, name, file: string; cached: bool) {.closure.} =
+  let color = getEnv("NO_COLOR").len == 0 and getEnv("TERM") != "dumb"
+  proc paint(value, role: string): string =
+    if color: shade(role) & value & "\e[0m" else: value
   result = proc(phase, name, file: string; cached: bool) =
     if jsonOutput:
       echo $(%*{"event": phase, "name": name, "file": file, "cached": cached})
-    elif verbose:
-      stderr.writeLine(phase.toUpperAscii & " " & name &
-        (if file.len > 0: " " & file else: ""))
+    else:
+      let label = case phase
+        of "check": "Checking"
+        of "build": "Compiling"
+        of "package": "Packaging"
+        of "bundle": "Bundled"
+        of "upload": "Uploading"
+        of "commit": "Committed"
+        of "resolve": "Resolving"
+        of "fetch": "Fetching"
+        of "install": "Installed"
+        of "lock": "Writing"
+        of "locked": "Locked"
+        of "reuse": "Fresh"
+        else: phase.capitalizeAscii
+      let role = if cached or phase == "reuse": "success" else: "info"
+      stderr.writeLine("  " & paint(label.align(10), role) & " " & name &
+        (if verbose and file.len > 0: " " & paint(file, "muted") else: ""))
 
 proc main*(input: seq[string]): int =
   if input.len == 0:
@@ -94,55 +113,98 @@ proc main*(input: seq[string]): int =
       if components.anyIt(it.required and not it.ready): return 1
       return 0
     if input[0] == "new":
-      if input.len != 2: raise newException(ValueError, "usage: foo new <directory>")
+      if input.len != 2: raise newException(ValueError, "usage: foo new <directory|.>")
       discard cliProject.create(input[1])
+      return 0
+    if input[0] == "init":
+      if input.len > 2: raise newException(ValueError, "usage: foo init [directory|.]")
+      let root = cliProject.createPackage(if input.len == 2: input[1] else: ".")
+      echo "Initialized " & root & "."
+      return 0
+    if input[0] == "login":
+      if input.len != 1: raise newException(ValueError, "usage: foo login")
+      discard packageRegistry.login()
+      echo "Logged in with GitHub."
       return 0
     if input[0] == "clean":
       if input.len != 1: raise newException(ValueError, "usage: foo clean")
       cliProject.clean()
       return 0
-    if input[0] in ["add", "remove"]:
-      let expected = if input[0] == "add": 3 else: 2
-      if input.len != expected:
-        raise newException(ValueError, "usage: foo " & input[0] & " <name>" &
-          (if input[0] == "add": " <source>" else: ""))
-      cliProject.dependency(input[0], input[1],
-        if input.len > 2: input[2] else: "")
+    if input[0] == "add":
+      if input.len notin [2, 3]:
+        raise newException(ValueError, "usage: foo add <package[@version]> [url|path]")
+      var name = input[1]
+      var source = if input.len == 3: input[2] else: ""
+      if source.len == 0:
+        let at = name.rfind('@')
+        if at > 0:
+          source = name[at + 1 .. ^1]
+          name = name[0 ..< at]
+        else:
+          source = packageRegistry.latestVersion(getCurrentDir(), name)
+      cliProject.dependency("add", name, source)
+      let normalized = cliProject.dependencySource(name, source)
+      if normalized[0] in {'^', '~'} or normalized[0].isDigit:
+        echo "Added " & name & "@" & normalized & " to project.json."
+      else:
+        echo "Added " & name & " from " & normalized & " to project.json."
+      echo "Run 'foo install' to resolve and install the dependency."
       return 0
-    if input[0] in ["publish", "install", "audit", "mirror"]:
+    if input[0] in ["publish", "install", "update", "outdated", "remove", "deprecate", "search", "info"]:
       let root = getCurrentDir()
       case input[0]
       of "publish":
-        if input.len != 3 or input[1] != "--key":
-          raise newException(ValueError,
-            "usage: foo publish --key <private.pem> (FOO_TOKEN supplies staging authentication)")
-        echo "Published " & packageRegistry.publish(root, input[2],
-          getEnv("FOO_TOKEN")) & "."
-      of "mirror":
-        if input.len != 2:
-          raise newException(ValueError, "usage: foo mirror <directory>")
-        echo "Mirrored " & $packageRegistry.mirror(root, input[1]) & " packages."
-      of "audit":
-        if input.len != 1: raise newException(ValueError, "usage: foo audit")
-        echo "Verified " & $packageRegistry.audit(root) & " signed packages."
+        if input.len != 1: raise newException(ValueError, "usage: foo publish")
+        let reporter = progress(false, true)
+        buildProject.newProject(root,
+          buildProject.ProjectOptions(progress: reporter)).check()
+        let published = packageRegistry.publish(root, progress =
+          proc(phase, name, detail: string) = reporter(phase, name, detail, false))
+        stderr.flushFile()
+        echo "Published " & published & "."
       of "install":
-        if input.len != 1: raise newException(ValueError, "usage: foo install")
-        let manifestPath = root / "project.json"
-        var registrySources = false
-        var dependencies = 0
-        if fileExists(manifestPath):
-          let manifest = parseJson(readFile(manifestPath))
-          for _, source in manifest.getOrDefault("dependencies"):
-            inc dependencies
-            if source.getStr().startsWith("registry+"): registrySources = true
-        if registrySources:
-          echo "Installed " & $packageRegistry.install(root).len & " signed packages."
-        elif dependencies > 0:
-          packageVendor.vendor(root)
-          echo "Dependencies installed."
-        else:
-          discard toolchainManager.install()
-          echo "FOO toolchain is ready."
+        if input.len > 2: raise newException(ValueError, "usage: foo install [package[@version]]")
+        let reporter = progress(false, true)
+        let packages = packageRegistry.install(root, if input.len == 2: input[1] else: "", progress =
+          proc(phase, name, detail: string) = reporter(phase, name, detail, false))
+        stderr.flushFile()
+        echo "Installed " & $packages.len & (if packages.len == 1: " package." else: " packages.")
+      of "update":
+        if input.len > 2: raise newException(ValueError, "usage: foo update [package]")
+        let reporter = progress(false, true)
+        let packages = packageRegistry.update(root, if input.len == 2: input[1] else: "", progress =
+          proc(phase, name, detail: string) = reporter(phase, name, detail, false))
+        stderr.flushFile()
+        echo "Updated " & $packages.len & (if packages.len == 1: " package." else: " packages.")
+      of "outdated":
+        if input.len != 1: raise newException(ValueError, "usage: foo outdated")
+        let packages = packageRegistry.outdated(root)
+        if packages.len == 0: echo "All direct dependencies are current."
+        for package in packages:
+          echo package["name"].getStr() & " " & package["current"].getStr() & " -> " &
+            package["latest"].getStr() & " (" & package["constraint"].getStr() & ")"
+      of "remove":
+        if input.len != 2: raise newException(ValueError, "usage: foo remove <package>")
+        let packages = packageRegistry.removePackage(root, input[1])
+        echo "Removed " & input[1] & "; " & $packages.len & " packages remain installed."
+      of "deprecate":
+        if input.len < 3: raise newException(ValueError, "usage: foo deprecate <package@version> <message>")
+        echo "Deprecated " & packageRegistry.deprecate(root, input[1], input[2 .. ^1].join(" ")) & "."
+      of "search":
+        if input.len < 2: raise newException(ValueError, "usage: foo search <query>")
+        for entry in packageRegistry.search(root, input[1 .. ^1].join(" ")):
+          echo entry.getOrDefault("name").getStr() & "@" &
+            entry.getOrDefault("version").getStr() & "  " &
+            entry.getOrDefault("description").getStr()
+      of "info":
+        if input.len != 2: raise newException(ValueError, "usage: foo info <package[@version]>")
+        var name = input[1]
+        var version = ""
+        let at = name.rfind('@')
+        if at > 0:
+          version = name[at + 1 .. ^1]
+          name = name[0 ..< at]
+        echo pretty(packageRegistry.info(root, name, version))
       else: discard
       return 0
     if input[0] == "cc":

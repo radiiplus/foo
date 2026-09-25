@@ -1,5 +1,5 @@
 -- Declares atomic values and memory ordering operations.
-public type Atom is opaque.
+public define Atom as opaque.
 public use "atomic" function create(value of type unsigned 64) of type fallible pointer to Atom.
 public use "atomic" function release(value of type pointer to Atom) of type nothing.
 public use "atomic" function load(value of type pointer to Atom, order of type text) of type fallible unsigned 64.

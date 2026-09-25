@@ -48,7 +48,7 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
   try:
     buildOptions.validate(options)
     createDir(outDir)
-    let selection = Selection(target: options.target, cpu: options.cpu,
+    let selection = Selection(backend: "zig", target: options.target, cpu: options.cpu,
       level: options.level, mode: mode, substrate: options.substrate,
       native: substrate.NativeSelection(substrate: options.native.substrate,
         clobbers: options.native.clobbers))
@@ -61,7 +61,13 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
     writeFile(mainPath, generated.code)
     writeFile(outDir / "shim.zig", zigShim.`shim`)
     writeFile(outDir / "library.zig", runtimeLibrary)
-    writeFile(outDir / "storage.zig", runtimeStorage)
+    let copy = select("copy", selection)
+    let transferBlock = case copy.implementation
+      of "block-32": "32"
+      of "block-16": "16"
+      else: "@sizeOf(usize)"
+    writeFile(outDir / "storage.zig",
+      runtimeStorage.replace("FOO_TRANSFER_BLOCK", transferBlock))
     writeFile(outDir / "stream.zig", runtimeStream)
     writeFile(outDir / "service.zig", runtimeService)
     var mappings = newJArray()
