@@ -70,7 +70,7 @@ Architecture: $architecture
 Installed-Size: $installed_size
 Maintainer: radiiplus <radiiplus@users.noreply.github.com>
 Homepage: https://github.com/radiiplus/foo
-Depends: libc6
+Depends: libc6, ca-certificates, tar, xz-utils
 Description: Readable systems programming language
  FOO checks, formats, tests, builds, and runs sentence-like .iv programs,
  with C and Zig available as native output backends.
@@ -80,6 +80,31 @@ sed "s/@VERSION@/$version/g" "$(dirname "$0")/io.github.radiiplus.foo.metainfo.x
   > "$package_root/usr/share/metainfo/io.github.radiiplus.foo.metainfo.xml"
 chmod 0644 "$package_root/DEBIAN/control" \
   "$package_root/usr/share/metainfo/io.github.radiiplus.foo.metainfo.xml"
+
+cat > "$package_root/DEBIAN/postinst" <<'EOF'
+#!/bin/sh
+set -u
+
+if [ "${FOO_SKIP_TOOLCHAIN_INSTALL:-}" != "1" ]; then
+  echo "Provisioning the FOO Zig backend..."
+  if ! FOO_HOME=/opt/foo /opt/foo/bin/foo toolchain install base; then
+    echo "FOO: backend provisioning was deferred; first use will retry it." >&2
+  fi
+fi
+exit 0
+EOF
+
+cat > "$package_root/DEBIAN/postrm" <<'EOF'
+#!/bin/sh
+set -u
+
+if [ "${1:-}" = "purge" ]; then
+  rm -rf /opt/foo/.artifacts/toolchain
+fi
+exit 0
+EOF
+
+chmod 0755 "$package_root/DEBIAN/postinst" "$package_root/DEBIAN/postrm"
 
 fakeroot dpkg-deb --build --root-owner-group "$package_root" \
   "$output_dir/foo-$release_arch.deb"

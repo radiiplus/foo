@@ -20,7 +20,7 @@ Once it's installed, open your terminal (Command Prompt/PowerShell on Windows, o
 foo doctor
 ```
 
-**Why this is awesome:** `foo doctor` runs a complete health check on your computer. FOO uses powerful backend tools (like Zig and C) to compile your code into hyper-fast machine instructions. If `foo doctor` realizes you don't have these tools installed, **it will automatically download and configure them for you in the background**. You never have to manually install a C compiler or worry about missing dependencies!
+**Why this is useful:** `foo doctor` runs a complete health check on your computer. The Debian installer provisions the pinned Zig backend automatically, and `foo run` or `foo build` retries that managed installation on first use when setup happened offline. `foo doctor` reports what is ready and gives the exact repair command when something is missing. Clang is optional unless a project imports C headers.
 
 ---
 

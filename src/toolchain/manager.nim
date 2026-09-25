@@ -1,4 +1,4 @@
-import std/[httpclient, json, os, osproc, sequtils, strutils, tables, times]
+import std/[httpclient, json, os, osproc, sequtils, strutils, times]
 import ../pkg/hash
 
 type Info* = object
@@ -12,7 +12,10 @@ let levels* = ["base", "system", "machine", "hardware"]
 proc directory*(): string =
   let home = getEnv("FOO_HOME")
   if home.len > 0: home / ".artifacts" / "toolchain"
-  else: getCurrentDir() / ".artifacts" / "toolchain"
+  else: getHomeDir() / ".foo" / "toolchains"
+
+proc bundledDirectory(): string =
+  parentDir(getAppDir()) / ".artifacts" / "toolchain"
 
 proc verify*(path, expected = version): bool =
   if not fileExists(path): return false
@@ -25,7 +28,10 @@ proc verify*(path, expected = version): bool =
 proc detect*(expected = version): Info =
   if expected != version: return Info()
   let executable = when defined(windows): "zig.exe" else: "zig"
-  var candidates = @[directory() / expected / executable]
+  var candidates = @[
+    bundledDirectory() / expected / executable,
+    directory() / expected / executable
+  ]
   if getEnv("FOO_HOME").len == 0:
     let home = getHomeDir()
     candidates.add(home / ".foo" / "toolchains" / expected / executable)
@@ -49,13 +55,31 @@ proc pin*(project = getCurrentDir()): string =
     raise newException(ValueError, "This FOO compiler requires Zig " & version & "; project foo.lock requests " & selected & ".")
   selected
 
+proc releaseSize*(release: JsonNode): int =
+  let value = release.getOrDefault("size")
+  try:
+    case value.kind
+    of JInt: result = int(value.getInt())
+    of JString: result = parseInt(value.getStr())
+    else: discard
+  except ValueError, OverflowDefect:
+    discard
+  if result <= 0 or result > 512 * 1024 * 1024:
+    raise newException(ValueError, "Invalid Zig release size")
+
+proc validSha256(value: string): bool =
+  if value.len != 64: return false
+  for character in value:
+    if character notin {'0'..'9', 'a'..'f'}: return false
+  true
+
 proc install*(expected = version): Info =
   if expected != version: raise newException(ValueError, "Unsupported backend version '" & expected & "'.")
   let existing = detect(expected)
   if existing.path.len > 0: return existing
   let indexUrl = "https://ziglang.org/download/index.json"
   let hostKey = when defined(windows): "x86_64-windows" elif defined(macosx): "aarch64-macos" elif defined(arm64): "aarch64-linux" else: "x86_64-linux"
-  let client = newHttpClient(timeout = 30000)
+  let client = newHttpClient(timeout = 300000)
   defer: client.close()
   let indexResponse = client.get(indexUrl)
   if indexResponse.code.int != 200: raise newException(IOError, "Unable to download Zig release index (" & $indexResponse.code & ")")
@@ -67,11 +91,14 @@ proc install*(expected = version): Info =
   if not archiveUrl.startsWith("https://ziglang.org/"):
     raise newException(ValueError, "Unexpected Zig download URL")
   let expectedHash = release.getOrDefault("shasum").getStr().toLowerAscii()
-  let expectedSize = release.getOrDefault("size").getInt()
-  if expectedSize <= 0 or expectedSize > 512 * 1024 * 1024: raise newException(ValueError, "Invalid Zig release size")
+  if not validSha256(expectedHash):
+    raise newException(ValueError, "Invalid Zig release checksum")
+  let expectedSize = releaseSize(release)
   let archive = client.get(archiveUrl)
   if archive.code.int != 200: raise newException(IOError, "Unable to download Zig " & expected)
-  if archive.body.len != expectedSize: raise newException(ValueError, "Zig archive size mismatch")
+  if archive.body.len != expectedSize:
+    raise newException(ValueError, "Zig archive size mismatch: expected " &
+      $expectedSize & " bytes, received " & $archive.body.len)
   if sha256Hex(archive.body).toLowerAscii() != expectedHash: raise newException(ValueError, "Zig archive checksum mismatch")
   let cache = directory()
   createDir(cache)

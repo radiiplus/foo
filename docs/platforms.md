@@ -79,7 +79,7 @@ This strips FOO down to its absolute bare minimum, generating raw machine instru
 
 You might be wondering: *"If I am building for Windows, doesn't my compiler need Windows-specific C libraries?"*
 
-Normally, yes. But FOO has a built-in **Toolchain Manager**. When you run `foo doctor` or attempt a cross-compile, FOO checks its local cache. If it realizes it is missing the specific Zig or C toolchain required for your target, it will quietly download and configure it in the background.
+Normally, yes. But FOO has a built-in **Toolchain Manager**. Debian installation provisions the pinned Zig backend, while `foo run`, `foo build`, and cross-compilation check the managed cache and install it on demand when necessary. `foo doctor` reports the current state without changing the machine. Clang remains an optional external tool used only for C-header bindings and explicitly selected C builds.
 
 You never have to manually install cross-compilers, linkers, or sysroots. FOO acts as its own IT department.
 

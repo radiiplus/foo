@@ -3,6 +3,19 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## 0.2.1 - 2026-09-25
+
+### Tooling And Distribution
+
+- Accept Zig archive sizes encoded as either JSON strings or numbers while
+  retaining strict size and SHA-256 verification.
+- Provision the pinned Zig backend during Debian installation and retry the
+  managed installation on first use when initial setup was offline.
+- Keep managed user toolchains under `~/.foo/toolchains` and detect toolchains
+  bundled beside the installed FOO compiler.
+- Clarify in `foo doctor` that Clang is not required unless a project imports C
+  headers or selects an external C compiler explicitly.
+
 ## 0.2.0 - 2026-09-25
 
 ### Language
