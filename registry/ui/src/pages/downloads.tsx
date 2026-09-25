@@ -1,8 +1,6 @@
 import { AlertTriangle, Archive, CheckCircle2, Download, ExternalLink, Laptop, Package, Terminal, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import packageManifest from "../../../../package.json";
-
 type GitHubAsset = {
   name: string;
   browser_download_url: string;
@@ -32,19 +30,20 @@ type Platform = {
 };
 
 const compilerRelease = /^foo-v\d/;
-const sourceVersion = packageManifest.version;
 const refreshInterval = 15 * 60 * 1_000;
-const fallbackTag = "foo-v0.1.0";
+const fallbackTag = "foo-v0.2.1";
 const fallbackBase = `https://github.com/radiiplus/foo/releases/download/${fallbackTag}`;
 const fallbackRelease: GitHubRelease = {
   tag_name: fallbackTag,
   html_url: `https://github.com/radiiplus/foo/releases/tag/${fallbackTag}`,
   assets: [
-    "foo-0.1.0.tgz",
-    "foo-v0.1.0-linux-x64.deb",
-    "foo-v0.1.0-linux-x64.tar.gz",
-    "foo-v0.1.0-windows-x64-setup.exe",
-    "foo-v0.1.0-windows-x64.zip",
+    "foo-0.2.1.tgz",
+    "foo-amd64.deb",
+    "foo-arm64.deb",
+    "foo-linux-x64.tar.gz",
+    "foo-linux-arm64.tar.gz",
+    "foo-windows-x64.exe",
+    "foo-windows-x64.zip",
     "SHA256SUMS.txt",
   ].map((name) => ({ name, browser_download_url: `${fallbackBase}/${name}` })),
 };
@@ -142,9 +141,6 @@ export default function Downloads() {
             </div>
             <div className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 font-mono text-[9px] text-[#666] sm:block sm:text-right">
               <div>PUBLISHED <span className="ml-2 text-[#d8d8d8]">{version ?? (error ? "UNAVAILABLE" : "CHECKING")}</span></div>
-              {version && version !== sourceVersion && (
-                <div className="sm:mt-1">SOURCE <span className="ml-2 text-[#d8d8d8]">{sourceVersion}</span> <span className="ml-1 text-[#9bad62]">PENDING RELEASE</span></div>
-              )}
             </div>
           </div>
         </header>
