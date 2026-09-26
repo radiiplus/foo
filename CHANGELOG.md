@@ -3,6 +3,18 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## 0.2.3 - 2026-09-26
+
+### Toolchain Setup
+
+- Show the selected Zig release, target platform, install destination, total
+  archive size, downloaded bytes, percentage, and transfer rate.
+- Report checksum verification, archive inspection, extraction, installation,
+  and executable verification as distinct stages.
+- Stream native toolchain downloads directly to disk before checksum
+  verification.
+- Use the same detailed progress language for native and npm installations.
+
 ## 0.2.2 - 2026-09-25
 
 ### Installation

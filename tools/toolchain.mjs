@@ -31,6 +31,17 @@ export function detect(expected = version) {
   for (const path of candidates) if (existsSync(path) && verify(path, expected)) return { version: expected, path };
 }
 export function list() { return existsSync(directory()) ? readdirSync(directory()).filter(name => /^\d+\.\d+\.\d+$/.test(name) && verify(join(directory(), name, executable), name)) : []; }
+export function formatBytes(value) {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 ** 2) return `${(value / 1024).toFixed(1)} KiB`;
+  if (value < 1024 ** 3) return `${(value / 1024 ** 2).toFixed(1)} MiB`;
+  return `${(value / 1024 ** 3).toFixed(1)} GiB`;
+}
+export function progressLine(downloaded, total, speed) {
+  const percent = total > 0 ? Math.min(100, Math.floor(downloaded * 100 / total)) : 0;
+  return `Downloaded ${formatBytes(downloaded)} / ${formatBytes(total)} (${percent}%) at ${formatBytes(speed)}/s`;
+}
+function report(message) { process.stderr.write(`  ${message}\n`); }
 export function configure() {
   if (process.env.npm_config_global !== 'true' || process.env.FOO_PATH === 'skip') return;
   const prefix = process.env.npm_config_prefix;
@@ -71,32 +82,49 @@ export async function install(expected = version) {
     const platform = { win32: 'windows', darwin: 'macos', linux: 'linux' }[process.platform];
     const arch = { x64: 'x86_64', arm64: 'aarch64' }[process.arch];
     if (!platform || !arch) throw Error(`No managed toolchain for ${process.platform}/${process.arch}.`);
+    process.stderr.write('FOO toolchain\n');
+    report(`Resolving Zig ${expected} for ${arch}-${platform}`);
     const response = await fetch(config.index, { signal: AbortSignal.timeout(60000), redirect: 'error' });
     if (!response.ok) throw Error(`Toolchain index returned HTTP ${response.status}.`);
     const index = await response.json(), release = index[expected]?.[`${arch}-${platform}`];
     if (!release || !/^[a-f0-9]{64}$/.test(release.shasum) || !(Number(release.size) > 0 && Number(release.size) < 512 * 1024 * 1024)) throw Error('Invalid toolchain release metadata.');
     const url = new URL(release.tarball);
     if (url.protocol !== 'https:' || url.hostname !== 'ziglang.org') throw Error('Toolchain archive must come from ziglang.org over HTTPS.');
-    const stage = mkdtempSync(join(cache, 'download-')), archive = join(stage, platform === 'windows' ? 'archive.zip' : 'archive.tar.xz');
-    process.stderr.write(`Installing FOO backend ${expected}…\n`);
+    const temporary = mkdtempSync(join(cache, 'download-')), archive = join(temporary, platform === 'windows' ? 'archive.zip' : 'archive.tar.xz');
+    const expectedSize = Number(release.size), started = Date.now(); let lastReport = 0;
+    report(`Destination ${join(cache, expected)}`);
+    report(`Downloading ${formatBytes(expectedSize)} from ziglang.org`);
     const download = await fetch(url, { signal: AbortSignal.timeout(300000), redirect: 'error' });
     if (!download.ok || !download.body) throw Error(`Toolchain download returned HTTP ${download.status}.`);
     const hash = createHash('sha256'); let bytes = 0;
-    await pipeline(Readable.fromWeb(download.body), new Transform({ transform(chunk, _encoding, done) { bytes += chunk.length; if (bytes > Number(release.size)) return done(Error('Toolchain archive exceeds its declared size.')); hash.update(chunk); done(null, chunk); } }), createWriteStream(archive, { flags: 'wx' }));
-    if (bytes !== Number(release.size) || hash.digest('hex') !== release.shasum) throw Error(`Toolchain checksum failed. Download retained at ${archive}.`);
+    const reportDownload = (force = false) => {
+      const now = Date.now();
+      if (!force && now - lastReport < 1000) return;
+      lastReport = now;
+      const speed = Math.floor(bytes * 1000 / Math.max(1, now - started));
+      report(progressLine(bytes, expectedSize, speed));
+    };
+    await pipeline(Readable.fromWeb(download.body), new Transform({ transform(chunk, _encoding, done) { bytes += chunk.length; if (bytes > expectedSize) return done(Error('Toolchain archive exceeds its declared size.')); hash.update(chunk); reportDownload(); done(null, chunk); } }), createWriteStream(archive, { flags: 'wx' }));
+    reportDownload(true);
+    report('Verifying SHA-256 checksum');
+    if (bytes !== expectedSize || hash.digest('hex') !== release.shasum) throw Error(`Toolchain checksum failed. Download retained at ${archive}.`);
+    report('Inspecting archive paths');
     const entries = execFileSync('tar', ['-tf', archive], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, windowsHide: true }).trim().split(/\r?\n/);
     if (entries.some(name => /^[\\/]|^[A-Za-z]:/.test(name) || name.split(/[\\/]/).includes('..'))) throw Error('Unsafe toolchain archive path.');
-    const unpacked = join(stage, 'unpacked'); mkdirSync(unpacked);
+    const unpacked = join(temporary, 'unpacked'); mkdirSync(unpacked);
+    report(`Extracting Zig ${expected}`);
     execFileSync('tar', ['-xf', archive, '-C', unpacked], { timeout: 300000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     const directories = readdirSync(unpacked).filter(name => statSync(join(unpacked, name)).isDirectory());
     if (directories.length !== 1) throw Error('Unexpected toolchain archive layout.');
     const installed = join(unpacked, directories[0]);
+    report('Verifying downloaded executable');
     if (!verify(join(installed, executable), expected)) throw Error('Downloaded toolchain reports an incompatible version.');
     const target = join(cache, expected);
-    if (existsSync(target)) renameSync(target, join(stage, 'previous'));
+    report(`Installing Zig ${expected}`);
+    if (existsSync(target)) renameSync(target, join(temporary, 'previous'));
     renameSync(installed, target);
     unlinkSync(archive);
-    process.stderr.write(`FOO backend ${expected} is ready.\n`);
+    report(`Ready Zig ${expected} at ${join(target, executable)}`);
     return { version: expected, path: join(target, executable) };
   } finally { closeSync(handle); unlinkSync(lock); }
 }

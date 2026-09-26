@@ -1,6 +1,6 @@
 {
   "name": "foo",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "license": "MIT OR Apache-2.0",
   "language": "1",
   "build": {

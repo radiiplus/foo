@@ -31,13 +31,13 @@ type Platform = {
 
 const compilerRelease = /^foo-v\d/;
 const refreshInterval = 15 * 60 * 1_000;
-const fallbackTag = "foo-v0.2.2";
+const fallbackTag = "foo-v0.2.3";
 const fallbackBase = `https://github.com/radiiplus/foo/releases/download/${fallbackTag}`;
 const fallbackRelease: GitHubRelease = {
   tag_name: fallbackTag,
   html_url: `https://github.com/radiiplus/foo/releases/tag/${fallbackTag}`,
   assets: [
-    "foo-0.2.2.tgz",
+    "foo-0.2.3.tgz",
     "foo-amd64.deb",
     "foo-arm64.deb",
     "foo-linux-x64.tar.gz",

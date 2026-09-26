@@ -73,12 +73,32 @@ proc validSha256(value: string): bool =
     if character notin {'0'..'9', 'a'..'f'}: return false
   true
 
+proc formatBytes*(value: BiggestInt): string =
+  if value < 1024: $value & " B"
+  elif value < 1024 * 1024:
+    formatFloat(value.float / 1024, ffDecimal, 1) & " KiB"
+  elif value < 1024 * 1024 * 1024:
+    formatFloat(value.float / (1024 * 1024), ffDecimal, 1) & " MiB"
+  else:
+    formatFloat(value.float / (1024 * 1024 * 1024), ffDecimal, 1) & " GiB"
+
+proc progressLine*(downloaded, total, speed: BiggestInt): string =
+  let percent = if total > 0: min(100, int(downloaded * 100 div total)) else: 0
+  "Downloaded " & formatBytes(downloaded) & " / " & formatBytes(total) &
+    " (" & $percent & "%) at " & formatBytes(speed) & "/s"
+
+proc stage(message: string) =
+  stderr.writeLine("  " & message)
+  stderr.flushFile()
+
 proc install*(expected = version): Info =
   if expected != version: raise newException(ValueError, "Unsupported backend version '" & expected & "'.")
   let existing = detect(expected)
   if existing.path.len > 0: return existing
   let indexUrl = "https://ziglang.org/download/index.json"
   let hostKey = when defined(windows): "x86_64-windows" elif defined(macosx): "aarch64-macos" elif defined(arm64): "aarch64-linux" else: "x86_64-linux"
+  stderr.writeLine("FOO toolchain")
+  stage("Resolving Zig " & expected & " for " & hostKey)
   let client = newHttpClient(timeout = 300000)
   defer: client.close()
   let indexResponse = client.get(indexUrl)
@@ -94,41 +114,59 @@ proc install*(expected = version): Info =
   if not validSha256(expectedHash):
     raise newException(ValueError, "Invalid Zig release checksum")
   let expectedSize = releaseSize(release)
-  let archive = client.get(archiveUrl)
-  if archive.code.int != 200: raise newException(IOError, "Unable to download Zig " & expected)
-  if archive.body.len != expectedSize:
-    raise newException(ValueError, "Zig archive size mismatch: expected " &
-      $expectedSize & " bytes, received " & $archive.body.len)
-  if sha256Hex(archive.body).toLowerAscii() != expectedHash: raise newException(ValueError, "Zig archive checksum mismatch")
   let cache = directory()
   createDir(cache)
   let stamp = $int(epochTime())
   let archivePath = cache / ("zig-" & expected & "-" & stamp & ".archive")
   let unpacked = cache / (".extract-" & stamp)
-  writeFile(archivePath, archive.body)
+  stage("Destination " & cache)
+  stage("Downloading " & formatBytes(expectedSize) & " from ziglang.org")
+  client.onProgressChanged = proc(total, downloaded, speed: BiggestInt) {.gcsafe.} =
+    let size = if total > 0: total else: BiggestInt(expectedSize)
+    stage(progressLine(downloaded, size, speed))
+  try:
+    client.downloadFile(archiveUrl, archivePath)
+  except CatchableError as error:
+    raise newException(IOError, "Unable to download Zig " & expected & ": " & error.msg)
+  client.onProgressChanged = nil
+  let downloadedSize = getFileSize(archivePath)
+  stage("Downloaded " & formatBytes(downloadedSize) & " / " &
+    formatBytes(expectedSize) & " (100%)")
+  if downloadedSize != expectedSize:
+    raise newException(ValueError, "Zig archive size mismatch: expected " &
+      $expectedSize & " bytes, received " & $downloadedSize)
+  stage("Verifying SHA-256 checksum")
+  if sha256Hex(readFile(archivePath)).toLowerAscii() != expectedHash:
+    raise newException(ValueError, "Zig archive checksum mismatch")
   createDir(unpacked)
+  stage("Inspecting archive paths")
   let listing = execCmdEx("tar -tf " & quoteShell(archivePath)).output
   for entry in listing.splitLines:
     let clean = entry.strip().replace('\\', '/')
-    if clean.len == 0 or clean.startsWith("/") or clean.split('/').anyIt(it == ".."):
+    if clean.len == 0: continue
+    if clean.startsWith("/") or clean.split('/').anyIt(it == ".."):
       raise newException(ValueError, "Unsafe Zig archive path")
+  stage("Extracting Zig " & expected)
   let unpack = execCmdEx("tar -xf " & quoteShell(archivePath) & " -C " & quoteShell(unpacked))
   if unpack.exitCode != 0: raise newException(IOError, "Unable to extract Zig archive: " & unpack.output)
   let executable = when defined(windows): "zig.exe" else: "zig"
-  var found = ""
-  for path in walkDirRec(unpacked):
-    if path.lastPathPart == executable:
-      found = path
-      break
-  if found.len == 0: raise newException(IOError, "Zig archive did not contain " & executable)
-  let sourceRoot = parentDir(found)
+  let roots = toSeq(walkDir(unpacked)).filterIt(it.kind == pcDir).mapIt(it.path)
+  if roots.len != 1 or not fileExists(roots[0] / executable):
+    raise newException(IOError, "Unexpected Zig archive layout")
+  let sourceRoot = roots[0]
   let targetRoot = cache / expected
+  stage("Installing Zig " & expected)
   if dirExists(targetRoot): removeDir(targetRoot)
   copyDir(sourceRoot, targetRoot)
+  let installed = targetRoot / executable
+  when not defined(windows):
+    setFilePermissions(installed, {fpUserRead, fpUserWrite, fpUserExec,
+      fpGroupRead, fpGroupExec, fpOthersRead, fpOthersExec})
   removeFile(archivePath)
   removeDir(unpacked)
-  let installed = targetRoot / executable
+  stage("Verifying installed executable")
   if not verify(installed, expected): raise newException(IOError, "Installed Zig failed version verification")
+  stage("Ready Zig " & expected & " at " & absolutePath(installed))
   Info(version: expected, path: absolutePath(installed))
 
 proc ensure*(level: string) =
