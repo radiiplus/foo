@@ -742,7 +742,8 @@ proc outdated*(root: string): seq[JsonNode] =
       result.add(%*{"name": requirement.name, "current": current, "latest": latest,
         "constraint": requirement.version})
 
-proc removePackage*(root, name: string): seq[Installed] =
+proc removePackage*(root, name: string;
+    progress: RegistryProgress = nil): seq[Installed] =
   if not validName(name): raise newException(ValueError, "Invalid package name: " & name)
   let path = root / "project.json"
   let project = parseJson(readFile(path))
@@ -762,7 +763,8 @@ proc removePackage*(root, name: string): seq[Installed] =
   writeFile(path, pretty(project) & "\n")
   let lockPath = root / "foo.lock"
   if fileExists(lockPath): removeFile(lockPath)
-  install(root)
+  if progress != nil: progress("remove", name, "project dependency")
+  install(root, progress = progress)
 
 proc deprecate*(root, package, message: string; token = ""): string =
   let marker = package.rfind('@')

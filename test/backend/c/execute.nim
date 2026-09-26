@@ -42,4 +42,22 @@ let built = build(module, "dev", output,
 doAssert built.success, built.error
 doAssert fileExists(built.artifact)
 doAssert built.output.len == 0
+
+let compatibilityOutput = ".artifacts" / "test-c-execute-compatibility"
+if dirExists(compatibilityOutput): removeDir(compatibilityOutput)
+createDir(compatibilityOutput)
+let nativeSource = compatibilityOutput / "extra.c"
+writeFile(nativeSource, "void foo_extra(void) {}\n")
+var buildPath = ""
+var linked = false
+let compatible = build(module, "dev", compatibilityOutput,
+  Native(name: "control", compile: true, compiler: "clang", run: true,
+    sources: @[nativeSource]), progress =
+    proc(phase, name, detail: string; cached: bool) =
+      discard name; discard cached
+      if phase == "path": buildPath = detail
+      if phase == "linked": linked = true)
+doAssert compatible.success, compatible.error
+doAssert buildPath.startsWith("Compatibility path (native sources) |")
+doAssert linked
 echo "C executable CFG and Phi parity: ok"

@@ -1,6 +1,7 @@
-import std/strutils
+import std/[os, osproc, strutils]
 
 type
+  BuildProgress* = proc(phase, name, detail: string; cached: bool) {.closure.}
   NativeBinding* = object
     substrate*: string
     clobbers*: seq[string]
@@ -31,6 +32,7 @@ type
     runtime*: string
     docs*: bool
     threads*: bool
+    jobs*: int
     debug*: bool
     run*: bool
     compile*: bool
@@ -42,6 +44,17 @@ type
     frameworks*: seq[string]
     objects*: seq[string]
     cpp*: bool
+
+proc jobLimit*(intensive = false): int =
+  let processors = max(1, countProcessors())
+  let configured = getEnv("FOO_BUILD_JOBS")
+  if configured.len > 0:
+    try:
+      return min(processors, max(1, parseInt(configured)))
+    except ValueError:
+      raise newException(ValueError, "FOO_BUILD_JOBS must be a positive integer")
+  let reserved = if intensive: 1 else: max(1, (processors + 3) div 4)
+  max(1, processors - reserved)
 
 proc artifact*(options: Native): string =
   let productName = if options.name.len > 0: options.name else: "app"

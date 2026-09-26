@@ -3,6 +3,52 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## 0.3.0 - 2026-09-26
+
+### Build Performance
+
+- Share Zig compiler caches across projects so subsequent builds can reuse
+  backend work instead of starting cold in every project directory.
+- Use Zig's faster self-hosted backend for compatible development builds and
+  retain the full backend for optimized or incompatible programs.
+- Compile and link simple C applications in one invocation, and compile native
+  sources concurrently when the compatibility path is required.
+- Select parallel job counts from available CPU and memory while reserving
+  system headroom, with additional resources assigned to slower build paths.
+- Report project artifact reuse explicitly and avoid rebuilding unchanged
+  applications.
+
+### Operation Interface
+
+- Give check, build, run, install, update, remove, publish, and toolchain
+  commands one consistent staged terminal interface.
+- Show live activity, timestamps, elapsed time, source files, worker counts,
+  cache reuse, meaningful stage results, and concise completion summaries.
+- Keep the default display quiet and readable, reserve `100%` for completed
+  work, and add `--explain` for deeper diagnostic detail without changing
+  machine-readable `--json` output.
+- Adapt stage layouts and color output to terminal width and capability.
+
+### Runtime And Backends
+
+- Add a Zig-native basic I/O path for display, input, line, read, write, and
+  close operations so simple applications do not need the hosted C service.
+- Download the managed Zig toolchain through WinHTTP and the Windows
+  certificate store, keeping native Windows installs independent of OpenSSL.
+- Add a shared live command runner for compiler processes, including responsive
+  activity updates and accurate duration reporting.
+
+### Documentation And Quality
+
+- Document fast and compatibility build paths, adaptive resource use, cache
+  behavior, the operation interface, and the `--explain` workflow.
+- Exclude local standard-library build caches and test executables from the npm
+  release archive while retaining the shipped test sources.
+- Keep platform distributions isolated from stale native binaries produced for
+  other operating systems or architectures.
+- Expand tests for C fast-path execution, Zig-native I/O, build selection,
+  terminal output, and service requirements.
+
 ## 0.2.3 - 2026-09-26
 
 ### Toolchain Setup

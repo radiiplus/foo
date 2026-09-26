@@ -8,4 +8,6 @@ doAssert zigShim.storage.contains("pub fn copyExact")
 doAssert zigShim.storage.contains("FOO_TRANSFER_BLOCK")
 doAssert zigShim.library.contains("fn hashmap")
 doAssert zigShim.library.contains("fn cloneBytes")
+doAssert zigShim.library.contains("pub const io = struct")
+doAssert zigShim.library.contains("runtimeIo()")
 echo "Zig shim parity: ok"

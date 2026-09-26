@@ -365,7 +365,7 @@ proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
   for functionIndex, function in module.funcs:
     let used = usedRegisters(function)
     var params: seq[string]
-    if function.name == "main" and hosted(module): params.add("process: @import(\"std\").process.Init")
+    if function.name == "main" and hosted(module, includeIo = false): params.add("process: @import(\"std\").process.Init")
     else:
       for parameter in function.params: params.add(valueStr(parameter) & ": " & typeStr(parameter.type))
     let qualifier = if function.abi == "c" or (options.library and function.public) or
@@ -389,7 +389,7 @@ proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
     if function.name == "main" and options.runtime != "none":
       addLine(0, "  shim.init(" & $(mode == "dev") & ");")
       addLine(0, "  defer shim.deinit();")
-      if hosted(module):
+      if hosted(module, includeIo = false):
         addLine(0, "  try @import(\"service.zig\").init(process.minimal.args);")
         addLine(0, "  defer @import(\"service.zig\").deinit();")
       if options.coverage.len > 0: addLine(0, "  defer report();")

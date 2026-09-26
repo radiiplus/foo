@@ -4,10 +4,12 @@ import ../..//ir/node
 
 const services* = ["io", "fs", "net", "process", "thread", "task", "time", "text"]
 
-proc hosted*(module: Module): bool =
+proc hosted*(module: Module; includeIo = true): bool =
   for declaration in module.externs:
+    let provider = if declaration.abi.startsWith("runtime."):
+        declaration.abi[8 .. ^1] else: ""
     if declaration.abi == "runtime" or
-        (declaration.abi.startsWith("runtime.") and declaration.abi[8 .. ^1] in services):
+        (provider in services and (includeIo or provider != "io")):
       return true
   false
 

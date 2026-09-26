@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { chmodSync, existsSync, statSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,7 +26,11 @@ if (process.platform !== "win32") {
   }
 }
 
-process.env.ZIG_GLOBAL_CACHE_DIR ||= resolve(process.cwd(), ".artifacts/cache/zig");
+const zigVersion = JSON.parse(readFileSync(resolve(root, "toolchain.json"), "utf8")).zig;
+const cacheRoot = process.env.FOO_CACHE_HOME
+  ? resolve(process.env.FOO_CACHE_HOME)
+  : resolve(homedir(), ".foo", "cache");
+process.env.ZIG_GLOBAL_CACHE_DIR ||= resolve(cacheRoot, "zig", zigVersion);
 process.env.ZIG_LOCAL_CACHE_DIR ||= resolve(process.cwd(), ".artifacts/cache/local");
 const result = spawnSync(compiler, process.argv.slice(2), {
   cwd: process.cwd(),

@@ -1,19 +1,22 @@
 import std/[json, os, osproc, sequtils, strutils, tables]
 import ../../ir/[kind, node]
 import ../../build/options as buildOptions
+import ../../build/execute as buildExecute
 import ../../opt/arch
 import ../../pkg/hash
+import ../../toolchain/manager as toolchainManager
 import ../substrate
 import ../native/[escape, service]
 import ./emitter
 import ./shim as zigShim
 
-type Result* = object
-  success*: bool
-  artifact*: string
-  output*: string
-  error*: string
-  cached*: bool
+type
+  Result* = object
+    success*: bool
+    artifact*: string
+    output*: string
+    error*: string
+    cached*: bool
 
 const
   runtimeLibrary = staticRead("library.zig")
@@ -22,6 +25,11 @@ const
   runtimeService = staticRead("service.zig")
   serviceHeader = staticRead("../native/service.h")
   serviceSource = staticRead("../native/service.c")
+
+proc sharedCacheDirectory*(): string =
+  let configured = getEnv("ZIG_GLOBAL_CACHE_DIR")
+  if configured.len > 0: absolutePath(configured)
+  else: getHomeDir() / ".foo" / "cache" / "zig" / toolchainManager.version
 
 proc stageEmbeds(module: Module; sourceFile, outDir: string) =
   let sourceDir = parentDir(absolutePath(sourceFile))
@@ -44,7 +52,8 @@ proc stageEmbeds(module: Module; sourceFile, outDir: string) =
     for basicBlock in fn.blocks: stageBlock(basicBlock)
 
 proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
-    sourceFile = "foo_source.iv"; options = buildOptions.Native()): Result =
+    sourceFile = "foo_source.iv"; options = buildOptions.Native();
+    progress: buildOptions.BuildProgress = nil): Result =
   try:
     buildOptions.validate(options)
     createDir(outDir)
@@ -79,17 +88,38 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
     if escaped.code.len > 0:
       fragment = outDir / "escape.c"
       writeFile(fragment, escaped.code)
-    let needsService = hosted(escaped.module)
+    let needsService = hosted(escaped.module, includeIo = false)
     if needsService:
       writeFile(outDir / "service.h", serviceHeader)
       writeFile(outDir / "service.c", serviceSource)
     let artifactPath = outDir / buildOptions.artifact(options)
     if options.compile:
+      let cache = sharedCacheDirectory()
+      createDir(cache)
+      let llvmRequired = fragment.len > 0 or needsService or
+        options.sources.len > 0 or options.sanitize.len > 0 or
+        options.exports.len > 0 or options.script.len > 0
+      let intensive = llvmRequired or mode == "release"
+      let jobs = if options.jobs > 0: options.jobs else: buildOptions.jobLimit(intensive)
+      if progress != nil:
+        var path = if intensive: "Compatibility path" else: "Fast path"
+        if mode == "release": path = "Optimized path"
+        elif fragment.len > 0: path.add(" (native interop)")
+        elif needsService: path.add(" (system services)")
+        elif options.sources.len > 0: path.add(" (native sources)")
+        elif options.sanitize.len > 0: path.add(" (safety checks)")
+        elif options.exports.len > 0 or options.script.len > 0:
+          path.add(" (custom linking)")
+        progress("path", options.name,
+          path & " | " & $jobs & (if jobs == 1: " job" else: " jobs") &
+          " | shared cache enabled", false)
       var command = quoteShell(zigPath) &
         (if options.kind in ["static", "shared"]: " build-lib " else: " build-exe ") &
         quoteShell(mainPath) & " -O " &
         (if mode == "release": "ReleaseSafe" else: "Debug") &
         " --cache-dir " & quoteShell(outDir / "cache") &
+        " --global-cache-dir " & quoteShell(cache) &
+        " -j" & $jobs &
         " -femit-bin=" & quoteShell(artifactPath)
       if options.name.len > 0: command.add(" --name " & quoteShell(options.name))
       if options.exports.len > 0 or options.script.len > 0:
@@ -103,6 +133,8 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
         command.add(" --version-script " & quoteShell(options.exports))
       if options.script.len > 0:
         command.add(" --script " & quoteShell(options.script))
+      if mode != "release" and not llvmRequired:
+        command.add(" -fno-llvm")
       for path in options.rpath: command.add(" -rpath " & quoteShell(path))
       for framework in options.frameworks:
         command.add(" -framework " & quoteShell(framework))
@@ -136,7 +168,8 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
         command.add(if fileExists(library): " " & quoteShell(library)
           else: " -l" & quoteShell(library))
       if options.cpp: command.add(" -lc++")
-      let process = execCmdEx(command)
+      let process = buildExecute.runCommand(command, outDir / ".compile-output",
+        options.name, progress)
       if process.exitCode != 0: raise newException(OSError, process.output)
     result.success = true
     result.artifact = artifactPath

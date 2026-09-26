@@ -101,7 +101,7 @@ fn cloneBytes(bytes: []const u8) ![]u8 {
     managed.memory.copyExact(result, bytes);
     return result;
 }
-fn io() std.Io {
+fn runtimeIo() std.Io {
     acquire();
     defer lock.store(false, .release);
     if (!started) {
@@ -195,6 +195,43 @@ pub fn deinit() void {
     }
 }
 
+pub const io = struct {
+    pub const Stream = streams.Stream;
+
+    pub fn input() *Stream {
+        return streams.input();
+    }
+    pub fn output() *Stream {
+        return streams.output();
+    }
+    pub fn report() *Stream {
+        return streams.report();
+    }
+    pub fn read(value: *Stream, size: u64) ![]const u8 {
+        if (size > std.math.maxInt(usize)) return error.InvalidSize;
+        const buffer = try allocator.alloc(u8, @intCast(size));
+        defer allocator.free(buffer);
+        const count = try streams.read(value, buffer.ptr, size);
+        return retain(u8, buffer[0..@intCast(count)]);
+    }
+    pub fn line(value: *Stream) ![]const u8 {
+        var result: std.ArrayList(u8) = .empty;
+        defer result.deinit(allocator);
+        var byte: [1]u8 = undefined;
+        while (try streams.read(value, &byte[0], 1) == 1) {
+            if (byte[0] == '\n') break;
+            if (byte[0] != '\r') try result.append(allocator, byte[0]);
+        }
+        return retain(u8, result.items);
+    }
+    pub fn write(value: *Stream, content: []const u8) !void {
+        try streams.write(value, content);
+    }
+    pub fn close(value: *Stream) !void {
+        try streams.close(value);
+    }
+};
+
 pub const buffers = struct {
     fn discard(comptime T: type, value: []const T) !void {
         if (value.len == 0) return;
@@ -223,7 +260,7 @@ pub fn report(path: []const u8, names: []const []const u8, lines: []const u32, c
     for (entries, 0..) |*entry, index| entry.* = .{ .function = names[index], .line = lines[index], .hits = counts[index] };
     const encoded = try std.json.Stringify.valueAlloc(allocator, .{ .version = 1, .kind = "function", .entries = entries }, .{});
     defer allocator.free(encoded);
-    try std.Io.Dir.cwd().writeFile(io(), .{ .sub_path = path, .data = encoded });
+    try std.Io.Dir.cwd().writeFile(runtimeIo(), .{ .sub_path = path, .data = encoded });
 }
 
 pub const arch = struct {
@@ -306,7 +343,7 @@ fn convert(comptime T: type, value: anytype) T {
     return value;
 }
 pub fn call(comptime module: []const u8, comptime name: []const u8, comptime Result: type, args: anytype) Result {
-    inline for (.{ "io", "fs", "net", "process", "thread", "time", "text" }) |namespace| {
+    inline for (.{ "fs", "net", "process", "thread", "time", "text" }) |namespace| {
         if (comptime std.mem.eql(u8, module, namespace)) return @import("service.zig").call(module, name, Result, args);
     }
     if (comptime std.mem.eql(u8, module, "sequence")) return sequence(name, Result, args);
@@ -440,7 +477,7 @@ pub const crypto = struct {
     pub fn random(size: u32) ![]const u8 {
         const buffer = try allocator.alloc(u8, size);
         defer allocator.free(buffer);
-        try io().randomSecure(buffer);
+        try runtimeIo().randomSecure(buffer);
         return retain(u8, buffer);
     }
     pub fn seal(data: []const u8, secret: []const u8, nonce: []const u8, context: []const u8) ![]const u8 {
@@ -477,13 +514,13 @@ pub const crypto = struct {
     }
     pub fn password(value: []const u8) ![]const u8 {
         var buffer: [256]u8 = undefined;
-        const encoded = try std.crypto.pwhash.argon2.strHash(value, .{ .allocator = allocator, .params = .{ .t = 3, .m = 65536, .p = 1 } }, &buffer, io());
+        const encoded = try std.crypto.pwhash.argon2.strHash(value, .{ .allocator = allocator, .params = .{ .t = 3, .m = 65536, .p = 1 } }, &buffer, runtimeIo());
         return retain(u8, encoded);
     }
     pub fn confirm(value: []const u8, encoded: []const u8) !bool {
         if (encoded.len > 256) return error.InvalidEncoding;
         if (!std.mem.startsWith(u8, encoded, "$argon2id$v=19$m=65536,t=3,p=1$")) return error.UnsupportedParameters;
-        std.crypto.pwhash.argon2.strVerify(encoded, value, .{ .allocator = allocator }, io()) catch |err| switch (err) {
+        std.crypto.pwhash.argon2.strVerify(encoded, value, .{ .allocator = allocator }, runtimeIo()) catch |err| switch (err) {
             error.PasswordVerificationFailed => return false,
             else => return err,
         };
@@ -617,7 +654,7 @@ pub const http = struct {
     };
     pub fn client() !*Client {
         const result = try allocator.create(Client);
-        result.* = .{ .inner = .{ .allocator = allocator, .io = io() } };
+        result.* = .{ .inner = .{ .allocator = allocator, .io = runtimeIo() } };
         return result;
     }
     pub fn close(value: *Client) void {
@@ -704,23 +741,23 @@ pub const http = struct {
         const result = try allocator.create(Server);
         errdefer allocator.destroy(result);
         const ip = try std.Io.net.IpAddress.parse(address, number);
-        result.* = try ip.listen(io(), .{ .reuse_address = true });
+        result.* = try ip.listen(runtimeIo(), .{ .reuse_address = true });
         return result;
     }
     pub fn port(value: *Server) u16 {
         return value.socket.address.getPort();
     }
     pub fn closeServer(value: *Server) void {
-        value.deinit(io());
+        value.deinit(runtimeIo());
         allocator.destroy(value);
     }
     pub fn accept(value: *Server) !*Peer {
         const result = try allocator.create(Peer);
         errdefer allocator.destroy(result);
-        const stream = try value.accept(io());
+        const stream = try value.accept(runtimeIo());
         result.* = .{ .stream = stream, .reader = undefined, .writer = undefined, .server = undefined };
-        result.reader = stream.reader(io(), &result.input);
-        result.writer = stream.writer(io(), &result.output);
+        result.reader = stream.reader(runtimeIo(), &result.input);
+        result.writer = stream.writer(runtimeIo(), &result.output);
         result.server = .init(&result.reader.interface, &result.writer.interface);
         return result;
     }
@@ -758,7 +795,7 @@ pub const http = struct {
         value.request = null;
     }
     pub fn disconnect(value: *Peer) void {
-        value.stream.close(io());
+        value.stream.close(runtimeIo());
         allocator.destroy(value);
     }
 };

@@ -69,6 +69,26 @@ FOO uses a **Build Planner** and a **Cache**. Every time you build, FOO records 
 
 This is why `foo watch` feels so instant. It only rebuilds the tiny parts of your code that actually changed, skipping everything else.
 
+### Adaptive build paths
+
+FOO uses one operation interface for builds, runs, package changes, publishing,
+and toolchain setup. It shows real source files and stages, an activity flow,
+elapsed time, and a final summary. The activity blocks show that work is moving;
+only a finished operation displays `100%`. Add `--explain` when paths, digests,
+registry endpoints, and other diagnostic context are useful.
+
+Build operations also show the active build path and the number of jobs
+available. Ordinary development builds use the fast path and leave CPU and
+memory headroom for the rest of the system. Native interop, extra native
+sources, safety checks, custom linking, and release optimization select a
+compatibility or optimized path. Those paths use a higher job limit and briefly
+state why they were selected.
+
+Zig builds share reusable compiler data across FOO projects. Finished project
+artifacts use a separate project cache; an unchanged build reports that it was
+reused and skips compilation. Set `FOO_BUILD_JOBS` when a machine needs an
+explicit worker limit.
+
 ---
 
 ## 5. Native Interop: The Escape Hatch

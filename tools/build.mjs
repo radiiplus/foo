@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,21 +11,20 @@ execFileSync(process.execPath, [join(root, "tools/native.mjs")], {
 });
 rmSync(output, { recursive: true, force: true });
 mkdirSync(join(output, "bin"), { recursive: true });
-for (const name of ["assets", "std", "docs", "test/stdlib", "test/native/service.c", "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT", "LICENSE-APACHE"])
+for (const name of ["assets", "std", "docs", "test/native/service.c", "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT", "LICENSE-APACHE"])
   cpSync(join(root, name), join(output, name), { recursive: true });
-rmSync(join(output, "test", "stdlib", ".artifacts"), { recursive: true, force: true });
+for (const name of readdirSync(join(root, "test", "stdlib"))) {
+  if (!name.endsWith(".iv") && !["project.json", "public.txt"].includes(name)) continue;
+  cpSync(join(root, "test", "stdlib", name), join(output, "test", "stdlib", name));
+}
 for (const name of ["foo.mjs", "foo.cmd", "version.mjs"])
   cpSync(join(root, "bin", name), join(output, "bin", name));
 const nativeName = process.platform === "win32" ? "foo.exe" : "foo";
-const binaries = {};
-for (const [platform, name] of [["win32", "foo.exe"], ["linux", "foo"]]) {
-  const source = join(root, ".artifacts", "native", name);
-  if (!existsSync(source)) continue;
-  cpSync(source, join(output, "bin", name));
-  binaries[platform] = `bin/${name}`;
-}
-if (!binaries[process.platform])
-  throw new Error(`Native compiler was not produced: ${join(root, ".artifacts", "native", nativeName)}`);
+const nativeSource = join(root, ".artifacts", "native", nativeName);
+if (!existsSync(nativeSource))
+  throw new Error(`Native compiler was not produced: ${nativeSource}`);
+cpSync(nativeSource, join(output, "bin", nativeName));
+const binaries = { [process.platform]: `bin/${nativeName}` };
 cpSync(join(root, "tools/toolchain.mjs"), join(output, "tools/toolchain.mjs"));
 
 const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));

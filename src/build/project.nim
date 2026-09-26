@@ -13,7 +13,7 @@ type
     backend*: string
     target*: string
     cpu*: string
-    progress*: proc(phase, name, file: string; cached: bool) {.closure.}
+    progress*: BuildProgress
   Project* = ref object
     root*: string
     options*: ProjectOptions
@@ -192,13 +192,16 @@ proc ir*(project: Project; entry = ""): Module =
 
 proc check*(project: Project; entry = "") =
   project.prepare(project.config())
-  if project.options.progress != nil:
-    let name = project.manifest().name
-    project.options.progress("check", if name.len > 0: name else: "project", entry, false)
-  if entry.len > 0:
-    discard project.compiler().check(if isAbsolute(entry): entry else: absolutePath(project.root / entry))
-  else:
-    for file in project.files(): discard project.compiler().check(file)
+  let selected = if entry.len > 0:
+      @[if isAbsolute(entry): entry else: absolutePath(project.root / entry)]
+    else: project.files()
+  for file in selected:
+    let name = relativePath(file, project.root).replace('\\', '/')
+    if project.options.progress != nil:
+      project.options.progress("check", name, file, false)
+    discard project.compiler().check(file)
+    if project.options.progress != nil:
+      project.options.progress("checked", name, "", false)
 
 proc runHook(project: Project; config: BuildConfig; name: string) =
   if config.hooks == nil or config.hooks.kind != JObject or not config.hooks.hasKey(name): return
@@ -237,8 +240,6 @@ proc build*(project: Project; entry = ""): Table[string, string] =
     if product.kind == "static" and product.needs.len > 0:
       raise newException(ValueError, "Static archives cannot contain dependent libraries")
     let selected = project.entryPath(if product.entry.len > 0: product.entry else: entry)
-    if project.options.progress != nil: project.options.progress("build", name, selected, false)
-    discard project.ir(selected)
     let target = triple(if project.options.target.len > 0: project.options.target elif config.target.len > 0: config.target[0] else: host)
     let output = if namedProducts:
       project.root / ".artifacts" / "build" / name
@@ -278,17 +279,28 @@ proc build*(project: Project; entry = ""): Table[string, string] =
         active.del(name)
         if project.options.progress != nil: project.options.progress("reuse", name, artifactPathExpected, true)
         return
+    if project.options.progress != nil:
+      project.options.progress("build", name, "", false)
     var success = false
     var artifactPath, buildError: string
-    if backend == "c":
-      let built = cDriver.build(project.compiler().ir(selected),
-        if config.optimize.len > 0: config.optimize else: "dev", output,
-        nativeOptions, selected)
-      success = built.success; artifactPath = built.artifact; buildError = built.error
-    else:
-      let built = zigDriver.build(project.compiler().ir(selected), if config.optimize.len > 0: config.optimize else: "dev", output, tool, selected, nativeOptions)
-      success = built.success; artifactPath = built.artifact; buildError = built.error
-    if not success: raise newException(OSError, if buildError.len > 0: buildError else: "Build failed")
+    try:
+      let compiled = project.compiler().ir(selected)
+      if backend == "c":
+        let built = cDriver.build(compiled,
+          if config.optimize.len > 0: config.optimize else: "dev", output,
+          nativeOptions, selected, project.options.progress)
+        success = built.success; artifactPath = built.artifact; buildError = built.error
+      else:
+        let built = zigDriver.build(compiled,
+          if config.optimize.len > 0: config.optimize else: "dev", output,
+          tool, selected, nativeOptions, project.options.progress)
+        success = built.success; artifactPath = built.artifact; buildError = built.error
+    except CatchableError:
+      if project.options.progress != nil: project.options.progress("failed", name, "", false)
+      raise
+    if not success:
+      if project.options.progress != nil: project.options.progress("failed", name, "", false)
+      raise newException(OSError, if buildError.len > 0: buildError else: "Build failed")
     artifacts[][name] = artifactPath
     write(cachePath, $(%*{"fingerprint": fingerprint, "artifact": artifactPath}))
     if project.options.progress != nil: project.options.progress("done", name, artifactPath, false)

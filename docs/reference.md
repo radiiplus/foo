@@ -26,6 +26,11 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | `foo doctor` | Reports installed and missing toolchain components. |
 | `foo bind <file.h>` | Automatically generates FOO bindings from a C header file. |
 
+Long-running commands share the FOO operation view. Add `--explain` to `build`,
+`run`, `check`, `install`, `update`, `remove`, `publish`, or `toolchain` to show
+diagnostic details that are hidden by default. Use `--json` with compiler
+commands when another program needs structured progress events.
+
 ---
 
 ## 2. Core Keywords
