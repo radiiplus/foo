@@ -1,7 +1,7 @@
 import std/[algorithm, os, osproc, sequtils, strutils, tables]
 import ../ast/node
 import ../ast/doc as astDoc
-import ../build/[compiler, project, files]
+import ../build/[compiler, project, files, options]
 import ../diag/engine
 import ../fmt/formatter
 import ../lex/lexer
@@ -43,8 +43,9 @@ proc run*(entryFile = ""; root = getCurrentDir(); options = ProjectOptions()) =
     if response.output.len > 0: stdout.write(response.output)
     if response.exitCode != 0: raise newException(OSError, response.output)
 
-proc test*(root = getCurrentDir(); filter = ""; backend = "zig"; executor: TestExecutor = nil): seq[TestResult] =
-  testRunner.runTests(root, filter, backend, executor)
+proc test*(root = getCurrentDir(); filter = ""; backend = "zig";
+    executor: TestExecutor = nil; progress: BuildProgress = nil): seq[TestResult] =
+  testRunner.runTests(root, filter, backend, executor, progress)
 
 proc fmt*(file: string): string =
   if not fileExists(file): raise newException(IOError, "File not found: " & file)

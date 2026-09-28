@@ -26,12 +26,12 @@ construction is too permissive.
 ```foo
 define User as record {
   name of type text.
-  age of type unsigned 64.
+  age of type unsigned.
 }.
 
-function create(name text, age unsigned 64) giving failable User {
+function create(name text, age unsigned) giving failable User {
   when age greater than 130 {
-    give fail(Error.InvalidAge).
+    give fail(Error.Age).
   }
   give User(name, age).
 }
@@ -42,17 +42,19 @@ function label(user User) giving text {
 
 constant user is create("Ada", 37) try.
 constant direct is User(age 37, name "Ada").
-constant User(name, age) is direct.
 display label(user).
 ```
 
 `create` is the custom constructor. `label` is the computed value. Neither one
-needs constructor or computed-field syntax. A structural destructure names the
-record and every field, so adding a field produces a compile error instead of
-silently changing the binding order.
+needs constructor or computed-field syntax. A structural destructure such as
+`constant User(name, age) is direct.` names the record and every field, so
+adding a field produces a compile error instead of silently changing the
+binding order.
 
-Use composition when one record contains another:
+Use composition when one record contains another. This fragment reuses `User`
+from the complete example above:
 
+<!-- snippet: context -->
 ```foo
 define Account as record {
   owner of type User.
@@ -107,7 +109,7 @@ function encode(token Token) giving failable text {
 }
 
 function decode(source text) giving failable Token {
-  when source is "" { give fail(Error.EmptyToken). }
+  when source is "" { give fail(Error.Empty). }
   give Token(source).
 }
 
@@ -118,8 +120,10 @@ display stored.
 ```
 
 For the standard JSON representation of a concrete scalar or record, FOO can
-generate both directions directly:
+generate both directions directly. This fragment reuses `codecs` and `Token`
+from the complete example above:
 
+<!-- snippet: context -->
 ```foo
 constant stored is codecs.encode[Token](Token("abc")) try.
 constant restored is codecs.decode[Token](stored) try.
@@ -141,7 +145,7 @@ use state as states.
 function transition(value integer, event integer) giving failable integer {
   constant next is value plus event.
   when next greater than 100 {
-    give fail(Error.InvalidTransition).
+    give fail(Error.Transition).
   }
   give next.
 }
@@ -163,16 +167,16 @@ function that returns a closed step choice.
 
 ```foo
 define Step as choice {
-  item(unsigned 64).
+  item(unsigned).
   done.
 }.
 
-function next(index unsigned 64) giving Step {
+function next(index unsigned) giving Step {
   when index less than 3 { give item(index). }
   give done.
 }
 
-dynamic index of type unsigned 64 is 0.
+dynamic index of type unsigned is 0.
 dynamic running is true.
 while running {
   match next(index) {
@@ -201,14 +205,14 @@ operations it is allowed to call.
 
 ```foo
 define Clock as record {
-  current of type function taking () giving unsigned 64.
+  current of type function taking () giving unsigned.
 }.
 
-function fixed() giving unsigned 64 {
+function fixed() giving unsigned {
   give 42.
 }
 
-function stamp(clock Clock) giving unsigned 64 {
+function stamp(clock Clock) giving unsigned {
   give clock.current().
 }
 
@@ -276,7 +280,7 @@ each index from zero up to, but not including, the requested count.
 ```foo
 use testing as check.
 
-function bounded(index unsigned 64) giving boolean {
+function bounded(index unsigned) giving boolean {
   give index less than 100.
 }
 
@@ -316,8 +320,10 @@ the storage) rules still apply.
 
 An ordinary import is private. Use `public use` when a facade (a public module
 over internal modules) should re-export (publish again)
-another module's public declarations without changing their names:
+another module's public declarations without changing their names. This
+fragment assumes the named internal file exists:
 
+<!-- snippet: context -->
 ```foo
 -- src/service.iv
 public use "internal/account.iv".
@@ -325,8 +331,10 @@ public use "internal/account.iv".
 
 Re-exported declarations participate in normal duplicate-name checks. A
 `public use` cannot have an alias. Use a public wrapper when the facade needs to
-rename a declaration, adapt arguments, or narrow behavior.
+rename a declaration, adapt arguments, or narrow behavior. This fragment also
+depends on the named internal file.
 
+<!-- snippet: context -->
 ```foo
 -- src/service.iv
 use "internal/account.iv" as account.

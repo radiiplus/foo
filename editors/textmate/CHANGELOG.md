@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.1 - 2026-09-28
+
+- Report when the FOO language server has initialized successfully.
+- Validate top-level `display`, `define`, `dynamic`, defaults, postfix `try`,
+  `fallback`, and `stop`/`skip` through the live compiler-backed server.
+- Use the compiler's complete analysis pipeline for editor diagnostics, hover,
+  and navigation.
+
 ## 2.4.0 - 2026-09-28
 
 - Align highlighting and snippets with the `failable`, postfix `try`, plural

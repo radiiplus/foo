@@ -42,11 +42,13 @@ const completed = new Promise((finish, reject) => {
             'constant messages are greet "FOO".',
             'dynamic count is 0.',
             'increase count by 1.',
+            'display "Hello from FOO".',
           ].join('\n'),
         } } });
       } else if (initialized && message.method === 'textDocument/publishDiagnostics') {
         if (!validated) {
-          assert.equal(message.params.diagnostics.length, 0, 'Current sentence syntax should be valid in the live editor');
+          assert.equal(message.params.diagnostics.length, 0,
+            `Current sentence syntax should be valid in the live editor: ${JSON.stringify(message.params.diagnostics)}`);
           validated = true;
           send({ method: 'textDocument/didChange', params: {
             textDocument: { uri: 'file:///live.iv', version: 2 },

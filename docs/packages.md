@@ -93,8 +93,8 @@ constraints, `foo outdated` reports them, and `foo remove` prunes the graph.
 
 ## Using a package before installation
 
-Writing `use packageName.` does not silently download code during a build. FOO
-looks for a local module, then `.foo/packages/packageName`, then a standard
+Writing `use package.` does not silently download code during a build. FOO
+looks for a local module, then `.foo/packages/package`, then a standard
 module. When the package is declared in `project.json` but has not been
 installed, checking stops with a package-not-found diagnostic and directs the
 developer to run:
@@ -104,7 +104,7 @@ foo install
 ```
 
 This separation keeps builds reproducible (repeatable from the same inputs) and prevents source code from causing
-network access. `foo add packageName` updates the manifest; `foo install`
+network access. `foo add package` updates the manifest; `foo install`
 resolves, verifies, and writes the exact graph. CI should restore or run the
 install step before `foo check`, `foo test`, or `foo build`.
 

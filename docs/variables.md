@@ -35,6 +35,8 @@ when attempts is 2 {
 Use intent-specific arithmetic for ordinary counters and quantities:
 
 ```foo
+dynamic attempts is 0.
+dynamic remaining is 10.
 increase attempts by 1.
 decrease remaining by 2.
 ```
@@ -47,6 +49,10 @@ store the result back into the dynamic binding.
 Use `is` for one value and `are` when a name represents a sequence of values:
 
 ```foo
+use sequence as sequences.
+
+constant current is "Ada".
+constant active is sequences.create[text]().
 constant user is current.
 constant users are active.
 ```
@@ -61,7 +67,7 @@ part of the program's contract.
 
 ```foo
 constant port of type unsigned 16 is 8080.
-dynamic balance of type decimal 64 is 12.50.
+dynamic balance of type decimal 32 is 12.50.
 ```
 
 The initializer must fit the declared type. FOO does not silently convert
@@ -105,8 +111,8 @@ the same name twice in one scope is an error.
 Use `define ... as ...` to give a type a domain-specific name.
 
 ```foo
-define Identity as unsigned 64.
-define Temperature as decimal 64.
+define Identity as unsigned.
+define Temperature as decimal.
 
 constant owner of type Identity is 42.
 constant room of type Temperature is 21.5.
@@ -117,7 +123,7 @@ only how it is stored.
 
 ## Try it
 
-1. Declare a constant named `projectName` and display it.
+1. Declare a constant named `project` and display it.
 2. Declare `dynamic completed is 0.`.
 3. Increase `completed` three times with `increase completed by 1.`.
 4. Add a `when` block that displays `"Done"` when the value is 3.

@@ -66,6 +66,10 @@ constant body is web.body(response) try.
 Advanced users can configure the same client before requesting:
 
 ```foo
+use http as web.
+
+constant client is web.client() try.
+after { web.close(client). }
 web.attach(client, "Accept", "application/json") try.
 web.redirects(client, 2) try.
 web.reuse(client, true).
@@ -143,8 +147,10 @@ server are CLI tools rather than source modules.
 
 ## Reading a signature
 
-Consider:
+Consider this signature fragment from the HTTP module. `Peer` is an opaque
+module-owned type declared elsewhere in that module:
 
+<!-- snippet: context -->
 ```foo
 public use "http" function read(
   value pointer to Peer,

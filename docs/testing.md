@@ -69,7 +69,7 @@ to `every`:
 ```foo
 use testing as check.
 
-function bounded(index unsigned 64) giving boolean {
+function bounded(index unsigned) giving boolean {
   give index less than 100.
 }
 
@@ -83,17 +83,19 @@ not generate arbitrary values of a type. For varied typed inputs, define an
 index-to-value function, store it in `Generator[T]`, and call `generate`:
 
 ```foo
-function sample(index unsigned 64) giving integer {
+use testing as check.
+
+function sample(index unsigned) giving unsigned {
   give index plus 1.
 }
 
-function positive(value integer) giving boolean {
+function positive(value unsigned) giving boolean {
   give value greater than 0.
 }
 
 test "generated values stay positive" {
-  constant generator is check.Generator[integer](sample).
-  check.generate[integer](100, generator, positive).
+  constant generator is check.Generator[unsigned](sample).
+  check.generate[unsigned](100, generator, positive).
 }
 ```
 

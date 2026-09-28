@@ -5,6 +5,41 @@ changes are recorded here.
 
 ## Unreleased
 
+## 0.4.1 - 2026-09-28
+
+### Compiler And Runtime
+
+- Keep built-in Zig output on its native fast path so a basic `display`
+  program no longer requires generated C service headers or libc.
+- Avoid passing Clang's `-target` option to a host GCC build, while preserving
+  explicit cross-target handling.
+- Exclude top-level `test/` and `benchmark/` trees from flat source discovery
+  so they are only compiled by their dedicated commands.
+
+### Testing And Editor
+
+- Give `foo test` the same staged operation interface as builds and runs,
+  including checking, compilation, completion, failure details, and timing.
+- Compile a selected test body directly as its entry point, removing the
+  unnecessary synthetic call boundary.
+- Run live LSP analysis through the compiler's complete expansion, entry,
+  linking, lint, type, and capability pipeline using project configuration.
+- Emit structured editor diagnostics with stable FOO codes, exact ranges,
+  suggestions, and fixes, and report successful language-server startup.
+- Add live regression coverage for top-level `display`, concise declarations,
+  defaults, postfix `try`, `fallback`, and current loop control words.
+
+### Documentation
+
+- Audit the book against compiler behavior, replace speculative examples with
+  compiling forms, and explain technical terms in place where they first
+  matter.
+- Clarify canonical calls, numeric widths, ownership boundaries, native ABI
+  declarations, test behavior, supported control flow, and standard-library
+  contracts throughout the book and generated LLM reference.
+- Keep the registry documentation page synchronized with the revised book and
+  improve long-document scrolling and navigation behavior.
+
 ## 0.4.0 - 2026-09-28
 
 ### Language

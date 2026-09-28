@@ -13,6 +13,7 @@ import ../types/checker
 import ../ir/[lower, monomorph]
 import ../backend/zig/driver as zigDriver
 import ../backend/c/driver as cDriver
+import ../build/compiler as buildCompiler
 import ../build/options as buildOptions
 import ../toolchain/manager
 
@@ -103,12 +104,6 @@ proc synthesizeTests*(program: ast.Program; selected: TestSuite) : bool =
           break
     if target == nil: continue
     let span = target.span
-    let nameNode = ast.Name(tag: "name", span: span, text: "__test_selected")
-    let function = ast.Function(tag: "function", span: span, public: false, name: nameNode,
-      typeParams: @[], params: @[], returnType: nil, abi: "", constraint: nil,
-      constraints: @[], attributes: @[], body: target.body)
-    let callName = ast.Name(tag: "name", span: span, text: nameNode.text)
-    let call = ast.Action(tag: "action", span: span, name: callName, args: @[], value: nil)
     var start: ast.Function
     for statement in unit.body.stmts:
       if statement.tag == "function" and ast.Function(statement).name.text == "start":
@@ -118,11 +113,10 @@ proc synthesizeTests*(program: ast.Program; selected: TestSuite) : bool =
       let startName = ast.Name(tag: "name", span: span, text: "start")
       start = ast.Function(tag: "function", span: span, public: true, name: startName,
         typeParams: @[], params: @[], returnType: nil, abi: "", constraint: nil,
-        constraints: @[], attributes: @[], body: ast.Block(tag: "block", span: span, stmts: @[ast.Statement(call)]))
+        constraints: @[], attributes: @[], body: target.body)
       unit.body.stmts.add(ast.Statement(start))
     else:
-      start.body.stmts = @[ast.Statement(call)]
-    unit.body.stmts.add(ast.Statement(function))
+      start.body = target.body
     var filtered: seq[ast.Statement] = @[]
     for statement in unit.body.stmts:
       if statement != ast.Statement(target): filtered.add(statement)
@@ -153,7 +147,8 @@ proc flag(node: JsonNode): bool =
 proc rooted(root, path: string): string =
   if isAbsolute(path): path else: absolutePath(root / path)
 
-proc runSingleTest*(suite: TestSuite; backend = "zig"; executor: TestExecutor = nil): TestResult =
+proc runSingleTest*(suite: TestSuite; backend = "zig"; executor: TestExecutor = nil;
+    progress: buildOptions.BuildProgress = nil): TestResult =
   let started = epochTime()
   if executor != nil:
     result = executor(suite)
@@ -183,6 +178,8 @@ proc runSingleTest*(suite: TestSuite; backend = "zig"; executor: TestExecutor = 
     var includePaths: seq[string]
     for path in c.child("include").strings: includePaths.add(rooted(projectRoot, path))
     let source = readFile(suite.file)
+    if progress != nil:
+      progress("check", relativePath(suite.file, projectRoot), suite.file, false)
     let diagnostics = newEngine()
     diagnostics.setSource(source, suite.file)
     var program = newParser(newLexer(source, diagnostics).lex(), diagnostics).parse()
@@ -190,6 +187,7 @@ proc runSingleTest*(suite: TestSuite; backend = "zig"; executor: TestExecutor = 
       raise newException(ValueError, renderAll(diagnostics.messages(),
         RenderOptions(style: "short", color: false)))
     if not synthesizeTests(program, suite): raise newException(ValueError, "Test suite was not found: " & suite.name)
+    buildCompiler.prepareEntry(program)
     expand(program, diagnostics, projectRoot,
       cBinding.BindOptions(includePaths: includePaths))
     let resolution = newResolver(diagnostics, projectRoot).resolve(program, suite.file)
@@ -202,6 +200,8 @@ proc runSingleTest*(suite: TestSuite; backend = "zig"; executor: TestExecutor = 
     if diagnostics.failed:
       raise newException(ValueError, renderAll(diagnostics.messages(),
         RenderOptions(style: "short", color: false)))
+    if progress != nil:
+      progress("checked", relativePath(suite.file, projectRoot), suite.file, false)
     let module = monomorphize(lower(program, checker.types))
     let outDir = projectRoot / ".artifacts" / "test" / backend /
       $getCurrentProcessId() /
@@ -226,15 +226,17 @@ proc runSingleTest*(suite: TestSuite; backend = "zig"; executor: TestExecutor = 
       cpp: linkOptions.child("cpp").flag)
     var success = false
     var artifactPath, buildError: string
+    if progress != nil: progress("build", suite.name, "", false)
     if backend == "c":
-      let built = cDriver.build(module, "dev", outDir, native, suite.file)
+      let built = cDriver.build(module, "dev", outDir, native, suite.file, progress)
       success = built.success; artifactPath = built.artifact; buildError = built.error
     else:
       let zig = detect().path
       if zig.len == 0: raise newException(IOError, "Zig backend is missing; install the pinned toolchain")
-      let built = zigDriver.build(module, "dev", outDir, zig, suite.file, native)
+      let built = zigDriver.build(module, "dev", outDir, zig, suite.file, native, progress)
       success = built.success; artifactPath = built.artifact; buildError = built.error
     if not success: raise newException(OSError, if buildError.len > 0: buildError else: "Test build failed")
+    if progress != nil: progress("done", suite.name, artifactPath, false)
     let execution = execCmdEx(quoteShell(artifactPath), workingDir = projectRoot)
     result.passed = execution.exitCode == 0
     result.output = execution.output
@@ -242,14 +244,16 @@ proc runSingleTest*(suite: TestSuite; backend = "zig"; executor: TestExecutor = 
     result.opaque = sources.len > 0 or native.libs.len > 0
     if not result.passed: result.error = "Test process exited with " & $execution.exitCode
   except CatchableError as error:
+    if progress != nil: progress("failed", suite.name, error.msg, false)
     result.passed = false
     result.error = error.msg
   result.timeMs = int((epochTime() - started) * 1000)
 
-proc runTests*(root = getCurrentDir(); filter = ""; backend = "zig"; executor: TestExecutor = nil): seq[TestResult] =
+proc runTests*(root = getCurrentDir(); filter = ""; backend = "zig";
+    executor: TestExecutor = nil; progress: buildOptions.BuildProgress = nil): seq[TestResult] =
   var suites = discoverTests(root)
   if filter.len > 0: suites = suites.filterIt(filter in it.name)
-  for suite in suites: result.add(runSingleTest(suite, backend, executor))
+  for suite in suites: result.add(runSingleTest(suite, backend, executor, progress))
 
 proc watchTests*(root = getCurrentDir(); filter = ""; backend = "zig"; executor: TestExecutor = nil): TestWatcher =
   TestWatcher(root: absolutePath(root), filter: filter, backend: backend, executor: executor,

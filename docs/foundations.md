@@ -15,7 +15,7 @@ FOO infers a local binding from its initializer:
 
 ```foo
 constant count is 42.
-constant user is create().
+constant user is "Ada".
 ```
 
 Function parameters, public boundaries, recursive results, empty collections,
@@ -28,7 +28,7 @@ value's type after declaration and never silently converts unrelated types.
 absence value. Absence is not failure:
 
 ```foo
-constant index of type optional unsigned 64 is sequence.find(items, target).
+constant index of type optional unsigned is null.
 
 when index is null {
   display "Not found".
@@ -48,15 +48,16 @@ types, and only the optional pointer can be `null`.
 
 ### Equality and identity (Current boundary)
 
-`equals` and `is` compare values. `not equals` and `is not` negate that test.
+`is` compares values and `is not` negates that test.
 Primitive values and types deriving `Equatable` may be compared. FOO does not
 expose a separate object-identity operator. Use `memory.identical[T](left,
 right)` when a low-level API genuinely needs pointer identity. That check does
 not prove that either pointer is live or safe to dereference.
 
 ```foo
-when left equals right { display "Equal". }
-when result is not null { display "Present". }
+constant left is 4.
+constant right is 4.
+when left is right { display "Equal". }
 ```
 
 ### Boolean logic (Current)
@@ -65,6 +66,9 @@ Conditions require `boolean`. `and`, `or`, and `not` use documented precedence;
 parentheses make mixed conditions explicit:
 
 ```foo
+constant active is true.
+constant verified is false.
+constant trusted is true.
 when active and (verified or trusted) {
   display "Allowed".
 }
@@ -108,8 +112,11 @@ runtime representation, and package behavior would duplicate those values.
 
 ### Iteration (Current language and library)
 
-`for each` works with compiler-supported sequences and collection types:
+`for each` works with compiler-supported sequences and collection types. This
+fragment assumes `items` is a sequence already provided by the surrounding
+program:
 
+<!-- snippet: context -->
 ```foo
 for each item in items {
   display item.
@@ -129,8 +136,10 @@ limited to compiler-supported collection values.
 ### Modules (Current)
 
 Each `.iv` file is a module. `use` imports a sibling, source-root, package, or
-standard module; an alias provides a short local namespace:
+standard module; an alias provides a short local namespace. This fragment
+assumes the project contains `account.iv`:
 
+<!-- snippet: context -->
 ```foo
 use http as web.
 use "account.iv" as account.
@@ -180,20 +189,25 @@ define Outcome[T] as choice {
   ended.
 }.
 
-constant result is picked[unsigned 64](42).
+constant result is picked[unsigned](42).
 ```
 
 A payload-free generic variant uses the expected result type when one is
 available. This keeps the common return form short:
 
 ```foo
-function finish() giving Outcome[unsigned 64] {
+define Outcome[T] as choice {
+  picked(T).
+  ended.
+}.
+
+function finish() giving Outcome[unsigned] {
   give ended.
 }
 ```
 
 Without an expected type, supply the type argument and call the zero-argument
-constructor: `constant result is ended[unsigned 64]().`
+constructor: `constant result is ended[unsigned]().`
 
 When a choice comes from an aliased module, use the alias consistently in both
 construction and matching: `model.picked(value)` and `case model.picked(value)`.
@@ -202,16 +216,18 @@ Fields may be initialized in declaration order or by field label. Labels are
 normalized into declaration order and every field must appear exactly once:
 
 ```foo
+define User as record {
+  name of type text.
+  age of type integer.
+}.
+
 constant user is User(age 42, name "Ada").
 ```
 
 Validation constructors and computed values are ordinary functions, which can
 return a failable result when validation rejects input. Structural
-destructuring names the record and all of its fields:
-
-```foo
-constant User(name, age) is user.
-```
+destructuring names the record and all of its fields, for example
+`constant User(name, age) is user.` after `User` and `user` are declared.
 
 Missing, repeated, or unknown fields are compile errors. FOO uses composition
 through fields for reuse and does not provide inheritance or implicit subtype
@@ -259,14 +275,13 @@ garbage-collected references.
 
 ### Unsafe and native code (Current)
 
-`unsafe` isolates operations the checker cannot prove safe. Native C belongs in
-an explicit `native c` container, while external functions state their ABI.
+`unsafe` isolates operations the checker cannot prove safe. Target-specific
+code belongs behind a verified native contract, while external functions state
+their ABI.
 Shared-library loading lives in `dl`; operating-system APIs live in `os`.
 
 ```foo
-native c function add(left integer, right integer) giving integer {
-  return left + right;
-}
+extern "C" function add(left integer, right integer) giving integer.
 ```
 
 The C ABI, system ABI, symbol spelling, calling convention, and record layout
@@ -311,8 +326,10 @@ deterministic.
 
 ### Transactions and failure chains (Current library boundary)
 
-`fallback` chains can express ordered recovery:
+`fallback` chains can express ordered recovery. This fragment assumes the
+three application-specific operations are declared with compatible types:
 
+<!-- snippet: context -->
 ```foo
 constant connection is primary() fallback secondary() fallback offline.
 ```

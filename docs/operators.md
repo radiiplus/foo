@@ -26,6 +26,8 @@ Use parentheses whenever they make the intended grouping clearer.
 ## Equality
 
 ```foo
+constant left is 4.
+constant right is 4.
 constant same is left is right.
 constant different is left is not right.
 ```
@@ -38,6 +40,8 @@ error rather than an automatic conversion.
 Prefer a direct positive comparison:
 
 ```foo
+constant age is 21.
+
 when age greater than or equal to 18 {
   display "Adult".
 }
@@ -52,12 +56,15 @@ The complete comparison vocabulary is:
 | At least | `left greater than or equal to right` |
 | At most | `left less than or equal to right` |
 
-Shorter `is at least` and `is at most` forms are also accepted. Use one style
-consistently inside a project.
+Use the direct forms in the table consistently. The removed `is at least` and
+`is at most` spellings are not canonical FOO v1 syntax.
 
 ## Boolean logic
 
 ```foo
+constant signed is true.
+constant allowed is true.
+constant visible is false.
 constant approved is signed and allowed.
 constant preview is signed or visible.
 constant blocked is not approved.
@@ -69,9 +76,10 @@ Precedence from strongest to weakest is:
 2. `multiply`, `divide`, and `remainder`.
 3. `plus` and `subtract`.
 4. Comparisons such as `is` and `greater than`.
-5. `and`.
-6. `or`.
-7. `fallback`.
+5. `not`.
+6. `and`.
+7. `or`.
+8. `fallback`.
 
 ## Updating a dynamic value
 
@@ -87,6 +95,7 @@ For addition and subtraction, the shorter mutation statements describe intent
 without repeating the target:
 
 ```foo
+dynamic total is 10.
 increase total by 5.
 decrease total by 2.
 ```

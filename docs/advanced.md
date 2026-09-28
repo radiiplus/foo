@@ -13,7 +13,9 @@ In most languages, your code runs *after* the program is built. But in FOO, you 
 ### The Benefit: Zero Runtime Cost
 Imagine you need to calculate a massive lookup table, read a configuration file, or format a huge block of text. If you do this at runtime, your app has to waste time doing it every time it starts. 
 
-With `eval`, FOO does the math *during compilation* and bakes the result directly into the final executable. Your app starts instantly and uses zero extra memory.
+With `eval`, FOO performs supported work during compilation and stores the
+result in the built program. This removes that runtime computation; the stored
+result can still occupy space in the executable and memory when loaded.
 
 ```foo
 eval {
@@ -129,27 +131,21 @@ other advanced standard-library surfaces.
 
 ---
 
-## 4. Native C and Assembly (The Escape Hatch)
+## 4. Native boundaries
 
 Sometimes, FOO's high-level abstractions just aren't enough. Maybe you need to use a specific CPU instruction, or talk to a legacy C library that has no FOO bindings.
 
-FOO gives you an **Escape Hatch**. Native code always lives in an explicitly marked `native c { ... }`, `native c function`, or `asm { ... }` container, so it cannot be mistaken for FOO source.
+Start with a typed foreign declaration. It keeps the calling convention,
+parameters, and result visible to the checker while the implementation remains
+in a separately compiled native library.
 
-### Native C
 ```foo
-native c function add(a integer, b integer) giving integer {
-  return a + b;
-}
+extern "C" function add(left integer, right integer) giving integer.
 ```
 
-### Inline Assembly
-```foo
-asm {
-  /* Raw assembly instructions go here. */
-}
-```
-
-**The Benefit:** You can write 99% of your app in safe, readable FOO, and the remaining 1% in raw, high-performance C or Assembly, all in the same file.
+Use a verified native contract only when the portable language and foreign API
+cannot express the operation. Target-specific assembly belongs inside that
+contract, with its target requirements and effects declared at the boundary.
 
 ---
 
@@ -191,7 +187,7 @@ FOO believes that you should never be trapped by your language.
 *   Need speed? Use `eval` to bake math into the binary.
 *   Need memory control? Use custom allocators.
 *   Need protocol control? Use the advanced HTTP, TCP, file, JSON, and task operations.
-*   Need raw power? Use `native c` or `asm`.
+*   Need a native operation? Use a typed foreign declaration or verified native contract.
 *   Need hardware tuning? Use `-mcpu`.
 
 FOO gives you the safety of a high-level language, with the raw power of a low-level systems language. You are never forced to choose.

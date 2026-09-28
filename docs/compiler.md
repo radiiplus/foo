@@ -2,7 +2,8 @@
 
 You have been writing beautiful, English-like sentences, but computers don't speak English. They speak machine code (1s and 0s). 
 
-The FOO Compiler is the engine that bridges that gap. It reads your code, proves it is safe, and translates it into highly optimized instructions for your specific hardware. 
+The FOO compiler parses and checks source, lowers it to an intermediate form,
+and asks the selected backend to produce code for the requested target.
 
 Let’s look at the three-step magic trick the compiler performs.
 
@@ -16,11 +17,13 @@ When you run `foo build`, the compiler goes through three distinct phases:
 First, the **Parser** reads your sentences and builds a grammar tree. Then, the **Type Checker** (the "Bouncer") verifies that your logic is sound. 
 *   *Can you add text to a number?* No.
 *   *Did you handle the error?* Yes.
-If the code isn't perfect, the compiler stops you here, before it ever tries to run the program.
+If parsing or checking fails, compilation stops before the program runs.
 
 ### Step 2: Lower to IR (The Blueprint)
 Once your code is proven safe, FOO lowers it into an **Intermediate Representation (IR)**. Think of this as a strict, simplified blueprint of your program. It strips away the "English" words and converts everything into pure logic. 
-This is where FOO applies **Sealing**—a mathematical process that guarantees your memory is read and written in the exact right order, eliminating entire categories of bugs.
+This is where FOO applies sealing checks for supported ownership, lifetime, and
+ordering contracts. The checker rejects violations it can prove; native code
+still has to honor its declared contract.
 
 ### Step 3: Emit & Optimize (The Factory)
 Finally, the compiler takes that blueprint and translates it into a language your computer can actually build: **C** or **Zig**. 
@@ -40,7 +43,9 @@ Select the C11 backend with `--backend c`.
 
 ### The Zig Backend (Modern Speed)
 FOO uses the Zig backend by default.
-**The Benefit:** Zig is a modern language with incredible safety features and lightning-fast compilation times. It’s perfect for building standalone binaries that don't need any external dependencies.
+The managed Zig toolchain provides the default native build and cross-target
+path. Generated code still follows FOO's checked semantics; choosing this
+backend is not a separate language safety mode or a performance guarantee.
 
 ```sh
 # Build using the C backend
@@ -143,15 +148,16 @@ explicit worker limit.
 
 Sometimes, standard code isn't enough. Maybe you need to talk directly to a graphics card, or use a specific CPU instruction.
 
-FOO gives you an escape hatch. You can drop down into **Native C** or **Assembly** right inside your FOO file.
+FOO exposes foreign declarations and verified native contracts for operations
+that the portable language or standard library cannot express.
 
 ```foo
-native c function add(a integer, b integer) giving integer {
-  return a + b;
-}
+extern "C" function add(left integer, right integer) giving integer.
 ```
 
-This allows you to write 99% of your app in safe, readable FOO, and the remaining 1% in raw, high-performance C.
+The declaration gives FOO a checked call signature. The linked native symbol
+must obey that ABI and signature; `foo bind` can generate declarations from a C
+header.
 
 ---
 

@@ -5,7 +5,9 @@ modules shipped with the language). In many languages, you have to hunt down
 third-party packages for basic tasks like reading JSON, hashing passwords, or
 making HTTP requests.
 
-FOO ships with over 40 highly-optimized, battle-tested modules ready to use out of the box. And because they are part of the core language, they all follow the same strict safety rules and English-like syntax you’ve already learned.
+FOO ships standard modules for text, files, networking, data, memory,
+concurrency, and development support. They use ordinary FOO declarations and
+make failure and resource ownership visible in their signatures.
 
 Let’s tour the most powerful tools in your FOO toolbox.
 
@@ -26,9 +28,11 @@ display clean.
 
 ---
 
-## 2. Files and Paths (`file`, `path`)
+## 2. Files and paths (`file`, `path`)
 
-The `file` module handles reading and writing files, while the `path` module helps you build file paths safely (without worrying about slashes `/` vs backslashes `\`).
+The `file` module reads, writes, opens, and joins ordinary text paths. The
+lower-level `path` module works with native pointer-oriented paths at foreign
+boundaries; application code normally starts with `file`.
 
 ```foo
 use file.
@@ -67,7 +71,9 @@ runtime contract on the C and Zig backends.
 
 ## 4. Data Serialization (`json`)
 
-Talking to APIs usually means working with JSON. FOO has a built-in JSON parser and encoder that is both fast and type-safe.
+The `json` module parses text into a checked document tree and writes that tree
+back to text. A successfully parsed tree is structurally valid JSON; use
+`Codec[T]` when the application needs a specific FOO record type.
 
 ```foo
 use json as documents.

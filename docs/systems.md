@@ -6,12 +6,14 @@ Let’s look at how FOO connects to the outside world.
 
 ---
 
-## 1. Files and Input/Output (The `io` Module)
+## 1. Files and input/output (`file` and `io`)
 
-The simplest way to talk to the operating system is through the `io` module. Because FOO is a **Systems Language**, these operations are designed to be fast and safe, using the OS's native file handling capabilities.
+Use `file` for whole-file operations and file-backed streams. Use `io` for the
+process input, output, and error streams. Operations that can fail return a
+failable value and therefore need postfix `try` or a deliberate `fallback`.
 
 ### Reading a File
-FOO makes reading an entire file into memory a single, safe operation.
+`file.read` reads an entire text file and returns its content on success.
 ```foo
 use file.
 
@@ -21,7 +23,8 @@ display content.
 ```
 
 ### Writing to a File
-Writing is just as simple. FOO handles opening the file, writing the bytes, and closing it automatically.
+`file.write` performs the complete write and closes its internal handle before
+returning. A write failure is propagated by `try`.
 ```foo
 use file.
 
@@ -103,34 +106,27 @@ extern "C" function puts(value pointer to byte) giving integer.
 If you have a massive C header file (`.h`), you don't have to type out all the declarations manually. FOO comes with a `bind` tool that reads the C file and automatically generates the FOO bindings (declarations that connect FOO names to C code) for you.
 
 ```sh
-foo bind my_library.h
+foo bind library.h
 ```
 
 ---
 
-## 5. Going Native: `native c` and `asm`
+## 5. Native boundaries
 
-When you need absolute, raw control over the hardware—like writing a device driver or a highly optimized math routine—FOO allows you to drop down to the metal without leaving your FOO file.
+When a portable library operation is not enough, use a typed foreign
+declaration or a verified native contract. Keep the boundary small because FOO
+cannot prove the behavior of its native implementation.
 
-### Native C Blocks
-You can write raw C code directly inside a FOO function.
+### Calling C
+
+Declare the ABI and the complete FOO signature:
 ```foo
-native c function add(a integer, b integer) giving integer {
-  // This is raw C code
-  return a + b;
-}
+extern "C" function add(left integer, right integer) giving integer.
 ```
 
-### Inline Assembly
-For the truly brave, FOO supports inline assembly (`asm`, low-level processor
-instructions written directly in the source). This is used for extremely
-specific hardware instructions.
-```foo
-asm {
-  // Raw assembly instructions go here
-}
-```
-*Note: This is an advanced feature used only when standard FOO code isn't fast enough!*
+`foo bind header.h` generates these declarations for larger C APIs. Assembly
+belongs behind a native contract with explicit target and effect requirements;
+it is not an ordinary standalone FOO statement.
 
 ---
 

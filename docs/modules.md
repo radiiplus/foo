@@ -15,16 +15,19 @@ Standard modules use their plain names. Application code does not write a
 `std/` prefix.
 
 The alias controls the qualifier (the name written before the dot) used in the
-file:
+file. This fragment continues from the imports above:
 
+<!-- snippet: context -->
 ```foo
 constant content is files.read("notes.txt") try.
 ```
 
 ## Import another project file
 
-Use a quoted path relative to the importing module:
+Use a quoted path relative to the importing module. This fragment assumes the
+next example is stored at `src/billing/tax.iv`:
 
+<!-- snippet: context -->
 ```foo
 use "billing/tax.iv" as tax.
 
@@ -46,9 +49,10 @@ does not automatically re-export anything.
 ## Build a facade module (one public entry point over internal modules)
 
 Use `public use` for a transparent facade (a module presenting a simpler public
-surface over internal modules) that preserves the imported public
-names:
+surface over internal modules) that preserves the imported public names. The
+next fragment assumes the named internal file exists:
 
+<!-- snippet: context -->
 ```foo
 -- src/account.iv
 public use "internal/storage.iv".
@@ -56,9 +60,10 @@ public use "internal/storage.iv".
 
 The compiler reports collisions between local declarations and names that are
 re-exported (made public again from another module). A public use cannot have an
-alias. Publish a forwarding function when
-the facade must rename or adapt an operation:
+alias. Publish a forwarding function when the facade must rename or adapt an
+operation. This fragment also depends on the named internal file:
 
+<!-- snippet: context -->
 ```foo
 -- src/account.iv
 use "internal/storage.iv" as storage.
@@ -103,7 +108,7 @@ stored as `path+...` entries in `project.json`.
 
 ## If a package is not installed
 
-`use packageName.` does not silently download code during a build. If the
+`use package.` does not silently download code during a build. If the
 package is declared but missing locally, checking stops with an installation
 diagnostic. Run:
 
@@ -114,7 +119,7 @@ foo install
 If it is not declared, add it first:
 
 ```sh
-foo add packageName
+foo add package
 foo install
 ```
 

@@ -26,16 +26,17 @@ the order written in source; the compiler does not silently rearrange a public
 record based on access frequency.
 ```foo
 public define User as record {
-  id of type unsigned 64.
+  id of type unsigned.
   name of type text.
   active of type boolean.
 }.
 ```
 
 ### The `packed` Record (Optimized for Space)
-If you are talking to hardware or sending data over a network, you need every
-bit to be exactly where you expect it. A `packed` record strips out padding
-(unused bytes inserted to align fields) between its fields.
+Use a `packed` record when FOO code needs a defined bit layout. Integer fields
+contribute their declared number of bits and the record has no alignment
+padding between fields. This is not automatically compatible with a C
+compiler's bit-field layout.
 ```foo
 public define Header as packed record {
   version of type integer 4.
@@ -45,7 +46,9 @@ public define Header as packed record {
 ```
 
 ### The `c` Record (Optimized for Interoperability)
-If you need to talk to a C library, FOO can match the C memory layout perfectly so you can pass data back and forth seamlessly.
+Use C-layout metadata when a record crosses a C ABI boundary. The field types
+must also have compatible C representations; layout metadata alone cannot make
+an incompatible field safe.
 ```foo
 #[repr(C)]
 public define Point as record {
@@ -63,6 +66,8 @@ In languages like C or C++, if you allocate 100 objects, you have to manually fr
 FOO encourages **Region-Based Memory Management** (also known as Arenas). Think of a Region as a dedicated workbench. You build everything on that bench, and when you are done, you just sweep the entire bench clean in one motion.
 
 ```foo
+use memory.
+
 function process() giving failable nothing {
   -- 1. Create a temporary workspace (Region)
   constant arena is memory.arena() try.
@@ -72,11 +77,9 @@ function process() giving failable nothing {
   
   -- 3. Allocate data INSIDE the arena
   constant buffer is memory.allocate(arena, 1024) try.
-  constant image is loadImage(arena, "photo.png") try.
+  display "Buffer ready".
   
-  -- Do work...
-  
-  -- When we reach the end, 'memory.close(arena)' frees EVERYTHING at once!
+  -- Reaching the end runs memory.close(arena).
 }
 ```
 

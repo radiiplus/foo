@@ -61,7 +61,7 @@ This page answers a practical question: **Which familiar language features exist
 
 ### ✅ What is in FOO v1
 *   **Concurrency:** Library-based overlapping work through scoped tasks, pools, channels, OS threads, mutexes (single-worker locks), condition variables, and atomics (shared operations completed as one step).
-*   **C ABI:** The binary rules used to call C: `extern "C"`, C-layout records, callbacks, generated header bindings, dynamic libraries, and explicit native C containers.
+*   **C ABI:** The binary rules used to call C: `extern "C"`, C-layout records, callbacks, generated header bindings, dynamic libraries, and verified native contracts.
 *   **Other Languages:** Rust and other libraries are accessed via the stable C ABI.
 *   **Low-Level Access:** Typed surfaces for advanced HTTP, sockets, files, JSON, allocators, atomics, OS, native C, and assembly.
 

@@ -10,9 +10,11 @@ Write every filename, function, type, and value name as one word. Let its
 module and surrounding type provide context:
 
 ```foo
+use file.
+
 constant limit is 3.
 constant account is "Ada".
-file.read(input).
+file.read("input.txt") try.
 ```
 
 Do not join several words as `retry_limit`, `retryLimit`, or `RetryLimit`.
@@ -24,6 +26,10 @@ Use `is` when a name represents one value and `are` when it represents several
 values:
 
 ```foo
+use sequence as sequences.
+
+constant current is "Ada".
+constant active is sequences.create[text]().
 constant user is current.
 constant users are active.
 ```
@@ -31,28 +37,38 @@ constant users are active.
 The copula (the linking word `is` or `are`) communicates intent; the type checker still determines the exact
 type from the initializer. It does not guess from whether a name ends in `s`.
 
-## Sentence calls
+## Sentence-call shorthand
 
-The shortest call supplies values in declaration order:
+Parenthesized calls are the canonical form emitted by `foo fmt`. FOO also
+accepts the sentence-call shorthand in this section when the call remains
+unambiguous.
 
+The next four fragments focus on call spelling and assume the named functions
+and values have already been declared. The shortest call supplies values in
+declaration order:
+
+<!-- snippet: context -->
 ```foo
 constant result is add 10 20.
 ```
 
 Add parameter labels when they prevent ambiguity:
 
+<!-- snippet: context -->
 ```foo
 constant socket is connect host "example.com" port 443 timeout 5000.
 ```
 
 A mixed call puts positional values first:
 
+<!-- snippet: context -->
 ```foo
 constant socket is connect "example.com" timeout 10000.
 ```
 
 Parentheses remain available for nesting and zero-argument calls:
 
+<!-- snippet: context -->
 ```foo
 constant total is add(tax(price), shipping).
 constant now is clock().
@@ -64,15 +80,15 @@ are compile errors.
 ## Defaults, remaining arguments, and overloads
 
 ```foo
-function connect
-    host text
-    port integer default 443
+function connect(
+    host text,
+    port integer default 443,
     timeout integer default 5000
-    giving boolean {
+) giving boolean {
   give true.
 }
 
-function total values are sequence of integer giving integer {
+function total(values are sequence of integer) giving integer {
   dynamic result is 0.
   for each value in values { increase result by value. }
   give result.
@@ -95,6 +111,8 @@ Use `increase` and `decrease` when the operation updates the same dynamic
 binding:
 
 ```foo
+dynamic score is 0.
+dynamic health is 100.
 increase score by 10.
 decrease health by 5.
 ```
@@ -102,6 +120,8 @@ decrease health by 5.
 Use `set` for a replacement or a more complex calculation:
 
 ```foo
+dynamic price is 20.0.
+constant rate is 1.5.
 set price to price multiply rate.
 ```
 
@@ -110,7 +130,7 @@ Both forms retain overflow checks and reject immutable targets.
 ## Function guards
 
 ```foo
-function withdraw amount decimal
+function withdraw(amount decimal)
     when amount greater than 0
     giving decimal {
   give amount.
@@ -149,8 +169,10 @@ storage until the ownership model gains an explicit heap-owned closure form.
 ## Current pattern matching
 
 `match` supports literals, `anything`, choice variants, payload bindings, and
-case guards:
+case guards. This fragment assumes `result` has a choice type with `success`
+and `failure` variants:
 
+<!-- snippet: context -->
 ```foo
 match result {
   case success(value) when value greater than 0 { display "Success". }
@@ -175,7 +197,7 @@ The following ideas are directions, not accepted source syntax yet:
 | Lazy sequences | `sequence each item in values` | Cancellation and retained captures |
 | Generators | `give next value` | Generator frame ownership and cleanup |
 | Multiple results | Record destructuring rather than anonymous tuples | Stable names and ABI layout |
-| Distinct types | `define Identity as distinct unsigned 64` | Explicit conversion vocabulary |
+| Distinct types | `define Identity as distinct unsigned` | Explicit conversion vocabulary |
 | Refinement types | `where value greater than 0` | Runtime checks versus compile-time proof |
 | Capabilities | Values that grant file or network authority | Delegation and package boundaries |
 | Resource expressions | `with ... as ...` | Interaction with existing `after` cleanup |

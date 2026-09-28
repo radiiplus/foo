@@ -51,6 +51,17 @@ writeFile(root / "src" / "main.iv", "display \"top level\".")
 let concise = newProject(root)
 concise.check()
 doAssert concise.ir().funcs.anyIt(it.name == "main")
+
+let flat = getTempDir() / "foo-build-flat-test"
+if dirExists(flat): removeDir(flat)
+createDir(flat / "test")
+createDir(flat / "benchmark")
+writeFile(flat / "main.iv", "display \"application\".")
+writeFile(flat / "test" / "suite.iv", "test \"suite\" { display \"test\". }")
+writeFile(flat / "benchmark" / "speed.iv", "display \"benchmark\".")
+doAssert newProject(flat).files() == @[absolutePath(flat / "main.iv")]
+removeDir(flat)
+
 writeFile(root / "profile.json",
   """{"version":1,"kind":"function","entries":[{"function":"main","line":1,"hits":50}]}""")
 configured["build"] = %*{"optimize": "release", "profile": "profile.json"}

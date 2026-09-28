@@ -45,7 +45,7 @@ error.
 Use `define ... as ...` when a domain value deserves its own name:
 
 ```foo
-define Identity as unsigned 64.
+define Identity as unsigned.
 define Handler[T] as function taking (T) giving nothing.
 ```
 
@@ -123,12 +123,12 @@ parameter forms share one name); labels, arity (argument count), and input
 types must identify one best definition.
 
 ```foo
-function connect host text port integer default 443 giving boolean {
+function connect(host text, port integer default 443) giving boolean {
   give true.
 }
 
-constant secure is connect host "example.com".
-constant local is connect "localhost" port 8080.
+constant secure is connect(host "example.com").
+constant local is connect("localhost", port 8080).
 ```
 
 Generic parameters use square brackets and can be constrained by `Equatable`,
@@ -165,6 +165,8 @@ Choose the form based on what you are checking.
 ### Option A: `when` / `otherwise` (For conditions)
 Use this when you are checking if something is true or false (like "is health > 0?").
 ```foo
+dynamic health is 12.
+
 when health is 0 { display "Game Over". }
 otherwise when health less than 20 {
   display "Critical!".
@@ -173,9 +175,11 @@ otherwise { display "Keep going!". }
 ```
 
 ### Option B: `match` (For specific values)
-Use this when you are checking a variable against a list of specific options (like a switch statement). It’s cleaner and faster to read.
+Use this when you are checking a variable against a list of specific options.
 ```foo
-match statusCode {
+constant status of type integer is 404.
+
+match status {
   case 200 { display "Success". }
   case 404 { display "Not Found". }
   case 500 { display "Server Error". }
@@ -203,10 +207,11 @@ conditions when the grouping matters to the reader.
 
 **Example:**
 ```foo
--- Hard to read: if (user.age >= 18 && user.hasId)
--- Easy to read:
-when user.age greater than or equal to 18 and user.hasId {
-  grantAccess().
+constant age is 21.
+constant identity is true.
+
+when age greater than or equal to 18 and identity {
+  display "Access granted".
 }
 ```
 
@@ -215,7 +220,9 @@ when user.age greater than or equal to 18 and user.hasId {
 ## 5. Loops: `for each` vs `while`
 
 ### The `for each` Loop (For collections)
-When you want to do something to every item in a list.
+Use it to do something to every item in a collection. This fragment assumes
+`basket` is a sequence of text:
+<!-- snippet: context -->
 ```foo
 for each fruit in basket {
   display fruit.
@@ -229,7 +236,7 @@ dynamic battery is 100.
 while battery greater than 0 {
   set battery to battery subtract 1.
   when battery is 10 { skip. }
-  runMotor().
+  display "Motor running".
   when battery is 1 { stop. }
 }
 ```
@@ -274,7 +281,8 @@ released after their aliases are no longer used.
 
 ## 7. Error Handling (`failable`)
 
-In FOO, errors aren't hidden surprises that crash your app. They are **First-Class Values** (regular data you can see and handle). If a function can fail, it is marked as `failable`.
+Expected operational failures are visible in a `failable T` result. Panics from
+failed safety checks are separate and cannot be handled with `fallback`.
 
 You have two ways to handle these errors:
 
@@ -293,14 +301,18 @@ In FOO, `fallback` expects an alternative value of the exact same type as the su
 
 If you just want to provide a backup string, you do this:
 ```foo
-constant config is load() fallback "Default Settings".
+use file as files.
+
+constant config is files.read("config.json") fallback "Default Settings".
 ```
 
 The fallback is an expression of the same success type. Log separately when the
 calling workflow needs an explicit diagnostic.
 
 ```foo
-constant config is load() fallback "Default Settings".
+use file as files.
+
+constant config is files.read("config.json") fallback "Default Settings".
 display config.
 ```
 
@@ -312,6 +324,8 @@ When a failable result must be captured, the declaration and propagation remain
 two explicit operations:
 
 ```foo
+use file as files.
+
 constant config is files.read("config.json") try.
 ```
 
@@ -348,8 +362,10 @@ function process() giving failable nothing {
 ## 9. Modules and Visibility
 
 Every `.iv` file is a module. Declarations are private unless marked `public`.
-Ordinary imports stay private and may bind a short alias:
+Ordinary imports stay private and may bind a short alias. This fragment assumes
+the project contains `network/server.iv`:
 
+<!-- snippet: context -->
 ```foo
 use "network/server.iv" as server.
 use http as web.
@@ -378,7 +394,7 @@ constant duration is clock.seconds(2).
 clock.wait(duration) try.
 
 constant allocator is memory.system().
-constant size of type unsigned 64 is 5 multiply 1024 multiply 1024.
+constant size of type unsigned is 5 multiply 1024 multiply 1024.
 constant buffer is memory.allocate(allocator, size) try.
 after { memory.release(allocator, buffer) fallback nothing. }
 ```

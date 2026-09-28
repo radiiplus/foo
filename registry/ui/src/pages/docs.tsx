@@ -3,6 +3,7 @@ import { Children, isValidElement, useEffect, useMemo, useState, type ReactNode 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import manifest from "../../../../package.json";
 import { Code } from "../components/code";
 import { chapter, chapters, link } from "../content/docs";
 import { seo } from "../utils/seo";
@@ -73,7 +74,7 @@ export default function Docs({ id, section }: Props) {
             <div className="docs-kicker"><span>FOO BOOK</span><i />CHAPTER {String(index + 1).padStart(2, "0")}</div>
             <h1>{page.title}</h1>
             <p>{page.description}</p>
-            <div className="docs-meta"><span><Clock3 size={12} />{minutes} min read</span><span>FOO 0.3</span></div>
+            <div className="docs-meta"><span><Clock3 size={12} />{minutes} min read</span><span>FOO {manifest.version}</span></div>
           </header>
 
           <div className="docs-prose">
@@ -108,7 +109,7 @@ export default function Docs({ id, section }: Props) {
         <aside className="docs-outline">
           <p>On this page</p>
           {sections.slice(0, 12).map((section) => <a key={section.id} className={section.depth === 3 ? "nested" : ""} href={`/docs/${page.id}?section=${section.id}`} onClick={() => scroll(section.id)}>{section.label}</a>)}
-          <div><span />FOO 0.3 documentation</div>
+          <div><span />FOO {manifest.version} documentation</div>
         </aside>
       </div>
     </div>

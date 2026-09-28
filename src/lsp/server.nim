@@ -1,10 +1,10 @@
 import std/[json, os, strutils, tables, uri]
 import ../ast/node as ast
 import ../diag/engine
-import ../lex/lexer
-import ../parse/parser
-import ../sema/[module, resolver]
-import ../types/checker
+import ../diag/render
+import ../build/compiler as compilation
+import ../build/project as workspace
+import ../sema/module
 import ../types/type as semantic
 
 type
@@ -45,22 +45,15 @@ proc fileUri(path: string): string =
 proc analyze(root, uri, source: string; version: int): Document =
   let engine = newEngine()
   let file = documentPath(root, uri)
-  engine.setSource(source, file)
-  let program = newParser(newLexer(source, engine).lex(), engine).parse()
-  var resolution: Resolution
-  var types = initTable[pointer, semantic.Type]()
-  if not engine.failed:
-    resolution = newResolver(engine, root).resolve(program, file)
-    let typeChecker = newChecker(engine)
-    typeChecker.check(program)
-    types = typeChecker.types
+  let project = workspace.newProject(root)
+  let compiler = workspace.compiler(project)
+  let analysis = compilation.analyze(compiler, file, source, engine)
   var items = newJArray()
   for message in engine.messages:
-    let line = max(message.span.line - 1, 0)
-    let column = max(message.span.col - 1, 0)
-    items.add(%*{"range": {"start": {"line": line, "character": column}, "end": {"line": line, "character": column + max(message.span.`end` - message.span.start, 1)}}, "severity": 1, "source": "foo", "message": message.text})
-  Document(uri: uri, file: file, source: source, version: version, program: program,
-    resolution: resolution, types: types, diagnosticItems: items)
+    items.add(diagnostic(message))
+  Document(uri: uri, file: file, source: source, version: version,
+    program: analysis.program, resolution: analysis.resolution,
+    types: analysis.types, diagnosticItems: items)
 
 proc diagnostics(document: Document): JsonNode =
   %*{"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": {"uri": document.uri, "version": document.version, "diagnostics": document.diagnosticItems}}

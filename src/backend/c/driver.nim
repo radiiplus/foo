@@ -32,6 +32,19 @@ proc compilerPath(options: Native): string =
   if configured.len > 0: return configured
   when defined(windows): "clang" else: "cc"
 
+proc local(target: string): bool =
+  if target.len == 0: return true
+  let value = target.toLowerAscii()
+  let platform = when defined(windows): value.contains("windows")
+    elif defined(macosx): value.contains("macos") or value.contains("darwin")
+    else: value.contains("linux")
+  let architecture = when defined(arm64):
+      value.contains("aarch64") or value.contains("arm64")
+    elif defined(amd64):
+      value.contains("x86_64") or value.contains("amd64")
+    else: true
+  platform and architecture
+
 proc build*(module: Module; mode: string; outDir: string;
     options = Native(); sourceFile = "main.iv";
     progress: BuildProgress = nil): Result =
@@ -76,7 +89,8 @@ proc build*(module: Module; mode: string; outDir: string;
       var common = @["-std=c11", "-D_POSIX_C_SOURCE=200809L",
         (if mode == "release": "-O2" else: "-O0"), "-g"]
       if options.kind == "shared": common.add("-fPIC")
-      if options.target.len > 0 and options.compiler.len == 0:
+      if options.target.len > 0 and options.compiler.len == 0 and
+          not local(options.target):
         common.add(@["-target", options.target])
       if options.cpu.len > 0:
         common.add(profile(options.target, options.cpu).c)
@@ -88,7 +102,8 @@ proc build*(module: Module; mode: string; outDir: string;
       if needsService: common.add(@["-I", outDir])
       for path in options.includePaths: common.add(@["-I", path])
       proc addLinkOptions(command: var string) =
-        if options.target.len > 0 and options.compiler.len == 0:
+        if options.target.len > 0 and options.compiler.len == 0 and
+            not local(options.target):
           command.add(" -target " & quoteShell(options.target))
         if options.kind == "shared": command.add(" -shared")
         if options.soname.len > 0:

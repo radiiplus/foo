@@ -40,7 +40,10 @@ sequence payload once, initializes every element, and avoids the repeated
 allocation and copying required by persistent `append`.
 
 ```foo
+use sequence as sequences.
+
 constant values is sequences.sized[integer](10_000) try.
+after { sequences.release[integer](values) fallback nothing. }
 dynamic index is 0.
 while index less than 10_000 {
   set values at index to index.
@@ -56,6 +59,11 @@ values must remain valid.
 ## Length and indexing
 
 ```foo
+use sequence as sequences.
+
+constant empty is sequences.create[integer]().
+constant values is sequences.append[integer](empty, 4) try.
+after { sequences.release[integer](values) fallback nothing. }
 constant count is sequences.length[integer](values).
 constant first is values at 0.
 ```
@@ -66,8 +74,13 @@ error rather than an unchecked memory read.
 ## Iteration
 
 ```foo
+use sequence as sequences.
+
+constant empty is sequences.create[integer]().
+constant values is sequences.append[integer](empty, 4) try.
+after { sequences.release[integer](values) fallback nothing. }
 for each value in values {
-  inspect(value).
+  display "Value found".
 }
 ```
 
@@ -76,6 +89,8 @@ The loop visits sequence values in order.
 ## Transformations
 
 ```foo
+use sequence as sequences.
+
 function double(value integer) giving integer {
   give value multiply 2.
 }
@@ -83,6 +98,8 @@ function double(value integer) giving integer {
 function positive(value integer) giving boolean {
   give value greater than 0.
 }
+
+constant values is sequences.create[integer]().
 
 constant doubled is sequences.map[integer, integer](values, double) try.
 constant kept is sequences.filter[integer](doubled, positive) try.

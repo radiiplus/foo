@@ -451,7 +451,7 @@ fn convert(comptime T: type, value: anytype) T {
     return value;
 }
 pub fn call(comptime module: []const u8, comptime name: []const u8, comptime Result: type, args: anytype) Result {
-    inline for (.{ "fs", "io", "net", "process", "thread", "time", "text" }) |namespace| {
+    inline for (.{ "fs", "net", "process", "thread", "time", "text" }) |namespace| {
         if (comptime std.mem.eql(u8, module, namespace)) return @import("service.zig").call(module, name, Result, args);
     }
     if (comptime std.mem.eql(u8, module, "sequence")) return sequence(name, Result, args);

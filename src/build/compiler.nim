@@ -5,6 +5,7 @@ import ../parse/parser
 import ../sema/resolver
 import ../sema/link
 import ../sema/module as semaModule
+import ../sema/symbol as symbol
 import ../types/checker
 import ../types/type as semantic
 import ../ir/lower
@@ -24,6 +25,10 @@ type
     diagnostics*: Engine
   CheckResult* = object
     cached*: bool
+  Analysis* = object
+    program*: Program
+    resolution*: semaModule.Resolution
+    types*: Table[pointer, semantic.Type]
   Compiler* = ref object
     root*: string
     backend*: string
@@ -56,7 +61,7 @@ proc parseSource(compiler: Compiler; file, source: string; diag: Engine): Progra
     interopExpand.expand(result, diag, compiler.root,
       cBinding.BindOptions(includePaths: compiler.includes))
 
-proc prepareEntry(program: Program) =
+proc prepareEntry*(program: Program) =
   if program == nil or program.units.len == 0: return
   let unit = program.units[0]
   var ioQualifier, logQualifier: string
@@ -249,24 +254,26 @@ proc prepareEntry(program: Program) =
     body: Block(tag: "block", span: body[0].span, stmts: body)))
   unit.body.stmts = declarations
 
-proc program*(compiler: Compiler; file: string): Program =
+proc analyze*(compiler: Compiler; file, source: string;
+    diag: Engine): Analysis =
   let path = absolutePath(file)
-  if not fileExists(path): raise newException(IOError, "File not found: " & path)
-  let source = readFile(path)
-  let diag = newEngine()
   var parsed = compiler.parseSource(path, source, diag)
+  var resolution = semaModule.Resolution(
+    units: initTable[string, semaModule.Unit](),
+    resolutions: initTable[pointer, symbol.Symbol]())
+  var types = initTable[pointer, semantic.Type]()
   if not diag.failed: prepareEntry(parsed)
   if not diag.failed:
     let resolver = newResolver(diag, compiler.root, parse =
-      proc(file, input: string; diagnostics: Engine): Program =
-        compiler.parseSource(file, input, diagnostics))
-    let resolution = resolver.resolve(parsed, "main")
+      proc(importedFile, input: string; diagnostics: Engine): Program =
+        compiler.parseSource(importedFile, input, diagnostics))
+    resolution = resolver.resolve(parsed, path)
     if not diag.failed: parsed = link(parsed, resolution)
   if not diag.failed: lint(parsed, diag, compiler.backend)
   if not diag.failed:
     let checker = newChecker(diag)
     checker.check(parsed)
-    compiler.typings[path] = checker.types
+    types = checker.types
   if not diag.failed:
     let manifestPath = compiler.root / "project.json"
     let manifest = parseJson(if fileExists(manifestPath):
@@ -275,14 +282,23 @@ proc program*(compiler: Compiler; file: string): Program =
         manifest["requires"].kind == JString: manifest["requires"].getStr()
       else: "base"
     capabilities(parsed, diag, level)
+  Analysis(program: parsed, resolution: resolution, types: types)
+
+proc program*(compiler: Compiler; file: string): Program =
+  let path = absolutePath(file)
+  if not fileExists(path): raise newException(IOError, "File not found: " & path)
+  let source = readFile(path)
+  let diag = newEngine()
+  let analysis = compiler.analyze(path, source, diag)
   if diag.failed:
     var error: Diagnostics
     new(error)
     error.msg = "Check failed"
     error.diagnostics = diag
     raise error
-  compiler.programs[path] = parsed
-  parsed
+  compiler.typings[path] = analysis.types
+  compiler.programs[path] = analysis.program
+  analysis.program
 
 proc check*(compiler: Compiler; file: string): CheckResult =
   let path = absolutePath(file)

@@ -76,7 +76,9 @@ tree or rely on a guessed filename.
 
 Open `src/main.iv` in your favorite code editor. Let’s write a program that greets the user.
 
-Because FOO’s **Parser** (the brilliant part of the compiler that reads your code) is designed to understand natural, flowing sentences, you don't need to clutter your screen with messy semicolons or excessive parentheses. 
+FOO uses a small sentence-like grammar. The parser does not guess arbitrary
+English: parameters have declared types, calls use parentheses, and a period
+ends each simple statement.
 
 Type this out:
 
@@ -89,7 +91,7 @@ constant name is "vibes".
 greet(name).
 ```
 
-### Let’s break down the brilliance here:
+### Read the example
 *   **`name text`**: FOO is strictly **Typed** (meaning it keeps strict track of what kind of data is stored in a variable, preventing math errors on text), without repeating `of type` in parameter lists.
 *   **`plus`**: Instead of forcing you to use the `+` symbol for everything, FOO lets you use the English word `plus` to glue text together.
 *   **Implicit completion**: A function that gives nothing can simply end; use `give` when returning a value.
@@ -157,8 +159,10 @@ public function add(left integer, right integer) giving integer {
 ```
 *Notice the word `public`? This is the only way to let other files see this function. If you leave `public` off, the function becomes private and completely invisible to the rest of your app. This prevents messy "spaghetti code" (where everything is tangled together and hard to track).*
 
-Now, go back to `src/main.iv` and use it:
+Now, go back to `src/main.iv` and use it. This fragment depends on the
+`math.iv` file created immediately above:
 
+<!-- snippet: context -->
 ```foo
 use "math.iv" as math. -- This brings in our new file!
 
@@ -172,22 +176,16 @@ when total is 30 { display "Total calculated". }
 
 Everyone makes typos. When you make a mistake in FOO, the compiler doesn't just crash and give you a confusing wall of red text. It acts like a helpful teacher.
 
-Try changing your code to this mistake:
+Try this deliberately invalid declaration:
+
+<!-- snippet: error TypeMismatch -->
 ```foo
-constant age is "twenty". -- Oops! We used text instead of a number.
+constant age of type integer is "twenty".
 ```
 
-Run `foo check`. FOO will point exactly to the mistake and tell you how to fix it:
-
-```text
-main.iv:2:18
-
-  constant age is "twenty".
-                  ^^^^^^^
-  This value is text, but age needs an integer.
-  Try: constant age is 20.
-```
-Fix the first error it points out, save the file, and run it again!
+Run `foo check`. The compiler reports a `TypeMismatch` at `"twenty"`: the
+annotation requires an integer, but the initializer is text. Replace it with an
+integer such as `20`, then check again.
 
 The official VS Code extension can do this check while you type. It starts
 `foo lsp` automatically and places errors directly on the affected code. This
@@ -202,13 +200,13 @@ Server Path** to the `foo` executable.
 
 Here are the commands you will use every single day as a FOO programmer:
 
-*   **`foo check`**: The Safety Inspector. It reads all your code and mathematically proves it is safe, but doesn't actually run it. Perfect for catching typos quickly.
+*   **`foo check`**: Parses and type-checks the project without running it.
 *   **`foo build`**: The Factory. It compiles your code into a final, standalone, highly-optimized application file that you can share with others.
 *   **`foo run`**: The Quick Test. Builds the app and immediately runs it so you can see the results.
 *   **`foo test`**: Runs the checks under `test/` and any test blocks in the project.
 *   **`foo benchmark`**: Builds each program under `benchmark/` once, warms it up, and reports repeated timings.
 *   **`foo watch`**: The Tireless Assistant. It sits in the background, and every single time you hit "Save" in your code editor, it automatically re-checks and re-builds your app instantly.
-*   **`foo fmt`**: The Beautifier. It automatically reformats your code to ensure perfect spacing and indentation, so your code always looks professional.
+*   **`foo fmt`**: Rewrites source using the canonical FOO formatting rules.
 
 ---
 

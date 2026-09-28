@@ -83,6 +83,10 @@ proc discover*(root: string; source = ""): seq[string] =
     raise newException(IOError, "Source root not found: " & directory)
   var seen = initHashSet[string]()
   for relative in glob(directory, "**/*.iv"):
+    let normalized = relative.replace(DirSep, '/')
+    if selected == "." and normalized.split('/')[0].toLowerAscii() in
+        ["test", "benchmark"]:
+      continue
     let lower = relative.toLowerAscii()
     if lower in seen:
       raise newException(ValueError, "Source paths differ only by case: " & relative)

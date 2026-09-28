@@ -30,7 +30,9 @@ return from each branch or update a deliberately dynamic binding.
 Use `match` when one value is compared with several patterns.
 
 ```foo
-match statusCode {
+constant status of type integer is 404.
+
+match status {
   case 200 { display "OK". }
   case 404 { display "Not found". }
   case anything { display "Other response". }
@@ -44,6 +46,9 @@ covered).
 A case may have an additional guard:
 
 ```foo
+constant level of type integer is 10.
+constant active is true.
+
 match level {
   case 10 when active { display "Active administrator". }
   case 10 { display "Inactive administrator". }
@@ -69,21 +74,26 @@ separate infinite-loop keyword.
 
 ## Counted repetition
 
-`repeat until` creates a counter and stops when it reaches the limit.
+FOO uses an ordinary dynamic value and `while` for a counted loop. The update is
+visible, so the reader can see exactly when the counter changes.
 
 ```foo
-repeat until index reaches 3 {
+dynamic index is 0.
+
+while index less than 3 {
   display "Step".
-  advance index.
+  set index to index plus 1.
 }
 ```
 
-Use `advance index.` to move the named counter forward.
+This block runs three times, with `index` equal to `0`, `1`, and `2`.
 
 ## `for each`
 
-Use `for each` to visit the elements of a collection in order.
+Use `for each` to visit the elements of a collection in order. This fragment
+assumes `values` is a sequence and `process` is a function for one element:
 
+<!-- snippet: context -->
 ```foo
 for each item in values {
   process(item).
@@ -124,10 +134,11 @@ function absolute(value integer) giving integer {
 This is often clearer than wrapping the entire function in `otherwise`.
 
 For a reusable precondition, put a function guard between the parameters and
-result declaration:
+result declaration. This fragment assumes a `math.root` operation is in scope:
 
+<!-- snippet: context -->
 ```foo
-function root value decimal
+function root(value decimal)
     when value greater than or equal to 0
     giving decimal {
   give math.root(value).

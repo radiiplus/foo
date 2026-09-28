@@ -1,254 +1,206 @@
-# Chapter 13: Syntax Guide (The Complete FOO Dictionary)
+# Syntax Guide
 
-Welcome to the complete syntax reference for FOO. This chapter is a plain-language dictionary of every keyword, operator, and sentence structure in the language. 
+This page is a compact reference for the canonical forms used throughout the
+book. Each FOO block is a complete example unless the text calls it a fragment.
+The normative grammar lives at `specs/grammar.md` in the repository.
 
-Use this guide when you know *what* you want to do, but just need to remember the exact FOO word to do it.
+## Declarations
 
----
+| Form | Meaning | Example |
+| --- | --- | --- |
+| `constant` | Binds a value that cannot be reassigned. | `constant limit is 100.` |
+| `dynamic` | Binds a value that can be changed with `set`. | `dynamic count is 0.` |
+| `function` | Declares a reusable operation. | `function ready() giving boolean { give true. }` |
+| `public` | Makes a declaration visible to importing modules. | `public constant limit is 100.` |
+| `use` | Imports a module or file. | `use file.` |
+| `define ... as ...` | Introduces a named type. | `define Identity as unsigned.` |
 
-## 1. Declarations (Creating Things)
+Use `is` for a singular binding and `are` when the binding represents several
+values. Both forms retain ordinary static type checking.
 
-| Syntax | Plain Meaning | Example |
-| :--- | :--- | :--- |
-| `constant` | Creates a value that cannot be changed. | `constant pi is 3.14.` |
-| `dynamic` | Creates a value that can be changed. | `dynamic score is 0.` |
-| `are` | Declares a binding that represents multiple values. | `constant users are active.` |
-| `function` | Defines a reusable block of code. | `function greet() { ... }` |
-| `public` | Makes a declaration visible to other files. | `public constant limit is 100.` |
-| `use` | Imports another file or module. | `use io.` or `use "math.iv".` |
-| `define` | Introduces a named type. | `define Identity as integer 64.` |
-| `record` | Groups related fields together. | `define Point as record { x of type integer. y of type integer. }.` |
-| `choice` | Defines a value that can be one of several variants. | `define Color as choice { red. blue. }.` |
-
----
-
-## 2. Core Types
-
-| Type | Plain Meaning | Example |
-| :--- | :--- | :--- |
-| `integer` | Whole numbers (defaults to 64-bit). | `42` or `-10` |
-| `unsigned` | Whole numbers, positive only. | `100` |
-| `decimal` | Numbers with fractions (defaults to 64-bit). | `3.14` |
-| `boolean` | True or false. | `true` or `false` |
-| `byte` | A single 8-bit unsigned number. | `255` |
-| `text` | A string of characters. | `"hello world"` |
-| `nothing` | The single unit value used when there is no useful result. | `nothing` |
-| `null` | An absent optional value. | `null` |
-| `pointer to` | A memory address pointing to a value. | `pointer to integer` |
-| `sequence of` | A dynamic list of values. | `sequence of text` |
-| `optional` | A value that might be missing. | `optional text` |
-| `failable` | A value that might be an error. | `failable integer` |
-| `vector` | A fixed-size array for SIMD math (one instruction processing several values). | `vector[4, decimal]` |
-
----
-
-## 3. Math and Logic (Word Operators)
-
-| Instead of... | Write this... | Example |
-| :--- | :--- | :--- |
-| `+` | `plus` | `5 plus 5` |
-| `-` | `subtract` | `10 subtract 2` |
-| `*` | `multiply` | `4 multiply 4` |
-| `/` | `divide` | `20 divide 4` |
-| `%` | `remainder` | `10 remainder 3` |
-| `==` | `is` | `x is 10` |
-| `!=` | `is not` | `x is not 0` |
-| `>` | `greater than` | `health greater than 0` |
-| `<` | `less than` | `ammo less than 5` |
-| `>=` | `greater than or equal to` | `age greater than or equal to 18` |
-| `<=` | `less than or equal to` | `speed less than or equal to 100` |
-| `&&` | `and` | `true and false` |
-| `\|\|` | `or` | `true or false` |
-| `!` | `not` | `not ready` |
-
----
-
-## 4. Control Flow (Making Decisions)
-
-### Conditionals (`when` / `otherwise`)
-Use this when you are checking if a condition is true or false.
 ```foo
-when condition {
-  -- runs if true
+constant title is "Report".
+dynamic retries is 0.
+set retries to retries plus 1.
+```
+
+## Types and values
+
+| Type | Meaning | Example value |
+| --- | --- | --- |
+| `integer` | Signed 64-bit whole number. | `42` |
+| `unsigned` | Unsigned 64-bit whole number. | `42` |
+| `decimal` | Binary64 fractional number. | `3.14` |
+| `boolean` | Exactly `true` or `false`. | `true` |
+| `byte` | One opaque 8-bit storage value. | Produced by byte and memory APIs. |
+| `character` | One Unicode scalar. | `'F'` |
+| `text` | Immutable validated UTF-8 text. | `"hello"` |
+| `nothing` | The unit type and its only value. | `nothing` |
+| `optional T` | A present `T` or absent `null`. | `null` |
+| `failable T` | A successful `T` or an error. | Returned by a failable call. |
+| `sequence of T` | A bounded contiguous view of `T` values. | Returned by collection APIs. |
+| `pointer to T` | A non-null native address with provenance. | Returned by memory APIs. |
+| `vector[N, T]` | `N` fixed SIMD lanes of `T`. | Constructed by vector APIs. |
+
+The bare numeric names are the canonical 64-bit spellings. A non-default width
+may be written when representation matters, such as `integer 32`, `unsigned
+16`, or `decimal 32`.
+
+`nothing` and `null` are different. `nothing` is a real unit value; `null` is
+only the absent value of an `optional T`.
+
+## Records and choices
+
+```foo
+define User as record {
+  name of type text.
+  active of type boolean.
+}.
+
+define Status as choice {
+  ready.
+  failed(text).
+}.
+
+constant user is User("Ada", true).
+constant status is ready.
+```
+
+Record fields keep `of type` because they declare stored layout. Function
+parameters use `name Type`, as shown later on this page.
+
+## Operators
+
+| Operation | Canonical form |
+| --- | --- |
+| Addition | `left plus right` |
+| Subtraction | `left subtract right` |
+| Multiplication | `left multiply right` |
+| Division | `left divide right` |
+| Remainder | `left remainder right` |
+| Equality | `left is right` |
+| Inequality | `left is not right` |
+| Ordering | `less than`, `greater than`, and their `or equal to` forms |
+| Boolean logic | `not`, `and`, `or` |
+
+Multiplication, division, and remainder bind more tightly than addition and
+subtraction. Use parentheses when mixed Boolean conditions would be easier to
+misread.
+
+## Conditions
+
+```foo
+constant temperature is 24.
+
+when temperature greater than 30 {
+  display "Hot".
 }
-otherwise when otherCondition {
-  -- runs if first was false, second is true
+otherwise when temperature less than 15 {
+  display "Cold".
 }
 otherwise {
-  -- runs if everything above was false
+  display "Comfortable".
 }
 ```
 
-### Matching (`match` / `case`)
-Use this when you are checking a single variable against specific values. It is cleaner and safer than using long `when/otherwise` chains.
+Branches are checked in order, and only the first matching branch runs. The
+final `otherwise` is optional.
+
+Use `match` when one value is compared with several patterns:
 
 ```foo
-match statusCode {
+constant status of type integer is 404.
+
+match status {
   case 200 { display "OK". }
-  case 404 { display "Not Found". }
-  case anything { display "Unknown". }
+  case 404 { display "Not found". }
+  case anything { display "Other response". }
 }
 ```
 
-**The Superpower: Exhaustiveness Checking**
-FOO's compiler mathematically guarantees that you haven't forgotten a possible outcome. If you use `match` on a `boolean` and forget to include a `case` for either `true` or `false`, FOO will stop the build and throw an error. You are forced to handle every edge case!
+`anything` is the catch-all pattern. A match must cover every possible value;
+an integer match therefore needs an unguarded catch-all.
 
-**Advanced Guards (`when` inside `case`)**
-You can add an extra condition to a specific case:
+## Loops
+
 ```foo
-match userLevel {
-  case 99 when accountActive {
-    display "Super Admin".
-  }
-  case 10 {
-    display "Regular Admin".
-  }
-  case anything {
-    display "Guest".
-  }
+dynamic index is 0.
+
+while index less than 3 {
+  set index to index plus 1.
 }
 ```
 
-### Loops
+Use `for each` for a bounded sequence. `stop` leaves the nearest loop and
+`skip` starts its next iteration. FOO has no separate `repeat until`, `advance`,
+or infinite-loop form.
+
+## Functions
+
 ```foo
--- Repeat while a condition is true
-while health greater than 0 {
-  decrease health by 1.
+function add(left integer, right integer) giving integer {
+  give left plus right.
 }
 
--- Loop over every item in a list
-for each item in shoppingCart {
-  display item.
-}
-
--- Stop a loop completely
-stop.
-
--- Skip to the next iteration
-skip.
+constant total is add(20, 22).
 ```
 
----
+Parenthesized calls are canonical. Parameters use `name Type`; `giving Type`
+states the result. A function with no useful result may omit `giving` and reach
+its closing brace. Use `give nothing.` only when it must return early.
 
-## 5. Functions and Returns
-
-```foo
--- A function that returns nothing
-function work() {
-  -- Do work here
-}
-
--- A function that returns an integer
-function add(a integer, b integer) giving integer {
-  give a plus b.
-}
-```
-
-The recommended sentence form omits punctuation that does not add clarity:
+Defaults and named arguments remain part of the same call grammar:
 
 ```foo
-function connect
-    host text
-    port integer default 443
-    timeout integer default 5000
-    giving boolean {
+function connect(host text, port integer default 443) giving boolean {
   give true.
 }
 
-constant first is connect "example.com".
-constant second is connect host "localhost" port 8080.
+constant secure is connect("example.com").
+constant local is connect(host "localhost", port 8080).
 ```
 
-Use `values are sequence of integer` as the final parameter to consume all
-remaining integer arguments. Multiple functions may share a name; the compiler
-requires one unambiguous match by labels, arity (argument count), and types.
-
-Local closures capture lexical bindings (names visible in the surrounding
-written block):
+## Failure and cleanup
 
 ```foo
-function countTwice() giving integer {
-  dynamic count is 0.
-  constant next is function giving integer {
-    increase count by 1.
-    give count.
-  }.
-  next().
-  give next().
+use file as files.
+
+function settings() giving failable text {
+  give files.read("settings.json") try.
 }
+
+constant content is settings() fallback "{}".
 ```
 
-Captured closures are scoped and cannot leave the function that owns their
-captured storage.
+Postfix `try` propagates a failure from the current failable function.
+`fallback` handles it locally by supplying a value of the success type. `after`
+registers cleanup for ordinary scope exits, including propagated failures.
 
-Function guards state mandatory preconditions (rules that must be true before
-the function runs):
-
-```foo
-function positive value integer
-    when value greater than 0
-    giving integer {
-  give value.
-}
-```
-
----
-
-## 6. Error Handling
-
-| Keyword | Plain Meaning | Example |
-| :--- | :--- | :--- |
-| `try` | Unwraps the preceding failable value, or bails out if it fails. | `file.read("data.txt") try.` |
-| `fallback` | Provides an alternative if the left side fails. | `load() fallback "default".` |
-| `after` | Runs cleanup code when the scope ends. | `after { io.close(stream) fallback nothing. }` |
-
----
-
-## 7. Built-in Commands & Units
-
-### Output
-```foo
-use log.
-
-display "Hello!".
-log.note("System started.").
-log.alert("Something went wrong.").
-```
-
-### Quantities
-Use ordinary numeric expressions in the units required by the library.
+## Modules and native calls
 
 ```foo
-use time.
-
-constant duration is 2000000000.
-time.sleep(duration) try.
-constant capacity is 16 multiply 1024 multiply 1024 multiply 1024.
-```
-
----
-
-## 8. Native Interoperability
-
-```foo
--- Declare a C function directly
+use file as files.
 extern "C" function puts(value pointer to byte) giving integer.
+```
 
--- Write a raw C block
-native c function fast(a integer) giving integer {
-  return a * a;
-}
+Each `.iv` file is a module. Declarations are private unless marked `public`.
+`extern "C"` declares a typed C ABI boundary; the linked symbol must obey the
+declared signature. Target-specific code and assembly belong behind a verified
+native contract, not in an ordinary standalone assembly statement.
 
--- Write raw Assembly
-asm {
-  /* hardware instructions here */
+## Statement endings
+
+A period ends a simple statement. Blocks use braces and do not add a period
+after the closing brace. Comments begin with `--`.
+
+```foo
+-- This is one complete statement.
+display "Ready".
+
+when true {
+  display "The block needs no trailing period".
 }
 ```
 
----
-
-## Summary
-
-That’s the entire FOO language in a nutshell! It is a small, highly readable vocabulary that compiles down to incredibly powerful machine code. 
-
-Thank you for reading the FOO Book. Now go build something amazing!
+Continue with [The Language](language.md) for a guided explanation or
+[Reference](reference.md) for a command-oriented lookup.

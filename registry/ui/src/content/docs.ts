@@ -50,7 +50,7 @@ export const chapters: Chapter[] = [
   { id: "variables", title: "Variables", short: "Variables", description: "Declare fixed and changing values, let the compiler work out obvious types, and learn where names are visible.", group: "Learn", source: variables },
   { id: "types", title: "Types and Values", short: "Types and values", description: "Use built-in and grouped values, represent missing data, and handle results that can fail.", group: "Learn", source: types },
   { id: "operators", title: "Operators", short: "Operators", description: "Write arithmetic, comparisons, Boolean logic, and grouped expressions with FOO's word operators.", group: "Learn", source: operators },
-  { id: "flow", title: "Conditions and Loops", short: "Conditions and loops", description: "Choose paths with when and match, then repeat work with while, repeat, and for each.", group: "Learn", source: flow },
+  { id: "flow", title: "Conditions and Loops", short: "Conditions and loops", description: "Choose paths with when, otherwise, and match, then repeat work with while and for each.", group: "Learn", source: flow },
   { id: "functions", title: "Functions", short: "Functions", description: "Define typed operations, return values, expose public APIs, and write constrained generics.", group: "Learn", source: functions },
   { id: "expressions", title: "Expressions and English Grammar", short: "Expressions", description: "Use sentence calls, flexible arguments, shared function names, local functions, and deliberate value updates.", group: "Learn", source: expressions },
   { id: "foundations", title: "Language Foundations", short: "Foundations", description: "Understand missing values, reusable typed code, modules, memory, overlapping work, time, testing, and future design boundaries.", group: "Learn", source: foundations },
@@ -76,7 +76,7 @@ export const chapters: Chapter[] = [
   { id: "status", title: "Feature Status", short: "Feature status", description: "Check which language, memory, concurrency, interop, and tooling features FOO v1 implements.", group: "Reference", source: status },
   { id: "reference", title: "Quick Reference", short: "Reference", description: "A compact lookup for commands, vocabulary, types, control flow, and error handling.", group: "Reference", source: reference },
   { id: "advanced", title: "Advanced FOO", short: "Advanced", description: "Run work while building, control memory placement and communication rules, use native code, and tune hardware paths.", group: "Reference", source: advanced },
-  { id: "syntax", title: "Syntax Guide", short: "Syntax guide", description: "The complete dictionary of FOO declarations, types, operators, control flow, and interop.", group: "Reference", source: syntax },
+  { id: "syntax", title: "Syntax Guide", short: "Syntax guide", description: "A compact reference for canonical declarations, types, operators, control flow, failure handling, and interop.", group: "Reference", source: syntax },
 ];
 
 export const fallback = chapters[0];

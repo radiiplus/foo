@@ -56,6 +56,7 @@ class FooLanguageClient {
       if (this.process !== child) return;
       this.ready = true;
       this.notify('initialized', {});
+      this.output.appendLine('FOO language server ready.');
       for (const document of vscode.workspace.textDocuments) this.open(document);
     }).catch(error => this.fail(`FOO language server initialization failed: ${error.message}`));
   }

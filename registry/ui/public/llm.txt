@@ -58,7 +58,7 @@ Read these lessons in order when FOO is new to you.
 4. **[Variables](variables.md)** - Use constants, dynamic values, inference, and scope.
 5. **[Types and Values](types.md)** - Learn primitive, optional, failable, and compound types.
 6. **[Operators](operators.md)** - Write arithmetic, comparisons, and Boolean logic.
-7. **[Conditions and Loops](flow.md)** - Use `when`, `match`, `while`, `repeat`, and `for each`.
+7. **[Conditions and Loops](flow.md)** - Use `when`, `otherwise`, `match`, `while`, and `for each`.
 8. **[Functions](functions.md)** - Define operations, results, public APIs, and generics.
 9. **[Expressions and English Grammar](expressions.md)** - Use sentence calls, defaults, overloads, guards, closures, and intentional mutation.
 10. **[Language Foundations](foundations.md)** - Understand inference, absence, comparison, generics, modules, memory, effects, concurrency, time, tooling, and design boundaries.
@@ -85,7 +85,7 @@ Use these chapters when creating a real application or package.
 23. **[Testing](testing.md)** - Organize assertions, filters, watches, and native fixtures.
 24. **[Benchmarking](benchmarking.md)** - Measure programs with warmups and repeated samples.
 25. **[Optimization Under the Hood](tuning.md)** - Understand execution specialization, boundary and work elimination, fusion rules, adaptive paths, and measured evidence.
-26. **[Performance Report](performance.md)** - Review benchmark methodology, native controls, allocation evidence, and remaining work.
+26. **[Performance Report](performance.md)** - Review current measurements, sequence behavior, runtime telemetry, and profiling decisions.
 
 ## Master and reference
 
@@ -93,13 +93,13 @@ These chapters describe compiler behavior, target configuration, and the exact
 surface of the current language.
 
 27. **[The Compiler](compiler.md)** - Follow source through checking, optimization, and native backends.
-27. **[Diagnostics](diagnostics.md)** - Read grouped terminal, JSON, and editor errors.
-28. **[Platforms](platforms.md)** - Build for desktop, server, ARM, WebAssembly, and freestanding targets.
-29. **[Feature Status](status.md)** - Separate implemented behavior from future design.
-30. **[Building Release Binaries](releasing.md)** - Build Windows and Linux compiler binaries, use WSL, sign Linux output, and package platform icons.
-30. **[Reference](reference.md)** - Look up commands, vocabulary, and core types quickly.
-31. **[Advanced](advanced.md)** - Use allocators, protocol controls, native code, and hardware tuning.
-32. **[Syntax Guide](syntax.md)** - Look up complete sentence forms.
+28. **[Diagnostics](diagnostics.md)** - Read grouped terminal, JSON, and editor errors.
+29. **[Platforms](platforms.md)** - Build for desktop, server, ARM, WebAssembly, and freestanding targets.
+30. **[Feature Status](status.md)** - Separate implemented behavior from future design.
+31. **[Building Release Binaries](releasing.md)** - Build Windows and Linux compiler binaries, use WSL, sign Linux output, and package platform icons.
+32. **[Reference](reference.md)** - Look up commands, vocabulary, and core types quickly.
+33. **[Advanced](advanced.md)** - Use allocators, protocol controls, native code, and hardware tuning.
+34. **[Syntax Guide](syntax.md)** - Look up complete sentence forms.
 
 ## How to read an example
 
@@ -116,6 +116,8 @@ Examples use the current vocabulary:
 - `multiply`, `subtract`, and `divide` for arithmetic.
 - `stop` and `skip` for loop control.
 - postfix `try` for propagation and `fallback` for recovery.
+- parenthesized calls as the canonical formatter output; sentence calls are an
+  accepted shorthand only where their argument boundaries are unambiguous.
 - `file` as the canonical filesystem module.
 
 ## Essential terms
@@ -162,7 +164,9 @@ In most languages, your code runs *after* the program is built. But in FOO, you 
 ### The Benefit: Zero Runtime Cost
 Imagine you need to calculate a massive lookup table, read a configuration file, or format a huge block of text. If you do this at runtime, your app has to waste time doing it every time it starts.
 
-With `eval`, FOO does the math *during compilation* and bakes the result directly into the final executable. Your app starts instantly and uses zero extra memory.
+With `eval`, FOO performs supported work during compilation and stores the
+result in the built program. This removes that runtime computation; the stored
+result can still occupy space in the executable and memory when loaded.
 
 ```foo
 eval {
@@ -278,27 +282,21 @@ other advanced standard-library surfaces.
 
 ---
 
-## 4. Native C and Assembly (The Escape Hatch)
+## 4. Native boundaries
 
 Sometimes, FOO's high-level abstractions just aren't enough. Maybe you need to use a specific CPU instruction, or talk to a legacy C library that has no FOO bindings.
 
-FOO gives you an **Escape Hatch**. Native code always lives in an explicitly marked `native c { ... }`, `native c function`, or `asm { ... }` container, so it cannot be mistaken for FOO source.
+Start with a typed foreign declaration. It keeps the calling convention,
+parameters, and result visible to the checker while the implementation remains
+in a separately compiled native library.
 
-### Native C
 ```foo
-native c function add(a integer, b integer) giving integer {
-  return a + b;
-}
+extern "C" function add(left integer, right integer) giving integer.
 ```
 
-### Inline Assembly
-```foo
-asm {
-  /* Raw assembly instructions go here. */
-}
-```
-
-**The Benefit:** You can write 99% of your app in safe, readable FOO, and the remaining 1% in raw, high-performance C or Assembly, all in the same file.
+Use a verified native contract only when the portable language and foreign API
+cannot express the operation. Target-specific assembly belongs inside that
+contract, with its target requirements and effects declared at the boundary.
 
 ---
 
@@ -340,7 +338,7 @@ FOO believes that you should never be trapped by your language.
 *   Need speed? Use `eval` to bake math into the binary.
 *   Need memory control? Use custom allocators.
 *   Need protocol control? Use the advanced HTTP, TCP, file, JSON, and task operations.
-*   Need raw power? Use `native c` or `asm`.
+*   Need a native operation? Use a typed foreign declaration or verified native contract.
 *   Need hardware tuning? Use `-mcpu`.
 
 FOO gives you the safety of a high-level language, with the raw power of a low-level systems language. You are never forced to choose.
@@ -721,6 +719,10 @@ constant body is web.body(response) try.
 Advanced users can configure the same client before requesting:
 
 ```foo
+use http as web.
+
+constant client is web.client() try.
+after { web.close(client). }
 web.attach(client, "Accept", "application/json") try.
 web.redirects(client, 2) try.
 web.reuse(client, true).
@@ -798,8 +800,10 @@ server are CLI tools rather than source modules.
 
 ## Reading a signature
 
-Consider:
+Consider this signature fragment from the HTTP module. `Peer` is an opaque
+module-owned type declared elsewhere in that module:
 
+<!-- snippet: context -->
 ```foo
 public use "http" function read(
   value pointer to Peer,
@@ -865,7 +869,10 @@ sequence payload once, initializes every element, and avoids the repeated
 allocation and copying required by persistent `append`.
 
 ```foo
+use sequence as sequences.
+
 constant values is sequences.sized[integer](10_000) try.
+after { sequences.release[integer](values) fallback nothing. }
 dynamic index is 0.
 while index less than 10_000 {
   set values at index to index.
@@ -881,6 +888,11 @@ values must remain valid.
 ## Length and indexing
 
 ```foo
+use sequence as sequences.
+
+constant empty is sequences.create[integer]().
+constant values is sequences.append[integer](empty, 4) try.
+after { sequences.release[integer](values) fallback nothing. }
 constant count is sequences.length[integer](values).
 constant first is values at 0.
 ```
@@ -891,8 +903,13 @@ error rather than an unchecked memory read.
 ## Iteration
 
 ```foo
+use sequence as sequences.
+
+constant empty is sequences.create[integer]().
+constant values is sequences.append[integer](empty, 4) try.
+after { sequences.release[integer](values) fallback nothing. }
 for each value in values {
-  inspect(value).
+  display "Value found".
 }
 ```
 
@@ -901,6 +918,8 @@ The loop visits sequence values in order.
 ## Transformations
 
 ```foo
+use sequence as sequences.
+
 function double(value integer) giving integer {
   give value multiply 2.
 }
@@ -908,6 +927,8 @@ function double(value integer) giving integer {
 function positive(value integer) giving boolean {
   give value greater than 0.
 }
+
+constant values is sequences.create[integer]().
 
 constant doubled is sequences.map[integer, integer](values, double) try.
 constant kept is sequences.filter[integer](doubled, positive) try.
@@ -992,7 +1013,8 @@ Next: [Error handling](errors.md).
 
 You have been writing beautiful, English-like sentences, but computers don't speak English. They speak machine code (1s and 0s).
 
-The FOO Compiler is the engine that bridges that gap. It reads your code, proves it is safe, and translates it into highly optimized instructions for your specific hardware.
+The FOO compiler parses and checks source, lowers it to an intermediate form,
+and asks the selected backend to produce code for the requested target.
 
 Let’s look at the three-step magic trick the compiler performs.
 
@@ -1006,11 +1028,13 @@ When you run `foo build`, the compiler goes through three distinct phases:
 First, the **Parser** reads your sentences and builds a grammar tree. Then, the **Type Checker** (the "Bouncer") verifies that your logic is sound.
 *   *Can you add text to a number?* No.
 *   *Did you handle the error?* Yes.
-If the code isn't perfect, the compiler stops you here, before it ever tries to run the program.
+If parsing or checking fails, compilation stops before the program runs.
 
 ### Step 2: Lower to IR (The Blueprint)
 Once your code is proven safe, FOO lowers it into an **Intermediate Representation (IR)**. Think of this as a strict, simplified blueprint of your program. It strips away the "English" words and converts everything into pure logic.
-This is where FOO applies **Sealing**—a mathematical process that guarantees your memory is read and written in the exact right order, eliminating entire categories of bugs.
+This is where FOO applies sealing checks for supported ownership, lifetime, and
+ordering contracts. The checker rejects violations it can prove; native code
+still has to honor its declared contract.
 
 ### Step 3: Emit & Optimize (The Factory)
 Finally, the compiler takes that blueprint and translates it into a language your computer can actually build: **C** or **Zig**.
@@ -1030,7 +1054,9 @@ Select the C11 backend with `--backend c`.
 
 ### The Zig Backend (Modern Speed)
 FOO uses the Zig backend by default.
-**The Benefit:** Zig is a modern language with incredible safety features and lightning-fast compilation times. It’s perfect for building standalone binaries that don't need any external dependencies.
+The managed Zig toolchain provides the default native build and cross-target
+path. Generated code still follows FOO's checked semantics; choosing this
+backend is not a separate language safety mode or a performance guarantee.
 
 ```sh
 # Build using the C backend
@@ -1133,15 +1159,16 @@ explicit worker limit.
 
 Sometimes, standard code isn't enough. Maybe you need to talk directly to a graphics card, or use a specific CPU instruction.
 
-FOO gives you an escape hatch. You can drop down into **Native C** or **Assembly** right inside your FOO file.
+FOO exposes foreign declarations and verified native contracts for operations
+that the portable language or standard library cannot express.
 
 ```foo
-native c function add(a integer, b integer) giving integer {
-  return a + b;
-}
+extern "C" function add(left integer, right integer) giving integer.
 ```
 
-This allows you to write 99% of your app in safe, readable FOO, and the remaining 1% in raw, high-performance C.
+The declaration gives FOO a checked call signature. The linked native symbol
+must obey that ABI and signature; `foo bind` can generate declarations from a C
+header.
 
 ---
 
@@ -1350,12 +1377,17 @@ error to its caller.
 
 ## Postfix `try`
 
-These are the canonical forms (the standard forms new code should use):
+This complete function shows the canonical forms (the standard forms new code
+should use):
 
 ```foo
-constant content is files.read("notes.txt") try.
-files.write("copy.txt", content) try.
-give settings() try.
+use file as files.
+
+function copy() giving failable text {
+  constant content is files.read("notes.txt") try.
+  files.write("copy.txt", content) try.
+  give content.
+}
 ```
 
 Do not write `constant content is try files.read(...)`. Prefix `try` is legacy
@@ -1366,6 +1398,8 @@ syntax; new code and documentation use the postfix operator.
 Use `fallback` when the current scope can supply a valid replacement.
 
 ```foo
+use file as files.
+
 constant settings is files.read("settings.json") fallback "{}".
 display settings.
 ```
@@ -1453,9 +1487,11 @@ Write every filename, function, type, and value name as one word. Let its
 module and surrounding type provide context:
 
 ```foo
+use file.
+
 constant limit is 3.
 constant account is "Ada".
-file.read(input).
+file.read("input.txt") try.
 ```
 
 Do not join several words as `retry_limit`, `retryLimit`, or `RetryLimit`.
@@ -1467,6 +1503,10 @@ Use `is` when a name represents one value and `are` when it represents several
 values:
 
 ```foo
+use sequence as sequences.
+
+constant current is "Ada".
+constant active is sequences.create[text]().
 constant user is current.
 constant users are active.
 ```
@@ -1474,28 +1514,38 @@ constant users are active.
 The copula (the linking word `is` or `are`) communicates intent; the type checker still determines the exact
 type from the initializer. It does not guess from whether a name ends in `s`.
 
-## Sentence calls
+## Sentence-call shorthand
 
-The shortest call supplies values in declaration order:
+Parenthesized calls are the canonical form emitted by `foo fmt`. FOO also
+accepts the sentence-call shorthand in this section when the call remains
+unambiguous.
 
+The next four fragments focus on call spelling and assume the named functions
+and values have already been declared. The shortest call supplies values in
+declaration order:
+
+<!-- snippet: context -->
 ```foo
 constant result is add 10 20.
 ```
 
 Add parameter labels when they prevent ambiguity:
 
+<!-- snippet: context -->
 ```foo
 constant socket is connect host "example.com" port 443 timeout 5000.
 ```
 
 A mixed call puts positional values first:
 
+<!-- snippet: context -->
 ```foo
 constant socket is connect "example.com" timeout 10000.
 ```
 
 Parentheses remain available for nesting and zero-argument calls:
 
+<!-- snippet: context -->
 ```foo
 constant total is add(tax(price), shipping).
 constant now is clock().
@@ -1507,15 +1557,15 @@ are compile errors.
 ## Defaults, remaining arguments, and overloads
 
 ```foo
-function connect
-    host text
-    port integer default 443
+function connect(
+    host text,
+    port integer default 443,
     timeout integer default 5000
-    giving boolean {
+) giving boolean {
   give true.
 }
 
-function total values are sequence of integer giving integer {
+function total(values are sequence of integer) giving integer {
   dynamic result is 0.
   for each value in values { increase result by value. }
   give result.
@@ -1538,6 +1588,8 @@ Use `increase` and `decrease` when the operation updates the same dynamic
 binding:
 
 ```foo
+dynamic score is 0.
+dynamic health is 100.
 increase score by 10.
 decrease health by 5.
 ```
@@ -1545,6 +1597,8 @@ decrease health by 5.
 Use `set` for a replacement or a more complex calculation:
 
 ```foo
+dynamic price is 20.0.
+constant rate is 1.5.
 set price to price multiply rate.
 ```
 
@@ -1553,7 +1607,7 @@ Both forms retain overflow checks and reject immutable targets.
 ## Function guards
 
 ```foo
-function withdraw amount decimal
+function withdraw(amount decimal)
     when amount greater than 0
     giving decimal {
   give amount.
@@ -1592,8 +1646,10 @@ storage until the ownership model gains an explicit heap-owned closure form.
 ## Current pattern matching
 
 `match` supports literals, `anything`, choice variants, payload bindings, and
-case guards:
+case guards. This fragment assumes `result` has a choice type with `success`
+and `failure` variants:
 
+<!-- snippet: context -->
 ```foo
 match result {
   case success(value) when value greater than 0 { display "Success". }
@@ -1618,7 +1674,7 @@ The following ideas are directions, not accepted source syntax yet:
 | Lazy sequences | `sequence each item in values` | Cancellation and retained captures |
 | Generators | `give next value` | Generator frame ownership and cleanup |
 | Multiple results | Record destructuring rather than anonymous tuples | Stable names and ABI layout |
-| Distinct types | `define Identity as distinct unsigned 64` | Explicit conversion vocabulary |
+| Distinct types | `define Identity as distinct unsigned` | Explicit conversion vocabulary |
 | Refinement types | `where value greater than 0` | Runtime checks versus compile-time proof |
 | Capabilities | Values that grant file or network authority | Delegation and package boundaries |
 | Resource expressions | `with ... as ...` | Interaction with existing `after` cleanup |
@@ -1670,7 +1726,9 @@ return from each branch or update a deliberately dynamic binding.
 Use `match` when one value is compared with several patterns.
 
 ```foo
-match statusCode {
+constant status of type integer is 404.
+
+match status {
   case 200 { display "OK". }
   case 404 { display "Not found". }
   case anything { display "Other response". }
@@ -1684,6 +1742,9 @@ covered).
 A case may have an additional guard:
 
 ```foo
+constant level of type integer is 10.
+constant active is true.
+
 match level {
   case 10 when active { display "Active administrator". }
   case 10 { display "Inactive administrator". }
@@ -1709,21 +1770,26 @@ separate infinite-loop keyword.
 
 ## Counted repetition
 
-`repeat until` creates a counter and stops when it reaches the limit.
+FOO uses an ordinary dynamic value and `while` for a counted loop. The update is
+visible, so the reader can see exactly when the counter changes.
 
 ```foo
-repeat until index reaches 3 {
+dynamic index is 0.
+
+while index less than 3 {
   display "Step".
-  advance index.
+  set index to index plus 1.
 }
 ```
 
-Use `advance index.` to move the named counter forward.
+This block runs three times, with `index` equal to `0`, `1`, and `2`.
 
 ## `for each`
 
-Use `for each` to visit the elements of a collection in order.
+Use `for each` to visit the elements of a collection in order. This fragment
+assumes `values` is a sequence and `process` is a function for one element:
 
+<!-- snippet: context -->
 ```foo
 for each item in values {
   process(item).
@@ -1764,10 +1830,11 @@ function absolute(value integer) giving integer {
 This is often clearer than wrapping the entire function in `otherwise`.
 
 For a reusable precondition, put a function guard between the parameters and
-result declaration:
+result declaration. This fragment assumes a `math.root` operation is in scope:
 
+<!-- snippet: context -->
 ```foo
-function root value decimal
+function root(value decimal)
     when value greater than or equal to 0
     giving decimal {
   give math.root(value).
@@ -1806,7 +1873,7 @@ FOO infers a local binding from its initializer:
 
 ```foo
 constant count is 42.
-constant user is create().
+constant user is "Ada".
 ```
 
 Function parameters, public boundaries, recursive results, empty collections,
@@ -1819,7 +1886,7 @@ value's type after declaration and never silently converts unrelated types.
 absence value. Absence is not failure:
 
 ```foo
-constant index of type optional unsigned 64 is sequence.find(items, target).
+constant index of type optional unsigned is null.
 
 when index is null {
   display "Not found".
@@ -1839,15 +1906,16 @@ types, and only the optional pointer can be `null`.
 
 ### Equality and identity (Current boundary)
 
-`equals` and `is` compare values. `not equals` and `is not` negate that test.
+`is` compares values and `is not` negates that test.
 Primitive values and types deriving `Equatable` may be compared. FOO does not
 expose a separate object-identity operator. Use `memory.identical[T](left,
 right)` when a low-level API genuinely needs pointer identity. That check does
 not prove that either pointer is live or safe to dereference.
 
 ```foo
-when left equals right { display "Equal". }
-when result is not null { display "Present". }
+constant left is 4.
+constant right is 4.
+when left is right { display "Equal". }
 ```
 
 ### Boolean logic (Current)
@@ -1856,6 +1924,9 @@ Conditions require `boolean`. `and`, `or`, and `not` use documented precedence;
 parentheses make mixed conditions explicit:
 
 ```foo
+constant active is true.
+constant verified is false.
+constant trusted is true.
 when active and (verified or trusted) {
   display "Allowed".
 }
@@ -1899,8 +1970,11 @@ runtime representation, and package behavior would duplicate those values.
 
 ### Iteration (Current language and library)
 
-`for each` works with compiler-supported sequences and collection types:
+`for each` works with compiler-supported sequences and collection types. This
+fragment assumes `items` is a sequence already provided by the surrounding
+program:
 
+<!-- snippet: context -->
 ```foo
 for each item in items {
   display item.
@@ -1920,8 +1994,10 @@ limited to compiler-supported collection values.
 ### Modules (Current)
 
 Each `.iv` file is a module. `use` imports a sibling, source-root, package, or
-standard module; an alias provides a short local namespace:
+standard module; an alias provides a short local namespace. This fragment
+assumes the project contains `account.iv`:
 
+<!-- snippet: context -->
 ```foo
 use http as web.
 use "account.iv" as account.
@@ -1971,20 +2047,25 @@ define Outcome[T] as choice {
   ended.
 }.
 
-constant result is picked[unsigned 64](42).
+constant result is picked[unsigned](42).
 ```
 
 A payload-free generic variant uses the expected result type when one is
 available. This keeps the common return form short:
 
 ```foo
-function finish() giving Outcome[unsigned 64] {
+define Outcome[T] as choice {
+  picked(T).
+  ended.
+}.
+
+function finish() giving Outcome[unsigned] {
   give ended.
 }
 ```
 
 Without an expected type, supply the type argument and call the zero-argument
-constructor: `constant result is ended[unsigned 64]().`
+constructor: `constant result is ended[unsigned]().`
 
 When a choice comes from an aliased module, use the alias consistently in both
 construction and matching: `model.picked(value)` and `case model.picked(value)`.
@@ -1993,16 +2074,18 @@ Fields may be initialized in declaration order or by field label. Labels are
 normalized into declaration order and every field must appear exactly once:
 
 ```foo
+define User as record {
+  name of type text.
+  age of type integer.
+}.
+
 constant user is User(age 42, name "Ada").
 ```
 
 Validation constructors and computed values are ordinary functions, which can
 return a failable result when validation rejects input. Structural
-destructuring names the record and all of its fields:
-
-```foo
-constant User(name, age) is user.
-```
+destructuring names the record and all of its fields, for example
+`constant User(name, age) is user.` after `User` and `user` are declared.
 
 Missing, repeated, or unknown fields are compile errors. FOO uses composition
 through fields for reuse and does not provide inheritance or implicit subtype
@@ -2050,14 +2133,13 @@ garbage-collected references.
 
 ### Unsafe and native code (Current)
 
-`unsafe` isolates operations the checker cannot prove safe. Native C belongs in
-an explicit `native c` container, while external functions state their ABI.
+`unsafe` isolates operations the checker cannot prove safe. Target-specific
+code belongs behind a verified native contract, while external functions state
+their ABI.
 Shared-library loading lives in `dl`; operating-system APIs live in `os`.
 
 ```foo
-native c function add(left integer, right integer) giving integer {
-  return left + right;
-}
+extern "C" function add(left integer, right integer) giving integer.
 ```
 
 The C ABI, system ABI, symbol spelling, calling convention, and record layout
@@ -2102,8 +2184,10 @@ deterministic.
 
 ### Transactions and failure chains (Current library boundary)
 
-`fallback` chains can express ordered recovery:
+`fallback` chains can express ordered recovery. This fragment assumes the
+three application-specific operations are declared with compatible types:
 
+<!-- snippet: context -->
 ```foo
 constant connection is primary() fallback secondary() fallback offline.
 ```
@@ -2216,19 +2300,15 @@ A function names a reusable operation. Its parameters describe the inputs and
 ## Define and call a function
 
 ```foo
-function add left integer right integer giving integer {
+function add(left integer, right integer) giving integer {
   give left plus right.
 }
 
-constant total is add 20 22.
-```
-
-Arguments are evaluated from left to right. Parenthesized declarations and
-calls remain valid when punctuation makes a nested expression clearer:
-
-```foo
 constant total is add(20, 22).
 ```
+
+Arguments are evaluated from left to right. Parentheses delimit the argument
+list, including an empty list for a zero-argument call.
 
 ## Default and named arguments
 
@@ -2236,17 +2316,17 @@ Write `default` after a parameter type. A missing argument uses that expression
 at the call site. Defaults may refer to earlier parameters.
 
 ```foo
-function connect
-    host text
-    port integer default 443
+function connect(
+    host text,
+    port integer default 443,
     timeout integer default 5000
-    giving boolean {
+) giving boolean {
   give true.
 }
 
-constant ordinary is connect "example.com".
-constant local is connect "localhost" port 8080.
-constant explicit is connect host "example.com" timeout 10000.
+constant ordinary is connect("example.com").
+constant local is connect("localhost", port 8080).
+constant explicit is connect(host "example.com", timeout 10000).
 ```
 
 A label is the parameter name followed directly by its value. FOO does not
@@ -2259,7 +2339,7 @@ Use `are sequence of` on the final parameter when it should consume the
 remaining arguments:
 
 ```foo
-function total values are sequence of integer giving integer {
+function total(values are sequence of integer) giving integer {
   dynamic result is 0.
   for each value in values {
     increase result by value.
@@ -2267,7 +2347,7 @@ function total values are sequence of integer giving integer {
   give result.
 }
 
-constant answer is total 10 20 30 40.
+constant answer is total(10, 20, 30, 40).
 ```
 
 Inside the function, `values` is a read-only sequence. A variadic parameter
@@ -2278,7 +2358,7 @@ must be last and cannot also have a default.
 `give` immediately returns from the current function.
 
 ```foo
-function larger left integer right integer giving integer {
+function larger(left integer, right integer) giving integer {
   when left greater than right { give left. }
   give right.
 }
@@ -2292,15 +2372,15 @@ type.
 Omit `giving` when no useful value is returned.
 
 ```foo
-function announce message text {
+function announce(message text) {
   display message.
 }
 
-announce "Ready".
+announce("Ready").
 ```
 
-Reaching the closing brace completes automatically. A bare `give.` is useful
-only for an early return.
+Reaching the closing brace completes automatically. For an early return from a
+function with no useful result, write `give nothing.`.
 
 ## Parameters and local values
 
@@ -2308,7 +2388,7 @@ Parameters are immutable bindings. Create a dynamic local when an algorithm
 needs a changing value.
 
 ```foo
-function sum limit integer giving integer {
+function sum(limit integer) giving integer {
   dynamic total is 0.
   dynamic current is 1.
   while current less than or equal to limit {
@@ -2324,7 +2404,7 @@ function sum limit integer giving integer {
 Declarations are private to their file unless they begin with `public`.
 
 ```foo
-public function area width decimal height decimal giving decimal {
+public function area(width decimal, height decimal) giving decimal {
   give width multiply height.
 }
 ```
@@ -2360,7 +2440,7 @@ Non-capturing functions can be passed to higher-order operations such as
 `sequence.map` and `sequence.filter`.
 
 ```foo
-function double value integer giving integer {
+function double(value integer) giving integer {
   give value multiply 2.
 }
 ```
@@ -2388,7 +2468,7 @@ function twice() giving integer {
 Closures are scoped in this release. Call them inside the function that owns
 their captured values. Returning a closure or passing it somewhere that may
 retain it is rejected, preventing a reference to expired stack storage. Use
-`using (name, otherName)` after the closure result type when an API review
+`using (name, other)` after the closure result type when an API review
 benefits from an explicit capture list.
 
 ## Overloads (one function name with several parameter forms)
@@ -2396,15 +2476,15 @@ benefits from an explicit capture list.
 Functions may share a name when their parameter types or calling forms differ:
 
 ```foo
-function identify value integer giving text {
+function identify(value integer) giving text {
   give "number".
 }
 
-function identify value text giving text {
+function identify(value text) giving text {
   give "text".
 }
 
-constant kind is identify 42.
+constant kind is identify(42).
 ```
 
 FOO first checks labels and arity (argument count), then chooses the most exact
@@ -2418,7 +2498,7 @@ A declaration may state a Boolean precondition (a rule that must be true before
 the function runs) before `giving`:
 
 ```foo
-function withdraw amount decimal
+function withdraw(amount decimal)
     when amount greater than 0
     giving decimal {
   give amount.
@@ -2442,7 +2522,7 @@ a profiler boundary:
 
 ```foo
 #[noinline]
-function next(value unsigned 64) giving unsigned 64 {
+function next(value unsigned) giving unsigned {
   give value plus 1.
 }
 ```
@@ -2452,7 +2532,7 @@ performance hint; ordinary application code should let the optimizer decide.
 
 ## Try it
 
-1. Write `subtract left integer right integer giving integer`.
+1. Write `subtract(left integer, right integer) giving integer`.
 2. Write a function with an early guard clause.
 3. Write a function that returns nothing without `give nothing.`.
 4. Make one function public and import it from another file.
@@ -2483,7 +2563,8 @@ contract (the behavior the language promises).
 
 ## 1. Reads Like English, Runs Like a Sports Car
 
-Most languages force you to learn a secret code. FOO’s parser (the part of the compiler that reads your code) is designed to understand natural, flowing sentences.
+FOO's parser (the part of the compiler that reads source) accepts a small,
+defined sentence grammar. It does not guess the meaning of arbitrary English.
 
 Here is a complete, working FOO program:
 
@@ -2530,17 +2611,25 @@ valid) use the same target-aware contract. Read
 
 ## 3. Superpowers Hidden in Plain Sight
 
-As you get deeper into FOO, you’ll discover features that feel like magic. They are designed to keep your code safe and lightning-fast without making you write extra boilerplate.
+The language also exposes compile-time work, checked memory contracts, and
+native interoperability without changing its ordinary statement grammar.
 
 ### 🪄 Compile-Time Magic (`eval`)
 Sometimes, you have heavy tasks—like reading a configuration file, doing complex math, or formatting a giant block of text—that never actually change while the user is running the app.
-With FOO’s `eval` blocks, you can tell the compiler to do that heavy lifting *while the program is being built*. The results are baked directly into the final app, meaning your app starts up instantly and uses zero extra memory for those tasks.
+With an `eval` block, supported computation happens while the program is built
+and its result is stored in the output. This can remove runtime computation,
+but the stored result still contributes to executable or loaded memory size.
 
 ### 🛡️ Bulletproof Memory (Sealing)
-Memory bugs (where a program accidentally reads data before it's written, or cleans it up too early) are the hardest bugs to find in systems programming. FOO uses a brilliant process called **Sealing**. As your code is compiled, FOO builds an invisible mathematical "dependency trail" through your memory operations. It mathematically guarantees that every piece of data is read and written in the exact, perfect chronological order, completely eliminating entire categories of invisible bugs before your app even runs.
+Memory bugs include reading data before initialization and using storage after
+its owner has closed. FOO's sealing analysis tracks supported ownership and
+ordering contracts and rejects violations it can prove. Native code and an
+incorrect foreign contract remain the programmer's responsibility.
 
 ### 🤝 Play Nice With Others (Interoperability)
-The programming world runs on C libraries. If you need to use an existing C library for graphics, networking, or cryptography, you don't have to rewrite it in FOO. FOO can read C header files and automatically generate safe, English-like FOO wrappers. You get to use the massive, decades-old ecosystem of C, but you get to write your actual app in beautiful, readable FOO.
+FOO can generate typed declarations from supported C headers with `foo bind`.
+Those declarations check the FOO side of each call; the native library and its
+declared ABI, layout, ownership, and lifetime contracts must still be correct.
 
 ---
 
@@ -2603,7 +2692,7 @@ error.
 Use `define ... as ...` when a domain value deserves its own name:
 
 ```foo
-define Identity as unsigned 64.
+define Identity as unsigned.
 define Handler[T] as function taking (T) giving nothing.
 ```
 
@@ -2681,12 +2770,12 @@ parameter forms share one name); labels, arity (argument count), and input
 types must identify one best definition.
 
 ```foo
-function connect host text port integer default 443 giving boolean {
+function connect(host text, port integer default 443) giving boolean {
   give true.
 }
 
-constant secure is connect host "example.com".
-constant local is connect "localhost" port 8080.
+constant secure is connect(host "example.com").
+constant local is connect("localhost", port 8080).
 ```
 
 Generic parameters use square brackets and can be constrained by `Equatable`,
@@ -2723,6 +2812,8 @@ Choose the form based on what you are checking.
 ### Option A: `when` / `otherwise` (For conditions)
 Use this when you are checking if something is true or false (like "is health > 0?").
 ```foo
+dynamic health is 12.
+
 when health is 0 { display "Game Over". }
 otherwise when health less than 20 {
   display "Critical!".
@@ -2731,9 +2822,11 @@ otherwise { display "Keep going!". }
 ```
 
 ### Option B: `match` (For specific values)
-Use this when you are checking a variable against a list of specific options (like a switch statement). It’s cleaner and faster to read.
+Use this when you are checking a variable against a list of specific options.
 ```foo
-match statusCode {
+constant status of type integer is 404.
+
+match status {
   case 200 { display "Success". }
   case 404 { display "Not Found". }
   case 500 { display "Server Error". }
@@ -2761,10 +2854,11 @@ conditions when the grouping matters to the reader.
 
 **Example:**
 ```foo
--- Hard to read: if (user.age >= 18 && user.hasId)
--- Easy to read:
-when user.age greater than or equal to 18 and user.hasId {
-  grantAccess().
+constant age is 21.
+constant identity is true.
+
+when age greater than or equal to 18 and identity {
+  display "Access granted".
 }
 ```
 
@@ -2773,7 +2867,9 @@ when user.age greater than or equal to 18 and user.hasId {
 ## 5. Loops: `for each` vs `while`
 
 ### The `for each` Loop (For collections)
-When you want to do something to every item in a list.
+Use it to do something to every item in a collection. This fragment assumes
+`basket` is a sequence of text:
+<!-- snippet: context -->
 ```foo
 for each fruit in basket {
   display fruit.
@@ -2787,7 +2883,7 @@ dynamic battery is 100.
 while battery greater than 0 {
   set battery to battery subtract 1.
   when battery is 10 { skip. }
-  runMotor().
+  display "Motor running".
   when battery is 1 { stop. }
 }
 ```
@@ -2832,7 +2928,8 @@ released after their aliases are no longer used.
 
 ## 7. Error Handling (`failable`)
 
-In FOO, errors aren't hidden surprises that crash your app. They are **First-Class Values** (regular data you can see and handle). If a function can fail, it is marked as `failable`.
+Expected operational failures are visible in a `failable T` result. Panics from
+failed safety checks are separate and cannot be handled with `fallback`.
 
 You have two ways to handle these errors:
 
@@ -2851,14 +2948,18 @@ In FOO, `fallback` expects an alternative value of the exact same type as the su
 
 If you just want to provide a backup string, you do this:
 ```foo
-constant config is load() fallback "Default Settings".
+use file as files.
+
+constant config is files.read("config.json") fallback "Default Settings".
 ```
 
 The fallback is an expression of the same success type. Log separately when the
 calling workflow needs an explicit diagnostic.
 
 ```foo
-constant config is load() fallback "Default Settings".
+use file as files.
+
+constant config is files.read("config.json") fallback "Default Settings".
 display config.
 ```
 
@@ -2870,6 +2971,8 @@ When a failable result must be captured, the declaration and propagation remain
 two explicit operations:
 
 ```foo
+use file as files.
+
 constant config is files.read("config.json") try.
 ```
 
@@ -2906,8 +3009,10 @@ function process() giving failable nothing {
 ## 9. Modules and Visibility
 
 Every `.iv` file is a module. Declarations are private unless marked `public`.
-Ordinary imports stay private and may bind a short alias:
+Ordinary imports stay private and may bind a short alias. This fragment assumes
+the project contains `network/server.iv`:
 
+<!-- snippet: context -->
 ```foo
 use "network/server.iv" as server.
 use http as web.
@@ -2936,7 +3041,7 @@ constant duration is clock.seconds(2).
 clock.wait(duration) try.
 
 constant allocator is memory.system().
-constant size of type unsigned 64 is 5 multiply 1024 multiply 1024.
+constant size of type unsigned is 5 multiply 1024 multiply 1024.
 constant buffer is memory.allocate(allocator, size) try.
 after { memory.release(allocator, buffer) fallback nothing. }
 ```
@@ -2967,7 +3072,9 @@ modules shipped with the language). In many languages, you have to hunt down
 third-party packages for basic tasks like reading JSON, hashing passwords, or
 making HTTP requests.
 
-FOO ships with over 40 highly-optimized, battle-tested modules ready to use out of the box. And because they are part of the core language, they all follow the same strict safety rules and English-like syntax you’ve already learned.
+FOO ships standard modules for text, files, networking, data, memory,
+concurrency, and development support. They use ordinary FOO declarations and
+make failure and resource ownership visible in their signatures.
 
 Let’s tour the most powerful tools in your FOO toolbox.
 
@@ -2988,9 +3095,11 @@ display clean.
 
 ---
 
-## 2. Files and Paths (`file`, `path`)
+## 2. Files and paths (`file`, `path`)
 
-The `file` module handles reading and writing files, while the `path` module helps you build file paths safely (without worrying about slashes `/` vs backslashes `\`).
+The `file` module reads, writes, opens, and joins ordinary text paths. The
+lower-level `path` module works with native pointer-oriented paths at foreign
+boundaries; application code normally starts with `file`.
 
 ```foo
 use file.
@@ -3029,7 +3138,9 @@ runtime contract on the C and Zig backends.
 
 ## 4. Data Serialization (`json`)
 
-Talking to APIs usually means working with JSON. FOO has a built-in JSON parser and encoder that is both fast and type-safe.
+The `json` module parses text into a checked document tree and writes that tree
+back to text. A successfully parsed tree is structurally valid JSON; use
+`Codec[T]` when the application needs a specific FOO record type.
 
 ```foo
 use json as documents.
@@ -3219,16 +3330,17 @@ the order written in source; the compiler does not silently rearrange a public
 record based on access frequency.
 ```foo
 public define User as record {
-  id of type unsigned 64.
+  id of type unsigned.
   name of type text.
   active of type boolean.
 }.
 ```
 
 ### The `packed` Record (Optimized for Space)
-If you are talking to hardware or sending data over a network, you need every
-bit to be exactly where you expect it. A `packed` record strips out padding
-(unused bytes inserted to align fields) between its fields.
+Use a `packed` record when FOO code needs a defined bit layout. Integer fields
+contribute their declared number of bits and the record has no alignment
+padding between fields. This is not automatically compatible with a C
+compiler's bit-field layout.
 ```foo
 public define Header as packed record {
   version of type integer 4.
@@ -3238,7 +3350,9 @@ public define Header as packed record {
 ```
 
 ### The `c` Record (Optimized for Interoperability)
-If you need to talk to a C library, FOO can match the C memory layout perfectly so you can pass data back and forth seamlessly.
+Use C-layout metadata when a record crosses a C ABI boundary. The field types
+must also have compatible C representations; layout metadata alone cannot make
+an incompatible field safe.
 ```foo
 #[repr(C)]
 public define Point as record {
@@ -3256,6 +3370,8 @@ In languages like C or C++, if you allocate 100 objects, you have to manually fr
 FOO encourages **Region-Based Memory Management** (also known as Arenas). Think of a Region as a dedicated workbench. You build everything on that bench, and when you are done, you just sweep the entire bench clean in one motion.
 
 ```foo
+use memory.
+
 function process() giving failable nothing {
   -- 1. Create a temporary workspace (Region)
   constant arena is memory.arena() try.
@@ -3265,11 +3381,9 @@ function process() giving failable nothing {
 
   -- 3. Allocate data INSIDE the arena
   constant buffer is memory.allocate(arena, 1024) try.
-  constant image is loadImage(arena, "photo.png") try.
+  display "Buffer ready".
 
-  -- Do work...
-
-  -- When we reach the end, 'memory.close(arena)' frees EVERYTHING at once!
+  -- Reaching the end runs memory.close(arena).
 }
 ```
 
@@ -3395,16 +3509,19 @@ Standard modules use their plain names. Application code does not write a
 `std/` prefix.
 
 The alias controls the qualifier (the name written before the dot) used in the
-file:
+file. This fragment continues from the imports above:
 
+<!-- snippet: context -->
 ```foo
 constant content is files.read("notes.txt") try.
 ```
 
 ## Import another project file
 
-Use a quoted path relative to the importing module:
+Use a quoted path relative to the importing module. This fragment assumes the
+next example is stored at `src/billing/tax.iv`:
 
+<!-- snippet: context -->
 ```foo
 use "billing/tax.iv" as tax.
 
@@ -3426,9 +3543,10 @@ does not automatically re-export anything.
 ## Build a facade module (one public entry point over internal modules)
 
 Use `public use` for a transparent facade (a module presenting a simpler public
-surface over internal modules) that preserves the imported public
-names:
+surface over internal modules) that preserves the imported public names. The
+next fragment assumes the named internal file exists:
 
+<!-- snippet: context -->
 ```foo
 -- src/account.iv
 public use "internal/storage.iv".
@@ -3436,9 +3554,10 @@ public use "internal/storage.iv".
 
 The compiler reports collisions between local declarations and names that are
 re-exported (made public again from another module). A public use cannot have an
-alias. Publish a forwarding function when
-the facade must rename or adapt an operation:
+alias. Publish a forwarding function when the facade must rename or adapt an
+operation. This fragment also depends on the named internal file:
 
+<!-- snippet: context -->
 ```foo
 -- src/account.iv
 use "internal/storage.iv" as storage.
@@ -3483,7 +3602,7 @@ stored as `path+...` entries in `project.json`.
 
 ## If a package is not installed
 
-`use packageName.` does not silently download code during a build. If the
+`use package.` does not silently download code during a build. If the
 package is declared but missing locally, checking stops with an installation
 diagnostic. Run:
 
@@ -3494,7 +3613,7 @@ foo install
 If it is not declared, add it first:
 
 ```sh
-foo add packageName
+foo add package
 foo install
 ```
 
@@ -3573,6 +3692,8 @@ Use parentheses whenever they make the intended grouping clearer.
 ## Equality
 
 ```foo
+constant left is 4.
+constant right is 4.
 constant same is left is right.
 constant different is left is not right.
 ```
@@ -3585,6 +3706,8 @@ error rather than an automatic conversion.
 Prefer a direct positive comparison:
 
 ```foo
+constant age is 21.
+
 when age greater than or equal to 18 {
   display "Adult".
 }
@@ -3599,12 +3722,15 @@ The complete comparison vocabulary is:
 | At least | `left greater than or equal to right` |
 | At most | `left less than or equal to right` |
 
-Shorter `is at least` and `is at most` forms are also accepted. Use one style
-consistently inside a project.
+Use the direct forms in the table consistently. The removed `is at least` and
+`is at most` spellings are not canonical FOO v1 syntax.
 
 ## Boolean logic
 
 ```foo
+constant signed is true.
+constant allowed is true.
+constant visible is false.
 constant approved is signed and allowed.
 constant preview is signed or visible.
 constant blocked is not approved.
@@ -3616,9 +3742,10 @@ Precedence from strongest to weakest is:
 2. `multiply`, `divide`, and `remainder`.
 3. `plus` and `subtract`.
 4. Comparisons such as `is` and `greater than`.
-5. `and`.
-6. `or`.
-7. `fallback`.
+5. `not`.
+6. `and`.
+7. `or`.
+8. `fallback`.
 
 ## Updating a dynamic value
 
@@ -3634,6 +3761,7 @@ For addition and subtraction, the shorter mutation statements describe intent
 without repeating the target:
 
 ```foo
+dynamic total is 10.
 increase total by 5.
 decrease total by 2.
 ```
@@ -3746,8 +3874,8 @@ constraints, `foo outdated` reports them, and `foo remove` prunes the graph.
 
 ## Using a package before installation
 
-Writing `use packageName.` does not silently download code during a build. FOO
-looks for a local module, then `.foo/packages/packageName`, then a standard
+Writing `use package.` does not silently download code during a build. FOO
+looks for a local module, then `.foo/packages/package`, then a standard
 module. When the package is declared in `project.json` but has not been
 installed, checking stops with a package-not-found diagnostic and directs the
 developer to run:
@@ -3757,7 +3885,7 @@ foo install
 ```
 
 This separation keeps builds reproducible (repeatable from the same inputs) and prevents source code from causing
-network access. `foo add packageName` updates the manifest; `foo install`
+network access. `foo add package` updates the manifest; `foo install`
 resolves, verifies, and writes the exact graph. CI should restore or run the
 install step before `foo check`, `foo test`, or `foo build`.
 
@@ -3802,12 +3930,12 @@ construction is too permissive.
 ```foo
 define User as record {
   name of type text.
-  age of type unsigned 64.
+  age of type unsigned.
 }.
 
-function create(name text, age unsigned 64) giving failable User {
+function create(name text, age unsigned) giving failable User {
   when age greater than 130 {
-    give fail(Error.InvalidAge).
+    give fail(Error.Age).
   }
   give User(name, age).
 }
@@ -3818,17 +3946,19 @@ function label(user User) giving text {
 
 constant user is create("Ada", 37) try.
 constant direct is User(age 37, name "Ada").
-constant User(name, age) is direct.
 display label(user).
 ```
 
 `create` is the custom constructor. `label` is the computed value. Neither one
-needs constructor or computed-field syntax. A structural destructure names the
-record and every field, so adding a field produces a compile error instead of
-silently changing the binding order.
+needs constructor or computed-field syntax. A structural destructure such as
+`constant User(name, age) is direct.` names the record and every field, so
+adding a field produces a compile error instead of silently changing the
+binding order.
 
-Use composition when one record contains another:
+Use composition when one record contains another. This fragment reuses `User`
+from the complete example above:
 
+<!-- snippet: context -->
 ```foo
 define Account as record {
   owner of type User.
@@ -3883,7 +4013,7 @@ function encode(token Token) giving failable text {
 }
 
 function decode(source text) giving failable Token {
-  when source is "" { give fail(Error.EmptyToken). }
+  when source is "" { give fail(Error.Empty). }
   give Token(source).
 }
 
@@ -3894,8 +4024,10 @@ display stored.
 ```
 
 For the standard JSON representation of a concrete scalar or record, FOO can
-generate both directions directly:
+generate both directions directly. This fragment reuses `codecs` and `Token`
+from the complete example above:
 
+<!-- snippet: context -->
 ```foo
 constant stored is codecs.encode[Token](Token("abc")) try.
 constant restored is codecs.decode[Token](stored) try.
@@ -3917,7 +4049,7 @@ use state as states.
 function transition(value integer, event integer) giving failable integer {
   constant next is value plus event.
   when next greater than 100 {
-    give fail(Error.InvalidTransition).
+    give fail(Error.Transition).
   }
   give next.
 }
@@ -3939,16 +4071,16 @@ function that returns a closed step choice.
 
 ```foo
 define Step as choice {
-  item(unsigned 64).
+  item(unsigned).
   done.
 }.
 
-function next(index unsigned 64) giving Step {
+function next(index unsigned) giving Step {
   when index less than 3 { give item(index). }
   give done.
 }
 
-dynamic index of type unsigned 64 is 0.
+dynamic index of type unsigned is 0.
 dynamic running is true.
 while running {
   match next(index) {
@@ -3977,14 +4109,14 @@ operations it is allowed to call.
 
 ```foo
 define Clock as record {
-  current of type function taking () giving unsigned 64.
+  current of type function taking () giving unsigned.
 }.
 
-function fixed() giving unsigned 64 {
+function fixed() giving unsigned {
   give 42.
 }
 
-function stamp(clock Clock) giving unsigned 64 {
+function stamp(clock Clock) giving unsigned {
   give clock.current().
 }
 
@@ -4052,7 +4184,7 @@ each index from zero up to, but not including, the requested count.
 ```foo
 use testing as check.
 
-function bounded(index unsigned 64) giving boolean {
+function bounded(index unsigned) giving boolean {
   give index less than 100.
 }
 
@@ -4092,8 +4224,10 @@ the storage) rules still apply.
 
 An ordinary import is private. Use `public use` when a facade (a public module
 over internal modules) should re-export (publish again)
-another module's public declarations without changing their names:
+another module's public declarations without changing their names. This
+fragment assumes the named internal file exists:
 
+<!-- snippet: context -->
 ```foo
 -- src/service.iv
 public use "internal/account.iv".
@@ -4101,8 +4235,10 @@ public use "internal/account.iv".
 
 Re-exported declarations participate in normal duplicate-name checks. A
 `public use` cannot have an alias. Use a public wrapper when the facade needs to
-rename a declaration, adapt arguments, or narrow behavior.
+rename a declaration, adapt arguments, or narrow behavior. This fragment also
+depends on the named internal file.
 
+<!-- snippet: context -->
 ```foo
 -- src/service.iv
 use "internal/account.iv" as account.
@@ -4311,7 +4447,9 @@ addressed.
 
 In many ecosystems, building your app for a different operating system means you have to actually *own* a computer running that operating system. If you are on a Mac and want to build a Windows `.exe`, you usually have to boot up a virtual machine or use a clunky third-party tool.
 
-FOO completely shatters this limitation. Because FOO translates your code down to native C or Zig, it supports **Cross-Compilation** (building for a different kind of computer) out of the box. You can sit on your Mac, type a single command, and generate a lightning-fast executable for Windows, Linux, ARM, or even the Web.
+FOO defines named target presets for Windows, Linux, macOS, WASI, and selected
+freestanding environments. A cross-build succeeds when the managed backend and
+the project's native dependencies support the requested architecture and ABI.
 
 Let’s look at how FOO conquers the hardware world.
 
@@ -4344,7 +4482,9 @@ every operation is vectorized (performed on several values at once).
 
 ## 2. Cross-Compilation (The Ultimate Flex)
 
-Because FOO manages its own toolchains, cross-compilation is seamless. You do not need to install Windows SDKs or Linux headers on your Mac.
+FOO manages its default Zig toolchain and target catalog. Projects with foreign
+libraries or custom native inputs may still need compatible target libraries,
+headers, or SDK components.
 
 If you type `foo build --target windows-x64` while sitting on a Linux machine,
 FOO's backend (code generator) will automatically generate standard Windows PE
@@ -4355,7 +4495,7 @@ FOO's backend (code generator) will automatically generate standard Windows PE
 foo build --target windows-x64
 
 # FOO outputs:
-# .artifacts/build/my_app.exe
+# .artifacts/build/app.exe
 ```
 You can now copy that `.exe` file to a compatible Windows machine and run it
 natively. A CPU-specific preset still requires the destination CPU features.
@@ -4373,8 +4513,9 @@ a standard way for WebAssembly programs to request system services) preset.
 foo build --target wasi
 ```
 
-**Why this is awesome:**
-You can write your core business logic (like image processing, cryptography, or game physics) in FOO, compile it to WASM, and drop it into a JavaScript website. Your web app will run at near-native speeds, completely bypassing the slowness of traditional JavaScript.
+The `wasi` preset emits a WASI module for a compatible host. Browser integration
+requires the imports and JavaScript glue expected by that host; performance
+depends on the workload and runtime.
 
 ---
 
@@ -4979,7 +5120,9 @@ tree or rely on a guessed filename.
 
 Open `src/main.iv` in your favorite code editor. Let’s write a program that greets the user.
 
-Because FOO’s **Parser** (the brilliant part of the compiler that reads your code) is designed to understand natural, flowing sentences, you don't need to clutter your screen with messy semicolons or excessive parentheses.
+FOO uses a small sentence-like grammar. The parser does not guess arbitrary
+English: parameters have declared types, calls use parentheses, and a period
+ends each simple statement.
 
 Type this out:
 
@@ -4992,7 +5135,7 @@ constant name is "vibes".
 greet(name).
 ```
 
-### Let’s break down the brilliance here:
+### Read the example
 *   **`name text`**: FOO is strictly **Typed** (meaning it keeps strict track of what kind of data is stored in a variable, preventing math errors on text), without repeating `of type` in parameter lists.
 *   **`plus`**: Instead of forcing you to use the `+` symbol for everything, FOO lets you use the English word `plus` to glue text together.
 *   **Implicit completion**: A function that gives nothing can simply end; use `give` when returning a value.
@@ -5060,8 +5203,10 @@ public function add(left integer, right integer) giving integer {
 ```
 *Notice the word `public`? This is the only way to let other files see this function. If you leave `public` off, the function becomes private and completely invisible to the rest of your app. This prevents messy "spaghetti code" (where everything is tangled together and hard to track).*
 
-Now, go back to `src/main.iv` and use it:
+Now, go back to `src/main.iv` and use it. This fragment depends on the
+`math.iv` file created immediately above:
 
+<!-- snippet: context -->
 ```foo
 use "math.iv" as math. -- This brings in our new file!
 
@@ -5075,22 +5220,16 @@ when total is 30 { display "Total calculated". }
 
 Everyone makes typos. When you make a mistake in FOO, the compiler doesn't just crash and give you a confusing wall of red text. It acts like a helpful teacher.
 
-Try changing your code to this mistake:
+Try this deliberately invalid declaration:
+
+<!-- snippet: error TypeMismatch -->
 ```foo
-constant age is "twenty". -- Oops! We used text instead of a number.
+constant age of type integer is "twenty".
 ```
 
-Run `foo check`. FOO will point exactly to the mistake and tell you how to fix it:
-
-```text
-main.iv:2:18
-
-  constant age is "twenty".
-                  ^^^^^^^
-  This value is text, but age needs an integer.
-  Try: constant age is 20.
-```
-Fix the first error it points out, save the file, and run it again!
+Run `foo check`. The compiler reports a `TypeMismatch` at `"twenty"`: the
+annotation requires an integer, but the initializer is text. Replace it with an
+integer such as `20`, then check again.
 
 The official VS Code extension can do this check while you type. It starts
 `foo lsp` automatically and places errors directly on the affected code. This
@@ -5105,13 +5244,13 @@ Server Path** to the `foo` executable.
 
 Here are the commands you will use every single day as a FOO programmer:
 
-*   **`foo check`**: The Safety Inspector. It reads all your code and mathematically proves it is safe, but doesn't actually run it. Perfect for catching typos quickly.
+*   **`foo check`**: Parses and type-checks the project without running it.
 *   **`foo build`**: The Factory. It compiles your code into a final, standalone, highly-optimized application file that you can share with others.
 *   **`foo run`**: The Quick Test. Builds the app and immediately runs it so you can see the results.
 *   **`foo test`**: Runs the checks under `test/` and any test blocks in the project.
 *   **`foo benchmark`**: Builds each program under `benchmark/` once, warms it up, and reports repeated timings.
 *   **`foo watch`**: The Tireless Assistant. It sits in the background, and every single time you hit "Save" in your code editor, it automatically re-checks and re-builds your app instantly.
-*   **`foo fmt`**: The Beautifier. It automatically reformats your code to ensure perfect spacing and indentation, so your code always looks professional.
+*   **`foo fmt`**: Rewrites source using the canonical FOO formatting rules.
 
 ---
 
@@ -5182,7 +5321,7 @@ This page answers a practical question: **Which familiar language features exist
 
 ### ✅ What is in FOO v1
 *   **Concurrency:** Library-based overlapping work through scoped tasks, pools, channels, OS threads, mutexes (single-worker locks), condition variables, and atomics (shared operations completed as one step).
-*   **C ABI:** The binary rules used to call C: `extern "C"`, C-layout records, callbacks, generated header bindings, dynamic libraries, and explicit native C containers.
+*   **C ABI:** The binary rules used to call C: `extern "C"`, C-layout records, callbacks, generated header bindings, dynamic libraries, and verified native contracts.
 *   **Other Languages:** Rust and other libraries are accessed via the stable C ABI.
 *   **Low-Level Access:** Typed surfaces for advanced HTTP, sockets, files, JSON, allocators, atomics, OS, native C, and assembly.
 
@@ -5227,260 +5366,212 @@ The detailed language contract lives in the versioned specifications under the `
 
 --- SOURCE: docs/syntax.md ---
 
-# Chapter 13: Syntax Guide (The Complete FOO Dictionary)
+# Syntax Guide
 
-Welcome to the complete syntax reference for FOO. This chapter is a plain-language dictionary of every keyword, operator, and sentence structure in the language.
+This page is a compact reference for the canonical forms used throughout the
+book. Each FOO block is a complete example unless the text calls it a fragment.
+The normative grammar lives at `specs/grammar.md` in the repository.
 
-Use this guide when you know *what* you want to do, but just need to remember the exact FOO word to do it.
+## Declarations
 
----
+| Form | Meaning | Example |
+| --- | --- | --- |
+| `constant` | Binds a value that cannot be reassigned. | `constant limit is 100.` |
+| `dynamic` | Binds a value that can be changed with `set`. | `dynamic count is 0.` |
+| `function` | Declares a reusable operation. | `function ready() giving boolean { give true. }` |
+| `public` | Makes a declaration visible to importing modules. | `public constant limit is 100.` |
+| `use` | Imports a module or file. | `use file.` |
+| `define ... as ...` | Introduces a named type. | `define Identity as unsigned.` |
 
-## 1. Declarations (Creating Things)
+Use `is` for a singular binding and `are` when the binding represents several
+values. Both forms retain ordinary static type checking.
 
-| Syntax | Plain Meaning | Example |
-| :--- | :--- | :--- |
-| `constant` | Creates a value that cannot be changed. | `constant pi is 3.14.` |
-| `dynamic` | Creates a value that can be changed. | `dynamic score is 0.` |
-| `are` | Declares a binding that represents multiple values. | `constant users are active.` |
-| `function` | Defines a reusable block of code. | `function greet() { ... }` |
-| `public` | Makes a declaration visible to other files. | `public constant limit is 100.` |
-| `use` | Imports another file or module. | `use io.` or `use "math.iv".` |
-| `define` | Introduces a named type. | `define Identity as integer 64.` |
-| `record` | Groups related fields together. | `define Point as record { x of type integer. y of type integer. }.` |
-| `choice` | Defines a value that can be one of several variants. | `define Color as choice { red. blue. }.` |
-
----
-
-## 2. Core Types
-
-| Type | Plain Meaning | Example |
-| :--- | :--- | :--- |
-| `integer` | Whole numbers (defaults to 64-bit). | `42` or `-10` |
-| `unsigned` | Whole numbers, positive only. | `100` |
-| `decimal` | Numbers with fractions (defaults to 64-bit). | `3.14` |
-| `boolean` | True or false. | `true` or `false` |
-| `byte` | A single 8-bit unsigned number. | `255` |
-| `text` | A string of characters. | `"hello world"` |
-| `nothing` | The single unit value used when there is no useful result. | `nothing` |
-| `null` | An absent optional value. | `null` |
-| `pointer to` | A memory address pointing to a value. | `pointer to integer` |
-| `sequence of` | A dynamic list of values. | `sequence of text` |
-| `optional` | A value that might be missing. | `optional text` |
-| `failable` | A value that might be an error. | `failable integer` |
-| `vector` | A fixed-size array for SIMD math (one instruction processing several values). | `vector[4, decimal]` |
-
----
-
-## 3. Math and Logic (Word Operators)
-
-| Instead of... | Write this... | Example |
-| :--- | :--- | :--- |
-| `+` | `plus` | `5 plus 5` |
-| `-` | `subtract` | `10 subtract 2` |
-| `*` | `multiply` | `4 multiply 4` |
-| `/` | `divide` | `20 divide 4` |
-| `%` | `remainder` | `10 remainder 3` |
-| `==` | `is` | `x is 10` |
-| `!=` | `is not` | `x is not 0` |
-| `>` | `greater than` | `health greater than 0` |
-| `<` | `less than` | `ammo less than 5` |
-| `>=` | `greater than or equal to` | `age greater than or equal to 18` |
-| `<=` | `less than or equal to` | `speed less than or equal to 100` |
-| `&&` | `and` | `true and false` |
-| `\|\|` | `or` | `true or false` |
-| `!` | `not` | `not ready` |
-
----
-
-## 4. Control Flow (Making Decisions)
-
-### Conditionals (`when` / `otherwise`)
-Use this when you are checking if a condition is true or false.
 ```foo
-when condition {
-  -- runs if true
+constant title is "Report".
+dynamic retries is 0.
+set retries to retries plus 1.
+```
+
+## Types and values
+
+| Type | Meaning | Example value |
+| --- | --- | --- |
+| `integer` | Signed 64-bit whole number. | `42` |
+| `unsigned` | Unsigned 64-bit whole number. | `42` |
+| `decimal` | Binary64 fractional number. | `3.14` |
+| `boolean` | Exactly `true` or `false`. | `true` |
+| `byte` | One opaque 8-bit storage value. | Produced by byte and memory APIs. |
+| `character` | One Unicode scalar. | `'F'` |
+| `text` | Immutable validated UTF-8 text. | `"hello"` |
+| `nothing` | The unit type and its only value. | `nothing` |
+| `optional T` | A present `T` or absent `null`. | `null` |
+| `failable T` | A successful `T` or an error. | Returned by a failable call. |
+| `sequence of T` | A bounded contiguous view of `T` values. | Returned by collection APIs. |
+| `pointer to T` | A non-null native address with provenance. | Returned by memory APIs. |
+| `vector[N, T]` | `N` fixed SIMD lanes of `T`. | Constructed by vector APIs. |
+
+The bare numeric names are the canonical 64-bit spellings. A non-default width
+may be written when representation matters, such as `integer 32`, `unsigned
+16`, or `decimal 32`.
+
+`nothing` and `null` are different. `nothing` is a real unit value; `null` is
+only the absent value of an `optional T`.
+
+## Records and choices
+
+```foo
+define User as record {
+  name of type text.
+  active of type boolean.
+}.
+
+define Status as choice {
+  ready.
+  failed(text).
+}.
+
+constant user is User("Ada", true).
+constant status is ready.
+```
+
+Record fields keep `of type` because they declare stored layout. Function
+parameters use `name Type`, as shown later on this page.
+
+## Operators
+
+| Operation | Canonical form |
+| --- | --- |
+| Addition | `left plus right` |
+| Subtraction | `left subtract right` |
+| Multiplication | `left multiply right` |
+| Division | `left divide right` |
+| Remainder | `left remainder right` |
+| Equality | `left is right` |
+| Inequality | `left is not right` |
+| Ordering | `less than`, `greater than`, and their `or equal to` forms |
+| Boolean logic | `not`, `and`, `or` |
+
+Multiplication, division, and remainder bind more tightly than addition and
+subtraction. Use parentheses when mixed Boolean conditions would be easier to
+misread.
+
+## Conditions
+
+```foo
+constant temperature is 24.
+
+when temperature greater than 30 {
+  display "Hot".
 }
-otherwise when otherCondition {
-  -- runs if first was false, second is true
+otherwise when temperature less than 15 {
+  display "Cold".
 }
 otherwise {
-  -- runs if everything above was false
+  display "Comfortable".
 }
 ```
 
-### Matching (`match` / `case`)
-Use this when you are checking a single variable against specific values. It is cleaner and safer than using long `when/otherwise` chains.
+Branches are checked in order, and only the first matching branch runs. The
+final `otherwise` is optional.
+
+Use `match` when one value is compared with several patterns:
 
 ```foo
-match statusCode {
+constant status of type integer is 404.
+
+match status {
   case 200 { display "OK". }
-  case 404 { display "Not Found". }
-  case anything { display "Unknown". }
+  case 404 { display "Not found". }
+  case anything { display "Other response". }
 }
 ```
 
-**The Superpower: Exhaustiveness Checking**
-FOO's compiler mathematically guarantees that you haven't forgotten a possible outcome. If you use `match` on a `boolean` and forget to include a `case` for either `true` or `false`, FOO will stop the build and throw an error. You are forced to handle every edge case!
+`anything` is the catch-all pattern. A match must cover every possible value;
+an integer match therefore needs an unguarded catch-all.
 
-**Advanced Guards (`when` inside `case`)**
-You can add an extra condition to a specific case:
+## Loops
+
 ```foo
-match userLevel {
-  case 99 when accountActive {
-    display "Super Admin".
-  }
-  case 10 {
-    display "Regular Admin".
-  }
-  case anything {
-    display "Guest".
-  }
+dynamic index is 0.
+
+while index less than 3 {
+  set index to index plus 1.
 }
 ```
 
-### Loops
+Use `for each` for a bounded sequence. `stop` leaves the nearest loop and
+`skip` starts its next iteration. FOO has no separate `repeat until`, `advance`,
+or infinite-loop form.
+
+## Functions
+
 ```foo
--- Repeat while a condition is true
-while health greater than 0 {
-  decrease health by 1.
+function add(left integer, right integer) giving integer {
+  give left plus right.
 }
 
--- Loop over every item in a list
-for each item in shoppingCart {
-  display item.
-}
-
--- Stop a loop completely
-stop.
-
--- Skip to the next iteration
-skip.
+constant total is add(20, 22).
 ```
 
----
+Parenthesized calls are canonical. Parameters use `name Type`; `giving Type`
+states the result. A function with no useful result may omit `giving` and reach
+its closing brace. Use `give nothing.` only when it must return early.
 
-## 5. Functions and Returns
-
-```foo
--- A function that returns nothing
-function work() {
-  -- Do work here
-}
-
--- A function that returns an integer
-function add(a integer, b integer) giving integer {
-  give a plus b.
-}
-```
-
-The recommended sentence form omits punctuation that does not add clarity:
+Defaults and named arguments remain part of the same call grammar:
 
 ```foo
-function connect
-    host text
-    port integer default 443
-    timeout integer default 5000
-    giving boolean {
+function connect(host text, port integer default 443) giving boolean {
   give true.
 }
 
-constant first is connect "example.com".
-constant second is connect host "localhost" port 8080.
+constant secure is connect("example.com").
+constant local is connect(host "localhost", port 8080).
 ```
 
-Use `values are sequence of integer` as the final parameter to consume all
-remaining integer arguments. Multiple functions may share a name; the compiler
-requires one unambiguous match by labels, arity (argument count), and types.
-
-Local closures capture lexical bindings (names visible in the surrounding
-written block):
+## Failure and cleanup
 
 ```foo
-function countTwice() giving integer {
-  dynamic count is 0.
-  constant next is function giving integer {
-    increase count by 1.
-    give count.
-  }.
-  next().
-  give next().
+use file as files.
+
+function settings() giving failable text {
+  give files.read("settings.json") try.
 }
+
+constant content is settings() fallback "{}".
 ```
 
-Captured closures are scoped and cannot leave the function that owns their
-captured storage.
+Postfix `try` propagates a failure from the current failable function.
+`fallback` handles it locally by supplying a value of the success type. `after`
+registers cleanup for ordinary scope exits, including propagated failures.
 
-Function guards state mandatory preconditions (rules that must be true before
-the function runs):
-
-```foo
-function positive value integer
-    when value greater than 0
-    giving integer {
-  give value.
-}
-```
-
----
-
-## 6. Error Handling
-
-| Keyword | Plain Meaning | Example |
-| :--- | :--- | :--- |
-| `try` | Unwraps the preceding failable value, or bails out if it fails. | `file.read("data.txt") try.` |
-| `fallback` | Provides an alternative if the left side fails. | `load() fallback "default".` |
-| `after` | Runs cleanup code when the scope ends. | `after { io.close(stream) fallback nothing. }` |
-
----
-
-## 7. Built-in Commands & Units
-
-### Output
-```foo
-use log.
-
-display "Hello!".
-log.note("System started.").
-log.alert("Something went wrong.").
-```
-
-### Quantities
-Use ordinary numeric expressions in the units required by the library.
+## Modules and native calls
 
 ```foo
-use time.
-
-constant duration is 2000000000.
-time.sleep(duration) try.
-constant capacity is 16 multiply 1024 multiply 1024 multiply 1024.
-```
-
----
-
-## 8. Native Interoperability
-
-```foo
--- Declare a C function directly
+use file as files.
 extern "C" function puts(value pointer to byte) giving integer.
+```
 
--- Write a raw C block
-native c function fast(a integer) giving integer {
-  return a * a;
-}
+Each `.iv` file is a module. Declarations are private unless marked `public`.
+`extern "C"` declares a typed C ABI boundary; the linked symbol must obey the
+declared signature. Target-specific code and assembly belong behind a verified
+native contract, not in an ordinary standalone assembly statement.
 
--- Write raw Assembly
-asm {
-  /* hardware instructions here */
+## Statement endings
+
+A period ends a simple statement. Blocks use braces and do not add a period
+after the closing brace. Comments begin with `--`.
+
+```foo
+-- This is one complete statement.
+display "Ready".
+
+when true {
+  display "The block needs no trailing period".
 }
 ```
 
----
-
-## Summary
-
-That’s the entire FOO language in a nutshell! It is a small, highly readable vocabulary that compiles down to incredibly powerful machine code.
-
-Thank you for reading the FOO Book. Now go build something amazing!
+Continue with [The Language](language.md) for a guided explanation or
+[Reference](reference.md) for a command-oriented lookup.
 
 --- SOURCE: docs/systems.md ---
 
@@ -5492,12 +5583,14 @@ Let’s look at how FOO connects to the outside world.
 
 ---
 
-## 1. Files and Input/Output (The `io` Module)
+## 1. Files and input/output (`file` and `io`)
 
-The simplest way to talk to the operating system is through the `io` module. Because FOO is a **Systems Language**, these operations are designed to be fast and safe, using the OS's native file handling capabilities.
+Use `file` for whole-file operations and file-backed streams. Use `io` for the
+process input, output, and error streams. Operations that can fail return a
+failable value and therefore need postfix `try` or a deliberate `fallback`.
 
 ### Reading a File
-FOO makes reading an entire file into memory a single, safe operation.
+`file.read` reads an entire text file and returns its content on success.
 ```foo
 use file.
 
@@ -5507,7 +5600,8 @@ display content.
 ```
 
 ### Writing to a File
-Writing is just as simple. FOO handles opening the file, writing the bytes, and closing it automatically.
+`file.write` performs the complete write and closes its internal handle before
+returning. A write failure is propagated by `try`.
 ```foo
 use file.
 
@@ -5589,34 +5683,27 @@ extern "C" function puts(value pointer to byte) giving integer.
 If you have a massive C header file (`.h`), you don't have to type out all the declarations manually. FOO comes with a `bind` tool that reads the C file and automatically generates the FOO bindings (declarations that connect FOO names to C code) for you.
 
 ```sh
-foo bind my_library.h
+foo bind library.h
 ```
 
 ---
 
-## 5. Going Native: `native c` and `asm`
+## 5. Native boundaries
 
-When you need absolute, raw control over the hardware—like writing a device driver or a highly optimized math routine—FOO allows you to drop down to the metal without leaving your FOO file.
+When a portable library operation is not enough, use a typed foreign
+declaration or a verified native contract. Keep the boundary small because FOO
+cannot prove the behavior of its native implementation.
 
-### Native C Blocks
-You can write raw C code directly inside a FOO function.
+### Calling C
+
+Declare the ABI and the complete FOO signature:
 ```foo
-native c function add(a integer, b integer) giving integer {
-  // This is raw C code
-  return a + b;
-}
+extern "C" function add(left integer, right integer) giving integer.
 ```
 
-### Inline Assembly
-For the truly brave, FOO supports inline assembly (`asm`, low-level processor
-instructions written directly in the source). This is used for extremely
-specific hardware instructions.
-```foo
-asm {
-  // Raw assembly instructions go here
-}
-```
-*Note: This is an advanced feature used only when standard FOO code isn't fast enough!*
+`foo bind header.h` generates these declarations for larger C APIs. Assembly
+belongs behind a native contract with explicit target and effect requirements;
+it is not an ordinary standalone FOO statement.
 
 ---
 
@@ -5704,7 +5791,7 @@ to `every`:
 ```foo
 use testing as check.
 
-function bounded(index unsigned 64) giving boolean {
+function bounded(index unsigned) giving boolean {
   give index less than 100.
 }
 
@@ -5718,17 +5805,19 @@ not generate arbitrary values of a type. For varied typed inputs, define an
 index-to-value function, store it in `Generator[T]`, and call `generate`:
 
 ```foo
-function sample(index unsigned 64) giving integer {
+use testing as check.
+
+function sample(index unsigned) giving unsigned {
   give index plus 1.
 }
 
-function positive(value integer) giving boolean {
+function positive(value unsigned) giving boolean {
   give value greater than 0.
 }
 
 test "generated values stay positive" {
-  constant generator is check.Generator[integer](sample).
-  check.generate[integer](100, generator, positive).
+  constant generator is check.Generator[unsigned](sample).
+  check.generate[unsigned](100, generator, positive).
 }
 ```
 
@@ -6085,17 +6174,18 @@ error) cannot be ignored.
 | `unsigned` | Nonnegative whole number | `42` |
 | `decimal` | Fractional number | `3.14` |
 | `boolean` | Truth value | `true`, `false` |
-| `byte` | One unsigned 8-bit value | `255` |
+| `byte` | One opaque 8-bit storage value | Produced by byte and memory APIs |
 | `character` | One character | `'F'` |
 | `text` | Text data | `"FOO"` |
 | `nothing` | No useful value | `nothing` |
 
-`integer`, `unsigned`, and `decimal` may include a width when layout matters:
+The bare numeric types use 64-bit storage. Write another width only when a
+layout or foreign interface requires it:
 
 ```foo
 constant offset of type integer 32 is 12.
-constant size of type unsigned 64 is 4096.
-constant ratio of type decimal 64 is 0.75.
+constant port of type unsigned 16 is 8080.
+constant ratio of type decimal 32 is 0.75.
 ```
 
 ## Text and characters
@@ -6128,6 +6218,8 @@ Write the comparison you mean instead of relying on truthiness (automatically
 treating a value as true or false):
 
 ```foo
+constant attempts is 1.
+
 when attempts greater than 0 {
   display "A retry occurred".
 }
@@ -6138,7 +6230,7 @@ when attempts greater than 0 {
 `optional T` means a value may contain `T` or may be `null`.
 
 ```foo
-constant selected of type optional unsigned 64 is null.
+constant selected of type optional unsigned is null.
 
 when selected is null {
   display "Nothing selected".
@@ -6170,12 +6262,10 @@ FOO builds larger types from smaller ones:
 
 | Type form | Purpose |
 | --- | --- |
-| `array[N, T]` | Fixed-size values stored together. |
 | `sequence of T` | A bounded view over values of one type. |
 | `optional T` | A value that may be absent. |
 | `failable T` | A result that may fail. |
 | `pointer to T` | A low-level memory address. |
-| `reference to T` | A checked borrowed reference. |
 | `vector[N, T]` | Fixed-width SIMD data (several values processed by one processor instruction). |
 
 Records and choices define application-specific data. They are covered in
@@ -6213,7 +6303,7 @@ guess which behavior you intended.
 ## Try it
 
 1. Declare one value for each primitive type in the table.
-2. Add an explicit width to an integer.
+2. Add a non-default width to an integer.
 3. Write a positive `when count greater than 0` condition.
 4. Deliberately assign text to an integer and inspect the diagnostic.
 5. Create a typed duration with `clock.millis(50)` and pass it to `clock.wait`.
@@ -6259,6 +6349,8 @@ when attempts is 2 {
 Use intent-specific arithmetic for ordinary counters and quantities:
 
 ```foo
+dynamic attempts is 0.
+dynamic remaining is 10.
 increase attempts by 1.
 decrease remaining by 2.
 ```
@@ -6271,6 +6363,10 @@ store the result back into the dynamic binding.
 Use `is` for one value and `are` when a name represents a sequence of values:
 
 ```foo
+use sequence as sequences.
+
+constant current is "Ada".
+constant active is sequences.create[text]().
 constant user is current.
 constant users are active.
 ```
@@ -6285,7 +6381,7 @@ part of the program's contract.
 
 ```foo
 constant port of type unsigned 16 is 8080.
-dynamic balance of type decimal 64 is 12.50.
+dynamic balance of type decimal 32 is 12.50.
 ```
 
 The initializer must fit the declared type. FOO does not silently convert
@@ -6329,8 +6425,8 @@ the same name twice in one scope is an error.
 Use `define ... as ...` to give a type a domain-specific name.
 
 ```foo
-define Identity as unsigned 64.
-define Temperature as decimal 64.
+define Identity as unsigned.
+define Temperature as decimal.
 
 constant owner of type Identity is 42.
 constant room of type Temperature is 21.5.
@@ -6341,7 +6437,7 @@ only how it is stored.
 
 ## Try it
 
-1. Declare a constant named `projectName` and display it.
+1. Declare a constant named `project` and display it.
 2. Declare `dynamic completed is 0.`.
 3. Increase `completed` three times with `increase completed by 1.`.
 4. Add a `when` block that displays `"Done"` when the value is 3.
@@ -8817,6 +8913,41 @@ All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
 ## Unreleased
+
+## 0.4.1 - 2026-09-28
+
+### Compiler And Runtime
+
+- Keep built-in Zig output on its native fast path so a basic `display`
+  program no longer requires generated C service headers or libc.
+- Avoid passing Clang's `-target` option to a host GCC build, while preserving
+  explicit cross-target handling.
+- Exclude top-level `test/` and `benchmark/` trees from flat source discovery
+  so they are only compiled by their dedicated commands.
+
+### Testing And Editor
+
+- Give `foo test` the same staged operation interface as builds and runs,
+  including checking, compilation, completion, failure details, and timing.
+- Compile a selected test body directly as its entry point, removing the
+  unnecessary synthetic call boundary.
+- Run live LSP analysis through the compiler's complete expansion, entry,
+  linking, lint, type, and capability pipeline using project configuration.
+- Emit structured editor diagnostics with stable FOO codes, exact ranges,
+  suggestions, and fixes, and report successful language-server startup.
+- Add live regression coverage for top-level `display`, concise declarations,
+  defaults, postfix `try`, `fallback`, and current loop control words.
+
+### Documentation
+
+- Audit the book against compiler behavior, replace speculative examples with
+  compiling forms, and explain technical terms in place where they first
+  matter.
+- Clarify canonical calls, numeric widths, ownership boundaries, native ABI
+  declarations, test behavior, supported control flow, and standard-library
+  contracts throughout the book and generated LLM reference.
+- Keep the registry documentation page synchronized with the revised book and
+  improve long-document scrolling and navigation behavior.
 
 ## 0.4.0 - 2026-09-28
 

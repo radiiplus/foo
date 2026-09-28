@@ -49,7 +49,7 @@ Read these lessons in order when FOO is new to you.
 4. **[Variables](variables.md)** - Use constants, dynamic values, inference, and scope.
 5. **[Types and Values](types.md)** - Learn primitive, optional, failable, and compound types.
 6. **[Operators](operators.md)** - Write arithmetic, comparisons, and Boolean logic.
-7. **[Conditions and Loops](flow.md)** - Use `when`, `match`, `while`, `repeat`, and `for each`.
+7. **[Conditions and Loops](flow.md)** - Use `when`, `otherwise`, `match`, `while`, and `for each`.
 8. **[Functions](functions.md)** - Define operations, results, public APIs, and generics.
 9. **[Expressions and English Grammar](expressions.md)** - Use sentence calls, defaults, overloads, guards, closures, and intentional mutation.
 10. **[Language Foundations](foundations.md)** - Understand inference, absence, comparison, generics, modules, memory, effects, concurrency, time, tooling, and design boundaries.
@@ -76,7 +76,7 @@ Use these chapters when creating a real application or package.
 23. **[Testing](testing.md)** - Organize assertions, filters, watches, and native fixtures.
 24. **[Benchmarking](benchmarking.md)** - Measure programs with warmups and repeated samples.
 25. **[Optimization Under the Hood](tuning.md)** - Understand execution specialization, boundary and work elimination, fusion rules, adaptive paths, and measured evidence.
-26. **[Performance Report](performance.md)** - Review benchmark methodology, native controls, allocation evidence, and remaining work.
+26. **[Performance Report](performance.md)** - Review current measurements, sequence behavior, runtime telemetry, and profiling decisions.
 
 ## Master and reference
 
@@ -84,13 +84,13 @@ These chapters describe compiler behavior, target configuration, and the exact
 surface of the current language.
 
 27. **[The Compiler](compiler.md)** - Follow source through checking, optimization, and native backends.
-27. **[Diagnostics](diagnostics.md)** - Read grouped terminal, JSON, and editor errors.
-28. **[Platforms](platforms.md)** - Build for desktop, server, ARM, WebAssembly, and freestanding targets.
-29. **[Feature Status](status.md)** - Separate implemented behavior from future design.
-30. **[Building Release Binaries](releasing.md)** - Build Windows and Linux compiler binaries, use WSL, sign Linux output, and package platform icons.
-30. **[Reference](reference.md)** - Look up commands, vocabulary, and core types quickly.
-31. **[Advanced](advanced.md)** - Use allocators, protocol controls, native code, and hardware tuning.
-32. **[Syntax Guide](syntax.md)** - Look up complete sentence forms.
+28. **[Diagnostics](diagnostics.md)** - Read grouped terminal, JSON, and editor errors.
+29. **[Platforms](platforms.md)** - Build for desktop, server, ARM, WebAssembly, and freestanding targets.
+30. **[Feature Status](status.md)** - Separate implemented behavior from future design.
+31. **[Building Release Binaries](releasing.md)** - Build Windows and Linux compiler binaries, use WSL, sign Linux output, and package platform icons.
+32. **[Reference](reference.md)** - Look up commands, vocabulary, and core types quickly.
+33. **[Advanced](advanced.md)** - Use allocators, protocol controls, native code, and hardware tuning.
+34. **[Syntax Guide](syntax.md)** - Look up complete sentence forms.
 
 ## How to read an example
 
@@ -107,6 +107,8 @@ Examples use the current vocabulary:
 - `multiply`, `subtract`, and `divide` for arithmetic.
 - `stop` and `skip` for loop control.
 - postfix `try` for propagation and `fallback` for recovery.
+- parenthesized calls as the canonical formatter output; sentence calls are an
+  accepted shorthand only where their argument boundaries are unambiguous.
 - `file` as the canonical filesystem module.
 
 ## Essential terms

@@ -12,17 +12,18 @@ error) cannot be ignored.
 | `unsigned` | Nonnegative whole number | `42` |
 | `decimal` | Fractional number | `3.14` |
 | `boolean` | Truth value | `true`, `false` |
-| `byte` | One unsigned 8-bit value | `255` |
+| `byte` | One opaque 8-bit storage value | Produced by byte and memory APIs |
 | `character` | One character | `'F'` |
 | `text` | Text data | `"FOO"` |
 | `nothing` | No useful value | `nothing` |
 
-`integer`, `unsigned`, and `decimal` may include a width when layout matters:
+The bare numeric types use 64-bit storage. Write another width only when a
+layout or foreign interface requires it:
 
 ```foo
 constant offset of type integer 32 is 12.
-constant size of type unsigned 64 is 4096.
-constant ratio of type decimal 64 is 0.75.
+constant port of type unsigned 16 is 8080.
+constant ratio of type decimal 32 is 0.75.
 ```
 
 ## Text and characters
@@ -55,6 +56,8 @@ Write the comparison you mean instead of relying on truthiness (automatically
 treating a value as true or false):
 
 ```foo
+constant attempts is 1.
+
 when attempts greater than 0 {
   display "A retry occurred".
 }
@@ -65,7 +68,7 @@ when attempts greater than 0 {
 `optional T` means a value may contain `T` or may be `null`.
 
 ```foo
-constant selected of type optional unsigned 64 is null.
+constant selected of type optional unsigned is null.
 
 when selected is null {
   display "Nothing selected".
@@ -97,12 +100,10 @@ FOO builds larger types from smaller ones:
 
 | Type form | Purpose |
 | --- | --- |
-| `array[N, T]` | Fixed-size values stored together. |
 | `sequence of T` | A bounded view over values of one type. |
 | `optional T` | A value that may be absent. |
 | `failable T` | A result that may fail. |
 | `pointer to T` | A low-level memory address. |
-| `reference to T` | A checked borrowed reference. |
 | `vector[N, T]` | Fixed-width SIMD data (several values processed by one processor instruction). |
 
 Records and choices define application-specific data. They are covered in
@@ -140,7 +141,7 @@ guess which behavior you intended.
 ## Try it
 
 1. Declare one value for each primitive type in the table.
-2. Add an explicit width to an integer.
+2. Add a non-default width to an integer.
 3. Write a positive `when count greater than 0` condition.
 4. Deliberately assign text to an integer and inspect the diagnostic.
 5. Create a typed duration with `clock.millis(50)` and pass it to `clock.wait`.

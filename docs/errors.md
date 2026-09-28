@@ -19,12 +19,17 @@ error to its caller.
 
 ## Postfix `try`
 
-These are the canonical forms (the standard forms new code should use):
+This complete function shows the canonical forms (the standard forms new code
+should use):
 
 ```foo
-constant content is files.read("notes.txt") try.
-files.write("copy.txt", content) try.
-give settings() try.
+use file as files.
+
+function copy() giving failable text {
+  constant content is files.read("notes.txt") try.
+  files.write("copy.txt", content) try.
+  give content.
+}
 ```
 
 Do not write `constant content is try files.read(...)`. Prefix `try` is legacy
@@ -35,6 +40,8 @@ syntax; new code and documentation use the postfix operator.
 Use `fallback` when the current scope can supply a valid replacement.
 
 ```foo
+use file as files.
+
 constant settings is files.read("settings.json") fallback "{}".
 display settings.
 ```

@@ -6,19 +6,15 @@ A function names a reusable operation. Its parameters describe the inputs and
 ## Define and call a function
 
 ```foo
-function add left integer right integer giving integer {
+function add(left integer, right integer) giving integer {
   give left plus right.
 }
 
-constant total is add 20 22.
-```
-
-Arguments are evaluated from left to right. Parenthesized declarations and
-calls remain valid when punctuation makes a nested expression clearer:
-
-```foo
 constant total is add(20, 22).
 ```
+
+Arguments are evaluated from left to right. Parentheses delimit the argument
+list, including an empty list for a zero-argument call.
 
 ## Default and named arguments
 
@@ -26,17 +22,17 @@ Write `default` after a parameter type. A missing argument uses that expression
 at the call site. Defaults may refer to earlier parameters.
 
 ```foo
-function connect
-    host text
-    port integer default 443
+function connect(
+    host text,
+    port integer default 443,
     timeout integer default 5000
-    giving boolean {
+) giving boolean {
   give true.
 }
 
-constant ordinary is connect "example.com".
-constant local is connect "localhost" port 8080.
-constant explicit is connect host "example.com" timeout 10000.
+constant ordinary is connect("example.com").
+constant local is connect("localhost", port 8080).
+constant explicit is connect(host "example.com", timeout 10000).
 ```
 
 A label is the parameter name followed directly by its value. FOO does not
@@ -49,7 +45,7 @@ Use `are sequence of` on the final parameter when it should consume the
 remaining arguments:
 
 ```foo
-function total values are sequence of integer giving integer {
+function total(values are sequence of integer) giving integer {
   dynamic result is 0.
   for each value in values {
     increase result by value.
@@ -57,7 +53,7 @@ function total values are sequence of integer giving integer {
   give result.
 }
 
-constant answer is total 10 20 30 40.
+constant answer is total(10, 20, 30, 40).
 ```
 
 Inside the function, `values` is a read-only sequence. A variadic parameter
@@ -68,7 +64,7 @@ must be last and cannot also have a default.
 `give` immediately returns from the current function.
 
 ```foo
-function larger left integer right integer giving integer {
+function larger(left integer, right integer) giving integer {
   when left greater than right { give left. }
   give right.
 }
@@ -82,15 +78,15 @@ type.
 Omit `giving` when no useful value is returned.
 
 ```foo
-function announce message text {
+function announce(message text) {
   display message.
 }
 
-announce "Ready".
+announce("Ready").
 ```
 
-Reaching the closing brace completes automatically. A bare `give.` is useful
-only for an early return.
+Reaching the closing brace completes automatically. For an early return from a
+function with no useful result, write `give nothing.`.
 
 ## Parameters and local values
 
@@ -98,7 +94,7 @@ Parameters are immutable bindings. Create a dynamic local when an algorithm
 needs a changing value.
 
 ```foo
-function sum limit integer giving integer {
+function sum(limit integer) giving integer {
   dynamic total is 0.
   dynamic current is 1.
   while current less than or equal to limit {
@@ -114,7 +110,7 @@ function sum limit integer giving integer {
 Declarations are private to their file unless they begin with `public`.
 
 ```foo
-public function area width decimal height decimal giving decimal {
+public function area(width decimal, height decimal) giving decimal {
   give width multiply height.
 }
 ```
@@ -150,7 +146,7 @@ Non-capturing functions can be passed to higher-order operations such as
 `sequence.map` and `sequence.filter`.
 
 ```foo
-function double value integer giving integer {
+function double(value integer) giving integer {
   give value multiply 2.
 }
 ```
@@ -178,7 +174,7 @@ function twice() giving integer {
 Closures are scoped in this release. Call them inside the function that owns
 their captured values. Returning a closure or passing it somewhere that may
 retain it is rejected, preventing a reference to expired stack storage. Use
-`using (name, otherName)` after the closure result type when an API review
+`using (name, other)` after the closure result type when an API review
 benefits from an explicit capture list.
 
 ## Overloads (one function name with several parameter forms)
@@ -186,15 +182,15 @@ benefits from an explicit capture list.
 Functions may share a name when their parameter types or calling forms differ:
 
 ```foo
-function identify value integer giving text {
+function identify(value integer) giving text {
   give "number".
 }
 
-function identify value text giving text {
+function identify(value text) giving text {
   give "text".
 }
 
-constant kind is identify 42.
+constant kind is identify(42).
 ```
 
 FOO first checks labels and arity (argument count), then chooses the most exact
@@ -208,7 +204,7 @@ A declaration may state a Boolean precondition (a rule that must be true before
 the function runs) before `giving`:
 
 ```foo
-function withdraw amount decimal
+function withdraw(amount decimal)
     when amount greater than 0
     giving decimal {
   give amount.
@@ -232,7 +228,7 @@ a profiler boundary:
 
 ```foo
 #[noinline]
-function next(value unsigned 64) giving unsigned 64 {
+function next(value unsigned) giving unsigned {
   give value plus 1.
 }
 ```
@@ -242,7 +238,7 @@ performance hint; ordinary application code should let the optimizer decide.
 
 ## Try it
 
-1. Write `subtract left integer right integer giving integer`.
+1. Write `subtract(left integer, right integer) giving integer`.
 2. Write a function with an early guard clause.
 3. Write a function that returns nothing without `give nothing.`.
 4. Make one function public and import it from another file.

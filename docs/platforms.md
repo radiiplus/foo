@@ -2,7 +2,9 @@
 
 In many ecosystems, building your app for a different operating system means you have to actually *own* a computer running that operating system. If you are on a Mac and want to build a Windows `.exe`, you usually have to boot up a virtual machine or use a clunky third-party tool.
 
-FOO completely shatters this limitation. Because FOO translates your code down to native C or Zig, it supports **Cross-Compilation** (building for a different kind of computer) out of the box. You can sit on your Mac, type a single command, and generate a lightning-fast executable for Windows, Linux, ARM, or even the Web.
+FOO defines named target presets for Windows, Linux, macOS, WASI, and selected
+freestanding environments. A cross-build succeeds when the managed backend and
+the project's native dependencies support the requested architecture and ABI.
 
 Let’s look at how FOO conquers the hardware world.
 
@@ -35,7 +37,9 @@ every operation is vectorized (performed on several values at once).
 
 ## 2. Cross-Compilation (The Ultimate Flex)
 
-Because FOO manages its own toolchains, cross-compilation is seamless. You do not need to install Windows SDKs or Linux headers on your Mac. 
+FOO manages its default Zig toolchain and target catalog. Projects with foreign
+libraries or custom native inputs may still need compatible target libraries,
+headers, or SDK components.
 
 If you type `foo build --target windows-x64` while sitting on a Linux machine,
 FOO's backend (code generator) will automatically generate standard Windows PE
@@ -46,7 +50,7 @@ FOO's backend (code generator) will automatically generate standard Windows PE
 foo build --target windows-x64
 
 # FOO outputs:
-# .artifacts/build/my_app.exe
+# .artifacts/build/app.exe
 ```
 You can now copy that `.exe` file to a compatible Windows machine and run it
 natively. A CPU-specific preset still requires the destination CPU features.
@@ -64,8 +68,9 @@ a standard way for WebAssembly programs to request system services) preset.
 foo build --target wasi
 ```
 
-**Why this is awesome:** 
-You can write your core business logic (like image processing, cryptography, or game physics) in FOO, compile it to WASM, and drop it into a JavaScript website. Your web app will run at near-native speeds, completely bypassing the slowness of traditional JavaScript.
+The `wasi` preset emits a WASI module for a compatible host. Browser integration
+requires the imports and JavaScript glue expected by that host; performance
+depends on the workload and runtime.
 
 ---
 

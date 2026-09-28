@@ -1,5 +1,6 @@
 import std/[algorithm, json, os, sequtils, strutils]
 import ../../src/diag/engine
+import ../../src/lex/kind
 import ../../src/lex/lexer
 import ../../src/parse/parser
 import ../../src/build/compiler as buildCompiler
@@ -11,6 +12,7 @@ type
     language: string
     source: string
     expectedError: string
+    contextual: bool
 
 proc fences(path: string): seq[Fence] =
   let source = readFile(path)
@@ -26,7 +28,8 @@ proc fences(path: string): seq[Fence] =
     if line.startsWith("```"):
       if active:
         result.add(Fence(path: path, line: opening, language: language,
-          source: body.join("\n") & "\n", expectedError: expectedError))
+          source: body.join("\n") & "\n", expectedError: expectedError,
+          contextual: expectedError == "context"))
         active = false
         language = ""
         expectedError = ""
@@ -42,7 +45,9 @@ proc fences(path: string): seq[Fence] =
       body.add(line)
     else:
       let stripped = line.strip()
-      if stripped.startsWith("<!-- snippet: error ") and
+      if stripped == "<!-- snippet: context -->":
+        pendingDirective = "context"
+      elif stripped.startsWith("<!-- snippet: error ") and
           stripped.endsWith(" -->"):
         pendingDirective = stripped[20 ..< stripped.len - 4].strip()
       elif stripped.len > 0:
@@ -72,11 +77,24 @@ for path in paths:
       inc fooCount
       let diagnostics = newEngine()
       diagnostics.setSource(fence.source, location)
-      discard newParser(newLexer(fence.source, diagnostics).lex(),
-        diagnostics).parse()
+      let tokens = newLexer(fence.source, diagnostics).lex()
+      discard newParser(tokens, diagnostics).parse()
       if diagnostics.failed:
         for message in diagnostics.messages:
           failures.add(location & ": " & message.text)
+      const removed = ["fallible", "integer 64", "unsigned 64", "decimal 64",
+        "repeat until", "advance ", "reference to", "native c", "asm {",
+        " equals ", " times "]
+      for spelling in removed:
+        if spelling in fence.source:
+          failures.add(location & ": removed spelling in FOO example: " & spelling.strip())
+      for token in tokens:
+        if token.kind != Kind.Ident: continue
+        var compound = '_' in token.text
+        for index in 1 ..< token.text.len:
+          if token.text[index].isUpperAscii: compound = true
+        if compound:
+          failures.add(location & ": FOO names must be one word: " & token.text)
     of "json":
       inc jsonCount
       try:
@@ -133,21 +151,16 @@ for path in paths:
     writeFile(snippet, fence.source)
     try:
       discard buildCompiler.newCompiler(repository).ir(snippet)
-      if fence.expectedError.len > 0:
+      if fence.contextual:
+        failures.add(location & ": contextual snippet compiled; make it a complete example")
+      elif fence.expectedError.len > 0:
         failures.add(location & ": expected " & fence.expectedError &
           " but the snippet compiled")
       else:
         inc checked
         if verbose: echo "CHECK " & location
     except buildCompiler.Diagnostics as error:
-      if fence.expectedError.len > 0:
-        if error.diagnostics.messages.anyIt($it.code == fence.expectedError):
-          inc expectedFailures
-          if verbose: echo "EXPECTED " & location & " " & fence.expectedError
-        else:
-          failures.add(location & ": expected " & fence.expectedError &
-            ", got " & error.diagnostics.messages.mapIt($it.code).join(", "))
-      else:
+      if fence.contextual:
         let unexpected = error.diagnostics.messages.filterIt(
           $it.code notin ["Missing", "Absent"])
         if unexpected.len > 0:
@@ -161,6 +174,17 @@ for path in paths:
             for message in error.diagnostics.messages:
               echo "  " & $message.code & " " & $message.span.line & ":" &
                 $message.span.col & ": " & message.text
+      elif fence.expectedError.len > 0:
+        if error.diagnostics.messages.anyIt($it.code == fence.expectedError):
+          inc expectedFailures
+          if verbose: echo "EXPECTED " & location & " " & fence.expectedError
+        else:
+          failures.add(location & ": expected " & fence.expectedError &
+            ", got " & error.diagnostics.messages.mapIt($it.code).join(", "))
+      else:
+        for message in error.diagnostics.messages:
+          failures.add(location & ":" & $message.span.line & ":" &
+            $message.span.col & ": " & $message.code & ": " & message.text)
     except CatchableError as error:
       failures.add(location & ": lowering failed: " & error.msg)
       if verbose:

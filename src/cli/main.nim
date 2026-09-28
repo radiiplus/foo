@@ -380,13 +380,21 @@ proc main*(input: seq[string]): int =
         raise newException(ValueError,
           "usage: foo test [file.iv|directory] [--filter name] [--backend c|zig] [--watch]")
       proc executeTests() =
+        activeOperation = cliDisplay.newOperation("TEST", jsonOutput, verbose)
         let results = test(if positional.len > 0: positional[0] else: root,
-          filter, if backend.len > 0: backend else: "zig")
+          filter, if backend.len > 0: backend else: "zig",
+          progress = activeOperation.reporter())
+        var failed = 0
         for item in results:
-          echo (if item.passed: "PASS " else: "FAIL ") & item.suite.name &
-            " (" & item.suite.file & ")"
-          if item.error.len > 0: stderr.writeLine(item.error)
-        if results.anyIt(not it.passed):
+          if not item.passed: inc failed
+          activeOperation.update("Results", item.suite.name,
+            if item.passed: cliDisplay.stateComplete else: cliDisplay.stateFailed,
+            if item.error.len > 0: item.error else: $item.timeMs & " ms", true)
+        activeOperation.finish(failed == 0, $results.len &
+          (if results.len == 1: " test" else: " tests") &
+          " · " & $failed & " failed")
+        activeOperation = nil
+        if failed > 0:
           raise newException(ValueError, "One or more tests failed")
       if watching: watch(root, executeTests) else: executeTests()
     of "benchmark":
