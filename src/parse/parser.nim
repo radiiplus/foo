@@ -84,24 +84,28 @@ proc attributes(parser: Parser): seq[string] =
 proc parseType(parser: Parser): `Type` =
   let token = parser.peek
   case token.kind
-  of Kind.Integer, Kind.Unsigned, Kind.Decimal, Kind.Boolean, Kind.Byte, Kind.Character, Kind.Text, Kind.Nothing:
+  of Kind.Integer, Kind.Unsigned, Kind.Decimal:
     discard parser.advance
     var width = ""
-    if parser.check(Kind.Int): width = parser.advance.text
+    if parser.check(Kind.Int):
+      let size = parser.advance
+      width = size.text
+      if width == "64":
+        parser.diagnostics.emit(Code.Syntax, size.span,
+          "Use bare '" & token.text & "' for the canonical 64-bit type")
     return Primitive(tag: "primitive", span: token.span, name: token.text, width: width)
+  of Kind.Boolean, Kind.Byte, Kind.Character, Kind.Text, Kind.Nothing:
+    discard parser.advance
+    return Primitive(tag: "primitive", span: token.span, name: token.text)
   of Kind.Sequence:
     discard parser.advance
-    discard parser.match(Kind.Of)
+    discard parser.expect(Kind.Of, "expected 'of'")
     let constant = parser.match(Kind.Constant)
     return Sequence(tag: "sequence", span: token.span, elem: parser.parseType, constant: constant)
-  of Kind.Array:
-    discard parser.advance
-    discard parser.expect(Kind.Of, "expected 'of'")
-    return Sequence(tag: "sequence", span: token.span, elem: parser.parseType)
   of Kind.Optional:
     discard parser.advance
     return Optional(tag: "optional", span: token.span, elem: parser.parseType)
-  of Kind.Pointer, Kind.Address, Kind.Reference:
+  of Kind.Pointer:
     discard parser.advance
     discard parser.expect(Kind.To, "expected 'to'")
     return Pointer(tag: "pointer", span: token.span, elem: parser.parseType)
@@ -118,8 +122,10 @@ proc parseType(parser: Parser): `Type` =
     return Vector(tag: "vector", span: token.span, length: length.text, elem: elem)
   of Kind.Function:
     discard parser.advance
-    let sentence = parser.check(Kind.Ident) and parser.peek.text == "taking"
-    if sentence: discard parser.advance
+    if parser.check(Kind.Ident) and parser.peek.text == "taking":
+      discard parser.advance
+    else:
+      discard parser.expect(Kind.Ident, "expected 'taking'")
     discard parser.expect(Kind.Paren, "expected '('")
     var params: seq[`Type`]
     parser.lines()
@@ -129,12 +135,10 @@ proc parseType(parser: Parser): `Type` =
       if not parser.match(Kind.Comma): break
       parser.lines()
     discard parser.expect(Kind.Close, "expected ')'")
-    if sentence:
-      if parser.check(Kind.Ident) and parser.peek.text == "giving": discard parser.advance
-      else: discard parser.expect(Kind.Of, "expected 'giving'")
+    if parser.check(Kind.Ident) and parser.peek.text == "giving":
+      discard parser.advance
     else:
-      discard parser.expect(Kind.Of, "expected 'of'")
-      discard parser.match(Kind.Type)
+      discard parser.expect(Kind.Ident, "expected 'giving'")
     let ret = parser.parseType
     var abi = ""
     if parser.match(Kind.For): abi = parser.name.text
@@ -178,16 +182,12 @@ proc parameter(parser: Parser; allowExtended = true): Parameter =
     variadic = true
   let parameterName = parser.name
   if allowExtended and parser.match(Kind.Are): variadic = true
-  discard parser.match(Kind.Of)
-  discard parser.match(Kind.Type)
   var parameterType = parser.parseType
   if variadic and parameterType != nil and parameterType.tag == "sequence":
     parameterType = node.Sequence(parameterType).elem
   var defaultValue: Expression
   if allowExtended:
-    if parser.match(Kind.Is):
-      defaultValue = parser.expression()
-    elif parser.check(Kind.Ident) and parser.peek.text == "default":
+    if parser.check(Kind.Ident) and parser.peek.text == "default":
       discard parser.advance
       defaultValue = parser.expression()
   Parameter(tag: "parameter", span: parameterName.span, name: parameterName,
@@ -265,10 +265,7 @@ proc primary(parser: Parser): Expression =
     Closure(tag: "closure", span: token.span, params: params,
       returnType: returnType, captures: captures, body: parser.blockNode)
   of Kind.Int:
-    if parser.check(Kind.Ident) and parser.peek.text in ["bytes", "bits", "kilobytes", "megabytes", "gigabytes", "terabytes", "seconds", "milliseconds", "microseconds", "nanoseconds"]:
-      let unit = parser.advance
-      Quantity(tag: "quantity", span: token.span, value: token.text, unit: unit.text)
-    else: Integer(tag: "integer", span: token.span, value: token.text)
+    Integer(tag: "integer", span: token.span, value: token.text)
   of Kind.Float: Decimal(tag: "decimal", span: token.span, value: token.text)
   of Kind.String: Text(tag: "text", span: token.span, value: token.text)
   of Kind.Char: Character(tag: "character", span: token.span, value: token.text)
@@ -321,7 +318,7 @@ proc sentence(parser: Parser; callee: Expression): Expression =
   let word = if separator >= 0: qualified[separator + 1 .. ^1] else: qualified
   let next = parser.peek.text
   let argument = parser.peek.kind in [Kind.Ident, Kind.String, Kind.Int, Kind.Float,
-    Kind.True, Kind.False, Kind.Paren, Kind.Try]
+    Kind.True, Kind.False, Kind.Paren]
   if parser.peek.kind in [Kind.Dot, Kind.Comma, Kind.Close, Kind.Bracket, Kind.Open,
       Kind.Shut, Kind.NewlineToken, Kind.Eof, Kind.Catch]: return callee
   if next in ["into", "with", "to", "in", "from", "remainder"]: return callee
@@ -479,11 +476,10 @@ proc postfix(parser: Parser): Expression =
           `end`: closing.span.`end`, line: result.span.line, col: result.span.col,
           file: result.span.file), callee: result, args: args, types: types)
       else:
-        let index = parser.expression()
-        let closing = parser.expect(Kind.Bracket, "expected ']'")
-        result = Index(tag: "index", span: Span(start: result.span.start,
-          `end`: closing.span.`end`, line: result.span.line, col: result.span.col,
-          file: result.span.file), `object`: result, index: index)
+        parser.diagnostics.emit(Code.Syntax, parser.peek.span,
+          "Index a value with 'at', for example 'items at index'")
+        discard parser.expression()
+        discard parser.expect(Kind.Bracket, "expected ']'")
     elif parser.match(Kind.At):
       let index = parser.primary
       result = Index(tag: "index", span: result.span, `object`: result, index: index)
@@ -493,7 +489,7 @@ proc postfix(parser: Parser): Expression =
     result = Unary(tag: "unary", span: result.span, op: "try", operand: result)
 
 proc unary(parser: Parser): Expression =
-  var legacy = false
+  var ordinaryCall = false
   if parser.check(Kind.Ident) and parser.peek.text == "allocate" and
       parser.peek(1).kind == Kind.Paren:
     var depth = 0
@@ -505,10 +501,10 @@ proc unary(parser: Parser): Expression =
         dec depth
         if depth == 0: break
       elif kind == Kind.Comma and depth == 1:
-        legacy = true
+        ordinaryCall = true
         break
       inc index
-  if parser.check(Kind.Ident) and parser.peek.text == "allocate" and not legacy:
+  if parser.check(Kind.Ident) and parser.peek.text == "allocate" and not ordinaryCall:
     let token = parser.advance
     let size = parser.primary
     var owner: Expression
@@ -519,7 +515,7 @@ proc unary(parser: Parser): Expression =
     while parser.match(Kind.Try):
       value = Unary(tag: "unary", span: value.span, op: "try", operand: value)
     return value
-  if parser.check(Kind.Not) or parser.check(Kind.Try):
+  if parser.check(Kind.Not):
     let token = parser.advance
     return Unary(tag: "unary", span: token.span, op: token.text, operand: parser.unary)
   parser.postfix
@@ -533,12 +529,6 @@ proc binop(parser: Parser): string =
     let token = parser.advance
     if token.text == "divided": discard parser.expect(Kind.By, "expected 'by'")
     "divided by"
-  of Kind.Equals: discard parser.advance; "equals"
-  of Kind.Does:
-    discard parser.advance
-    discard parser.expect(Kind.Not, "expected 'not'")
-    discard parser.expect(Kind.Equal, "expected 'equal'")
-    "does not equal"
   of Kind.Is:
     discard parser.advance
     if parser.match(Kind.Greater):
@@ -580,14 +570,13 @@ proc binop(parser: Parser): string =
   of Kind.And: discard parser.advance; "and"
   of Kind.Or: discard parser.advance; "or"
   of Kind.Catch: discard parser.advance; "catch"
-  of Kind.Context: discard parser.advance; "context"
   of Kind.Ident:
     if parser.peek.text == "remainder": discard parser.advance; "remainder" else: ""
   else: ""
 
 proc precedence(operation: string): int =
   case operation
-  of "context", "catch": 1
+  of "catch": 1
   of "or": 2
   of "and": 3
   of "equals", "does not equal", "is greater than", "is less than", "is at least", "is at most": 4
@@ -606,8 +595,7 @@ proc expression(parser: Parser; minPrec = 0): Expression =
       parser.pos = position
       break
     let right = parser.expression(if operation == "catch": priority else: priority + 1)
-    if operation == "context": result = ErrorChain(tag: "error-chain", span: result.span, expr: result, context: right)
-    else: result = Binary(tag: "binary", span: result.span, op: operation, left: result, right: right)
+    result = Binary(tag: "binary", span: result.span, op: operation, left: result, right: right)
 
 proc parse*(parser: Parser): Program
 
@@ -794,9 +782,7 @@ proc statement(parser: Parser): Statement =
     discard parser.expect(Kind.Close, "expected ')'")
     parser.lines()
     if parser.peek.text == "giving": discard parser.advance
-    else:
-      discard parser.expect(Kind.Of, "expected 'of'")
-      discard parser.expect(Kind.Type, "expected 'type'")
+    else: discard parser.expect(Kind.Ident, "expected 'giving'")
     let returnType = parser.parseType
     if parser.check(Kind.Open):
       return Function(tag: "function", span: parser.span, public: public, abi: "c", name: functionName,
@@ -894,8 +880,7 @@ proc statement(parser: Parser): Statement =
       guard = parser.expression
       parser.lines()
     var returnType: `Type`
-    if parser.match(Kind.Of): discard parser.match(Kind.Type); returnType = parser.parseType
-    elif parser.check(Kind.Ident) and parser.peek.text == "giving":
+    if parser.check(Kind.Ident) and parser.peek.text == "giving":
       discard parser.advance
       returnType = parser.parseType
     parser.lines()
@@ -941,8 +926,7 @@ proc statement(parser: Parser): Statement =
       discard parser.expect(Kind.Close, "expected ')'")
       parser.lines()
       var returnType: `Type`
-      if parser.match(Kind.Of): discard parser.match(Kind.Type); returnType = parser.parseType
-      elif parser.check(Kind.Ident) and parser.peek.text == "giving":
+      if parser.check(Kind.Ident) and parser.peek.text == "giving":
         discard parser.advance
         returnType = parser.parseType
       discard parser.match(Kind.Dot)
@@ -964,9 +948,6 @@ proc statement(parser: Parser): Statement =
       Use(tag: "use", span: parser.span, public: public,
         name: Name(tag: "name", span: imported.span, text: splitFile(value).name),
         path: if imported.kind == Kind.String: value else: "", alias: alias)
-  of Kind.NativeZig:
-    let nativeToken = parser.advance
-    NativeZig(tag: "native-zig", span: nativeToken.span, code: nativeToken.text)
   of Kind.Native:
     let nativeToken = parser.advance
     let info = if nativeToken.native.isSome: nativeToken.native.get else: NativeInfo(substrate: "foo")
@@ -991,18 +972,15 @@ proc statement(parser: Parser): Statement =
     else:
       if public: parser.diagnostics.emit(Code.NativePublic, nativeToken.span, "Native blocks cannot be public; export a portable function instead")
       Native(tag: "native", span: nativeToken.span, substrate: info.substrate, code: nativeToken.text)
-  of Kind.Asm:
-    let asmToken = parser.advance
-    Asm(tag: "asm", span: asmToken.span, code: asmToken.text)
   of Kind.Type:
     discard parser.advance
+    if token.text != "define":
+      parser.diagnostics.emit(Code.Syntax, token.span,
+        "A named type declaration starts with 'define'")
     let typeName = parser.name
     let typeParams = parser.generics()
-    if token.text == "define":
-      if parser.peek.kind == Kind.Ident and parser.peek.text == "as": discard parser.advance
-      else: discard parser.expect(Kind.Is, "expected 'as'")
-    else:
-      discard parser.expect(Kind.Is, "expected 'is'")
+    if parser.peek.kind == Kind.Ident and parser.peek.text == "as": discard parser.advance
+    else: discard parser.expect(Kind.Is, "expected 'as'")
     var body: Node
     if parser.match(Kind.Packed): body = parser.recordType("packed")
     elif parser.check(Kind.Ident) and parser.peek.text == "c" and parser.peek(1).kind in [Kind.Record, Kind.Union]:
@@ -1034,17 +1012,6 @@ proc statement(parser: Parser): Statement =
   of Kind.While:
     discard parser.advance
     `While`(tag: "while", span: parser.span, cond: parser.expression, body: parser.blockNode)
-  of Kind.Repeat:
-    discard parser.advance
-    discard parser.expect(Kind.Until, "expected 'until'")
-    let target = parser.name
-    discard parser.expect(Kind.Reaches, "expected 'reaches'")
-    Repeat(tag: "repeat", span: parser.span, target: target, limit: parser.expression, body: parser.blockNode)
-  of Kind.Advance:
-    discard parser.advance
-    let target = parser.name
-    discard parser.expect(Kind.Dot, "expected '.'")
-    AdvanceStatement(tag: "advance", span: parser.span, target: target)
   of Kind.For:
     discard parser.advance
     discard parser.expect(Kind.Each, "expected 'each'")
@@ -1073,11 +1040,6 @@ proc statement(parser: Parser): Statement =
     discard parser.advance
     discard parser.expect(Kind.Dot, "expected '.'")
     `Continue`(tag: "continue", span: parser.span)
-  of Kind.Try:
-    discard parser.advance
-    let value = parser.expression
-    discard parser.expect(Kind.Dot, "expected '.'")
-    `Try`(tag: "try", span: parser.span, expr: value)
   of Kind.After:
     discard parser.advance
     let onError = parser.check(Kind.Ident) and parser.peek.text == "error"

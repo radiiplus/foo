@@ -72,7 +72,6 @@ proc print*(value: Node; depth: int = 0): string =
   of "embed":
     let item = Embed(value)
     result = "embed" & (if item.`type` != nil: "[" & print(item.`type`) & "]" else: "") & "(\"" & escapeText(item.path) & "\")"
-  of "error-chain": result = print(ErrorChain(value).expr) & " context " & print(ErrorChain(value).context)
   of "constant":
     let item = Constant(value)
     result = indent(depth) & (if item.public: "public " else: "") & "constant " & item.name.text &
@@ -125,18 +124,15 @@ proc print*(value: Node; depth: int = 0): string =
       result = prefix & "use \"" & escapeText(provider(item.abi)) & "\" function " & item.name.text & printTypeParams(item.typeParams) &
         "(" & params.join(", ") & ") giving " & print(item.returnType) & "."
   of "c-import": result = indent(depth) & "use c \"" & escapeText(CImport(value).header) & "\"."
-  of "native-zig": result = indent(depth) & "native zig {" & NativeZig(value).code & "}"
   of "native":
     let item = Native(value)
     result = indent(depth) & "native" & (if item.substrate == "foo": "" else: " " & item.substrate) & " {" & item.code & "}"
-  of "asm": result = indent(depth) & "asm {" & Asm(value).code & "}"
   of "give": result = indent(depth) & "give" & (if Give(value).value != nil: " " & print(Give(value).value) else: "") & "."
   of "when":
     let item = `When`(value)
     result = indent(depth) & "when " & print(item.cond) & " " & printBlock(item.`then`, depth)
     if item.`else` != nil: result.add(" otherwise " & print(item.`else`, depth).strip())
   of "while": result = indent(depth) & "while " & print(`While`(value).cond) & " " & printBlock(`While`(value).body, depth)
-  of "repeat": result = indent(depth) & "repeat until " & Repeat(value).target.text & " reaches " & print(Repeat(value).limit) & " " & printBlock(Repeat(value).body, depth)
   of "for": result = indent(depth) & "for each " & `For`(value).`bind`.text & " in " & print(`For`(value).iter) & " " & printBlock(`For`(value).body, depth)
   of "match":
     let item = Match(value)
@@ -145,7 +141,6 @@ proc print*(value: Node; depth: int = 0): string =
     result = indent(depth) & "match " & print(item.scrutinee) & " {\n" & cases.join("\n") & "\n" & indent(depth) & "}"
   of "break": result = indent(depth) & "stop."
   of "continue": result = indent(depth) & "skip."
-  of "try": result = indent(depth) & print(`Try`(value).expr) & " try."
   of "defer":
     let item = `Defer`(value)
     result = indent(depth) & "after" & (if item.error: " error" else: "") & " "
@@ -158,7 +153,6 @@ proc print*(value: Node; depth: int = 0): string =
       var args: seq[string]
       for arg in item.args: args.add(print(arg))
       result = indent(depth) & item.name.text & "(" & args.join(", ") & ")."
-  of "advance": result = indent(depth) & "advance " & AdvanceStatement(value).target.text & "."
   of "unreachable-statement": result = indent(depth) & "unreachable."
   of "integer": result = Integer(value).value
   of "decimal": result = Decimal(value).value
@@ -171,7 +165,6 @@ proc print*(value: Node; depth: int = 0): string =
   of "uninitialized": result = "uninitialized"
   of "unreachable": result = "unreachable"
   of "newline": result = "newline"
-  of "quantity": result = Quantity(value).value & " " & Quantity(value).unit
   of "name": result = Name(value).text
   of "call":
     let item = Call(value)
@@ -200,18 +193,24 @@ proc print*(value: Node; depth: int = 0): string =
   of "binary":
     let operation = case Binary(value).op
       of "catch": "fallback"
+      of "equals": "is"
+      of "does not equal": "is not"
       of "minus": "subtract"
       of "times": "multiply"
       of "divided by": "divide"
+      of "is greater than": "greater than"
+      of "is less than": "less than"
       of "is at least": "greater than or equal to"
       of "is at most": "less than or equal to"
       else: Binary(value).op
     result = print(Binary(value).left) & " " & operation & " " & print(Binary(value).right)
   of "group": result = "(" & print(Group(value).expr) & ")"
   of "field": result = print(Field(value).`object`) & "." & Field(value).field.text
-  of "index": result = print(Index(value).`object`) & "[" & print(Index(value).index) & "]"
-  of "primitive": result = Primitive(value).name & (if Primitive(value).width.len > 0: " " & Primitive(value).width else: "")
-  of "array": result = "sequence of " & print(Array(value).elem)
+  of "index": result = print(Index(value).`object`) & " at " & print(Index(value).index)
+  of "primitive":
+    let item = Primitive(value)
+    result = item.name & (if item.width.len > 0 and item.width != "64":
+      " " & item.width else: "")
   of "sequence": result = "sequence of " & (if Sequence(value).constant: "constant " else: "") & print(Sequence(value).elem)
   of "allocation": result = "allocate " & print(Allocation(value).size) & (if Allocation(value).owner != nil: " using " & print(Allocation(value).owner) else: "")
   of "assignment": result = indent(depth) & "set " & print(Assignment(value).target) & " to " & print(Assignment(value).value) & "."

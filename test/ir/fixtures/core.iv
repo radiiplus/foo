@@ -1,35 +1,35 @@
 -- Exercises typed values, lexical lifetimes, cleanup and opaque native contracts.
-type Parcel is record { value of type integer. }.
-
-public function square(value of type decimal) of type decimal {
-  give value times value.
+define Parcel as record {
+  value of type integer.
+}.
+public function square(value decimal) giving decimal {
+  give value multiply value.
 }
-
-function identity[T](value of type T) of type T {
+function identity[T](value T) giving T {
   give value.
 }
-
-function count(items of type sequence of integer) of type integer {
-  mutable total of type integer is 0.
+function count(items sequence of integer) giving integer {
+  dynamic total of type integer is 0.
   for each item in items {
     set total to total plus item.
   }
   give total.
 }
-
-function finish(flag of type boolean) of type integer {
-  mutable value of type integer is 44.
+function finish(flag boolean) giving integer {
+  dynamic value of type integer is 44.
   unsafe {
-    after { when flag { set value to value minus 1. } }
+    after {
+      when flag {
+        set value to value subtract 1.
+      }
+    }
   }
   give value.
 }
-
-function local() of type failable nothing {
-  constant bytes is try allocate 44.
+function local() giving failable nothing {
+  constant bytes is allocate 44 try.
   give nothing.
 }
-
 function escape() {
   native { operation(); }
   give nothing.

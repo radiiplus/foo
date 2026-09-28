@@ -28,7 +28,9 @@ type
 proc typeToString*(value: Type): string =
   if value == nil: return "unknown"
   case value.kind
-  of "primitive": return if value.width > 0: value.name & " " & $value.width else: value.name
+  of "primitive":
+    return if value.width > 0 and value.width != 64:
+      value.name & " " & $value.width else: value.name
   of "array": return "array of " & typeToString(value.elem)
   of "sequence": return "sequence of " & (if value.constant: "constant " else: "") & typeToString(value.elem)
   of "optional": return "optional " & typeToString(value.elem)

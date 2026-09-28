@@ -27,7 +27,7 @@ const checks = [
   ['data of type pointer to byte.', { data: '#D4D4D4', of: '#FF3CAC', type: '#FFD23F', pointer: '#FFD23F', to: '#FF3CAC', byte: '#39FF88' }],
   ['constant limit is 42.', { constant: '#FFD23F', limit: '#D66BFF', is: '#FF79C6', '42': '#B6FF00' }],
   ['dynamic count is limit.', { dynamic: '#FFD23F', count: '#D4D4D4', limit: '#D4D4D4' }],
-  ['define UserID as integer 64.', { define: '#FFD23F', UserID: '#39FF88', as: '#FFD23F', integer: '#39FF88' }],
+  ['define UserID as integer.', { define: '#FFD23F', UserID: '#39FF88', as: '#FFD23F', integer: '#39FF88' }],
   ['function greet name text punctuation text default "!" giving text {', { function: '#FFD23F', greet: '#FF7043', name: '#D4D4D4', text: '#39FF88', default: '#FFD23F', giving: '#FFD23F', '!': '#00E5FF' }],
   ['constant users are source fallback empty.', { constant: '#FFD23F', users: '#D66BFF', are: '#FF79C6', fallback: '#F15BB5' }],
   ['increase count by 1.', { increase: '#FF79C6', by: '#FF79C6', '1': '#B6FF00' }],

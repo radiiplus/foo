@@ -19,8 +19,8 @@ let ioModule = Module(name: "io", funcs: @[], externs: @[
   Extern(name: "output", abi: "runtime.io")])
 let ioResult = build(ioModule, "dev", ioOutput, options = Native(name: "io"))
 doAssert ioResult.success
-doAssert not fileExists(ioOutput / "service.h")
-doAssert not fileExists(ioOutput / "service.c")
+doAssert fileExists(ioOutput / "service.h")
+doAssert fileExists(ioOutput / "service.c")
 doAssert readFile(ioOutput / "library.zig").contains(
-  ".{ \"fs\", \"net\", \"process\", \"thread\", \"time\", \"text\" }")
+  ".{ \"fs\", \"io\", \"net\", \"process\", \"thread\", \"time\", \"text\" }")
 echo "Zig driver parity: ok"

@@ -39,19 +39,19 @@ function increment value integer giving failable integer {
 }
 
 display greet name "FOO".
-when identify 4 equals 5 {
+when identify 4 is 5 {
   display "integer overload".
 }
 display identify "text".
-when total 1 2 3 4 equals 10 {
+when total 1 2 3 4 is 10 {
   display "variadic".
 }
-when twice() equals 2 {
+when twice() is 2 {
   display "closure".
 }
-when positive 7 equals 7 {
+when positive 7 is 7 {
   display "guard".
 }
-when (increment(4) fallback 0) equals 5 {
+when (increment(4) fallback 0) is 5 {
   display "failable expression".
 }

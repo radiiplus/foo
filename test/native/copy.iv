@@ -1,7 +1,6 @@
 -- Copies caller-owned bytes without changing their lifetime.
 use memory.
-
-public function move(source of type sequence of constant byte, destination of type sequence of byte) of type failable nothing {
-  try copy source into destination.
-  give.
+public function move(source sequence of constant byte, destination sequence of byte) giving failable nothing {
+  transfer(source, destination) try.
+  give nothing.
 }

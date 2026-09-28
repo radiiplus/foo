@@ -1,63 +1,63 @@
 {
   "declarations": {
     "source": "docs/functions.md",
-    "sourceSha256": "7b643cf268fb58f6277efaff8505af5ebecb9073f33a0cd121c10364b67af163",
-    "fixtureSha256": "4161fc98ceb9cd28af791f79a276adb65c89b02a0d64d8eb7cbc55048cb3cdd8"
+    "sourceSha256": "0bcefe7007dddb136cd0b78312f6fedd8db37ed294965586858d15ee9bbd7700",
+    "fixtureSha256": "94b08141ed70e6af20d2402f0b2a6aa79d271e69ee958bcdae6679e7e7c59f87"
   },
   "types": {
     "source": "specs/types.md",
-    "sourceSha256": "b856143e9885cf63aa4f44d7ab52227903124687c242bce2e99c78f268ffe4ab",
+    "sourceSha256": "ce02d4994ff347efe160f2a647a078b0102ee2befc0a7af57ad1337a3f0da34a",
     "fixtureSha256": "bfd0efb5893189442baf6934d672dee41802cc32c915709a7bea8afc73be0b08"
   },
   "interop": {
     "source": "specs/native.md",
-    "sourceSha256": "d3b339fe51d2ecda60614c19c1b36156948464a32fad1bb0c0ef337ca81f80e7",
-    "fixtureSha256": "1f8055084f994de024203fdcfbefd2cebf0029fdac2d5e86699040926bc61876"
+    "sourceSha256": "8331b85f071b4cb7342fbf78f094a0972a9ad5d08452cf198ecb75d12a3d5928",
+    "fixtureSha256": "6f99893485f45b3810bc2a2ac0498a4bd15321c59d6f54b0c716695b0195c57d"
   },
   "concurrency": {
     "source": "docs/concurrency.md",
-    "sourceSha256": "b0a706e56db02bb9284ac3af8f8d8963245061d2f77f2a14c5f57b32d32ce48e",
+    "sourceSha256": "e14e1fae652402998d974a71ed82cda26b417eff65d5bb075381be1cc3b53f9b",
     "fixtureSha256": "bab539ead412aaf34d2c1fc9a98430eb0be0f055190db958d402faba9782096b"
   },
   "control": {
     "source": "test/lex/fixtures/sample.iv",
-    "sourceSha256": "7021422a9d50f075b955ed5b98cf0e058974164222058800318275bf1b1f03b9",
-    "fixtureSha256": "94e8e9946e85acb61dab351fa8d1a99444d166cde35957cc528559afb3f7e8d6"
+    "sourceSha256": "8a17646413c1f9fb57a84a457d977565ad7d52074bcfcc0ac15935597a61a5a7",
+    "fixtureSha256": "70f90e65eb96e72657f061bc5dc3aa7e49f966eb25891e692f5822fba50829f8"
   },
   "pointers": {
     "source": "std/deque.iv",
-    "sourceSha256": "c2b965791afc8260863ed42467116a821c486b8c17ff40858f12df1335a2e8f1",
-    "fixtureSha256": "c2b965791afc8260863ed42467116a821c486b8c17ff40858f12df1335a2e8f1"
+    "sourceSha256": "70820a4d69a8fbb462989d860c865b2059a76a4b321d1557890d9aa0320ee58c",
+    "fixtureSha256": "70820a4d69a8fbb462989d860c865b2059a76a4b321d1557890d9aa0320ee58c"
   },
   "errors": {
     "source": "std/crypto.iv",
-    "sourceSha256": "b2f448bd2259d27018daad7955d93002158af07d00c1e73533241a74ca939789",
-    "fixtureSha256": "b2f448bd2259d27018daad7955d93002158af07d00c1e73533241a74ca939789"
+    "sourceSha256": "197be6204b15f595b28362321bace9670b73f611b6cfae5a2958699e49731975",
+    "fixtureSha256": "197be6204b15f595b28362321bace9670b73f611b6cfae5a2958699e49731975"
   },
   "platforms": {
     "source": "std/os/windows.iv",
-    "sourceSha256": "7f55a76e051374d7e612582f1208218684755136449d1d2f37806953b4da7ee6",
-    "fixtureSha256": "7f55a76e051374d7e612582f1208218684755136449d1d2f37806953b4da7ee6"
+    "sourceSha256": "9357538929ef26d3aec588be3d1295db854bf41c94d67bf89aa6473fac661581",
+    "fixtureSha256": "9357538929ef26d3aec588be3d1295db854bf41c94d67bf89aa6473fac661581"
   },
   "library": {
     "sources": [
       {
         "source": "std/sequence.iv",
-        "sourceSha256": "76670cd8beba3b67f2f7d41e69a6233eb3042452decacb5104231bf60e715265"
+        "sourceSha256": "b747aecfda8de79c9011467d1fefb4758089e62b2ba0c61394d45c70dafbfb89"
       },
       {
         "source": "std/text.iv",
-        "sourceSha256": "52643cd5b61e3cb9bae46b342777d2041244062498d24e3edeb5b81994fd1f1e"
+        "sourceSha256": "9b2d50df3f84f844a0b9d45dec5762a84c6a37de6b9712346693d0df4d878160"
       },
       {
         "source": "test/stdlib/collections.iv",
-        "sourceSha256": "cd3498ddd0c3fc09abc4454b308a2062834f053dd016098191fef377447fd408"
+        "sourceSha256": "8cfd75f22fa90b71932fc2481834d7ae57978e10d5b6de7537dfbfa742a3680e"
       },
       {
         "source": "test/stdlib/services.iv",
-        "sourceSha256": "4a4e08d8d803abfab54a82ff7be43937cbc1db6d380e623dcea75e781d74e46f"
+        "sourceSha256": "b075f8da39af962bf522704e84adec4ad763a46434e70c5bf7bec46bb0c65967"
       }
     ],
-    "fixtureSha256": "6930640830ef87c4506ab0e8282f818bc85e09ca30940abff27f456fa189b4de"
+    "fixtureSha256": "f39c44cefcbffb63e9ccc8ee99f4a17387bc992ca9ca819e43395f9e98e330a2"
   }
 }

@@ -1,4 +1,4 @@
-import std/[algorithm, json, os, sequtils, strutils]
+import std/[algorithm, json, os, sequtils, sets, strutils, tables]
 import ../../src/diag/engine
 import ../../src/lex/kind
 import ../../src/lex/lexer
@@ -13,6 +13,8 @@ type
     source: string
     expectedError: string
     contextual: bool
+    project: string
+    projectFile: string
 
 proc fences(path: string): seq[Fence] =
   let source = readFile(path)
@@ -20,6 +22,8 @@ proc fences(path: string): seq[Fence] =
   var language = ""
   var expectedError = ""
   var pendingDirective = ""
+  var pendingProject = ""
+  var pendingFile = ""
   var opening = 0
   var body: seq[string]
   let lines = source.splitLines()
@@ -29,10 +33,13 @@ proc fences(path: string): seq[Fence] =
       if active:
         result.add(Fence(path: path, line: opening, language: language,
           source: body.join("\n") & "\n", expectedError: expectedError,
-          contextual: expectedError == "context"))
+          contextual: expectedError == "context", project: pendingProject,
+          projectFile: pendingFile))
         active = false
         language = ""
         expectedError = ""
+        pendingProject = ""
+        pendingFile = ""
         body.setLen(0)
       else:
         active = true
@@ -47,11 +54,21 @@ proc fences(path: string): seq[Fence] =
       let stripped = line.strip()
       if stripped == "<!-- snippet: context -->":
         pendingDirective = "context"
+      elif stripped.startsWith("<!-- snippet: project ") and
+          stripped.endsWith(" -->"):
+        let values = stripped[22 ..< stripped.len - 4].splitWhitespace()
+        if values.len != 2:
+          raise newException(ValueError, path & ":" & $(index + 1) &
+            ": project snippet needs a group and project-relative path")
+        pendingProject = values[0]
+        pendingFile = values[1]
       elif stripped.startsWith("<!-- snippet: error ") and
           stripped.endsWith(" -->"):
         pendingDirective = stripped[20 ..< stripped.len - 4].strip()
       elif stripped.len > 0:
         pendingDirective = ""
+        pendingProject = ""
+        pendingFile = ""
   if active:
     raise newException(ValueError, path & ":" & $opening &
       ": unclosed code fence")
@@ -83,8 +100,9 @@ for path in paths:
         for message in diagnostics.messages:
           failures.add(location & ": " & message.text)
       const removed = ["fallible", "integer 64", "unsigned 64", "decimal 64",
-        "repeat until", "advance ", "reference to", "native c", "asm {",
-        " equals ", " times "]
+        "repeat until", "advance ", "reference to",
+        " equals ", " does not equal ", " times ", " catch ", "mutable ",
+        "break.", "continue.", "cleanup {", "finally {"]
       for spelling in removed:
         if spelling in fence.source:
           failures.add(location & ": removed spelling in FOO example: " & spelling.strip())
@@ -141,12 +159,48 @@ var checked = 0
 var incomplete = 0
 var expectedFailures = 0
 var serial = 0
+var grouped = initOrderedTable[string, seq[Fence]]()
+for path in paths:
+  for fence in fences(path):
+    if fence.language == "foo" and fence.project.len > 0:
+      if not grouped.hasKey(fence.project): grouped[fence.project] = @[]
+      grouped[fence.project].add(fence)
+
+var projectLocations = initHashSet[string]()
+for name, projectFences in grouped:
+  let projectRoot = output / ("project-" & name)
+  createDir(projectRoot)
+  writeFile(projectRoot / "project.json",
+    "{\"schema\":1,\"name\":\"" & name &
+    "\",\"language\":\"1\",\"source\":\"src\",\"requires\":\"base\",\"dependencies\":{}}\n")
+  var entry = ""
+  for fence in projectFences:
+    let target = projectRoot / fence.projectFile
+    createDir(parentDir(target))
+    writeFile(target, fence.source)
+    projectLocations.incl(fence.path & ":" & $fence.line)
+    if fence.projectFile == "src/main.iv": entry = target
+  if entry.len == 0:
+    failures.add("project snippet '" & name & "' needs src/main.iv")
+    continue
+  try:
+    discard buildCompiler.newCompiler(projectRoot).ir(entry)
+    checked += projectFences.len
+    if verbose: echo "PROJECT " & name
+  except buildCompiler.Diagnostics as error:
+    for message in error.diagnostics.messages:
+      failures.add("project " & name & ":" & $message.span.line & ":" &
+        $message.span.col & ": " & $message.code & ": " & message.text)
+  except CatchableError as error:
+    failures.add("project " & name & ": lowering failed: " & error.msg)
+
 for path in paths:
   for fence in fences(path):
     if fence.language != "foo": continue
     inc serial
     let location = relativePath(fence.path, repository).replace('\\', '/') &
       ":" & $fence.line
+    if fence.path & ":" & $fence.line in projectLocations: continue
     let snippet = output / ("snippet-" & $serial & ".iv")
     writeFile(snippet, fence.source)
     try:

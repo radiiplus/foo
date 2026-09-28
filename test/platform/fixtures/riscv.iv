@@ -1,5 +1,5 @@
 -- Writes a serial marker on the RISC-V virtual board without a runtime.
-type Device is record {
+define Device as record {
   #[volatile]
   data of type pointer to unsigned 32.
 }.
@@ -7,11 +7,11 @@ type Device is record {
 #[start]
 #[naked]
 function boot() {
-  asm { "li t0, 0x10000000; li t1, 65; sb t1, 0(t0); 1: wfi; j 1b" }
-  give.
+  native asm { "li t0, 0x10000000; li t1, 65; sb t1, 0(t0); 1: wfi; j 1b" }
+  give nothing.
 }
 
 #[interrupt]
 function irq() {
-  give.
+  give nothing.
 }

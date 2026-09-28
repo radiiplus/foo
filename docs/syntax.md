@@ -87,6 +87,12 @@ Multiplication, division, and remainder bind more tightly than addition and
 subtraction. Use parentheses when mixed Boolean conditions would be easier to
 misread.
 
+`equal`, `equals`, `does not equal`, `==`, and backend helpers such as
+`foo_equal` are compiler/runtime spellings, not FOO source operators. Write
+`is`, `is not`, or an `or equal to` ordering phrase. These internal spellings
+may appear in generated IR or native diagnostics and must not be copied into
+an `.iv` file.
+
 ## Conditions
 
 ```foo
@@ -132,8 +138,8 @@ while index less than 3 {
 ```
 
 Use `for each` for a bounded sequence. `stop` leaves the nearest loop and
-`skip` starts its next iteration. FOO has no separate `repeat until`, `advance`,
-or infinite-loop form.
+`skip` starts its next iteration. Express every other loop with `while` and an
+explicit `set`, `increase`, or `decrease` update.
 
 ## Functions
 
@@ -148,6 +154,13 @@ constant total is add(20, 22).
 Parenthesized calls are canonical. Parameters use `name Type`; `giving Type`
 states the result. A function with no useful result may omit `giving` and reach
 its closing brace. Use `give nothing.` only when it must return early.
+
+Generic parameters use square brackets on declarations and calls. A `where`
+clause may use only the compiler-recognized capabilities `Equatable`, `Hash`,
+`Ord`, and `Allocator`. They are not modules or runtime values and cannot be
+imported or called. `Equatable` permits `is`, `Ord` permits ordering, `Hash`
+permits generated hashing, and `Allocator` accepts only the opaque allocator
+type used by generic memory helpers.
 
 Defaults and named arguments remain part of the same call grammar:
 
@@ -175,6 +188,69 @@ constant content is settings() fallback "{}".
 Postfix `try` propagates a failure from the current failable function.
 `fallback` handles it locally by supplying a value of the success type. `after`
 registers cleanup for ordinary scope exits, including propagated failures.
+
+## Console input and output
+
+The console operations are intentionally available without an import:
+
+| Operation | Meaning | Result |
+| --- | --- | --- |
+| `input()` | Read one line from standard input | `failable text` |
+| `display value.` | Write text to standard output | `nothing` |
+| `report value.` | Write diagnostic text to standard error | `nothing` |
+
+Use `io.input()`, `io.output()`, and `io.report()` only when code needs the
+stream itself. Use `io.read`, `io.line`, `io.write`, and `io.close` for explicit
+stream ownership and failure handling. The bare operations are compiler-provided
+console conveniences; they are not declarations that a package must import.
+
+## Compiler-owned names
+
+These names have language roles. Do not try to import them, declare substitutes
+for them, or assume they are standard-library values.
+
+| Name or form | Legal role in source |
+| --- | --- |
+| `integer`, `unsigned`, `decimal`, `boolean`, `byte`, `character`, `text`, `nothing` | Built-in types; `nothing` is also the sole unit value. |
+| `Error` | Compiler-known error type used by `fail(Error.Name)`; it is not a module. |
+| `Allocator` | Compiler-known opaque allocator type; allocator values come from `memory`. |
+| `Equatable`, `Hash`, `Ord`, `Allocator` after `where` | Compile-time capabilities only; they are not values, functions, or modules. |
+| `null` | Absence for an expected `optional T`; it has no standalone inferred type. |
+| `uninitialized` | Initial storage marker requiring an explicit expected type; reading before assignment is rejected. |
+| `newline` | Built-in text value containing one line feed. |
+| `anything` | Catch-all `match` pattern only; it is not a value that can be passed around. |
+| `unreachable` | Compiler assertion that execution cannot continue at that point. |
+| `fail(error)` | Built-in constructor for a failed `failable T`; no import provides it. |
+| `allocate count [using owner]` | Built-in checked allocation expression; `memory.allocate` is the explicit allocator API. |
+| `start()` | Optional application entry declaration selected by the project entry. |
+| `test "name" { ... }` | Test-runner declaration, discovered only by `foo test`. |
+| `eval { ... }` | Compile-time declaration evaluated by the compiler. |
+| `reflect[T]()` and `embed("path")` | Compile-time compiler operations, not module functions. |
+| `input()`, `display`, `report` | Automatically mapped console operations described above. |
+| `log message` and `log error` | Automatically mapped logging statements; use the `log` module for explicit control. |
+| `splat`, `shuffle`, `select`, `reduce` | Compiler intrinsics valid only with the documented vector argument shapes. |
+| `public use "provider" function ...` | Standard-library binding declaration only. Provider names such as `fs` and `runtime.*` are compiler/runtime identifiers, not importable modules. |
+| `#[repr(C)]` | Native-interface record or union layout marker. It is not a user-defined annotation. |
+| `#[noinline]` | Optimizer instruction for a function whose call boundary must remain measurable or externally observable. |
+| `#[start]`, `#[interrupt]`, `#[naked]`, `#[target_feature("...")]` | Hardware-target function attributes. They require the matching target and capability; ordinary applications use `start()`. |
+| `#[volatile]` | Hardware-only pointer-field access marker; it is not a general variable modifier. |
+
+Names beginning with `__`, generated symbols beginning with `foo_`, IR labels
+such as `equals`, `times`, or `catch`, and backend runtime helpers are never
+FOO source APIs. Their appearance in generated output or a native diagnostic
+does not make them callable from an `.iv` file. Source uses `is`, `multiply`,
+and `fallback` respectively.
+
+```foo
+constant name is input() fallback "friend".
+display "Hello, " plus name.
+report "The greeting was written".
+```
+
+`input()` reads one line from standard input, `display` writes to standard
+output, and `report` writes to standard error. Import `io` when code must pick
+a stream, read a bounded amount, handle a write failure, or close an owned
+stream.
 
 ## Modules and native calls
 

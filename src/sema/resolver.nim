@@ -1,6 +1,6 @@
 import std/[json, os, sets, strutils, tables]
 import ../ast/node as ast
-import ../diag/[code, engine, span]
+import ../diag/[code, engine]
 import ../lex/lexer
 import ../parse/parser
 import ./[form, module, scope, symbol]
@@ -13,6 +13,7 @@ type
   Resolver* = ref object
     diag: Engine
     root: string
+    sourceRoot: string
     stdRoot: string
     units: Table[string, module.Unit]
     order: seq[string]
@@ -38,9 +39,17 @@ proc bundledStdRoot(): string =
 proc newResolver*(diag: Engine; root: string; stdRoot = "";
     read: ReadProc = nil; parse: ParseProc = nil): Resolver =
   let absoluteRoot = absolutePath(root)
+  var source = "src"
+  try:
+    let manifest = parseJson(readFile(absoluteRoot / "project.json"))
+    let configured = manifest.getOrDefault("source").getStr()
+    if configured.len > 0: source = configured
+  except CatchableError:
+    discard
   Resolver(
     diag: diag,
     root: absoluteRoot,
+    sourceRoot: absolutePath(absoluteRoot / source),
     stdRoot: if stdRoot.len > 0: absolutePath(stdRoot) else: bundledStdRoot(),
     units: initTable[string, module.Unit](),
     resolutions: initTable[pointer, Symbol](),
@@ -109,7 +118,6 @@ proc resolveType(resolver: Resolver; node: ast.`Type`; target: Scope;
   of "optional": resolver.resolveType(ast.Optional(node).elem, target, moduleName)
   of "error": resolver.resolveType(ast.Error(node).elem, target, moduleName)
   of "pointer": resolver.resolveType(ast.Pointer(node).elem, target, moduleName)
-  of "array": resolver.resolveType(ast.Array(node).elem, target, moduleName)
   of "sequence": resolver.resolveType(ast.Sequence(node).elem, target, moduleName)
   of "vector": resolver.resolveType(ast.Vector(node).elem, target, moduleName)
   of "function-type":
@@ -169,9 +177,6 @@ proc expression(resolver: Resolver; node: ast.Expression; target: Scope;
   of "allocation":
     resolver.expression(ast.Allocation(node).size, target, moduleName)
     resolver.expression(ast.Allocation(node).owner, target, moduleName)
-  of "error-chain":
-    resolver.expression(ast.ErrorChain(node).expr, target, moduleName)
-    resolver.expression(ast.ErrorChain(node).context, target, moduleName)
   of "machine":
     let machine = ast.Machine(node)
     resolver.expression(machine.target, target, moduleName)
@@ -317,7 +322,11 @@ proc modulePath(resolver: Resolver; useNode: ast.Use; current: string): string =
     if path.isAbsolute: path else: absolutePath(parentDir(currentFile) / path)
   else:
     let local = parentDir(currentFile) / (useNode.name.text & ".iv")
-    if resolver.read(local).found: return local
+    if resolver.read(local).found and absolutePath(local) != absolutePath(currentFile):
+      return local
+    let project = resolver.sourceRoot / (useNode.name.text & ".iv")
+    if resolver.read(project).found and absolutePath(project) != absolutePath(currentFile):
+      return project
     let package = resolver.packagePath(useNode.name.text)
     if package.len > 0: return package
     resolver.stdRoot / (useNode.name.text & ".iv")
@@ -444,10 +453,6 @@ proc statement(resolver: Resolver; node: ast.Statement; target: Scope;
   of "while":
     resolver.expression(ast.`While`(node).cond, target, moduleName)
     resolver.resolveBlock(ast.`While`(node).body, target, moduleName)
-  of "repeat":
-    resolver.expression(ast.Repeat(node).target, target, moduleName)
-    resolver.expression(ast.Repeat(node).limit, target, moduleName)
-    resolver.resolveBlock(ast.Repeat(node).body, target, moduleName)
   of "for":
     let loop = ast.`For`(node)
     resolver.expression(loop.iter, target, moduleName)
@@ -471,7 +476,6 @@ proc statement(resolver: Resolver; node: ast.Statement; target: Scope;
   of "assignment":
     resolver.expression(ast.Assignment(node).target, target, moduleName)
     resolver.expression(ast.Assignment(node).value, target, moduleName)
-  of "try": resolver.expression(ast.`Try`(node).expr, target, moduleName)
   of "defer":
     let deferred = ast.`Defer`(node)
     if deferred.body != nil and deferred.body.tag == "block": resolver.resolveBlock(ast.Block(deferred.body), target, moduleName)
@@ -486,7 +490,6 @@ proc statement(resolver: Resolver; node: ast.Statement; target: Scope;
       resolver.expression(action.name, target, moduleName)
       for argument in action.args: resolver.expression(argument, target, moduleName)
   of "machine": resolver.expression(node, target, moduleName)
-  of "advance": resolver.expression(ast.AdvanceStatement(node).target, target, moduleName)
   else: discard
 
 proc resolveUnit(resolver: Resolver; node: ast.Unit; name, file: string) =

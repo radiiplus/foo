@@ -24,7 +24,7 @@ proc publicItems*(program: Program): seq[PublicItem] =
           declaration: "public function " & value.name.text &
             (if typeParams.len > 0: "[" & typeParams.join(", ") & "]" else: "") &
             "(" & params.join(", ") & ")" &
-            (if value.returnType != nil: " of type " & print(value.returnType) else: "") &
+            (if value.returnType != nil: " giving " & print(value.returnType) else: "") &
             (if clauses.len > 0: " where " & clauses.join(", ") else: "") & ".")
       of "extern-function":
         let value = ExternFunction(statement)
@@ -37,7 +37,7 @@ proc publicItems*(program: Program): seq[PublicItem] =
           declaration: "public function " & value.name.text &
             (if typeParams.len > 0: "[" & typeParams.join(", ") & "]" else: "") &
             "(" & params.join(", ") & ")" &
-            (if value.returnType != nil: " of type " & print(value.returnType) else: "") &
+            (if value.returnType != nil: " giving " & print(value.returnType) else: "") &
             (if clauses.len > 0: " where " & clauses.join(", ") else: "") & ".")
       of "alias":
         let value = Alias(statement)

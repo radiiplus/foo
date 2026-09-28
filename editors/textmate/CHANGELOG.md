@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.0 - 2026-09-28
+
+- Remove highlighting and snippets for deprecated language spellings and
+  compiler-internal native blocks.
+- Use canonical parenthesized calls in documentation and completion examples.
+- Align tokens, fixtures, and live language-server checks with FOO 0.5.0.
+
 ## 2.4.1 - 2026-09-28
 
 - Report when the FOO language server has initialized successfully.

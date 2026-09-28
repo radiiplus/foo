@@ -1,7 +1,7 @@
 # Types
 
 Reflection produces an immutable description with name and kind as text, and
-size and alignment as unsigned 64-bit values. Names use FOO type vocabulary.
+size and alignment as unsigned-bit values. Names use FOO type vocabulary.
 Sizes and alignments describe the selected target, not the compiler host.
 
 Version: 1.
@@ -34,10 +34,10 @@ identified by package, file and declaration.
 | `Error` | An open error identity; see [errors](errors.md) |
 | `Allocator` | A managed allocation capability; see [memory](memory.md) |
 
-Integer widths are 1 through 128. Width 64 uses the bare numeric name in
-canonical source; `integer 64`, `unsigned 64` and `decimal 64` are not separate
-accepted spellings. Byte remains distinct from `unsigned 8`, and character
-remains distinct from `unsigned 32`.
+Integer widths are 1 through 128. The default width is written with the bare
+numeric name; explicit widths are reserved for non-default representations.
+Byte remains distinct from `unsigned 8`, and character remains distinct from
+`unsigned 32`.
 
 The semantic lattice has an uninhabited bottom type, never, for expressions that
 cannot return, such as unreachable or propagation of an unconditional failure.

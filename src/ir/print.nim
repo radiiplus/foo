@@ -87,7 +87,6 @@ proc printInstr(instruction: Instruction): string =
     dest & "shuffle " & valueStr(instruction.val) & ", " & valueStr(instruction.val2) & ", " & mask.join(", ")
   of InstrKind.Select: dest & "select " & valueStr(instruction.cond) & ", " & valueStr(instruction.val) & ", " & valueStr(instruction.val2)
   of InstrKind.Reduce: dest & "reduce " & instruction.reduceOp.toLowerAscii & ", " & valueStr(instruction.val)
-  of InstrKind.NativeZig: dest & "native zig " & $(%instruction.code)
   else: dest & operations[instruction.kind.ord]
 
 proc print*(module: Module): string =

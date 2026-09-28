@@ -33,9 +33,6 @@ type
   Null* = ref object of Node
   Uninitialized* = ref object of Node
   Unreachable* = ref object of Node
-  Quantity* = ref object of Node
-    value*: string
-    unit*: string
   NewlineExpr* = ref object of Node
   Name* = ref object of Node
     text*: string
@@ -79,9 +76,6 @@ type
   Index* = ref object of Node
     `object`*: Expression
     index*: Expression
-  ErrorChain* = ref object of Node
-    expr*: Expression
-    context*: Expression
 
   TypeParam* = ref object of Node
     name*: Name
@@ -158,13 +152,9 @@ type
     returnType*: `Type`
   CImport* = ref object of Node
     header*: string
-  NativeZig* = ref object of Node
-    code*: string
   Native* = ref object of Node
     code*: string
     substrate*: string
-  Asm* = ref object of Node
-    code*: string
   Give* = ref object of Node
     value*: Expression
   `When`* = ref object of Node
@@ -173,10 +163,6 @@ type
     `else`*: Node
   `While`* = ref object of Node
     cond*: Expression
-    body*: Block
-  Repeat* = ref object of Node
-    target*: Name
-    limit*: Expression
     body*: Block
   `For`* = ref object of Node
     `bind`*: Name
@@ -187,8 +173,6 @@ type
     cases*: seq[`Case`]
   `Break`* = ref object of Node
   `Continue`* = ref object of Node
-  `Try`* = ref object of Node
-    expr*: Expression
   `Defer`* = ref object of Node
     body*: Node
     error*: bool
@@ -203,8 +187,6 @@ type
     guard*: Expression
     body*: Block
   UnreachableStatement* = ref object of Node
-  AdvanceStatement* = ref object of Node
-    target*: Name
   TestBlock* = ref object of Node
     name*: Text
     body*: Block
@@ -230,8 +212,6 @@ type
   Primitive* = ref object of Node
     name*: string
     width*: string
-  Array* = ref object of Node
-    elem*: `Type`
   Sequence* = ref object of Node
     elem*: `Type`
     constant*: bool

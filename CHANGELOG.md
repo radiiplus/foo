@@ -5,6 +5,45 @@ changes are recorded here.
 
 ## Unreleased
 
+## 0.5.0 - 2026-09-28
+
+### Language And Compiler
+
+- Remove deprecated spellings and compatibility forms from the lexer, parser,
+  formatter, IR, type checker, generated bindings, and both native backends so
+  every supported construct has one canonical spelling.
+- Make direct calls and high-level I/O forms compose consistently with module
+  calls, defaults, generics, records, choices, failures, and control flow.
+- Reserve compiler-owned operations and type constraints for compiler and
+  standard-library internals, with diagnostics that direct applications to the
+  public language surface.
+- Align module resolution, test discovery and counting, entry-point handling,
+  public visibility, and LSP analysis with the compiler's package model.
+
+### Runtime And Optimization
+
+- Replace linear persistent-sequence growth with a shared geometric buffer and
+  mutable newest-version tail while preserving logical lengths and copy-on-
+  branch behavior for older versions.
+- Retain allocation, growth, copy, peak-memory, slow-path, lookup, iteration,
+  append, and old-version branch measurements behind build configuration.
+- Remove redundant copies, allocations, metadata work, checks, and call
+  boundaries exposed by the new representation on both C and Zig backends.
+
+### Documentation And Tooling
+
+- Reconcile the book, language specification, standard-library catalog,
+  examples, and generated `llm.txt` with accepted compiler behavior.
+- Document module and project discovery, testing, special compiler-owned
+  symbols, canonical I/O, absence, failures, generics, constraints, identity,
+  cleanup, matching, operator precedence, and backend guarantees in place.
+- Compile-check every FOO documentation block, validate expected-error examples,
+  and check JSON and shell snippets so stale examples fail the test suite.
+- Update the VS Code grammar, snippets, fixtures, and language-server coverage
+  to remove deprecated forms and follow the canonical language surface.
+- Add cross-feature composition tests covering source resolution, public APIs,
+  generics, records, choices, failures, and native C and Zig generation.
+
 ## 0.4.1 - 2026-09-28
 
 ### Compiler And Runtime

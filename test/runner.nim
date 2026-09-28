@@ -12,6 +12,7 @@ doAssert suites[0].name == "addition"
 doAssert suites[0].file.endsWith("suite.iv")
 let withStarts = discoverTests(root, includeStarts = true)
 doAssert withStarts.len == 2
+
 var called = 0
 let results = runTests(root, "addition", executor = proc(suite: TestSuite): TestResult =
   called.inc
@@ -23,5 +24,24 @@ let watcher = watchTests(root, executor = proc(suite: TestSuite): TestResult =
 doAssert watcher.poll().len == 1
 watcher.stop()
 doAssert watcher.poll().len == 0
+
+let project = root / "project"
+createDir(project / "src")
+createDir(project / "test")
+writeFile(project / "project.json", """{"source":"src"}""")
+writeFile(project / "src" / "values.iv",
+  "public function answer() giving integer { give 42. }\n")
+writeFile(project / "test" / "contract.iv", """use values.
+use testing as check.
+test "source import and generic equality" { check.same(values.answer(), 42). }
+""")
+createDir(project / "benchmark")
+writeFile(project / "benchmark" / "broken.iv", "constant broken is .\n")
+createDir(project / ".foo" / "packages" / "broken")
+writeFile(project / ".foo" / "packages" / "broken" / "bad.iv",
+  "constant broken is .\n")
+let projectSuites = discoverTests(project)
+doAssert projectSuites.len == 1
+doAssert projectSuites[0].name == "source import and generic equality"
 removeDir(root)
 echo "test runner parity: ok"

@@ -1,32 +1,27 @@
 -- Declares executable test assertions.
-public use "testing" function expect(value of type boolean) of type nothing.
-public use "testing" function same(actual of type text, expected of type text) of type nothing.
-public use "testing" function number(actual of type unsigned 64, expected of type unsigned 64) of type nothing.
-public use "testing" function positive(value of type unsigned 64) of type nothing.
-public use "testing" function real(actual of type decimal 64, expected of type decimal 64) of type nothing.
-public use "testing" function point(actual of type optional unsigned 32, expected of type unsigned 32) of type nothing.
-
+public use "testing" function expect(value boolean) giving nothing.
+public use "testing" function number(actual unsigned, expected unsigned) giving nothing.
+public use "testing" function positive(value unsigned) giving nothing.
+public use "testing" function real(actual decimal, expected decimal) giving nothing.
+public use "testing" function point(actual optional unsigned 32, expected unsigned 32) giving nothing.
+public function same[T](actual T, expected T) giving nothing where T is Equatable {
+  expect(actual is expected).
+}
 public define Generator[T] as record {
-  sample of type function taking (unsigned 64) giving T.
+  sample of type function taking (unsigned) giving T.
 }.
-
-public function generate[T](
-    count unsigned 64,
-    generator Generator[T],
-    property function taking (T) giving boolean
-) giving nothing {
+public function generate[T](count unsigned, generator Generator[T], property function taking (T) giving boolean) giving nothing {
   constant produce is generator.sample.
-  dynamic index of type unsigned 64 is 0.
+  dynamic index of type unsigned is 0.
   while index less than count {
     expect(property(produce(index))).
-    increase index by 1.
+    set index to index plus 1.
   }
 }
-
-public function every(count unsigned 64, property function taking (unsigned 64) giving boolean) giving nothing {
-  dynamic index of type unsigned 64 is 0.
+public function every(count unsigned, property function taking (unsigned) giving boolean) giving nothing {
+  dynamic index of type unsigned is 0.
   while index less than count {
     expect(property(index)).
-    increase index by 1.
+    set index to index plus 1.
   }
 }

@@ -1,36 +1,36 @@
 -- Checks allocation contents, resizing, ownership and arena cleanup.
 use "../../std/memory.iv".
 use testing.
-function drop(allocator of type pointer to Allocator, buffer of type pointer to byte) of type failable text {
-  try release(allocator, buffer).
+function drop(allocator pointer to Allocator, buffer pointer to byte) giving failable text {
+  release(allocator, buffer) try.
   give "released".
 }
 start() {
   constant allocator is system().
-  constant buffer is try allocate(allocator, 4).
+  constant buffer is allocate(allocator, 4) try.
   expect(identical[byte](buffer, buffer)).
-  same(try view(allocator, buffer, 4), "\0\0\0\0").
-  try copy(allocator, buffer, "FOO!").
-  constant grown is try expand(allocator, buffer, 8).
-  same(try view(allocator, grown, 8), "FOO!\0\0\0\0").
-  constant smaller is try expand(allocator, grown, 2).
-  same(try view(allocator, smaller, 2), "FO").
-  same(view(allocator, smaller, 3) catch "bounds", "bounds").
-  constant unchanged is expand(allocator, smaller, 18446744073709551615) catch smaller.
-  same(try view(allocator, unchanged, 2), "FO").
-  constant group is try arena().
-  same(view(group, smaller, 2) catch "owner", "owner").
-  same(drop(group, smaller) catch "owner", "owner").
-  same(try view(allocator, smaller, 2), "FO").
-  constant temporary is try allocate(group, 8).
-  try copy(group, temporary, "arena").
-  try close(group).
-  same(view(group, temporary, 5) catch "closed", "closed").
-  try release(allocator, smaller).
-  same(drop(allocator, smaller) catch "stale", "stale").
-  same(view(allocator, smaller, 0) catch "released", "released").
-  constant empty is try allocate(allocator, 0).
-  same(try view(allocator, empty, 0), "").
-  try release(allocator, empty).
-  give.
+  same(view(allocator, buffer, 4) try, "\0\0\0\0").
+  copy(allocator, buffer, "FOO!") try.
+  constant grown is expand(allocator, buffer, 8) try.
+  same(view(allocator, grown, 8) try, "FOO!\0\0\0\0").
+  constant smaller is expand(allocator, grown, 2) try.
+  same(view(allocator, smaller, 2) try, "FO").
+  same(view(allocator, smaller, 3) fallback "bounds", "bounds").
+  constant unchanged is expand(allocator, smaller, 18446744073709551615) fallback smaller.
+  same(view(allocator, unchanged, 2) try, "FO").
+  constant group is arena() try.
+  same(view(group, smaller, 2) fallback "owner", "owner").
+  same(drop(group, smaller) fallback "owner", "owner").
+  same(view(allocator, smaller, 2) try, "FO").
+  constant temporary is allocate(group, 8) try.
+  copy(group, temporary, "arena") try.
+  close(group) try.
+  same(view(group, temporary, 5) fallback "closed", "closed").
+  release(allocator, smaller) try.
+  same(drop(allocator, smaller) fallback "stale", "stale").
+  same(view(allocator, smaller, 0) fallback "released", "released").
+  constant empty is allocate(allocator, 0) try.
+  same(view(allocator, empty, 0) try, "").
+  release(allocator, empty) try.
+  give nothing.
 }

@@ -3,6 +3,6 @@
   use secret.
   
   start() {
-    constant x is hidden_value.
-    give.
+    constant x is hiddenvalue.
+    give nothing.
   }

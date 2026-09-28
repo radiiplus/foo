@@ -34,8 +34,8 @@
   },
   {
     "line": 9,
-    "text": "sample",
-    "scope": "invalid.illegal.foo"
+    "text": "start",
+    "scope": "keyword.control.foo"
   },
   {
     "line": 10,
@@ -46,16 +46,6 @@
     "line": 10,
     "text": "[",
     "scope": "punctuation.definition.typeparameters.begin.foo"
-  },
-  {
-    "line": 10,
-    "text": "T:",
-    "scope": "meta.type.parameters.foo"
-  },
-  {
-    "line": 10,
-    "text": ":",
-    "scope": "punctuation.separator.foo"
   },
   {
     "line": 11,
@@ -134,14 +124,14 @@
   },
   {
     "line": 17,
-    "text": "[",
-    "scope": "meta.brackets.foo",
-    "absent": "meta.type.parameters.foo"
+    "text": "at",
+    "scope": "keyword.operator.foo"
   },
   {
     "line": 18,
-    "text": "index",
-    "scope": "meta.brackets.foo"
+    "text": "at",
+    "scope": "keyword.operator.foo",
+    "last": true
   },
   {
     "line": 19,
@@ -190,8 +180,8 @@
   },
   {
     "line": 26,
-    "text": "\"header.h\"",
-    "scope": "string.quoted.double.foo"
+    "text": "header",
+    "scope": "entity.name.function.foo"
   },
   {
     "line": 27,
@@ -444,56 +434,6 @@
     "last": true
   },
   {
-    "line": 59,
-    "text": "bytes",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
-    "line": 59,
-    "text": "bits",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
-    "line": 59,
-    "text": "kilobytes",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
-    "line": 59,
-    "text": "megabytes",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
-    "line": 59,
-    "text": "gigabytes",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
-    "line": 59,
-    "text": "terabytes",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
-    "line": 60,
-    "text": "seconds",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
-    "line": 60,
-    "text": "milliseconds",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
-    "line": 60,
-    "text": "microseconds",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
-    "line": 60,
-    "text": "nanoseconds",
-    "scope": "keyword.other.unit.foo"
-  },
-  {
     "line": 61,
     "text": "xFF",
     "scope": "variable.other.foo",
@@ -695,36 +635,36 @@
   },
   {
     "line": 72,
-    "text": "module",
-    "scope": "meta.embedded.block.zig",
+    "text": "value",
+    "scope": "meta.embedded.block.c",
     "absent": "keyword.other.foo"
   },
   {
     "line": 72,
     "text": "\"}\"",
-    "scope": "string.quoted.double.zig"
+    "scope": "string.quoted.double.c"
   },
   {
     "line": 73,
     "text": "function",
-    "scope": "comment.line.double-slash.zig"
+    "scope": "comment.line.double-slash.c"
   },
   {
     "line": 76,
     "text": "constant",
     "scope": "storage.modifier.foo",
-    "absent": "meta.embedded.block.zig"
+    "absent": "meta.embedded.block.c"
   },
   {
     "line": 77,
-    "text": "asm",
+    "text": "native",
     "scope": "keyword.control.foo"
   },
   {
     "line": 78,
     "text": "2",
     "scope": "constant.numeric.foo",
-    "absent": "meta.embedded.block.zig"
+    "absent": "meta.embedded.block.asm"
   },
   { "line": 80, "text": "native", "scope": "keyword.control.foo" },
   { "line": 82, "text": "answer", "scope": "meta.embedded.block.c" },

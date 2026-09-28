@@ -130,9 +130,8 @@ proc numberLiteral(lexer: Lexer): Token =
 
 proc keywordKind(text: string): Kind =
   case text
-  of "module": Module
   of "constant": Constant
-  of "dynamic", "mutable": Mutable
+  of "dynamic": Mutable
   of "is": Is
   of "give": Give
   of "when": When
@@ -141,25 +140,18 @@ proc keywordKind(text: string): Kind =
   of "each": Each
   of "in": In
   of "while": While
-  of "repeat": Repeat
-  of "until": Until
-  of "reaches": Reaches
-  of "advance": Advance
   of "match": Match
   of "case": Case
-  of "stop", "break": Break
-  of "skip", "continue": Continue
+  of "stop": Break
+  of "skip": Continue
   of "use": Use
   of "public": Public
   of "unsafe": Unsafe
   of "native": Native
-  of "evaluate": Evaluate
-  of "on": On
-  of "leave": Leave
   of "try": Try
   of "are": Are
-  of "fallback", "catch": Catch
-  of "after", "cleanup", "finally": After
+  of "fallback": Catch
+  of "after": After
   of "and": And
   of "or": Or
   of "not": Not
@@ -167,12 +159,10 @@ proc keywordKind(text: string): Kind =
   of "of": Of
   of "define", "type": Type
   of "plus": Plus
-  of "subtract", "minus": Minus
-  of "multiply", "times": Times
-  of "divide", "divided": Divided
+  of "subtract": Minus
+  of "multiply": Times
+  of "divide": Divided
   of "by": By
-  of "equals": Equals
-  of "does": Does
   of "equal": Equal
   of "greater": Greater
   of "than": Than
@@ -187,7 +177,6 @@ proc keywordKind(text: string): Kind =
   of "byte": Byte
   of "character": Character
   of "text": Text
-  of "array": Array
   of "sequence": Sequence
   of "nothing": Nothing
   of "null": Null
@@ -205,18 +194,14 @@ proc keywordKind(text: string): Kind =
   of "optional": Optional
   of "pointer": Pointer
   of "to": To
-  of "address": Address
-  of "reference": Reference
   of "start": Start
   of "newline": Newline
   of "anything": Anything
   of "test": Test
-  of "context": Context
   of "eval": Eval
   of "reflect": Reflect
   of "embed": Embed
   of "derives": Derives
-  of "asm": Asm
   else: Ident
 
 proc word(lexer: Lexer): Token =
@@ -294,13 +279,11 @@ proc next(lexer: Lexer): Token =
     var cursor = lexer.pos + 6
     while cursor < lexer.src.len and lexer.src[cursor].isSpaceAscii: inc cursor
     var substrate = "foo"
-    var kind = Kind.Native
     if cursor < lexer.src.len:
-      for candidate in ["zig", "c", "asm"]:
+      for candidate in ["c", "asm"]:
         if lexer.src[cursor .. ^1].startsWith(candidate) and cursor + candidate.len < lexer.src.len and
             (lexer.src[cursor + candidate.len].isSpaceAscii or lexer.src[cursor + candidate.len] == '{'):
           substrate = candidate
-          if substrate == "zig": kind = Kind.NativeZig
           cursor += candidate.len
           while cursor < lexer.src.len and lexer.src[cursor].isSpaceAscii: inc cursor
           break
@@ -312,12 +295,7 @@ proc next(lexer: Lexer): Token =
         header = lexer.src[cursor ..< opening].strip()
         cursor = opening
     if cursor < lexer.src.len and lexer.src[cursor] == '{':
-      return blockToken(lexer, kind, substrate, header)
-  if lexer.src[lexer.pos .. ^1].startsWith("asm") and lexer.pos + 3 < lexer.src.len and
-      (lexer.src[lexer.pos + 3].isSpaceAscii or lexer.src[lexer.pos + 3] == '{'):
-    var cursor = lexer.pos + 3
-    while cursor < lexer.src.len and lexer.src[cursor].isSpaceAscii: inc cursor
-    if cursor < lexer.src.len and lexer.src[cursor] == '{': return blockToken(lexer, Kind.Asm)
+      return blockToken(lexer, Kind.Native, substrate, header)
   if ch == '\n': lexer.mark(); discard lexer.read(); return make(lexer, Kind.NewlineToken, "\n")
   if ch == '-' and lexer.pos + 2 < lexer.src.len and lexer.src[lexer.pos + 1] == '-' and lexer.src[lexer.pos + 2] == '-': lexer.comment(); return lexer.next()
   if ch == '-' and lexer.pos + 1 < lexer.src.len and lexer.src[lexer.pos + 1] == '-': lexer.scanline(); return lexer.next()

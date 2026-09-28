@@ -4,14 +4,12 @@ public define Participant as record {
   commit of type function taking () giving failable nothing.
   rollback of type function taking () giving nothing.
 }.
-
-public function execute(
-    participant Participant,
-    work function taking () giving failable nothing
-) giving failable nothing {
+public function execute(participant Participant, work function taking () giving failable nothing) giving failable nothing {
   constant Participant(prepare, commit, rollback) is participant.
   prepare() try.
-  after error { rollback(). }
+  after error {
+    rollback().
+  }
   work() try.
   commit() try.
 }

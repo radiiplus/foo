@@ -37,7 +37,7 @@ Boolean and byte occupy one byte with alignment one; Boolean values encode as
 zero or one. Character occupies an unsigned 32-bit unit. Unit has no payload;
 an empty record occupies one byte with alignment one. Where the target lacks a
 128-bit C scalar, 128-bit integer storage is 16 little-endian bytes aligned as
-an unsigned 64-bit scalar and is passed indirectly.
+an unsigned-bit scalar and is passed indirectly.
 
 An optional stores an eight-bit tag, padding, then its value. A choice stores an
 unsigned 32-bit tag and an aligned union of payload storage. An implicit choice

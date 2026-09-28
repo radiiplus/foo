@@ -1,13 +1,11 @@
 -- Provides text formatting.
 --- Formatting and parsing ---
 --- Type-safe string formatting ---
-
-public function format(buffer of type pointer to byte, size of type integer 64, template of type pointer to byte) {
-  constant result of type integer 64 is 0.
+public function format(buffer pointer to byte, size integer, template pointer to byte) {
+  constant result of type integer is 0.
   give result.
 }
-
-public function parse(content of type pointer to byte) {
-  constant result of type integer 64 is 0.
+public function parse(content pointer to byte) {
+  constant result of type integer is 0.
   give result.
 }

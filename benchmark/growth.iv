@@ -2,27 +2,27 @@
 use sequence as items.
 use testing as check.
 
-dynamic values is items.create[unsigned 64]().
-dynamic older is items.create[unsigned 64]().
-dynamic index of type unsigned 64 is 0.
+dynamic values is items.create[unsigned]().
+dynamic older is items.create[unsigned]().
+dynamic index of type unsigned is 0.
 while index less than 10_000 {
-  set values to items.append[unsigned 64](values, index) try.
+  set values to items.append[unsigned](values, index) try.
   increase index by 1.
   when index is 5_000 { set older to values. }
 }
 
-constant marker of type unsigned 64 is 50_000.
-constant branched is items.append[unsigned 64](older, marker) try.
+constant marker of type unsigned is 50_000.
+constant branched is items.append[unsigned](older, marker) try.
 after {
-  items.release[unsigned 64](older) fallback nothing.
-  items.release[unsigned 64](values) fallback nothing.
-  items.release[unsigned 64](branched) fallback nothing.
+  items.release[unsigned](older) fallback nothing.
+  items.release[unsigned](values) fallback nothing.
+  items.release[unsigned](branched) fallback nothing.
 }
 
-check.number(items.length[unsigned 64](values), 10_000).
+check.number(items.length[unsigned](values), 10_000).
 check.number(values at 9_999, 9_999).
-check.number(items.length[unsigned 64](older), 5_000).
+check.number(items.length[unsigned](older), 5_000).
 check.number(older at 4_999, 4_999).
-check.number(items.length[unsigned 64](branched), 5_001).
+check.number(items.length[unsigned](branched), 5_001).
 check.number(branched at 5_000, 50_000).
 check.number(values at 5_000, 5_000).

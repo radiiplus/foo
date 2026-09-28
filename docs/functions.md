@@ -140,6 +140,12 @@ function maximum[T](left T, right T) giving T where T is Ord {
 Current standard constraints include `Equatable`, `Hash`, `Ord`, and
 `Allocator`.
 
+These names are compiler-recognized capabilities, not modules, interfaces, or
+runtime values. Do not `use` them or call them. `Equatable` permits `is` and
+`is not`, `Hash` adds equality-consistent hashing, `Ord` permits ordering, and
+`Allocator` permits allocator-dependent generic work. Application code cannot
+declare new constraint kinds in language version 1.
+
 ## Function values
 
 Non-capturing functions can be passed to higher-order operations such as

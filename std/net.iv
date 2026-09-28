@@ -1,14 +1,14 @@
 -- Opens TCP connections and transfers bytes with explicit connection lifetimes.
 public define Connection as opaque.
-public use "net" function connect(host of type text, port of type unsigned 64) of type failable pointer to Connection.
-public use "net" function listen(host of type text, port of type unsigned 64) of type failable pointer to Connection.
-public use "net" function accept(listener of type pointer to Connection) of type failable pointer to Connection.
-public use "net" function port(listener of type pointer to Connection) of type failable unsigned 64.
-public use "net" function send(connection of type pointer to Connection, content of type text) of type failable unsigned 64.
-public use "net" function receive(connection of type pointer to Connection, size of type unsigned 64) of type failable text.
+public use "net" function connect(host text, port unsigned) giving failable pointer to Connection.
+public use "net" function listen(host text, port unsigned) giving failable pointer to Connection.
+public use "net" function accept(listener pointer to Connection) giving failable pointer to Connection.
+public use "net" function port(listener pointer to Connection) giving failable unsigned.
+public use "net" function send(connection pointer to Connection, content text) giving failable unsigned.
+public use "net" function receive(connection pointer to Connection, size unsigned) giving failable text.
 -- Advanced socket controls. push may write fewer bytes than requested.
-public use "net" function push(connection pointer to Connection, content text) giving failable unsigned 64.
+public use "net" function push(connection pointer to Connection, content text) giving failable unsigned.
 public use "net" function shutdown(connection pointer to Connection, direction text) giving failable nothing.
 public use "net" function nodelay(connection pointer to Connection, enabled boolean) giving failable nothing.
 public use "net" function keepalive(connection pointer to Connection, enabled boolean) giving failable nothing.
-public use "net" function close(connection of type pointer to Connection) of type failable nothing.
+public use "net" function close(connection pointer to Connection) giving failable nothing.

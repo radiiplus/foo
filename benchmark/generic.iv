@@ -6,13 +6,13 @@ function identity[T](value T) giving T {
   give value.
 }
 
-dynamic index of type unsigned 64 is 0.
-dynamic checksum of type unsigned 64 is 0.
-dynamic limit of type unsigned 64 is 10_000_000.
+dynamic index of type unsigned is 0.
+dynamic checksum of type unsigned is 0.
+dynamic limit of type unsigned is 10_000_000.
 when machine.cores() try greater than 0 { increase limit by 1. }
 
 while index less than limit {
-  set checksum to checksum plus identity[unsigned 64](index).
+  set checksum to checksum plus identity[unsigned](index).
   increase index by 1.
 }
 

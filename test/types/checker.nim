@@ -237,8 +237,8 @@ choiceChecker.check(choiceProgram)
 doAssert not choiceDiagnostics.failed,
   if choiceDiagnostics.messages.len > 0:
     choiceDiagnostics.messages[0].text else: "generic choice check failed"
-doAssert choiceChecker.types[cast[pointer](someCall)].name == "Box[unsigned 64]"
-doAssert choiceChecker.types[cast[pointer](noneCall)].name == "Box[unsigned 64]"
-doAssert choiceChecker.types[cast[pointer](noneValue)].name == "Box[unsigned 64]"
+doAssert choiceChecker.types[cast[pointer](someCall)].name == "Box[unsigned]"
+doAssert choiceChecker.types[cast[pointer](noneCall)].name == "Box[unsigned]"
+doAssert choiceChecker.types[cast[pointer](noneValue)].name == "Box[unsigned]"
 
 echo "type checker parity: ok"

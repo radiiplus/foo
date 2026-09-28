@@ -157,7 +157,6 @@ one terminator; terminators cannot occur in its instruction list.
 | embed, reflect, eval | Resource, type or compile-time residue |
 | native | A declared opaque contract and substrate hint |
 | atomic, thread | Synchronization operations requiring verified target-specific contracts |
-| native.zig | Backend-pinned compatibility payload; never portable FOO semantics |
 | phi | SSA merge |
 | jump, branch, return, panic | Terminators |
 

@@ -3,7 +3,7 @@
   "displayName": "foo.iv",
   "description": "FOO language support with live diagnostics and Ultraviolet / Acid syntax accents.",
   "icon": "images/icon.png",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "publisher": "radiiplus",
   "repository": {
     "type": "git",

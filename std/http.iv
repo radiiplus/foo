@@ -3,25 +3,25 @@ public define Client as opaque.
 public define Response as opaque.
 public define Server as opaque.
 public define Peer as opaque.
-public use "http" function client() of type failable pointer to Client.
-public use "http" function trust(value of type pointer to Client, certificate of type text) of type failable nothing.
+public use "http" function client() giving failable pointer to Client.
+public use "http" function trust(value pointer to Client, certificate text) giving failable nothing.
 -- Advanced client controls. Attached headers persist until clear is called.
 public use "http" function attach(value pointer to Client, name text, content text) giving failable nothing.
 public use "http" function clear(value pointer to Client) giving nothing.
 public use "http" function redirects(value pointer to Client, limit unsigned 16) giving failable nothing.
 public use "http" function reuse(value pointer to Client, enabled boolean) giving nothing.
-public use "http" function request(value of type pointer to Client, url of type text, method of type text, content of type text, limit of type unsigned 32) of type failable pointer to Response.
-public use "http" function status(value of type pointer to Response) of type unsigned 16.
-public use "http" function body(value of type pointer to Response) of type failable text.
-public use "http" function release(value of type pointer to Response) of type nothing.
-public use "http" function close(value of type pointer to Client) of type nothing.
-public use "http" function listen(host of type text, port of type unsigned 16) of type failable pointer to Server.
-public use "http" function port(value of type pointer to Server) of type unsigned 16.
+public use "http" function request(value pointer to Client, url text, method text, content text, limit unsigned 32) giving failable pointer to Response.
+public use "http" function status(value pointer to Response) giving unsigned 16.
+public use "http" function body(value pointer to Response) giving failable text.
+public use "http" function release(value pointer to Response) giving nothing.
+public use "http" function close(value pointer to Client) giving nothing.
+public use "http" function listen(host text, port unsigned 16) giving failable pointer to Server.
+public use "http" function port(value pointer to Server) giving unsigned 16.
 public use "http" function shutdown(value pointer to Server) giving nothing.
-public use "http" function accept(value of type pointer to Server) of type failable pointer to Peer.
-public use "http" function receive(value of type pointer to Peer) of type failable text.
-public use "http" function method(value of type pointer to Peer) of type failable text.
-public use "http" function header(value of type pointer to Peer, name of type text) of type failable text.
-public use "http" function read(value of type pointer to Peer, limit of type unsigned 32) of type failable text.
-public use "http" function reply(value of type pointer to Peer, status of type unsigned 16, content of type text, reuse of type boolean) of type failable nothing.
-public use "http" function disconnect(value of type pointer to Peer) of type nothing.
+public use "http" function accept(value pointer to Server) giving failable pointer to Peer.
+public use "http" function receive(value pointer to Peer) giving failable text.
+public use "http" function method(value pointer to Peer) giving failable text.
+public use "http" function header(value pointer to Peer, name text) giving failable text.
+public use "http" function read(value pointer to Peer, limit unsigned 32) giving failable text.
+public use "http" function reply(value pointer to Peer, status unsigned 16, content text, reuse boolean) giving failable nothing.
+public use "http" function disconnect(value pointer to Peer) giving nothing.

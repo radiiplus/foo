@@ -22,7 +22,6 @@ proc inspectExpression(node: ast.Expression; diag: Engine) =
   of "field": inspectExpression(ast.Field(node).object, diag)
   of "index": inspectExpression(ast.Index(node).object, diag); inspectExpression(ast.Index(node).index, diag)
   of "allocation": inspectExpression(ast.Allocation(node).size, diag); inspectExpression(ast.Allocation(node).owner, diag)
-  of "error-chain": inspectExpression(ast.ErrorChain(node).expr, diag); inspectExpression(ast.ErrorChain(node).context, diag)
   of "machine":
     inspectExpression(ast.Machine(node).target, diag); inspectExpression(ast.Machine(node).value, diag)
     for argument in ast.Machine(node).args: inspectExpression(argument, diag)
@@ -44,12 +43,10 @@ proc inspectStatement(node: ast.Statement; diag: Engine) =
       if ast.`When`(node).else.tag == "block": inspectBlock(ast.Block(ast.`When`(node).else), diag)
       else: inspectStatement(ast.`When`(node).else, diag)
   of "while": inspectExpression(ast.`While`(node).cond, diag); inspectBlock(ast.`While`(node).body, diag)
-  of "repeat": inspectExpression(ast.Repeat(node).limit, diag); inspectBlock(ast.Repeat(node).body, diag)
   of "for": inspectExpression(ast.`For`(node).iter, diag); inspectBlock(ast.`For`(node).body, diag)
   of "match":
     inspectExpression(ast.Match(node).scrutinee, diag)
     for arm in ast.Match(node).cases: inspectExpression(arm.guard, diag); inspectBlock(arm.body, diag)
-  of "try": inspectExpression(ast.`Try`(node).expr, diag)
   of "defer":
     if ast.`Defer`(node).body.tag == "block": inspectBlock(ast.Block(ast.`Defer`(node).body), diag)
     else: inspectExpression(ast.`Defer`(node).body, diag)
@@ -73,7 +70,7 @@ proc capabilities*(program: ast.Program; diag: Engine; level = "base") =
 proc containsNative(body: ast.Block): bool
 proc containsNativeStatement(node: ast.Statement): bool =
   if node == nil: return false
-  if node.tag in ["native-zig", "native", "asm"]: return true
+  if node.tag == "native": return true
   if node.tag == "extern-function" and ast.ExternFunction(node).native.code.len > 0: return true
   case node.tag
   of "function": containsNative(ast.Function(node).body)
@@ -81,7 +78,6 @@ proc containsNativeStatement(node: ast.Statement): bool =
   of "test": containsNative(ast.TestBlock(node).body)
   of "unsafe": containsNative(ast.Unsafe(node).body)
   of "while": containsNative(ast.`While`(node).body)
-  of "repeat": containsNative(ast.Repeat(node).body)
   of "for": containsNative(ast.`For`(node).body)
   of "when":
     containsNative(ast.`When`(node).then) or
@@ -105,16 +101,12 @@ proc lintBlock(body: ast.Block; diag: Engine; backend: string) =
     if node.tag == "extern-function" and ast.ExternFunction(node).native.code.len > 0:
       diag.emit(Code.NativePublic, node.span,
         "Declare a native function at file scope, then call it with explicit arguments")
-    if node.tag == "native-zig" and backend != "zig":
-      diag.emit(Code.NativePublic, node.span, "native zig blocks require the Zig backend")
-      diag.suggestion("Remove this block or keep the package backend-pinned to Zig")
     case node.tag
     of "function": lintBlock(ast.Function(node).body, diag, backend)
     of "eval": lintBlock(ast.EvalBlock(node).body, diag, backend)
     of "test": lintBlock(ast.TestBlock(node).body, diag, backend)
     of "unsafe": lintBlock(ast.Unsafe(node).body, diag, backend)
     of "while": lintBlock(ast.`While`(node).body, diag, backend)
-    of "repeat": lintBlock(ast.Repeat(node).body, diag, backend)
     of "for": lintBlock(ast.`For`(node).body, diag, backend)
     of "when":
       lintBlock(ast.`When`(node).then, diag, backend)
@@ -135,13 +127,6 @@ proc lint*(program: ast.Program; diag: Engine; backend = "zig") =
         if function.native.code.len > 0 and function.public:
           diag.emit(Code.NativePublic, node.span,
             "Public APIs cannot expose a native function; use a private implementation and a portable wrapper")
-      if node.tag == "native-zig":
-        if backend != "zig":
-          diag.emit(Code.NativePublic, node.span, "native zig blocks require the Zig backend")
-          diag.suggestion("Remove this block or keep the package backend-pinned to Zig")
-        else:
-          diag.emit(Code.NativePublic, node.span, "native zig must be inside a private function")
-          diag.suggestion("Move the block into a private implementation function")
       if node.tag == "function":
         let function = ast.Function(node)
         if function.public and containsNative(function.body):

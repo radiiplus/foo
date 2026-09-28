@@ -1,12 +1,12 @@
 -- Exercises types fixtures errors behavior.
 
-  type Point is record {
-    x of type decimal 64.
-    y of type decimal 64.
+  define Point as record {
+    x of type decimal.
+    y of type decimal.
   }.
   
   start() {
     constant p of type Point is uninit.
     constant z is p.z.
-    give.
+    give nothing.
   }

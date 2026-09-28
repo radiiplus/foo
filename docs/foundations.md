@@ -112,12 +112,14 @@ runtime representation, and package behavior would duplicate those values.
 
 ### Iteration (Current language and library)
 
-`for each` works with compiler-supported sequences and collection types. This
-fragment assumes `items` is a sequence already provided by the surrounding
-program:
+`for each` works with compiler-supported sequences and collection types:
 
-<!-- snippet: context -->
 ```foo
+use sequence.
+
+constant items is sequence.append[text](sequence.create[text](), "value") try.
+after { sequence.release[text](items) fallback nothing. }
+
 for each item in items {
   display item.
 }
@@ -137,12 +139,19 @@ limited to compiler-supported collection values.
 
 Each `.iv` file is a module. `use` imports a sibling, source-root, package, or
 standard module; an alias provides a short local namespace. This fragment
-assumes the project contains `account.iv`:
+uses another project module:
 
-<!-- snippet: context -->
+<!-- snippet: project account src/account.iv -->
+```foo
+public function active() giving boolean { give true. }
+```
+
+<!-- snippet: project account src/main.iv -->
 ```foo
 use http as web.
 use "account.iv" as account.
+
+when account.active() { display "Active". }
 ```
 
 Circular imports, unresolved modules, and colliding imported names are compile
@@ -326,11 +335,13 @@ deterministic.
 
 ### Transactions and failure chains (Current library boundary)
 
-`fallback` chains can express ordered recovery. This fragment assumes the
-three application-specific operations are declared with compatible types:
+`fallback` chains can express ordered recovery:
 
-<!-- snippet: context -->
 ```foo
+function primary() giving failable text { give "primary". }
+function secondary() giving failable text { give "secondary". }
+
+constant offline is "offline".
 constant connection is primary() fallback secondary() fallback offline.
 ```
 

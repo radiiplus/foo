@@ -51,7 +51,7 @@ This page answers a practical question: **Which familiar language features exist
 *   **Compile-Time:** `eval`, immutable `reflect[T]()`, and `embed("path")` run or inspect work while the program is being built.
 
 ### ❌ What is NOT in FOO v1 (Do not assume these exist)
-*   Exceptions or `catch` blocks.
+*   Exception-based error handling.
 *   Custom pattern protocols.
 *   Macros or a user-defined annotation system.
 

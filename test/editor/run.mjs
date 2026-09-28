@@ -58,7 +58,7 @@ for (const [text, scope] of [['of', 'keyword.other.operator.of.foo'], ['type', '
 const configuration = JSON.parse(readFileSync(join(root, 'language.json'), 'utf8'));
 const increase = new RegExp(configuration.indentationRules.increaseIndentPattern);
 const decrease = new RegExp(configuration.indentationRules.decreaseIndentPattern);
-for (const line of ['function visit() {', 'start() {', 'module app {', '  } otherwise {']) assert(increase.test(line), `Block must indent: ${line}`);
+for (const line of ['function visit() {', 'start() {', 'when true {', '  } otherwise {']) assert(increase.test(line), `Block must indent: ${line}`);
 for (const line of ['-- comment {', '--- comment {', 'constant brace is "{".', 'function empty() {}']) assert(!increase.test(line), `Unexpected indentation: ${line}`);
 assert(decrease.test('  } otherwise {'));
 assert.equal('data.value'.match(new RegExp(configuration.wordPattern, 'g')).join(','), 'data,value');

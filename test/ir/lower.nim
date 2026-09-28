@@ -95,7 +95,9 @@ let loopFunction = ast.Function(tag: "function", span: position, name: name("cou
       cond: ast.Binary(tag: "binary", op: "is less than", left: name("index"),
         right: ast.Integer(tag: "integer", value: "3")),
       body: ast.Block(tag: "block", stmts: @[
-        ast.Statement(ast.AdvanceStatement(tag: "advance", target: name("index")))
+        ast.Statement(ast.Assignment(tag: "assignment", target: name("index"),
+          value: ast.Binary(tag: "binary", op: "plus", left: name("index"),
+            right: ast.Integer(tag: "integer", value: "1"))))
       ]))),
     ast.Statement(ast.Give(tag: "give", value: name("index")))
   ]))

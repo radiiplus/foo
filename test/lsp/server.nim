@@ -8,12 +8,15 @@ doAssert initialized[0]["result"]["capabilities"]["hoverProvider"].getBool()
 let current = lsp.handle(%*{"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {"textDocument": {"uri": "file:///current.iv", "version": 1, "text": """define Count as integer.
 function load value integer default 1 giving failable integer { give value. }
 function checked() giving failable integer { give load() try. }
+constant typed is input() fallback "".
 dynamic count is load() fallback 0.
 while count less than 3 {
   increase count by 1.
-  when count equals 1 { skip. }
-  when count equals 2 { stop. }
+  when count is 1 { skip. }
+  when count is 2 { stop. }
 }
+display typed.
+report "diagnostic".
 display "Hello, world!"."""}}})
 doAssert current.len == 1
 doAssert current[0]["params"]["diagnostics"].len == 0,

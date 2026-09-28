@@ -1,19 +1,18 @@
 -- Exercises types fixtures errors behavior.
 
-  type Data is record {
+  define Data as record {
     value of type integer 32.
   }.
 
-  function process(d of type Data) {
-    give.
+  function process(d Data) {
+    give nothing.
   }
 
   start() {
-    constant local_data of type Data is uninitialized.
+    constant localdata of type Data is uninitialized.
     
     -- This should trigger the escape error
-    process local_data.
+    process localdata.
     
-    give.
+    give nothing.
   }
-

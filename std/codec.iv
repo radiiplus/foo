@@ -3,6 +3,5 @@ public define Codec[T] as record {
   encode of type function taking (T) giving failable text.
   decode of type function taking (text) giving failable T.
 }.
-
 public use "codec" function encode[T](value T) giving failable text.
 public use "codec" function decode[T](source text) giving failable T.

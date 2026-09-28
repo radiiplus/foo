@@ -1,9 +1,9 @@
 -- Declares length-aware input, output and diagnostic streams.
 public define Stream as opaque.
-public use "stream" function input() of type pointer to Stream.
-public use "stream" function output() of type pointer to Stream.
-public use "stream" function report() of type pointer to Stream.
-public use "stream" function write(stream of type pointer to Stream, content of type text) of type failable nothing.
-public use "stream" function read(stream of type pointer to Stream, buffer of type pointer to byte, size of type unsigned 64) of type failable unsigned 64.
-public use "stream" function close(stream of type pointer to Stream) of type failable nothing.
-public use "stream" function print(stream of type pointer to Stream, content of type text) of type failable nothing.
+public use "stream" function input() giving pointer to Stream.
+public use "stream" function output() giving pointer to Stream.
+public use "stream" function report() giving pointer to Stream.
+public use "stream" function write(stream pointer to Stream, content text) giving failable nothing.
+public use "stream" function read(stream pointer to Stream, buffer pointer to byte, size unsigned) giving failable unsigned.
+public use "stream" function close(stream pointer to Stream) giving failable nothing.
+public use "stream" function print(stream pointer to Stream, content text) giving failable nothing.

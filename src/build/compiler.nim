@@ -65,13 +65,20 @@ proc prepareEntry*(program: Program) =
   if program == nil or program.units.len == 0: return
   let unit = program.units[0]
   var ioQualifier, logQualifier: string
+  var localNames = initHashSet[string]()
   for statement in unit.body.stmts:
-    if statement.tag != "use": continue
-    let imported = Use(statement)
-    if imported.path.len > 0: continue
-    let qualifier = if imported.alias != nil: imported.alias.text else: imported.name.text
-    if imported.name.text == "io": ioQualifier = qualifier
-    elif imported.name.text == "log": logQualifier = qualifier
+    case statement.tag
+    of "function": localNames.incl(Function(statement).name.text)
+    of "extern-function": localNames.incl(ExternFunction(statement).name.text)
+    of "constant": localNames.incl(Constant(statement).name.text)
+    of "mutable": localNames.incl(Mutable(statement).name.text)
+    of "use":
+      let imported = Use(statement)
+      if imported.path.len == 0:
+        let qualifier = if imported.alias != nil: imported.alias.text else: imported.name.text
+        if imported.name.text == "io": ioQualifier = qualifier
+        elif imported.name.text == "log": logQualifier = qualifier
+    else: discard
 
   var needsIo, needsLog, foundTry, foundRuntime: bool
   var failableTop = initTable[pointer, bool]()
@@ -87,7 +94,8 @@ proc prepareEntry*(program: Program) =
       let call = Call(expression)
       if call.callee.tag == "name":
         let name = Name(call.callee).text
-        if name == "display": needsIo = true
+        if name in ["display", "input", "report"] and name notin localNames:
+          needsIo = true
         elif name in ["__bare_log.message", "__bare_log.error"]: needsLog = true
       inspect(call.callee)
       for argument in call.args: inspect(argument)
@@ -105,7 +113,6 @@ proc prepareEntry*(program: Program) =
       foundRuntime = true
       inspect(Allocation(expression).size)
       inspect(Allocation(expression).owner)
-    of "error-chain": inspect(ErrorChain(expression).expr); inspect(ErrorChain(expression).context)
     else: discard
   proc inspectStatement(statement: Statement) =
     if statement == nil: return
@@ -122,12 +129,10 @@ proc prepareEntry*(program: Program) =
         if `When`(statement).else.tag == "block": inspectBlock(Block(`When`(statement).else))
         else: inspectStatement(Statement(`When`(statement).else))
     of "while": inspect(`While`(statement).cond); inspectBlock(`While`(statement).body)
-    of "repeat": inspect(Repeat(statement).limit); inspectBlock(Repeat(statement).body)
     of "for": inspect(`For`(statement).iter); inspectBlock(`For`(statement).body)
     of "match":
       inspect(Match(statement).scrutinee)
       for branch in Match(statement).cases: inspect(branch.guard); inspectBlock(branch.body)
-    of "try": inspect(`Try`(statement).expr)
     of "defer":
       if `Defer`(statement).body.tag == "block": inspectBlock(Block(`Defer`(statement).body))
       else: inspect(Expression(`Defer`(statement).body))
@@ -135,7 +140,9 @@ proc prepareEntry*(program: Program) =
     of "action":
       let action = Action(statement)
       if action.value != nil: inspect(action.value)
-      elif action.name.text == "display": needsIo = true
+      elif action.name.text in ["display", "report"] and
+          action.name.text notin localNames:
+        needsIo = true
       for argument in action.args: inspect(argument)
     else: discard
   proc inspectBlock(body: Block) =
@@ -161,7 +168,16 @@ proc prepareEntry*(program: Program) =
       let call = Call(expression)
       if call.callee.tag == "name":
         let name = Name(call.callee)
-        if name.text == "display": name.text = ioQualifier & ".show"
+        if name.text == "display" and name.text notin localNames:
+          name.text = ioQualifier & ".display"
+        elif name.text == "report" and name.text notin localNames:
+          name.text = ioQualifier & ".diagnose"
+        elif name.text == "input" and name.text notin localNames:
+          name.text = ioQualifier & ".line"
+          call.args.add(Call(tag: "call", span: call.span,
+            callee: Name(tag: "name", span: call.span,
+              text: ioQualifier & ".input"), args: @[], names: @[]))
+          call.names.add("")
         elif name.text == "__bare_log.message": name.text = logQualifier & ".note"
         elif name.text == "__bare_log.error": name.text = logQualifier & ".alert"
       rewrite(call.callee)
@@ -175,7 +191,6 @@ proc prepareEntry*(program: Program) =
     of "field": rewrite(Field(expression).object)
     of "index": rewrite(Index(expression).object); rewrite(Index(expression).index)
     of "allocation": rewrite(Allocation(expression).size); rewrite(Allocation(expression).owner)
-    of "error-chain": rewrite(ErrorChain(expression).expr); rewrite(ErrorChain(expression).context)
     else: discard
   proc rewriteStatement(statement: Statement) =
     if statement == nil: return
@@ -192,12 +207,10 @@ proc prepareEntry*(program: Program) =
         if `When`(statement).else.tag == "block": rewriteBlock(Block(`When`(statement).else))
         else: rewriteStatement(Statement(`When`(statement).else))
     of "while": rewrite(`While`(statement).cond); rewriteBlock(`While`(statement).body)
-    of "repeat": rewrite(Repeat(statement).limit); rewriteBlock(Repeat(statement).body)
     of "for": rewrite(`For`(statement).iter); rewriteBlock(`For`(statement).body)
     of "match":
       rewrite(Match(statement).scrutinee)
       for branch in Match(statement).cases: rewrite(branch.guard); rewriteBlock(branch.body)
-    of "try": rewrite(`Try`(statement).expr)
     of "defer":
       if `Defer`(statement).body.tag == "block": rewriteBlock(Block(`Defer`(statement).body))
       else: rewrite(Expression(`Defer`(statement).body))
@@ -205,7 +218,10 @@ proc prepareEntry*(program: Program) =
     of "action":
       let action = Action(statement)
       if action.value != nil: rewrite(action.value)
-      elif action.name.text == "display": action.name.text = ioQualifier & ".show"
+      elif action.name.text in ["display", "report"] and
+          action.name.text notin localNames:
+        action.name.text = ioQualifier & "." &
+          (if action.name.text == "report": "diagnose" else: "display")
       for argument in action.args: rewrite(argument)
     else: discard
   proc rewriteBlock(body: Block) =
@@ -226,9 +242,9 @@ proc prepareEntry*(program: Program) =
 
   let hasStart = unit.body.stmts.anyIt(it.tag == "function" and Function(it).name.text == "start")
   if hasStart: return
-  const executable = ["give", "when", "while", "repeat", "for", "match",
-    "assignment", "break", "continue", "try", "defer", "unsafe", "action",
-    "machine", "advance", "unreachable-statement"]
+  const executable = ["give", "when", "while", "for", "match",
+    "assignment", "break", "continue", "defer", "unsafe", "action",
+    "machine", "unreachable-statement"]
   var declarations, body: seq[Statement]
   var runtimeStarted, entryFailable: bool
   for statement in unit.body.stmts:
@@ -266,7 +282,8 @@ proc analyze*(compiler: Compiler; file, source: string;
   if not diag.failed:
     let resolver = newResolver(diag, compiler.root, parse =
       proc(importedFile, input: string; diagnostics: Engine): Program =
-        compiler.parseSource(importedFile, input, diagnostics))
+        result = compiler.parseSource(importedFile, input, diagnostics)
+        if not diagnostics.failed: prepareEntry(result))
     resolution = resolver.resolve(parsed, path)
     if not diag.failed: parsed = link(parsed, resolution)
   if not diag.failed: lint(parsed, diag, compiler.backend)
@@ -346,7 +363,8 @@ proc graph*(compiler: Compiler; files: seq[string]): JsonNode =
       raise error
     let current = newResolver(diag, compiler.root, parse =
       proc(importedFile, input: string; diagnostics: Engine): Program =
-        compiler.parseSource(importedFile, input, diagnostics)).resolve(parsed, path)
+        result = compiler.parseSource(importedFile, input, diagnostics)
+        if not diagnostics.failed: prepareEntry(result)).resolve(parsed, path)
     if diag.failed:
       var error: Diagnostics
       new(error); error.msg = "Check failed"; error.diagnostics = diag

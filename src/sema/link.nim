@@ -41,7 +41,6 @@ proc rewriteType(node: ast.`Type`; resolution: Resolution;
     let generic = ast.GenericInst(node)
     if replacement.len > 0: generic.name.text = replacement
     for argument in generic.args: rewriteType(argument, resolution, names)
-  of "array": rewriteType(ast.Array(node).elem, resolution, names)
   of "sequence": rewriteType(ast.Sequence(node).elem, resolution, names)
   of "optional": rewriteType(ast.Optional(node).elem, resolution, names)
   of "error": rewriteType(ast.Error(node).elem, resolution, names)
@@ -100,10 +99,6 @@ proc rewriteExpression(node: ast.Expression; resolution: Resolution;
     let index = ast.Index(node)
     index.object = rewriteExpression(index.object, resolution, names)
     index.index = rewriteExpression(index.index, resolution, names)
-  of "error-chain":
-    let chain = ast.ErrorChain(node)
-    chain.expr = rewriteExpression(chain.expr, resolution, names)
-    chain.context = rewriteExpression(chain.context, resolution, names)
   of "machine":
     let machine = ast.Machine(node)
     machine.target = rewriteExpression(machine.target, resolution, names)
@@ -183,11 +178,6 @@ proc rewriteStatement(node: ast.Statement; resolution: Resolution;
     let statement = ast.`While`(node)
     statement.cond = rewriteExpression(statement.cond, resolution, names)
     rewriteBlock(statement.body, resolution, names)
-  of "repeat":
-    let statement = ast.Repeat(node)
-    statement.target = ast.Name(rewriteExpression(statement.target, resolution, names))
-    statement.limit = rewriteExpression(statement.limit, resolution, names)
-    rewriteBlock(statement.body, resolution, names)
   of "for":
     let statement = ast.`For`(node)
     statement.iter = rewriteExpression(statement.iter, resolution, names)
@@ -203,9 +193,6 @@ proc rewriteStatement(node: ast.Statement; resolution: Resolution;
     let statement = ast.Assignment(node)
     statement.target = rewriteExpression(statement.target, resolution, names)
     statement.value = rewriteExpression(statement.value, resolution, names)
-  of "try":
-    let statement = ast.`Try`(node)
-    statement.expr = rewriteExpression(statement.expr, resolution, names)
   of "defer":
     let statement = ast.`Defer`(node)
     if statement.body != nil:
@@ -223,9 +210,6 @@ proc rewriteStatement(node: ast.Statement; resolution: Resolution;
       for index in 0 ..< statement.args.len:
         statement.args[index] = rewriteExpression(statement.args[index], resolution, names)
   of "machine": discard rewriteExpression(node, resolution, names)
-  of "advance":
-    let statement = ast.AdvanceStatement(node)
-    statement.target = ast.Name(rewriteExpression(statement.target, resolution, names))
   else: discard
 
 proc rewriteBlock(node: ast.Block; resolution: Resolution;

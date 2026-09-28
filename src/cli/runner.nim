@@ -1,7 +1,7 @@
 import std/[algorithm, os, osproc, sequtils, strutils, tables]
 import ../ast/node
 import ../ast/doc as astDoc
-import ../build/[compiler, project, files, options]
+import ../build/[project, files, options]
 import ../diag/engine
 import ../fmt/formatter
 import ../lex/lexer

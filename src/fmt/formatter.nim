@@ -1,7 +1,7 @@
-import std/[strutils, sequtils]
+import std/strutils
 import ../ast/[node, print]
 import ../diag/engine
-import ../lex/[lexer, token]
+import ../lex/lexer
 import ../parse/parser
 
 type Comment = object

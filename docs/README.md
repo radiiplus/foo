@@ -15,9 +15,9 @@ This book has two layers:
 
 Machine readers (automated tools such as language models) can use
 [`/llm.txt`](https://fooregistry.web.app/llm.txt). It is generated from the
-complete book, normative specifications (rules an implementation must follow), and changelog on
-every website build. Material marked **Design** remains a proposal rather than
-accepted FOO syntax.
+current language, library, project, testing, diagnostic, and platform chapters
+on every website build. It deliberately excludes proposals, duplicated
+specifications, historical performance reports, and changelog entries.
 
 ## Hello world
 
@@ -100,10 +100,10 @@ commands; JSON blocks belong in `project.json` or `foo.lock` as stated nearby.
 
 Examples use the current vocabulary:
 
-- `dynamic`, not `mutable`, for a changing value.
+- `dynamic` for a changing value.
 - `is` for one value and `are` for several values.
 - one word for each filename, function, type, and value name.
-- `define ... as ...`, not `type ... is ...`, for a named type.
+- `define ... as ...` for a named type.
 - `multiply`, `subtract`, and `divide` for arithmetic.
 - `stop` and `skip` for loop control.
 - postfix `try` for propagation and `fallback` for recovery.

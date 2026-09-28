@@ -8,10 +8,18 @@ let publicConstant = Constant(
 let privateConstant = Constant(
   tag: "constant", public: false, name: Name(tag: "name", text: "hidden"),
   value: Integer(tag: "integer", value: "0"))
+let publicFunction = Function(
+  tag: "function", public: true, name: Name(tag: "name", text: "identity"),
+  params: @[Parameter(tag: "parameter", name: Name(tag: "name", text: "value"),
+    `type`: Primitive(tag: "primitive", name: "integer", width: "64"))],
+  returnType: Primitive(tag: "primitive", name: "integer", width: "64"),
+  body: Block(tag: "block", stmts: @[]))
 let program = Program(tag: "program", units: @[
   Unit(tag: "unit", name: Name(tag: "name", text: "main"),
-    body: Block(tag: "block", stmts: @[Statement(publicConstant), Statement(privateConstant)]))
+    body: Block(tag: "block", stmts: @[Statement(publicConstant),
+      Statement(privateConstant), Statement(publicFunction)]))
 ])
 
-doAssert doc(program) == "public constant answer of type integer 64.\n"
+doAssert doc(program) == "public constant answer of type integer.\n" &
+  "public function identity(value integer) giving integer.\n"
 echo "ast doc parity: ok"

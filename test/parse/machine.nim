@@ -3,8 +3,8 @@ import ../../src/diag/engine
 import ../../src/lex/lexer
 import ../../src/parse/parser
 
-let source = """extern "C" function puts(value of type text) of type integer 32.
-extern "C" function callback(value of type integer 32) giving integer 32 { give value. }
+let source = """extern "C" function puts(value text) giving integer 32.
+extern "C" function callback(value integer 32) giving integer 32 { give value. }
 start() {
   atomic add counter by 1.
   bits set flags at position 4.
@@ -12,7 +12,7 @@ start() {
   memory align buffer to 8.
   register rax is 44.
   constant pid is call system call 39 with 1, 2.
-  try copy source into destination.
+  copy source into destination try.
   constant count is words.length of source.
   clear destination.
 }
@@ -36,8 +36,10 @@ for index, operation in ["atomic", "set", "clear", "align", "register"]:
 let system = ast.Machine(ast.Constant(body[5]).value)
 doAssert system.operation == "system"
 doAssert system.args.len == 2
-doAssert ast.Try(body[6]).expr.tag == "call"
-doAssert ast.Name(ast.Call(ast.Try(body[6]).expr).callee).text == "transfer"
+let copied = ast.Unary(ast.Action(body[6]).value)
+doAssert copied.op == "try"
+doAssert copied.operand.tag == "call"
+doAssert ast.Name(ast.Call(copied.operand).callee).text == "transfer"
 let length = ast.Call(ast.Constant(body[7]).value)
 doAssert ast.Field(length.callee).field.text == "length"
 doAssert ast.Action(body[8]).value.tag == "call"

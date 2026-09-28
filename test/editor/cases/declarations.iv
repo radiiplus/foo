@@ -1,25 +1,23 @@
 -- Exercises declarations syntax.
-function add left integer right integer giving integer {
+function add(left integer, right integer) giving integer {
   give left plus right.
 }
 
-constant total is add 20 22.
-
 constant total is add(20, 22).
 
-function connect
-    host text
-    port integer default 443
+function connect(
+    host text,
+    port integer default 443,
     timeout integer default 5000
-    giving boolean {
+) giving boolean {
   give true.
 }
 
-constant ordinary is connect "example.com".
-constant local is connect "localhost" port 8080.
-constant explicit is connect host "example.com" timeout 10000.
+constant ordinary is connect("example.com").
+constant local is connect("localhost", port 8080).
+constant explicit is connect(host "example.com", timeout 10000).
 
-function total values are sequence of integer giving integer {
+function total(values are sequence of integer) giving integer {
   dynamic result is 0.
   for each value in values {
     increase result by value.
@@ -27,20 +25,20 @@ function total values are sequence of integer giving integer {
   give result.
 }
 
-constant answer is total 10 20 30 40.
+constant answer is total(10, 20, 30, 40).
 
-function larger left integer right integer giving integer {
+function larger(left integer, right integer) giving integer {
   when left greater than right { give left. }
   give right.
 }
 
-function announce message text {
+function announce(message text) {
   display message.
 }
 
-announce "Ready".
+announce("Ready").
 
-function sum limit integer giving integer {
+function sum(limit integer) giving integer {
   dynamic total is 0.
   dynamic current is 1.
   while current less than or equal to limit {
@@ -50,7 +48,7 @@ function sum limit integer giving integer {
   give total.
 }
 
-public function area width decimal height decimal giving decimal {
+public function area(width decimal, height decimal) giving decimal {
   give width multiply height.
 }
 
@@ -63,7 +61,7 @@ function maximum[T](left T, right T) giving T where T is Ord {
   give right.
 }
 
-function double value integer giving integer {
+function double(value integer) giving integer {
   give value multiply 2.
 }
 
@@ -79,18 +77,23 @@ function twice() giving integer {
   give next().
 }
 
-function identify value integer giving text {
+function identify(value integer) giving text {
   give "number".
 }
 
-function identify value text giving text {
+function identify(value text) giving text {
   give "text".
 }
 
-constant kind is identify 42.
+constant kind is identify(42).
 
-function withdraw amount decimal
+function withdraw(amount decimal)
     when amount greater than 0
     giving decimal {
   give amount.
+}
+
+#[noinline]
+function next(value unsigned) giving unsigned {
+  give value plus 1.
 }

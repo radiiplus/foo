@@ -15,8 +15,30 @@ Output:
 Hello, world!
 ```
 
-`display` writes text. The final dot ends the statement. FOO does not require a
-`start()` function for ordinary top-level code.
+`display` writes text to standard output. The final dot ends the statement. FOO
+does not require a `start()` function for ordinary top-level code.
+
+Read one line from standard input with the high-level `input()` operation. It
+is failable because an input stream can fail:
+
+```foo
+constant name is input() fallback "friend".
+display "Hello, " plus name.
+```
+
+Use the `io` module only when you need an explicit stream, bounded reads, or
+error handling for writes.
+
+Use `report` for diagnostic text sent to standard error:
+
+```foo
+report "Configuration is missing".
+```
+
+The complete high-level console surface is `input()`, `display`, and `report`.
+They map to standard input, standard output, and standard error respectively.
+Explicit stream code uses `io.input()`, `io.output()`, `io.report()`,
+`io.read`, `io.line`, `io.write`, and `io.close`.
 
 ## Statements and blocks
 
@@ -92,7 +114,7 @@ Run these commands from the directory containing `project.json`:
 | `foo check` | Checks syntax and types without building an executable. |
 | `foo run` | Checks, builds, and runs the default entry. |
 | `foo build` | Builds without running. |
-| `foo test` | Runs the project's tests. |
+| `foo test` | Discovers, compiles, and runs the project's test blocks; no matches is an error. |
 | `foo benchmark` | Measures the benchmark programs. |
 
 Use `foo check` while learning. It gives the shortest path from a mistake to a

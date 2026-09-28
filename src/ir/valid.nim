@@ -18,7 +18,7 @@ proc sealBlock(basicBlock: Block; serial: var int) =
   for instruction in basicBlock.instrs:
     if instruction.effects.len > 0 or instruction.kind in {InstrKind.Alloc, InstrKind.Allocate,
         InstrKind.Load, InstrKind.Store, InstrKind.Call, InstrKind.Try, InstrKind.Trace,
-        InstrKind.Native, InstrKind.NativeZig, InstrKind.Atomic, InstrKind.Thread,
+        InstrKind.Native, InstrKind.Atomic, InstrKind.Thread,
         InstrKind.Defer, InstrKind.Catch, InstrKind.Index}:
       if instruction.effects.len == 0:
         instruction.effects = case instruction.kind
@@ -28,7 +28,7 @@ proc sealBlock(basicBlock: Block; serial: var int) =
           of InstrKind.Store: @["write"]
           of InstrKind.Call: @["external"]
           of InstrKind.Try, InstrKind.Trace: @["trace"]
-          of InstrKind.Native, InstrKind.NativeZig: @["unknown"]
+          of InstrKind.Native: @["unknown"]
           of InstrKind.Atomic, InstrKind.Thread: @["synchronize"]
           of InstrKind.Defer: @["cleanup"]
           of InstrKind.Catch: @["branch"]
@@ -213,7 +213,7 @@ proc validate*(module: Module): seq[ValidationError] =
   let terminators = {InstrKind.Return, InstrKind.Jump, InstrKind.Cjump, InstrKind.Panic}
   let effectful = {InstrKind.Load, InstrKind.Store, InstrKind.Call, InstrKind.Alloc,
     InstrKind.Allocate, InstrKind.Try, InstrKind.Trace, InstrKind.Native,
-    InstrKind.NativeZig, InstrKind.Atomic, InstrKind.Thread, InstrKind.Region,
+    InstrKind.Atomic, InstrKind.Thread, InstrKind.Region,
     InstrKind.Index, InstrKind.Defer, InstrKind.Catch}
 
   for function in module.funcs:

@@ -132,7 +132,10 @@ constant local is connect("localhost", port 8080).
 ```
 
 Generic parameters use square brackets and can be constrained by `Equatable`,
-`Hash`, `Ord`, or `Allocator`.
+`Hash`, `Ord`, or `Allocator`. These names are compiler capabilities, not
+modules or runtime values. `Equatable` supports equality, `Ord` supports
+ordering, `Hash` supports generated hashing, and `Allocator` accepts the opaque
+allocator type for generic memory helpers.
 
 Ordinary non-capturing function values can be passed to operations such as
 `sequence.map`. Local closures (functions that remember nearby values) may
@@ -220,10 +223,13 @@ when age greater than or equal to 18 and identity {
 ## 5. Loops: `for each` vs `while`
 
 ### The `for each` Loop (For collections)
-Use it to do something to every item in a collection. This fragment assumes
-`basket` is a sequence of text:
-<!-- snippet: context -->
+Use it to do something to every item in a collection:
 ```foo
+use sequence as items.
+
+constant basket is items.append[text](items.create[text](), "apple") try.
+after { items.release[text](basket) fallback nothing. }
+
 for each fruit in basket {
   display fruit.
 }
@@ -365,10 +371,17 @@ Every `.iv` file is a module. Declarations are private unless marked `public`.
 Ordinary imports stay private and may bind a short alias. This fragment assumes
 the project contains `network/server.iv`:
 
-<!-- snippet: context -->
+<!-- snippet: project network src/network/server.iv -->
+```foo
+public function ready() giving boolean { give true. }
+```
+
+<!-- snippet: project network src/main.iv -->
 ```foo
 use "network/server.iv" as server.
 use http as web.
+
+when server.ready() { display "Server ready". }
 ```
 
 `public use "network/server.iv".` re-exports that module's public declarations

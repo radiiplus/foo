@@ -33,7 +33,7 @@
   },
   "iteration": {
     "purpose": "Ordered sequence iteration latency",
-    "work": "Construct and iterate 1,000,000 unsigned 64-bit values with checksum validation"
+    "work": "Construct and iterate 1,000,000 unsigned values with checksum validation"
   },
   "lookup": {
     "purpose": "Checked sequence lookup latency",

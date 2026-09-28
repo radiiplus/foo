@@ -1,26 +1,26 @@
 -- Source: std/sequence.iv
 -- Builds typed sequences and applies ordering, searching, and transformations.
-public use "sequence" function create[T]() of type sequence of T.
-public use "sequence" function append[T](items of type sequence of T, value of type T) of type failable sequence of T.
-public use "sequence" function remove[T](items of type sequence of T, index of type unsigned 64) of type failable sequence of T.
-public use "sequence" function copy[T](items of type sequence of T) of type failable sequence of T.
-public use "sequence" function length[T](items of type sequence of T) of type unsigned 64.
-public use "sequence" function release[T](items of type sequence of T) of type failable nothing.
-public use "sequence" function sized[T](length unsigned 64) giving failable sequence of T.
-use "sequence" function compact[T](items sequence of T, length unsigned 64) giving failable sequence of T.
-
-public function find[T](items of type sequence of T, value of type T) of type optional unsigned 64 where T is Equatable {
-  dynamic index of type unsigned 64 is 0.
+public use "sequence" function create[T]() giving sequence of T.
+public use "sequence" function append[T](items sequence of T, value T) giving failable sequence of T.
+public use "sequence" function remove[T](items sequence of T, index unsigned) giving failable sequence of T.
+public use "sequence" function copy[T](items sequence of T) giving failable sequence of T.
+public use "sequence" function length[T](items sequence of T) giving unsigned.
+public use "sequence" function release[T](items sequence of T) giving failable nothing.
+public use "sequence" function sized[T](length unsigned) giving failable sequence of T.
+use "sequence" function compact[T](items sequence of T, length unsigned) giving failable sequence of T.
+public function find[T](items sequence of T, value T) giving optional unsigned where T is Equatable {
+  dynamic index of type unsigned is 0.
   for each item in items {
-    when item is value { give index. }
+    when item is value {
+      give index.
+    }
     set index to index plus 1.
   }
   give null.
 }
-
-public function sort[T](items of type sequence of T) of type failable sequence of T where T is Ord {
-  dynamic result is try copy[T](items).
-  dynamic index of type unsigned 64 is 1.
+public function sort[T](items sequence of T) giving failable sequence of T where T is Ord {
+  dynamic result is copy[T](items) try.
+  dynamic index of type unsigned is 1.
   while index less than length[T](result) {
     constant value is result at index.
     dynamic cursor is index.
@@ -28,30 +28,34 @@ public function sort[T](items of type sequence of T) of type failable sequence o
       when result at (cursor subtract 1) greater than value {
         set result at cursor to result at (cursor subtract 1).
         set cursor to cursor subtract 1.
-      } otherwise { stop. }
+      } otherwise {
+        stop.
+      }
     }
     set result at cursor to value.
     set index to index plus 1.
   }
   give result.
 }
-
-public function filter[T](items of type sequence of T, predicate of type function taking (T) giving boolean) of type failable sequence of T {
-  dynamic result is try sized[T](length[T](items)).
-  after error { release[T](result) fallback nothing. }
-  dynamic count of type unsigned 64 is 0.
+public function filter[T](items sequence of T, predicate function taking (T) giving boolean) giving failable sequence of T {
+  dynamic result is sized[T](length[T](items)) try.
+  after error {
+    release[T](result) fallback nothing.
+  }
+  dynamic count of type unsigned is 0.
   for each item in items {
     when predicate(item) {
       set result at count to item.
       set count to count plus 1.
     }
   }
-  give try compact[T](result, count).
+  give compact[T](result, count) try.
 }
-
-public function map[T, U](items of type sequence of T, transform of type function taking (T) giving U) of type failable sequence of U {
-  dynamic result is try sized[U](length[T](items)).
-  after error { release[U](result) fallback nothing. }
+public function map[T, U](items sequence of T, transform function taking (T) giving U) giving failable sequence of U {
+  dynamic result is sized[U](length[T](items)) try.
+  after error {
+    release[U](result) fallback nothing.
+  }
   dynamic index is 0.
   for each item in items {
     set result at index to transform(item).
@@ -59,14 +63,15 @@ public function map[T, U](items of type sequence of T, transform of type functio
   }
   give result.
 }
-
 public function deduplicate[T](items sequence of T) giving failable sequence of T where T is Equatable {
-  dynamic result is try sized[T](length[T](items)).
-  after error { release[T](result) fallback nothing. }
-  dynamic count of type unsigned 64 is 0.
+  dynamic result is sized[T](length[T](items)) try.
+  after error {
+    release[T](result) fallback nothing.
+  }
+  dynamic count of type unsigned is 0.
   for each item in items {
     dynamic present is false.
-    dynamic cursor of type unsigned 64 is 0.
+    dynamic cursor of type unsigned is 0.
     while cursor less than count {
       when result at cursor is item {
         set present to true.
@@ -79,62 +84,78 @@ public function deduplicate[T](items sequence of T) giving failable sequence of 
       set count to count plus 1.
     }
   }
-  give try compact[T](result, count).
+  give compact[T](result, count) try.
 }
-
 public function dedup[T](items sequence of T) giving failable sequence of T where T is Equatable {
-  give try deduplicate[T](items).
+  give deduplicate[T](items) try.
 }
 
 -- Source: std/text.iv
 -- Combines, trims, and splits text using byte offsets and ASCII whitespace.
 use sequence as items.
-use "sequence" function sized[T](length unsigned 64) giving failable sequence of T.
-public use "text" function concatenate(left of type text, right of type text) of type failable text.
-public use "text" function trim(content of type text) of type failable text.
-public use "text" function length(content of type text) of type unsigned 64.
-public use "text" function slice(content of type text, first of type unsigned 64, last of type unsigned 64) of type failable text.
-public use "text" function find(content of type text, value of type text) of type optional unsigned 64.
-public use "text" function release(content of type text) of type failable nothing.
-public function split(content of type text, separator of type text) of type failable sequence of text {
+use "sequence" function sized[T](length unsigned) giving failable sequence of T.
+public use "text" function concatenate(left text, right text) giving failable text.
+public use "text" function trim(content text) giving failable text.
+public use "text" function length(content text) giving unsigned.
+public use "text" function slice(content text, first unsigned, last unsigned) giving failable text.
+public use "text" function find(content text, value text) giving optional unsigned.
+public use "text" function release(content text) giving failable nothing.
+public function split(content text, separator text) giving failable sequence of text {
   constant separatorLength is length(separator).
   constant contentLength is length(content).
-  when separatorLength is 0 { give fail(Error.EmptySeparator). }
-  dynamic count of type unsigned 64 is 1.
-  dynamic cursor of type unsigned 64 is 0.
-  while cursor plus separatorLength is at most contentLength {
+  when separatorLength is 0 {
+    give fail(Error.EmptySeparator).
+  }
+  dynamic count of type unsigned is 1.
+  dynamic cursor of type unsigned is 0.
+  while cursor plus separatorLength less than or equal to contentLength {
     dynamic matches is true.
-    dynamic index of type unsigned 64 is 0.
+    dynamic index of type unsigned is 0.
     while index less than separatorLength {
-      when content at (cursor plus index) is not separator at index { set matches to false. stop. }
+      when content at (cursor plus index) is not separator at index {
+        set matches to false.
+        stop.
+      }
       set index to index plus 1.
     }
     when matches {
       set count to count plus 1.
       set cursor to cursor plus separatorLength.
-    } otherwise { set cursor to cursor plus 1. }
+    } otherwise {
+      set cursor to cursor plus 1.
+    }
   }
-  dynamic result is try sized[text](count).
-  after error { for each part in result { release(part) fallback nothing. } items.release[text](result) fallback nothing. }
-  dynamic first of type unsigned 64 is 0.
+  dynamic result is sized[text](count) try.
+  after error {
+    for each part in result {
+      release(part) fallback nothing.
+    }
+    items.release[text](result) fallback nothing.
+  }
+  dynamic first of type unsigned is 0.
   set cursor to 0.
-  dynamic resultIndex of type unsigned 64 is 0.
-  while cursor plus separatorLength is at most contentLength {
+  dynamic resultIndex of type unsigned is 0.
+  while cursor plus separatorLength less than or equal to contentLength {
     dynamic matches is true.
-    dynamic index of type unsigned 64 is 0.
+    dynamic index of type unsigned is 0.
     while index less than separatorLength {
-      when content at (cursor plus index) is not separator at index { set matches to false. stop. }
+      when content at (cursor plus index) is not separator at index {
+        set matches to false.
+        stop.
+      }
       set index to index plus 1.
     }
     when matches {
-      constant part is try slice(content, first, cursor).
+      constant part is slice(content, first, cursor) try.
       set result at resultIndex to part.
       set resultIndex to resultIndex plus 1.
       set cursor to cursor plus separatorLength.
       set first to cursor.
-    } otherwise { set cursor to cursor plus 1. }
+    } otherwise {
+      set cursor to cursor plus 1.
+    }
   }
-  set result at resultIndex to try slice(content, first, contentLength).
+  set result at resultIndex to slice(content, first, contentLength) try.
   give result.
 }
 
@@ -147,183 +168,283 @@ use table as fast.
 use set as unique.
 use queue as queue.
 use stack as stack.
-function double(value of type integer) of type integer { give value times 2. }
-function positive(value of type integer) of type boolean { give value greater than 0. }
-function negative(value of type integer) of type boolean { give value less than 0. }
-type Person is record { name of type text. age of type integer. } derives Equatable, Ord.
+use text as words.
+function double(value integer) giving integer {
+  give value multiply 2.
+}
+function positive(value integer) giving boolean {
+  give value is greater than 0.
+}
+function negative(value integer) giving boolean {
+  give value is less than 0.
+}
+define Person as record {
+  name of type text.
+  age of type integer.
+} derives Equatable, Ord.
 start() {
   constant missing of type optional integer is null.
   check.expect(missing is null).
   constant empty is sequence.create[integer]().
-  constant first is try sequence.append[integer](empty, 4).
-  constant second is try sequence.append[integer](first, 2).
-  constant repeated is try sequence.append[integer](second, 4).
-  constant sorted is try sequence.sort(second).
-  constant deduplicated is try sequence.dedup[integer](repeated).
-  after { sequence.release[integer](first) catch nothing. sequence.release[integer](second) catch nothing. sequence.release[integer](repeated) catch nothing. sequence.release[integer](sorted) catch nothing. sequence.release[integer](deduplicated) catch nothing. }
+  constant first is sequence.append[integer](empty, 4) try.
+  constant second is sequence.append[integer](first, 2) try.
+  constant repeated is sequence.append[integer](second, 4) try.
+  constant sorted is sequence.sort(second) try.
+  constant deduplicated is sequence.dedup[integer](repeated) try.
+  after {
+    sequence.release[integer](first) fallback nothing.
+    sequence.release[integer](second) fallback nothing.
+    sequence.release[integer](repeated) fallback nothing.
+    sequence.release[integer](sorted) fallback nothing.
+    sequence.release[integer](deduplicated) fallback nothing.
+  }
   check.expect(sorted at 0 is 2).
   check.expect(second at 0 is 4).
   check.expect(sequence.find[integer](sorted, 4) is not null).
   check.expect(sequence.length[integer](deduplicated) is 2).
-  constant mapped is try sequence.map[integer, integer](sorted, double).
-  constant filtered is try sequence.filter[integer](mapped, positive).
-  constant rejected is try sequence.filter[integer](mapped, negative).
-  after { sequence.release[integer](mapped) catch nothing. sequence.release[integer](filtered) catch nothing. sequence.release[integer](rejected) catch nothing. }
+  dynamic growing is sequence.create[integer]().
+  dynamic number is 0.
+  while number is less than 12 {
+    set growing to sequence.append[integer](growing, number) try.
+    set number to number plus 1.
+  }
+  constant snapshot is growing.
+  constant noise is words.concatenate("mixed", "allocation") try.
+  set growing to sequence.append[integer](growing, 12) try.
+  words.release(noise) try.
+  constant branch is sequence.append[integer](snapshot, 99) try.
+  after {
+    sequence.release[integer](growing) fallback nothing.
+    sequence.release[integer](branch) fallback nothing.
+  }
+  check.expect(sequence.length[integer](snapshot) is 12).
+  check.expect(snapshot at 11 is 11).
+  check.expect(growing at 12 is 12).
+  check.expect(branch at 12 is 99).
+  constant mapped is sequence.map[integer, integer](sorted, double) try.
+  constant filtered is sequence.filter[integer](mapped, positive) try.
+  constant rejected is sequence.filter[integer](mapped, negative) try.
+  after {
+    sequence.release[integer](mapped) fallback nothing.
+    sequence.release[integer](filtered) fallback nothing.
+    sequence.release[integer](rejected) fallback nothing.
+  }
   check.expect(filtered at 1 is 8).
   check.expect(sequence.length[integer](rejected) is 0).
   constant table is mapping.create[text, integer]().
-  constant entry is try mapping.put[text, integer](table, "answer", 44).
-  constant replaced is try mapping.put[text, integer](entry, "answer", 42).
-  after { mapping.release[text, integer](entry) catch nothing. mapping.release[text, integer](replaced) catch nothing. }
-  check.expect((try mapping.get[text, integer](entry, "answer")) is 44).
-  check.expect((try mapping.get[text, integer](replaced, "answer")) is 42).
+  constant entry is mapping.put[text, integer](table, "answer", 44) try.
+  constant replaced is mapping.put[text, integer](entry, "answer", 42) try.
+  after {
+    mapping.release[text, integer](entry) fallback nothing.
+    mapping.release[text, integer](replaced) fallback nothing.
+  }
+  check.expect((mapping.get[text, integer](entry, "answer") try) is 44).
+  check.expect((mapping.get[text, integer](replaced, "answer") try) is 42).
   check.expect(mapping.length[text, integer](replaced) is 1).
-  constant cache is try fast.create[integer]().
-  after { fast.close[integer](cache) fallback nothing. }
-  try fast.put[integer](cache, "answer", 44).
-  try fast.put[integer](cache, "answer", 42).
-  check.expect((try fast.get[integer](cache, "answer")) is 42).
-  check.expect((try fast.length[integer](cache)) is 1).
-  check.expect(try fast.contains[integer](cache, "answer")).
-  check.expect(try fast.remove[integer](cache, "answer")).
-  check.expect((try fast.length[integer](cache)) is 0).
+  constant cache is fast.create[integer]() try.
+  after {
+    fast.close[integer](cache) fallback nothing.
+  }
+  fast.put[integer](cache, "answer", 44) try.
+  fast.put[integer](cache, "answer", 42) try.
+  check.expect((fast.get[integer](cache, "answer") try) is 42).
+  check.expect((fast.length[integer](cache) try) is 1).
+  check.expect(fast.contains[integer](cache, "answer") try).
+  check.expect(fast.remove[integer](cache, "answer") try).
+  check.expect((fast.length[integer](cache) try) is 0).
   constant set is unique.create[integer]().
-  constant member is try unique.insert[integer](set, 44).
-  constant duplicate is try unique.insert[integer](member, 44).
-  after { unique.release[integer](member) catch nothing. unique.release[integer](duplicate) catch nothing. }
+  constant member is unique.insert[integer](set, 44) try.
+  constant duplicate is unique.insert[integer](member, 44) try.
+  after {
+    unique.release[integer](member) fallback nothing.
+    unique.release[integer](duplicate) fallback nothing.
+  }
   check.expect(unique.length[integer](duplicate) is 1).
   constant line is queue.create[integer]().
-  constant front is try queue.append[integer](line, 44).
-  after { queue.release[integer](front) catch nothing. }
-  check.expect((try queue.first[integer](front)) is 44).
+  constant front is queue.append[integer](line, 44) try.
+  after {
+    queue.release[integer](front) fallback nothing.
+  }
+  check.expect((queue.first[integer](front) try) is 44).
   constant pile is stack.create[text]().
-  constant top is try stack.push[text](pile, "FOO").
-  after { stack.release[text](top) catch nothing. }
-  check.same(try stack.top[text](top), "FOO").
+  constant top is stack.push[text](pile, "FOO") try.
+  after {
+    stack.release[text](top) fallback nothing.
+  }
+  check.same(stack.top[text](top) try, "FOO").
   constant people is unique.create[Person]().
-  constant person is try unique.insert[Person](people, Person("Ada", 44)).
-  after { unique.release[Person](person) catch nothing. }
+  constant person is unique.insert[Person](people, Person("Ada", 44)) try.
+  after {
+    unique.release[Person](person) fallback nothing.
+  }
   check.expect(unique.contains[Person](person, Person("Ada", 44))).
   check.expect(not unique.contains[Person](person, Person("Ada", 43))).
-  constant removed is try mapping.remove[text, integer](entry, "answer").
-  constant absent is try unique.remove[integer](duplicate, 44).
-  after { mapping.release[text, integer](removed) catch nothing. unique.release[integer](absent) catch nothing. }
+  constant removed is mapping.remove[text, integer](entry, "answer") try.
+  constant absent is unique.remove[integer](duplicate, 44) try.
+  after {
+    mapping.release[text, integer](removed) fallback nothing.
+    unique.release[integer](absent) fallback nothing.
+  }
   check.expect(mapping.length[text, integer](removed) is 0).
   check.expect(unique.length[integer](absent) is 0).
   check.expect(sequence.find[integer](empty, 0) is null).
-  constant back is try queue.append(front, 42).
-  constant tail is try queue.remove[integer](back).
-  after { queue.release[integer](back) catch nothing. queue.release[integer](tail) catch nothing. }
-  check.expect((try queue.first[integer](back)) is 44).
-  check.expect((try queue.first[integer](tail)) is 42).
-  constant peak is try stack.push[text](top, "IV").
-  constant lower is try stack.remove[text](peak).
-  after { stack.release[text](peak) catch nothing. stack.release[text](lower) catch nothing. }
-  check.same(try stack.top[text](peak), "IV").
-  check.same(try stack.top[text](lower), "FOO").
+  constant back is queue.append(front, 42) try.
+  constant tail is queue.remove[integer](back) try.
+  after {
+    queue.release[integer](back) fallback nothing.
+    queue.release[integer](tail) fallback nothing.
+  }
+  check.expect((queue.first[integer](back) try) is 44).
+  check.expect((queue.first[integer](tail) try) is 42).
+  constant peak is stack.push[text](top, "IV") try.
+  constant lower is stack.remove[text](peak) try.
+  after {
+    stack.release[text](peak) fallback nothing.
+    stack.release[text](lower) fallback nothing.
+  }
+  check.same(stack.top[text](peak) try, "IV").
+  check.same(stack.top[text](lower) try, "FOO").
   constant records is sequence.create[Person]().
-  constant older is try sequence.append(records, Person("Ada", 44)).
-  constant younger is try sequence.append(older, Person("Ada", 43)).
-  constant ordered is try sequence.sort(younger).
-  after { sequence.release(older) catch nothing. sequence.release(younger) catch nothing. sequence.release(ordered) catch nothing. }
+  constant older is sequence.append(records, Person("Ada", 44)) try.
+  constant younger is sequence.append(older, Person("Ada", 43)) try.
+  constant ordered is sequence.sort(younger) try.
+  after {
+    sequence.release(older) fallback nothing.
+    sequence.release(younger) fallback nothing.
+    sequence.release(ordered) fallback nothing.
+  }
   check.expect(ordered at 0 is Person("Ada", 43)).
-  check.expect((mapping.get[text, integer](entry, "absent") catch 99) is 99).
-  check.expect((stack.top[text](pile) catch "empty") is "empty").
+  check.expect((mapping.get[text, integer](entry, "absent") fallback 99) is 99).
+  check.expect((stack.top[text](pile) fallback "empty") is "empty").
 }
 
 -- Source: test/stdlib/services.iv
 -- Exercises portable files, text, clocks, threads, and TCP connections.
 use io as io.
-use fs as files.
+use file as files.
 use net as network.
 use process as process.
 use thread as tasks.
-use task as async_tasks.
+use task as jobs.
 use time as clock.
 use text as words.
 use sequence as items.
 use log as log.
 use testing as check.
-use "c" function verify() of type nothing.
-mutable count of type integer is 0.
-function work() of type nothing { set count to count plus 1. give. }
-function scoped_work(value of type integer 64) of type nothing for c { set count to count plus value. give. }
+extern "C" function verify() giving nothing.
+dynamic count of type integer is 0.
+function work() giving nothing {
+  set count to count plus 1.
+  give nothing.
+}
+function scopedwork(value integer) giving nothing for c {
+  set count to count plus value.
+  give nothing.
+}
 start() {
-  constant joined is try words.concatenate("FO", "O").
-  constant trimmed is try words.trim("  FOO  ").
-  after { words.release(joined) catch nothing. words.release(trimmed) catch nothing. }
+  constant joined is words.concatenate("FO", "O") try.
+  constant trimmed is words.trim("  FOO  ") try.
+  after {
+    words.release(joined) fallback nothing.
+    words.release(trimmed) fallback nothing.
+  }
   check.same(joined, trimmed).
   check.expect(words.find(trimmed, "OO") is not null).
   check.expect(words.find(trimmed, "missing") is null).
-  constant parts is try words.split("four::four::", "::").
-  after { for each part in parts { words.release(part) catch nothing. } items.release[text](parts) catch nothing. }
+  constant parts is words.split("four::four::", "::") try.
+  after {
+    for each part in parts {
+      words.release(part) fallback nothing.
+    }
+    items.release[text](parts) fallback nothing.
+  }
   check.expect(items.length[text](parts) is 3).
   check.same(parts at 0, "four").
   check.same(parts at 2, "").
-  try files.directory(".artifacts/service").
-  constant path is try files.join(".artifacts/service", "message.txt").
-  after { words.release(path) catch nothing. }
-  try files.write(path, "FOO" plus newline plus "44").
-  constant content is try files.read(path).
-  after { words.release(content) catch nothing. }
+  files.directory(".artifacts/service") try.
+  constant path is files.join(".artifacts/service", "message.txt") try.
+  after {
+    words.release(path) fallback nothing.
+  }
+  files.write(path, "FOO" plus newline plus "44") try.
+  constant content is files.read(path) try.
+  after {
+    words.release(content) fallback nothing.
+  }
   check.same(content, "FOO" plus newline plus "44").
-  constant file is try files.open(path, "read").
-  after { io.close(file) catch nothing. }
-  check.expect((try files.position(file)) is 0).
-  check.expect((try files.size(file)) is 6).
-  try files.seek(file, (0 subtract 2), "end").
-  check.expect((try files.position(file)) is 4).
-  constant tail is try io.read(file, 2).
-  after { words.release(tail) fallback nothing. }
+  constant file is files.open(path, "read") try.
+  after {
+    io.close(file) fallback nothing.
+  }
+  check.expect((files.position(file) try) is 0).
+  check.expect((files.size(file) try) is 6).
+  files.seek(file, (0 subtract 2), "end") try.
+  check.expect((files.position(file) try) is 4).
+  constant tail is io.read(file, 2) try.
+  after {
+    words.release(tail) fallback nothing.
+  }
   check.same(tail, "44").
-  try files.seek(file, 0, "start").
-  try files.flush(file).
-  constant line is try io.line(file).
-  after { words.release(line) catch nothing. }
+  files.seek(file, 0, "start") try.
+  files.flush(file) try.
+  constant line is io.line(file) try.
+  after {
+    words.release(line) fallback nothing.
+  }
   check.same(line, "FOO").
-  constant missing is files.read(".artifacts/service/missing") catch "missing".
+  constant missing is files.read(".artifacts/service/missing") fallback "missing".
   check.same(missing, "missing").
-  check.expect(process.count() greater than 0).
-  check.expect((try process.run("exit 7")) is 7).
-  check.same(process.environment("FOO_MISSING_VARIABLE_7F19") catch "missing", "missing").
-  constant argument is try process.argument(0).
-  after { words.release(argument) catch nothing. }
-  check.expect(words.length(argument) greater than 0).
-  constant before is try clock.current().
-  try clock.sleep(1000000).
-  check.expect((try clock.current()) greater than before).
-  constant task is try tasks.spawn(work).
-  try tasks.wait(task).
+  check.expect(process.count() is greater than 0).
+  check.expect((process.run("exit 7") try) is 7).
+  check.same(process.environment("FOO_MISSING_VARIABLE_7F19") fallback "missing", "missing").
+  constant argument is process.argument(0) try.
+  after {
+    words.release(argument) fallback nothing.
+  }
+  check.expect(words.length(argument) is greater than 0).
+  constant before is clock.current() try.
+  clock.sleep(1000000) try.
+  check.expect((clock.current() try) is greater than before).
+  constant task is tasks.spawn(work) try.
+  tasks.wait(task) try.
   check.expect(count is 1).
-  constant executor is try async_tasks.executor().
-  constant scope is try async_tasks.scope().
-  check.expect(async_tasks.backend() is at least 0).
-  check.expect(async_tasks.launch(scope, scoped_work, 2)).
-  async_tasks.join(scope).
+  constant executor is jobs.executor() try.
+  constant scope is jobs.scope() try.
+  check.expect(jobs.backend() greater than or equal to 0).
+  check.expect(jobs.launch(scope, scopedwork, 2)).
+  jobs.join(scope).
   check.expect(count is 3).
-  check.expect(async_tasks.label("foo-test")).
-  try clock.measure(work).
+  check.expect(jobs.label("foo-test")).
+  clock.measure(work) try.
   check.expect(count is 4).
-  constant mutex is try tasks.mutex().
-  constant condition is try tasks.condition().
-  try tasks.lock(mutex).
-  try tasks.signal(condition).
-  try tasks.unlock(mutex).
-  try tasks.close(mutex).
-  try tasks.close(condition).
-  constant listener is try network.listen("127.0.0.1", 0).
-  after { network.close(listener) catch nothing. }
-  constant client is try network.connect("127.0.0.1", try network.port(listener)).
-  after { network.close(client) catch nothing. }
-  try network.nodelay(client, true).
-  try network.keepalive(client, true).
-  constant server is try network.accept(listener).
-  after { network.close(server) catch nothing. }
-  check.expect((try network.push(client, "44")) is 2).
-  try network.shutdown(client, "write").
-  constant received is try network.receive(server, 2).
-  after { words.release(received) catch nothing. }
+  constant mutex is tasks.mutex() try.
+  constant condition is tasks.condition() try.
+  tasks.lock(mutex) try.
+  tasks.signal(condition) try.
+  tasks.unlock(mutex) try.
+  tasks.close(mutex) try.
+  tasks.close(condition) try.
+  constant listener is network.listen("127.0.0.1", 0) try.
+  after {
+    network.close(listener) fallback nothing.
+  }
+  constant client is network.connect("127.0.0.1", network.port(listener) try) try.
+  after {
+    network.close(client) fallback nothing.
+  }
+  network.nodelay(client, true) try.
+  network.keepalive(client, true) try.
+  constant server is network.accept(listener) try.
+  after {
+    network.close(server) fallback nothing.
+  }
+  check.expect((network.push(client, "44") try) is 2).
+  network.shutdown(client, "write") try.
+  constant received is network.receive(server, 2) try.
+  after {
+    words.release(received) fallback nothing.
+  }
   check.same(received, "44").
-  try log.message("services passed").
+  log.message("services passed") try.
   verify().
 }

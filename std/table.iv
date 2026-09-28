@@ -6,5 +6,5 @@ public use "table" function put[V](collection pointer to Table, key text, value 
 public use "table" function get[V](collection pointer to Table, key text) giving failable V.
 public use "table" function contains[V](collection pointer to Table, key text) giving failable boolean.
 public use "table" function remove[V](collection pointer to Table, key text) giving failable boolean.
-public use "table" function length[V](collection pointer to Table) giving failable unsigned 64.
+public use "table" function length[V](collection pointer to Table) giving failable unsigned.
 public use "table" function close[V](collection pointer to Table) giving failable nothing.

@@ -1,12 +1,27 @@
 -- Stores typed values in first-in, first-out order.
 use sequence as items.
-public define Queue[T] as record { values of type sequence of T. }.
-public function create[T]() of type Queue[T] { give Queue[T](items.create[T]()). }
-public function length[T](collection of type Queue[T]) of type unsigned 64 { give items.length[T](collection.values). }
-public function append[T](collection of type Queue[T], value of type T) of type failable Queue[T] { give Queue[T](try items.append[T](collection.values, value)). }
-public function first[T](collection of type Queue[T]) of type failable T {
-  when length[T](collection) is 0 { give fail(Error.EmptyCollection). }
+public define Queue[T] as record {
+  values of type sequence of T.
+}.
+public function create[T]() giving Queue[T] {
+  give Queue[T](items.create[T]()).
+}
+public function length[T](collection Queue[T]) giving unsigned {
+  give items.length[T](collection.values).
+}
+public function append[T](collection Queue[T], value T) giving failable Queue[T] {
+  give Queue[T](items.append[T](collection.values, value) try).
+}
+public function first[T](collection Queue[T]) giving failable T {
+  when length[T](collection) is 0 {
+    give fail(Error.EmptyCollection).
+  }
   give collection.values at 0.
 }
-public function remove[T](collection of type Queue[T]) of type failable Queue[T] { give Queue[T](try items.remove[T](collection.values, 0)). }
-public function release[T](collection of type Queue[T]) of type failable nothing { try items.release[T](collection.values). give. }
+public function remove[T](collection Queue[T]) giving failable Queue[T] {
+  give Queue[T](items.remove[T](collection.values, 0) try).
+}
+public function release[T](collection Queue[T]) giving failable nothing {
+  items.release[T](collection.values) try.
+  give nothing.
+}

@@ -8,7 +8,7 @@ signature reference for the installed compiler version.
 
 | Module | Purpose | Common operations |
 | --- | --- | --- |
-| `io` | Standard and file streams | `input`, `output`, `report`, `read`, `line`, `write`, `close`, `display` |
+| `io` | Standard and file streams | bare console `display`/`report`; stream `input`/`output`/`report`, `read`, `line`, `write`, `close` |
 | `file` | Files, directories, and stream position | `open`, `read`, `write`, `directory`, `join`, `flush`, `seek`, `position`, `size` |
 | `path` | Low-level path inspection | `merge`, `parent`, `name`, `suffix`, `absolute` |
 | `text` | Owned text operations | `concatenate`, `trim`, `length`, `slice`, `find`, `split`, `release` |
@@ -19,8 +19,7 @@ signature reference for the installed compiler version.
 | `system` | Host information | `cores`, `host`, `page` |
 | `log` | Application messages | `note`, `alert` |
 
-The canonical (official standard) filesystem module is `file`. Application documentation and new
-code do not use the old `fs` name.
+The filesystem module is `file`.
 
 ## Collections
 
@@ -133,7 +132,7 @@ packages should keep that code behind a small module boundary.
 
 | Module | Purpose | Main operations |
 | --- | --- | --- |
-| `testing` | Test assertions | `expect`, `same`, `number`, `positive`, `real`, `point` |
+| `testing` | Test assertions | `expect`, generic `same`, `every`, `Generator[T]`, `generate[T]` |
 | `contract` | Application preconditions (rules required before work starts) and invariants (rules that must always remain true) | `require`, `ensure`, `invariant` |
 | `state` | Immutable checked state transitions | `Machine[S, E]`, `create`, `step` |
 
@@ -148,10 +147,11 @@ server are CLI tools rather than source modules.
 ## Reading a signature
 
 Consider this signature fragment from the HTTP module. `Peer` is an opaque
-module-owned type declared elsewhere in that module:
+module-owned opaque type:
 
-<!-- snippet: context -->
 ```foo
+public define Peer as opaque.
+
 public use "http" function read(
   value pointer to Peer,
   limit unsigned 32

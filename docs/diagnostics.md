@@ -69,3 +69,29 @@ Fix the first independent error before chasing later messages. FOO keeps
 related locations attached to conflicts such as duplicate declarations and
 type mismatches, and it avoids merging those relationships into a generic
 count.
+
+## Diagnostic codes
+
+Codes identify categories; the message and highlighted source remain the
+authoritative explanation for a particular occurrence.
+
+| Code | Category | Code | Category |
+| --- | --- | --- | --- |
+| `FOO0000` | Unexpected token | `FOO0018` | Variant not found |
+| `FOO0001` | Unterminated input | `FOO0019` | Scope escape |
+| `FOO0002` | Invalid construct | `FOO0020` | Undefined value |
+| `FOO0003` | Invalid escape | `FOO0021` | Declaration not exported |
+| `FOO0004` | Invalid digit | `FOO0022` | Already imported |
+| `FOO0005` | Syntax error | `FOO0023` | Non-exhaustive match |
+| `FOO0006` | Missing declaration | `FOO0024` | Unreachable case |
+| `FOO0007` | Extra input | `FOO0025` | Backend error |
+| `FOO0008` | Duplicate declaration | `FOO0026` | Link error |
+| `FOO0009` | Hidden declaration | `FOO0027` | C binding error |
+| `FOO0010` | Name conflict | `FOO0028` | Native public API escape |
+| `FOO0011` | Module or item not found | `FOO0029` | Dependency conflict |
+| `FOO0012` | Circular dependency | `FOO0030` | Package hash mismatch |
+| `FOO0013` | Type mismatch | `FOO0031` | Package not found |
+| `FOO0014` | Value is not callable | `FOO0032` | Error context |
+| `FOO0015` | Value is not indexable | `FOO0033` | Uncaught error |
+| `FOO0016` | Value is not iterable | `FOO0034` | Test failed |
+| `FOO0017` | Field not found | | |

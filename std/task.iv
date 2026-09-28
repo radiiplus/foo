@@ -1,37 +1,30 @@
 -- Declares task execution and networking.
 --- Runtime-selected concurrency without function coloring ---
 --- Scoped execution currently uses native threads on every backend. ---
-
 public define Executor as opaque.
 public define Channel as opaque.
 public define Scope as opaque.
 public define Pool as opaque.
 public define Net as opaque.
 public define Socket as opaque.
-
-public use "task" function backend() of type integer 8.
-public use "task" function which() of type pointer to byte.
-public use "task" function executor() of type failable pointer to Executor.
-public use "task" function block(callback of type function() of type nothing for c) of type nothing.
-
-public use "task" function channel() of type failable pointer to Channel.
-public use "task" function send(channel of type pointer to Channel, value of type integer 64) of type boolean.
-public use "task" function receive(channel of type pointer to Channel, output of type pointer to integer 64) of type boolean.
-
-public use "task" function scope() of type failable pointer to Scope.
-public use "task" function launch(scope of type pointer to Scope, callback of type function(integer 64) of type nothing for c, argument of type integer 64) of type boolean.
-public use "task" function join(scope of type pointer to Scope) of type nothing.
-
-public use "task" function pool() of type failable pointer to Pool.
-public use "task" function submit(pool of type pointer to Pool, callback of type function(integer 64) of type nothing for c, argument of type integer 64) of type boolean.
-public use "task" function wait(pool of type pointer to Pool) of type nothing.
-
-public use "task" function affinity(cpu of type integer 64) of type boolean.
+public use "task" function backend() giving integer 8.
+public use "task" function which() giving pointer to byte.
+public use "task" function executor() giving failable pointer to Executor.
+public use "task" function block(callback function taking () giving nothing for c) giving nothing.
+public use "task" function channel() giving failable pointer to Channel.
+public use "task" function send(channel pointer to Channel, value integer) giving boolean.
+public use "task" function receive(channel pointer to Channel, output pointer to integer) giving boolean.
+public use "task" function scope() giving failable pointer to Scope.
+public use "task" function launch(scope pointer to Scope, callback function taking (integer) giving nothing for c, argument integer) giving boolean.
+public use "task" function join(scope pointer to Scope) giving nothing.
+public use "task" function pool() giving failable pointer to Pool.
+public use "task" function submit(pool pointer to Pool, callback function taking (integer) giving nothing for c, argument integer) giving boolean.
+public use "task" function wait(pool pointer to Pool) giving nothing.
+public use "task" function affinity(cpu integer) giving boolean.
 public use "task" function label(name text) giving boolean.
-
-public use "task" function net(executor of type pointer to Executor) of type pointer to Net.
-public use "task" function kind(net of type pointer to Net) of type integer 8.
-public use "task" function listen(net of type pointer to Net, port of type integer 32) of type pointer to Socket.
-public use "task" function connect(net of type pointer to Net, host of type pointer to byte, port of type integer 32) of type pointer to Socket.
-public use "task" function pull(socket of type pointer to Socket, buffer of type pointer to byte, size of type integer 64) of type integer 64.
-public use "task" function push(socket of type pointer to Socket, buffer of type pointer to byte, size of type integer 64) of type boolean.
+public use "task" function net(executor pointer to Executor) giving pointer to Net.
+public use "task" function kind(net pointer to Net) giving integer 8.
+public use "task" function listen(net pointer to Net, port integer 32) giving pointer to Socket.
+public use "task" function connect(net pointer to Net, host pointer to byte, port integer 32) giving pointer to Socket.
+public use "task" function pull(socket pointer to Socket, buffer pointer to byte, size integer) giving integer.
+public use "task" function push(socket pointer to Socket, buffer pointer to byte, size integer) giving boolean.

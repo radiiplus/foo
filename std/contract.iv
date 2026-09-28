@@ -1,14 +1,11 @@
 -- Checks application invariants with the runtime assertion mechanism.
 use testing as checks.
-
 public function require(condition boolean) giving nothing {
   checks.expect(condition).
 }
-
 public function ensure(condition boolean) giving nothing {
   checks.expect(condition).
 }
-
 public function invariant(condition boolean) giving nothing {
   checks.expect(condition).
 }

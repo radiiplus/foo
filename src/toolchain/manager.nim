@@ -51,7 +51,7 @@ proc directory*(): string =
 proc bundledDirectory(): string =
   parentDir(getAppDir()) / ".artifacts" / "toolchain"
 
-proc verify*(path, expected = version): bool =
+proc verify*(path: string; expected = version): bool =
   if not fileExists(path): return false
   try:
     let response = execCmdEx(quoteShell(path) & " version")

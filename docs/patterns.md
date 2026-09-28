@@ -51,11 +51,14 @@ needs constructor or computed-field syntax. A structural destructure such as
 adding a field produces a compile error instead of silently changing the
 binding order.
 
-Use composition when one record contains another. This fragment reuses `User`
-from the complete example above:
+Use composition when one record contains another:
 
-<!-- snippet: context -->
 ```foo
+define User as record {
+  name of type text.
+  age of type integer.
+}.
+
 define Account as record {
   owner of type User.
   active of type boolean.
@@ -120,11 +123,15 @@ display stored.
 ```
 
 For the standard JSON representation of a concrete scalar or record, FOO can
-generate both directions directly. This fragment reuses `codecs` and `Token`
-from the complete example above:
+generate both directions directly:
 
-<!-- snippet: context -->
 ```foo
+use codec as codecs.
+
+define Token as record {
+  value of type text.
+}.
+
 constant stored is codecs.encode[Token](Token("abc")) try.
 constant restored is codecs.decode[Token](stored) try.
 ```
@@ -320,28 +327,50 @@ the storage) rules still apply.
 
 An ordinary import is private. Use `public use` when a facade (a public module
 over internal modules) should re-export (publish again)
-another module's public declarations without changing their names. This
-fragment assumes the named internal file exists:
+another module's public declarations without changing their names:
 
-<!-- snippet: context -->
+<!-- snippet: project service src/internal/account.iv -->
+```foo
+public function lookup(name text) giving text { give name. }
+```
+
+<!-- snippet: project service src/service.iv -->
 ```foo
 -- src/service.iv
 public use "internal/account.iv".
 ```
 
+<!-- snippet: project service src/main.iv -->
+```foo
+use service.
+
+display service.lookup("Ada").
+```
+
 Re-exported declarations participate in normal duplicate-name checks. A
 `public use` cannot have an alias. Use a public wrapper when the facade needs to
-rename a declaration, adapt arguments, or narrow behavior. This fragment also
-depends on the named internal file.
+rename a declaration, adapt arguments, or narrow behavior:
 
-<!-- snippet: context -->
+<!-- snippet: project adapter src/internal/account.iv -->
+```foo
+public function lookup(name text) giving failable text { give name. }
+```
+
+<!-- snippet: project adapter src/service.iv -->
 ```foo
 -- src/service.iv
 use "internal/account.iv" as account.
 
-public function lookup(name text) giving failable account.User {
+public function lookup(name text) giving failable text {
   give account.lookup(name) try.
 }
+```
+
+<!-- snippet: project adapter src/main.iv -->
+```foo
+use service.
+
+display(service.lookup("Ada") fallback "missing").
 ```
 
 Callers import `service` and see `service.lookup`. The wrapper above forwards

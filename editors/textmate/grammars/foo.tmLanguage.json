@@ -306,10 +306,6 @@
     "declarations": {
       "patterns": [
         {
-          "match": "\\bmodule\\b(?:[ \\t]+[A-Za-z_][A-Za-z0-9_]*)?",
-          "name": "invalid.illegal.foo"
-        },
-        {
           "name": "meta.function.foo",
           "begin": "\\b(function)([ \\t]+)([A-Za-z_][A-Za-z0-9_]*)",
           "beginCaptures": {
@@ -356,7 +352,7 @@
         },
         {
           "name": "meta.type.foo",
-          "begin": "\\b(define|type)([ \\t]+)((?!(?:integer|unsigned|decimal|boolean|byte|character|text|array|sequence|nothing|record|choice|union|opaque|vector|function|optional|pointer|address|reference|failable)\\b)[A-Za-z_][A-Za-z0-9_]*)(?=[ \\t]*(?:\\[|as\\b|is\\b))",
+          "begin": "\\b(define)([ \\t]+)((?!(?:integer|unsigned|decimal|boolean|byte|character|text|sequence|nothing|record|choice|union|opaque|vector|function|optional|pointer|failable)\\b)[A-Za-z_][A-Za-z0-9_]*)(?=[ \\t]*(?:\\[|as\\b))",
           "beginCaptures": {
             "1": {
               "name": "storage.type.foo"
@@ -380,7 +376,7 @@
           }
         },
         {
-          "match": "\\b(dynamic|mutable)([ \\t]+)([A-Za-z_][A-Za-z0-9_]*)",
+          "match": "\\b(dynamic)([ \\t]+)([A-Za-z_][A-Za-z0-9_]*)",
           "captures": {
             "1": {
               "name": "storage.modifier.foo"
@@ -465,11 +461,11 @@
           "name": "support.type.primitive.foo"
         },
         {
-          "match": "\\b(?:optional|pointer|address|reference|failable)\\b",
+          "match": "\\b(?:optional|pointer|failable)\\b",
           "name": "storage.modifier.type.foo"
         },
         {
-          "match": "\\b(?:array|sequence|record|choice|union|opaque|vector|function)\\b",
+          "match": "\\b(?:sequence|record|choice|union|opaque|vector|function)\\b",
           "name": "storage.type.foo"
         },
         {
@@ -481,19 +477,19 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(?:give|when|otherwise|for|each|in|while|repeat|until|reaches|advance|match|case|stop|skip|break|continue|unsafe|native|asm|evaluate|on|leave|after|cleanup|finally|try|fallback|catch|test|eval|reflect|embed|start)\\b",
+          "match": "\\b(?:give|when|otherwise|for|each|in|while|match|case|stop|skip|unsafe|native|after|try|fallback|test|eval|reflect|embed|start)\\b",
           "name": "keyword.control.foo"
         },
         {
-          "match": "\\b(?:is|are|and|or|not|plus|subtract|multiply|divide|minus|times|divided|by|equals|does|equal|greater|than|less|at|least|most|increase|decrease)\\b",
+          "match": "\\b(?:is|are|and|or|not|plus|subtract|multiply|divide|by|equal|greater|than|less|at|least|most|increase|decrease)\\b",
           "name": "keyword.operator.foo"
         },
         {
-          "match": "\\b(?:module|use|where|define|type|giving|context|derives|as|default)\\b",
+          "match": "\\b(?:use|where|define|type|giving|derives|as|default)\\b",
           "name": "keyword.other.foo"
         },
         {
-          "match": "\\b(?:constant|dynamic|mutable|public|packed)\\b",
+          "match": "\\b(?:constant|dynamic|public|packed)\\b",
           "name": "storage.modifier.foo"
         },
         {
@@ -507,10 +503,6 @@
         {
           "match": "(?<![A-Za-z0-9_])[0-9][0-9_]*(?:\\.[0-9][0-9_]*)?",
           "name": "constant.numeric.foo"
-        },
-        {
-          "match": "\\b(?:bytes|bits|kilobytes|megabytes|gigabytes|terabytes|seconds|milliseconds|microseconds|nanoseconds)\\b",
-          "name": "keyword.other.unit.foo"
         }
       ]
     },

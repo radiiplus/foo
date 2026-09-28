@@ -1,4 +1,4 @@
--- Ordinary comment containing "quotes" and module
+-- Ordinary comment containing "quotes" and declarations
 --- Regular block
 function ignored() {}
 ---
@@ -6,24 +6,24 @@ function ignored() {}
 ---! Documentation across lines.
 constant ignored is 10.
 ---
-module sample {
-  function identity[T: Equatable](value of type T) of type T {
+start() {
+  function identity[T](value T) giving T where T is Equatable {
     give value.
   }
-  type Box[T] is record { value of type T. } derives Equatable, Hash.
+  define Box[T] as record { value of type T. } derives Equatable, Hash.
   constant count of type integer 32 is 1_000.
-  mutable amount of type decimal 64 is 12_345.67_89.
+  dynamic amount of type decimal is 12_345.67_89.
   constant lane of type vector[4, decimal 32] is splat(1.0).
-  constant item is values[0].
-  constant result is values[index[1]].
+  constant item is values at 0.
+  constant result is values at (index at 1).
   constant box of type Box[integer] is uninitialized.
-  function apply(value of type function(integer) of type nothing for c) {}
-  type Result is choice { Value(integer). Empty. }.
-  type Bits is packed record { count of type unsigned 3. }.
-  type Data is c union { number of type integer. }.
-  type Handle is opaque.
-  public use "crypto" function hash(value of type text) of type failable text.
-  use c "header.h".
+  function apply(value function taking (integer) giving nothing) { }
+  define Result as choice { Value(integer). Empty. }.
+  define Bits as packed record { count of type unsigned 3. }.
+  define Data as union { number of type integer. }.
+  define Handle as opaque.
+  public use "crypto" function hash(value text) giving failable text.
+  extern "C" function header() giving nothing.
   use sample as other.
   #[start]
   #[interrupt]
@@ -56,8 +56,8 @@ module sample {
   constant bad is "unfinished with \"escaped
   constant recovered is 45.
   0 42 1_000 1__2 1_ 0.5 12_345.6_7 5.
-  1 bytes 2 bits 3 kilobytes 4 megabytes 5 gigabytes 6 terabytes
-  1 seconds 2 milliseconds 3 microseconds 4 nanoseconds
+  constant kibibytes is 2 multiply 1024.
+  constant delay is clock.seconds(1).
   0xFF 0o77 0b10 1e3
   r"ordinary quoted text"
   let var const fn if else defer return mod pub extern export spawn thread_local uninit errdefer orelse
@@ -67,14 +67,14 @@ module sample {
   function generic[
     T,
     U
-  ](value of type T) { give value. }
-  native zig {
-    const module = .{ .value = "}" };
-    // function is Zig text here
-    { const value = 1; }
+  ](value T) { give value. }
+  native c {
+    const char *value = "}";
+    // function is C text here
+    { const int nested = 1; }
   }
   constant after is 1.
-  asm { "nop" ::: "memory" }
+  native asm { "nop" ::: "memory" }
   constant after is 2.
 }
 native c {
@@ -82,5 +82,5 @@ native c {
   int answer(void) { return 44; }
 }
 native asm { movq $44, %rax }
-native c function add(value of type integer) of type integer { return value + 1; }
+native c function add(value integer) giving integer { return value + 1; }
 atomic add counter by 1.

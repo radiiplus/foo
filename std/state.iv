@@ -3,11 +3,9 @@ public define Machine[S, E] as record {
   value of type S.
   change of type function taking (S, E) giving failable S.
 }.
-
 public function create[S, E](value S, change function taking (S, E) giving failable S) giving Machine[S, E] {
   give Machine[S, E](value, change).
 }
-
 public function step[S, E](machine Machine[S, E], event E) giving failable Machine[S, E] {
   constant value is machine.change(machine.value, event) try.
   give Machine[S, E](value, machine.change).

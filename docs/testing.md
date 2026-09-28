@@ -8,7 +8,8 @@ application code.
 `src/` for application code and `benchmark/` for performance measurements.
 
 Start with one small statement: arrange a value, run the operation, then check
-the result. A failed check makes `foo test` exit unsuccessfully.
+the result. A failed check, compile error, or selection containing no tests
+makes `foo test` exit unsuccessfully.
 
 ```foo
 use testing as check.
@@ -42,8 +43,10 @@ foo test --watch
 foo test std
 ```
 
-`foo test` discovers test blocks across the project, including `src/` and
-`test/`, and excludes dependencies and generated output. `--filter` matches
+`foo test` discovers `test "description" { ... }` blocks across the project,
+including `src/` and `test/`, and excludes dependencies, benchmarks, and
+generated output. Ordinary calls to `testing` functions outside a test block
+are not separate tests. `--filter` matches
 text in the description. Pass one file when you only want that file's tests;
 FOO does not compile or run the other test files. `--watch`
 rediscovers and reruns affected tests after a source or configuration change.
@@ -54,12 +57,24 @@ The `testing` module currently provides focused assertions:
 | Function | Check |
 | :--- | :--- |
 | `expect(value)` | Boolean value is true. |
-| `same(actual, expected)` | Text values match. |
+| `same[T](actual, expected)` | Two values of the same `Equatable` type match. |
 | `number(actual, expected)` | Unsigned integer values match. |
 | `positive(value)` | Unsigned integer is positive. |
 | `real(actual, expected)` | Decimal values match. |
 | `point(actual, expected)` | Optional unsigned point is present and matches. |
 | `every(count, property)` | The property returns true for every index from zero to `count subtract 1`. |
+
+`same` works for text, integers, decimals, Booleans, optionals, sequences, and
+records or choices that derive `Equatable`:
+
+```foo
+use testing as check.
+
+test "generic equality" {
+  check.same(1, 1).
+  check.same("FOO", "FOO").
+}
+```
 
 ## Check a bounded property
 

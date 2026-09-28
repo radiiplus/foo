@@ -1,4 +1,4 @@
-import std/strutils
+import std/[sequtils, strutils]
 import ../../src/lex/lexer
 import ../../src/parse/parser
 import ../../src/diag/engine
@@ -14,10 +14,10 @@ doAssert program.units[0].body.stmts[0].tag == "constant"
 doAssert program.units[0].body.stmts[1].tag == "function"
 doAssert not diagnostics.failed
 
-let legacy = "start() {\n  constant buffer is try allocate(owner, 4).\n}"
+let allocation = "start() {\n  constant buffer is allocate 4 using owner try.\n}"
 let issues = newEngine()
-issues.setSource(legacy, "legacy.iv")
-discard newParser(newLexer(legacy, issues).lex(), issues).parse()
+issues.setSource(allocation, "allocation.iv")
+discard newParser(newLexer(allocation, issues).lex(), issues).parse()
 doAssert not issues.failed
 
 let natural = """
@@ -78,6 +78,35 @@ let optionalTree = newParser(newLexer(optionalSource,
   optionalDiagnostics).lex(), optionalDiagnostics).parse()
 doAssert not optionalDiagnostics.failed
 doAssert Constant(optionalTree.units[0].body.stmts[0]).value.tag == "null"
+
+for removedWidth in ["integer 64", "unsigned 64", "decimal 64"]:
+  let widthSource = "constant value of type " & removedWidth & " is 0."
+  let widthDiagnostics = newEngine()
+  widthDiagnostics.setSource(widthSource, "width.iv")
+  discard newParser(newLexer(widthSource, widthDiagnostics).lex(),
+    widthDiagnostics).parse()
+  doAssert widthDiagnostics.failed
+  doAssert widthDiagnostics.messages.anyIt("Use bare" in it.text)
+
+for invalidWidth in ["boolean 8", "text 16", "nothing 32"]:
+  let widthSource = "constant value of type " & invalidWidth & " is 0."
+  let widthDiagnostics = newEngine()
+  widthDiagnostics.setSource(widthSource, "width.iv")
+  discard newParser(newLexer(widthSource, widthDiagnostics).lex(),
+    widthDiagnostics).parse()
+  doAssert widthDiagnostics.failed
+
+for removedFunction in [
+    "function old(value of type integer) giving integer { give value. }",
+    "function old(value integer) of type integer { give value. }",
+    "constant old of type function(integer) of type integer is uninitialized.",
+    "function old(value integer is 1) giving integer { give value. }",
+    "use \"c\" function old() giving integer."]:
+  let functionDiagnostics = newEngine()
+  functionDiagnostics.setSource(removedFunction, "function.iv")
+  discard newParser(newLexer(removedFunction, functionDiagnostics).lex(),
+    functionDiagnostics).parse()
+  doAssert functionDiagnostics.failed
 
 let destructureSource = "constant User(name, age) is user."
 let destructureDiagnostics = newEngine()

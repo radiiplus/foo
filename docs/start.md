@@ -152,6 +152,7 @@ As your app grows, you’ll want to split your code into multiple files to keep 
 
 Create a new file named `math.iv` and add this:
 
+<!-- snippet: project math src/math.iv -->
 ```foo
 public function add(left integer, right integer) giving integer {
   give left plus right.
@@ -162,7 +163,7 @@ public function add(left integer, right integer) giving integer {
 Now, go back to `src/main.iv` and use it. This fragment depends on the
 `math.iv` file created immediately above:
 
-<!-- snippet: context -->
+<!-- snippet: project math src/main.iv -->
 ```foo
 use "math.iv" as math. -- This brings in our new file!
 

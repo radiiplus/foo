@@ -69,7 +69,6 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
       if storage(nodeType(types, node)): result.incl(depth)
     of "group": result = expression(ast.Group(node).expr, bindings, depth)
     of "unary": result = expression(ast.Unary(node).operand, bindings, depth)
-    of "error-chain": result = expression(ast.ErrorChain(node).expr, bindings, depth)
     of "binary":
       let binary = ast.Binary(node)
       let origins = merge(expression(binary.left, bindings, depth),
@@ -171,7 +170,6 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
         else:
           discard expression(action.name, bindings, depth)
           for argument in action.args: discard expression(argument, bindings, depth)
-      of "try": discard expression(ast.`Try`(statement).expr, bindings, depth)
       of "when":
         let branch = ast.`When`(statement)
         discard expression(branch.cond, bindings, depth)
@@ -206,7 +204,6 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
         let loop = ast.`While`(statement)
         discard expression(loop.cond, bindings, depth)
         visit(loop.body, bindings, depth + 1)
-      of "repeat": visit(ast.Repeat(statement).body, bindings, depth + 1)
       of "unsafe": visit(ast.Unsafe(statement).body, bindings, depth + 1)
       of "eval": visit(ast.EvalBlock(statement).body, bindings, depth + 1)
       of "defer":

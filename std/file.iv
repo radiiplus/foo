@@ -7,6 +7,6 @@ public use "fs" function directory(path text) giving failable nothing.
 public use "fs" function join(left text, right text) giving failable text.
 -- Advanced stream controls. Offsets are byte offsets; origin is start, current, or end.
 public use "fs" function flush(stream pointer to streams.Stream) giving failable nothing.
-public use "fs" function seek(stream pointer to streams.Stream, offset integer 64, origin text) giving failable nothing.
-public use "fs" function position(stream pointer to streams.Stream) giving failable unsigned 64.
-public use "fs" function size(stream pointer to streams.Stream) giving failable unsigned 64.
+public use "fs" function seek(stream pointer to streams.Stream, offset integer, origin text) giving failable nothing.
+public use "fs" function position(stream pointer to streams.Stream) giving failable unsigned.
+public use "fs" function size(stream pointer to streams.Stream) giving failable unsigned.

@@ -1,4 +1,4 @@
-import std/[json, os, sequtils, strutils]
+import std/[json, os, strutils]
 import ../build/files
 import ../pkg/hash
 
@@ -46,10 +46,10 @@ proc mapType(raw: string; diagnostics: var seq[BindDiagnostic]; declaration = ""
   of "unsigned short", "unsigned short int": result = "unsigned 16"
   of "int", "signed int": result = "integer 32"
   of "unsigned", "unsigned int": result = "unsigned 32"
-  of "long", "long int", "long long", "long long int": result = "integer 64"
-  of "unsigned long", "unsigned long int", "unsigned long long", "unsigned long long int", "size_t": result = "unsigned 64"
+  of "long", "long int", "long long", "long long int": result = "integer"
+  of "unsigned long", "unsigned long int", "unsigned long long", "unsigned long long int", "size_t": result = "unsigned"
   of "float": result = "decimal 32"
-  of "double": result = "decimal 64"
+  of "double": result = "decimal"
   else:
     result = value.replace("struct ", "").replace("union ", "").replace("enum ", "")
     if result.len == 0 or result.contains({'(', ')', '[', ']', ','}):
@@ -77,8 +77,9 @@ proc parseFunction(line: string; diagnostics: var seq[BindDiagnostic]): string =
       var paramType = if words.len > 1: words[0 ..< words.high].join(" ") else: words[0]
       while paramName.startsWith("*"):
         paramType.add(" *"); paramName = paramName[1 .. ^1]
-      params.add(safeName(paramName) & " of type " & mapType(paramType, diagnostics, paramName))
-  "use \"c\" function " & safeName(name) & "(" & params.join(", ") & ") of type " & mapType(returnType, diagnostics, name) & "."
+      params.add(safeName(paramName) & " " & mapType(paramType, diagnostics, paramName))
+  "extern \"C\" function " & safeName(name) & "(" & params.join(", ") &
+    ") giving " & mapType(returnType, diagnostics, name) & "."
 
 proc `bind`*(header: string; options = BindOptions()): BindResult =
   let headerPath = absolutePath(header)

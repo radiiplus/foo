@@ -9,7 +9,6 @@ let libraries = toHashSet([
 ])
 
 proc binding*(name: string): Option[string] =
-  if name == "c": return some("c")
   if name == "task": return some("runtime")
   if name in libraries: return some("runtime." & name)
   none(string)

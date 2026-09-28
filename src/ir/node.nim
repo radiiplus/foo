@@ -1,6 +1,5 @@
 import std/tables
 import std/strutils
-import std/sets
 import ./kind
 
 type
@@ -192,7 +191,11 @@ proc label*(value: `Type`): string =
     of TypeKind.Opaque: "opaque"
     of TypeKind.Array: "sequence"
     else: "type"
-  if value.width > 0 and value.kind in {TypeKind.Int, TypeKind.Uint, TypeKind.Float}: name & " " & $value.width else: name
+  if value.width > 0 and value.width != 64 and
+      value.kind in {TypeKind.Int, TypeKind.Uint, TypeKind.Float}:
+    name & " " & $value.width
+  else:
+    name
 
 proc bytes*(value: string): seq[byte] =
   if value.len < 2 or value[0] != '"' or value[^1] != '"': raise newException(ValueError, "Malformed IR text constant")

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "name": "composition",
+  "language": "1",
+  "version": "0.1.0",
+  "source": "src",
+  "entry": "src/main.iv",
+  "requires": "base",
+  "dependencies": {}
+}

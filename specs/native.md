@@ -50,7 +50,7 @@ For parameter/result bindings, use a native function and string constraints.
 `result` names its output value; parameters keep their declared names:
 
 ```iv
-native asm function mirror(value unsigned 64) giving unsigned 64 {
+native asm function mirror(value unsigned) giving unsigned {
   "movq %[value], %[result]"
     : [result] "=r"(result)
     : [value] "r"(value)
@@ -87,7 +87,3 @@ ABI. For example, Linux x86-64 call 39 obtains the process ID. Other operating
 systems reject this operation with a target diagnostic; portable programs use
 standard-library services. Stack/frame registers and unsupported register names
 are rejected.
-
-Legacy backend-pinned `native zig` and string-constraint `asm` forms remain
-available to existing private backend code. They do not provide the portable
-parameter isolation of the interfaces above and are excluded from public APIs.

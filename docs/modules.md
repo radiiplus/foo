@@ -15,10 +15,12 @@ Standard modules use their plain names. Application code does not write a
 `std/` prefix.
 
 The alias controls the qualifier (the name written before the dot) used in the
-file. This fragment continues from the imports above:
+file. Without `as`, the module's own name is the qualifier, so both
+`use sequence.` and `use sequence as sequences.` are valid:
 
-<!-- snippet: context -->
 ```foo
+use file as files.
+
 constant content is files.read("notes.txt") try.
 ```
 
@@ -27,15 +29,17 @@ constant content is files.read("notes.txt") try.
 Use a quoted path relative to the importing module. This fragment assumes the
 next example is stored at `src/billing/tax.iv`:
 
-<!-- snippet: context -->
+<!-- snippet: project tax src/main.iv -->
 ```foo
 use "billing/tax.iv" as tax.
 
 constant total is tax.add(100.0, 5.0).
 ```
 
-The imported declaration must be public:
+The imported declaration must be public. This is the other file in the same
+checked example:
 
+<!-- snippet: project tax src/billing/tax.iv -->
 ```foo
 -- src/billing/tax.iv
 public function add(price decimal, amount decimal) giving decimal {
@@ -49,28 +53,51 @@ does not automatically re-export anything.
 ## Build a facade module (one public entry point over internal modules)
 
 Use `public use` for a transparent facade (a module presenting a simpler public
-surface over internal modules) that preserves the imported public names. The
-next fragment assumes the named internal file exists:
+surface over internal modules) that preserves the imported public names:
 
-<!-- snippet: context -->
+<!-- snippet: project facade src/internal/storage.iv -->
+```foo
+public function lookup(name text) giving text { give name. }
+```
+
+<!-- snippet: project facade src/account.iv -->
 ```foo
 -- src/account.iv
 public use "internal/storage.iv".
 ```
 
+<!-- snippet: project facade src/main.iv -->
+```foo
+use account.
+
+display account.lookup("Ada").
+```
+
 The compiler reports collisions between local declarations and names that are
 re-exported (made public again from another module). A public use cannot have an
 alias. Publish a forwarding function when the facade must rename or adapt an
-operation. This fragment also depends on the named internal file:
+operation:
 
-<!-- snippet: context -->
+<!-- snippet: project wrapper src/internal/storage.iv -->
+```foo
+public function lookup(name text) giving failable text { give name. }
+```
+
+<!-- snippet: project wrapper src/account.iv -->
 ```foo
 -- src/account.iv
 use "internal/storage.iv" as storage.
 
-public function lookup(name text) giving failable storage.User {
+public function lookup(name text) giving failable text {
   give storage.lookup(name) try.
 }
+```
+
+<!-- snippet: project wrapper src/main.iv -->
+```foo
+use account.
+
+display(account.lookup("Ada") fallback "missing").
 ```
 
 Callers use `account.lookup`. The wrapper is a new public contract, so document
@@ -149,12 +176,15 @@ foo remove json
 
 A bare import is resolved in this order:
 
-1. A sibling project file.
-2. A file under the project's source root.
+1. A sibling project file other than the importing file itself.
+2. A same-named file directly under the project's configured source root.
 3. A declared and installed package.
 4. A standard-library module.
 
-Name collisions and circular imports are compile errors.
+Quoted imports are resolved relative to the importing file and do not use this
+search order. Name collisions and circular imports are compile errors. Thus a
+test file can write `use values.` to import `src/values.iv`, while
+`test/values.iv` cannot use that spelling to import itself.
 
 ## Common mistakes
 

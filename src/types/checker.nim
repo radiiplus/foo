@@ -192,7 +192,6 @@ proc annotation(checker: Checker; node: ast.`Type`): semantic.Type =
         (value.name != "decimal" and (width < 1 or width > 128))):
       checker.diag.emit(Code.Invalid, node.span, "Invalid numeric width")
     result = primitive(value.name, width)
-  of "array": result = semantic.Type(kind: "array", elem: checker.annotation(ast.Array(node).elem))
   of "sequence":
     let sequence = ast.Sequence(node)
     result = semantic.Type(kind: "sequence", elem: checker.annotation(sequence.elem), constant: sequence.constant)
@@ -763,7 +762,6 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
   of "uninitialized": result = if expected == nil: unknown() else: expected
   of "unreachable": result = primitive("never")
   of "newline": result = primitive("text")
-  of "quantity": result = primitive("integer", 64)
   of "broken": result = unknown()
   of "name":
     let name = ast.Name(node).text
@@ -1009,9 +1007,6 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
     if owner.kind in ["array", "sequence", "vector"]: result = owner.elem
     elif owner.kind == "primitive" and owner.name == "text": result = primitive("byte")
     else: checker.diag.emit(Code.Invalid, index.object.span, "cannot index non-sequence type"); result = unknown()
-  of "error-chain":
-    discard checker.infer(ast.ErrorChain(node).context, environment)
-    result = checker.infer(ast.ErrorChain(node).expr, environment, expected)
   of "reflect":
     discard checker.annotation(ast.Reflect(node).type)
     result = semantic.Type(kind: "record", name: "__description",
@@ -1218,10 +1213,6 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
     let loop = ast.`While`(node)
     checker.boolean(checker.infer(loop.cond, environment), loop.cond.span)
     inc checker.loops; checker.checkBlock(loop.body, environment.child); dec checker.loops
-  of "repeat":
-    discard checker.infer(ast.Repeat(node).target, environment)
-    discard checker.infer(ast.Repeat(node).limit, environment)
-    inc checker.loops; checker.checkBlock(ast.Repeat(node).body, environment.child); dec checker.loops
   of "for":
     let loop = ast.`For`(node)
     let iterable = checker.infer(loop.iter, environment)
@@ -1273,15 +1264,6 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
     if checker.loops == 0 or checker.leaving > 0:
       checker.diag.emit(Code.Invalid, node.span,
         "Loop control needs an enclosing loop and cannot leave cleanup")
-  of "try":
-    if checker.leaving > 0:
-      checker.diag.emit(Code.Invalid, node.span,
-        "after cannot propagate an error; handle it with fallback")
-    let value = checker.infer(ast.`Try`(node).expr, environment)
-    if value.kind != "error": checker.diag.emit(Code.Invalid, node.span, "try needs a failable value")
-    if not checker.propagates:
-      checker.diag.emit(Code.Invalid, node.span,
-        "This function needs a failable return type to use try")
   of "unsafe": inc checker.unsafeDepth; checker.checkBlock(ast.Unsafe(node).body, environment.child); dec checker.unsafeDepth
   of "defer":
     let deferred = ast.`Defer`(node)
@@ -1322,12 +1304,6 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
       checker.diag.emit(Code.Invalid, node.span,
         "This call can fail. Use try or fallback to handle its error")
   of "machine": discard checker.infer(node, environment)
-  of "advance":
-    let target = ast.AdvanceStatement(node).target
-    if not environment.mutable(target.text):
-      checker.diag.emit(Code.Invalid, node.span,
-        "Advance needs a dynamic binding")
-    discard checker.infer(target, environment)
   else: discard
 
 proc check*(checker: Checker; program: ast.Program) =

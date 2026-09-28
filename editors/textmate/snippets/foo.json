@@ -68,15 +68,5 @@
     "prefix": "fallback",
     "body": ["${1:operation} fallback ${0:value}."],
     "description": "Recover from a failable operation"
-  },
-  "native c": {
-    "prefix": "native c",
-    "body": ["native c {", "  $0", "}"],
-    "description": "FOO native C block"
-  },
-  "native zig": {
-    "prefix": "native zig",
-    "body": ["native zig {", "  $0", "}"],
-    "description": "FOO native Zig block"
   }
 }

@@ -95,7 +95,7 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
     if escaped.code.len > 0:
       fragment = outDir / "escape.c"
       writeFile(fragment, escaped.code)
-    let needsService = hosted(escaped.module, includeIo = false)
+    let needsService = hosted(escaped.module)
     if needsService:
       writeFile(outDir / "service.h", serviceHeader)
       writeFile(outDir / "service.c", serviceSource)

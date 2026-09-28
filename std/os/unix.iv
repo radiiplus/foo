@@ -2,21 +2,17 @@
 --- Unix pipes, signals, and memory mapping handles. ---
 public define Pipe as opaque.
 public define Map as opaque.
-
 public function pipe() {
   constant result of type pointer to Pipe is uninitialized.
   give result.
 }
-
-public function signal(number of type integer 32) {
-  give.
+public function signal(number integer 32) {
+  give nothing.
 }
-
-public function mmap(size of type integer 64) {
+public function mmap(size integer) {
   constant result of type pointer to Map is uninitialized.
   give result.
 }
-
-public function munmap(mapping of type pointer to Map) {
-  give.
+public function munmap(mapping pointer to Map) {
+  give nothing.
 }

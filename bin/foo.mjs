@@ -13,9 +13,26 @@ const candidates = [
   resolve(root, ".artifacts", "native", executable),
   resolve(root, ".artifacts", "native", `${process.platform}-${arch()}`, executable),
 ].filter(Boolean);
-const compiler = candidates.find(existsSync);
-if (!compiler) {
+const available = candidates.filter(existsSync);
+if (available.length === 0) {
   console.error("The native FOO compiler is missing. Run npm run native:build.");
+  process.exit(1);
+}
+const expected = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")).version;
+const versions = new Map();
+const compiler = available.find((candidate) => {
+  const check = spawnSync(candidate, ["version"], {
+    encoding: "utf8",
+    windowsHide: true,
+  });
+  const output = `${check.stdout ?? ""}\n${check.stderr ?? ""}`;
+  const match = output.match(/compiler\s+([^\s]+)/);
+  versions.set(candidate, match?.[1] ?? "unreadable");
+  return check.status === 0 && match?.[1] === expected;
+});
+if (!compiler) {
+  const found = [...versions].map(([path, version]) => `${path} (${version})`).join("\n  ");
+  console.error(`The available FOO compiler does not match package ${expected}.\n  ${found}\nRun npm run native:build.`);
   process.exit(1);
 }
 if (process.platform !== "win32") {

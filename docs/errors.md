@@ -32,8 +32,10 @@ function copy() giving failable text {
 }
 ```
 
-Do not write `constant content is try files.read(...)`. Prefix `try` is legacy
-syntax; new code and documentation use the postfix operator.
+`try` is a postfix operator on one failable expression. It binds to the value
+immediately before it, so use parentheses when the propagated value
+participates in a larger expression. Repeating `try` is valid only when each
+application unwraps another failable layer.
 
 ## `fallback`
 
@@ -50,6 +52,11 @@ The replacement must have the same success type. A fallback for `failable
 text` must produce text.
 
 `fallback` handles the error locally. It does not propagate it.
+
+Every failable value must be propagated with `try`, recovered with `fallback`,
+returned from a compatible failable function, or otherwise consumed by an API
+that explicitly accepts it. `failable nothing` can still report failure;
+plain `nothing` cannot.
 
 ## Choosing between them
 
@@ -80,6 +87,9 @@ function chunk() giving failable text {
 
 The `after` block runs on ordinary completion, early `give`, propagated
 failure, `stop`, and `skip`. Forced process termination cannot guarantee it.
+Several cleanup blocks in one scope run in reverse registration order. A block
+belongs to its nearest enclosing scope, so one registered inside a loop runs
+when that iteration's scope exits.
 
 ## Cleanup only after failure
 
@@ -95,6 +105,9 @@ after error { memory.release(allocator, buffer) fallback nothing. }
 ```
 
 Use this form when ownership transfers to the caller on success.
+`after error` follows the same scope and reverse-order rules, but runs only
+while a failure is leaving that scope; `stop`, `skip`, and a successful `give`
+do not trigger it.
 
 ## Error context
 

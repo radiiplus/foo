@@ -170,9 +170,6 @@ proc parseInstruction(parser: TextParser): Instruction =
   of "eval": Instruction(kind: InstrKind.Eval, dest: dest, evalBody: parser.take.value)
   of "reflect": Instruction(kind: InstrKind.Reflect, dest: dest, typeArg: parser.parseType)
   of "embed": Instruction(kind: InstrKind.Embed, dest: dest, path: parser.take.value)
-  of "native":
-    discard parser.take("zig")
-    Instruction(kind: InstrKind.NativeZig, dest: dest, code: parser.take.value)
   else: raise newException(ValueError, "Unknown instruction: " & operation)
 
 proc parseText(source: string): Module =

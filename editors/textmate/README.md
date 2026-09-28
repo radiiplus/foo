@@ -34,7 +34,7 @@ function greet name text punctuation text default "!" giving text {
   give "Hello, " plus name plus punctuation.
 }
 
-display greet "world".
+display(greet("world")).
 ```
 
 ---
@@ -73,8 +73,6 @@ Start typing a prefix and select the FOO suggestion:
 | `increase` | Intentional mutation |
 | `try` | Failure propagation |
 | `fallback` | Failure recovery |
-| `native c` | Native C block |
-| `native zig` | Native Zig block |
 
 Use `--` for line comments and `--- ... ---` for block comments.
 

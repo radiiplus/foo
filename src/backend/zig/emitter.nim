@@ -263,7 +263,6 @@ proc emitInstr(instruction: Instruction; used: HashSet[string]): string =
       ", " & valueStr(instruction.val2) & ", @Vector(" & $instruction.mask.len & ", i32){ " & mask.join(", ") & " });")
   of InstrKind.Select: finish(destination & "@select(" & typeStr(instruction.dest.type.elem) & ", " & valueStr(instruction.cond) & ", " & valueStr(instruction.val) & ", " & valueStr(instruction.val2) & ");")
   of InstrKind.Reduce: finish(destination & "@reduce(." & (if instruction.reduceOp.len > 0: instruction.reduceOp else: "Add") & ", " & valueStr(instruction.val) & ");")
-  of InstrKind.NativeZig: instruction.code
   of InstrKind.Trace: "shim.trace(" & quote(instruction.trace) & ", " & quote(instruction.span.file) & ", " & $instruction.span.start & ");"
   of InstrKind.Atomic:
     let order = if instruction.field == "relaxed": "monotonic" else: instruction.field

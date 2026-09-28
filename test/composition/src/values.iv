@@ -1,0 +1,7 @@
+public function answer() giving integer {
+  give 42.
+}
+
+public function prompt() giving failable text {
+  give input() try.
+}

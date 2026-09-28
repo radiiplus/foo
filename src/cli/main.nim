@@ -390,10 +390,14 @@ proc main*(input: seq[string]): int =
           activeOperation.update("Results", item.suite.name,
             if item.passed: cliDisplay.stateComplete else: cliDisplay.stateFailed,
             if item.error.len > 0: item.error else: $item.timeMs & " ms", true)
-        activeOperation.finish(failed == 0, $results.len &
+        let empty = results.len == 0
+        activeOperation.finish(failed == 0 and not empty, $results.len &
           (if results.len == 1: " test" else: " tests") &
           " · " & $failed & " failed")
         activeOperation = nil
+        if empty:
+          raise newException(ValueError,
+            "No tests found. Add a test \"description\" { ... } block or select a fixture with start().")
         if failed > 0:
           raise newException(ValueError, "One or more tests failed")
       if watching: watch(root, executeTests) else: executeTests()

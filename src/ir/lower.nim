@@ -260,19 +260,6 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         else: inferred
       return literalValue(node, target)
     of "uninitialized": return Value(kind: ValueKind.Const, name: "undefined", `type`: if expected != nil: expected else: `Type`(kind: TypeKind.Void))
-    of "quantity":
-      let quantity = ast.Quantity(node)
-      let scale = case quantity.unit
-        of "kilobytes": 1024'i64
-        of "megabytes": 1024'i64 * 1024
-        of "gigabytes": 1024'i64 * 1024 * 1024
-        of "terabytes": 1024'i64 * 1024 * 1024 * 1024
-        of "seconds": 1_000_000_000'i64
-        of "milliseconds": 1_000_000'i64
-        of "microseconds": 1_000'i64
-        else: 1'i64
-      return Value(kind: ValueKind.Const, name: $(parseBiggestInt(quantity.value) * scale),
-        `type`: `Type`(kind: TypeKind.Int, width: 64))
     of "name":
       if slots.hasKey(ast.Name(node).text):
         let pointer = slots[ast.Name(node).text]
@@ -335,12 +322,6 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         emit(Instruction(kind: InstrKind.Extract, dest: dest, val: source,
           field: ast.Field(node).field.text))
       return dest
-    of "error-chain":
-      let chain = ast.ErrorChain(node)
-      let value = expression(chain.expr, expected)
-      emit(Instruction(kind: InstrKind.Trace, expr: value,
-        val: expression(chain.context), trace: functionNode.name.text & ".trace", effects: @["trace"]))
-      return value
     of "embed":
       let embedded = ast.Embed(node)
       let target = if expected != nil: expected elif embedded.type != nil: lowerType(embedded.type, aliases) else: `Type`(kind: TypeKind.Slice, constant: true, elem: `Type`(kind: TypeKind.Uint, width: 8))
@@ -621,13 +602,6 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       of "unsafe":
         statements(ast.Unsafe(statement).body.stmts)
         if term != nil: break
-      of "repeat":
-        let repeated = ast.Repeat(statement)
-        let condition = ast.Binary(tag: "binary", span: statement.span, op: "is less than",
-          left: repeated.target, right: repeated.limit)
-        statements(@[ast.Statement(ast.`While`(tag: "while", span: statement.span,
-          cond: condition, body: repeated.body))])
-        if term != nil: break
       of "for":
         let iteration = ast.`For`(statement)
         let iter = expression(iteration.iter)
@@ -825,14 +799,6 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         let pointer = place(assignment.target)
         emit(Instruction(kind: InstrKind.Store, `ptr`: pointer,
           val: expression(assignment.value, pointer.type.elem), effects: @["write"]))
-      of "advance":
-        let target = ast.AdvanceStatement(statement).target
-        let pointer = place(target)
-        let previous = expression(target)
-        let next = fresh(previous.type)
-        emit(Instruction(kind: InstrKind.Add, dest: next, val: previous,
-          val2: Value(kind: ValueKind.Const, name: "1", `type`: previous.type)))
-        emit(Instruction(kind: InstrKind.Store, `ptr`: pointer, val: next, effects: @["write"]))
       of "give":
         let value = if ast.Give(statement).value == nil: Value() else: expression(ast.Give(statement).value, signature.ret)
         var hasErrorCleanup = false
@@ -850,23 +816,16 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       of "action":
         let action = ast.Action(statement)
         discard expression(if action.value != nil: action.value else: ast.Call(tag: "call", callee: action.name, args: action.args, span: statement.span))
-      of "try":
-        let value = expression(ast.`Try`(statement).expr)
-        if hasCleanups(): discard propagate(value)
-        else: emit(Instruction(kind: InstrKind.Try, expr: value))
       of "defer":
         if cleaning: raise newException(ValueError, "Cleanup cannot register another cleanup")
         scopes[^1].add(Cleanup(statement: ast.`Defer`(statement),
           values: snapshot(environment), storage: snapshot(slots)))
       of "machine": discard expression(statement)
       of "native": emit(Instruction(kind: InstrKind.Native, code: ast.Native(statement).code, field: "@" & ast.Native(statement).substrate, effects: @["unknown"]))
-      of "native-zig": emit(Instruction(kind: InstrKind.NativeZig, code: ast.NativeZig(statement).code, effects: @["unknown"]))
       of "eval": statements(ast.EvalBlock(statement).body.stmts)
       of "unreachable-statement":
         term = Instruction(kind: InstrKind.Panic, msg: "unreachable")
         break
-      of "asm": emit(Instruction(kind: InstrKind.NativeZig,
-        code: "asm volatile (" & ast.Asm(statement).code & ");", effects: @["unknown"]))
       of "alias", "function", "extern-function", "use", "c-import", "test": discard
       else: raise newException(ValueError, "lowering for statement '" & statement.tag & "' is not implemented")
     if term == nil and not cleaning: cleanup(scopes.high, status = -1)

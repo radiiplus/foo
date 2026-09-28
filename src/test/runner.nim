@@ -67,10 +67,15 @@ proc inspect(path: string; includeStart: bool; suites: var seq[TestSuite]) =
 
 proc discoverTests*(root: string; includeStarts = false): seq[TestSuite] =
   var stdlib = ""
-  for candidate in [getAppDir().parentDir / "test" / "stdlib",
+  proc hasFixtures(directory: string): bool =
+    if not dirExists(directory): return false
+    for kind, path in walkDir(directory):
+      if kind == pcFile and path.toLowerAscii().endsWith(".iv"): return true
+  for candidate in [getCurrentDir() / "test" / "stdlib",
+      getAppDir().parentDir / "test" / "stdlib",
       getAppDir().parentDir.parentDir / "test" / "stdlib",
       currentSourcePath.parentDir.parentDir.parentDir / "test" / "stdlib"]:
-    if dirExists(candidate):
+    if hasFixtures(candidate):
       stdlib = absolutePath(candidate)
       break
   let selected = if root == "std": stdlib else: absolutePath(root)
@@ -85,11 +90,27 @@ proc discoverTests*(root: string; includeStarts = false): seq[TestSuite] =
       let name = path.lastPathPart
       if kind == pcLinkToDir or kind == pcLinkToFile: continue
       if kind == pcDir:
-        if name in ["node_modules", ".artifacts", ".git"]: continue
+        if name in ["node_modules", ".artifacts", ".foo", ".git", "benchmark"]:
+          continue
         visit(path)
       elif kind == pcFile:
         inspect(path, starts, suites)
-  visit(selected)
+  if selected == stdlib:
+    visit(selected)
+  elif fileExists(selected / "project.json"):
+    var source = "src"
+    try:
+      let manifest = parseJson(readFile(selected / "project.json"))
+      let configured = if manifest.hasKey("source") and
+          manifest["source"].kind == JString: manifest["source"].getStr() else: ""
+      if configured.len > 0: source = configured
+    except CatchableError:
+      discard
+    let roots = @[selected / source, selected / "test"].deduplicate()
+    for directory in roots:
+      if dirExists(directory): visit(directory)
+  else:
+    visit(selected)
   result = suites
 
 proc synthesizeTests*(program: ast.Program; selected: TestSuite) : bool =
@@ -190,7 +211,14 @@ proc runSingleTest*(suite: TestSuite; backend = "zig"; executor: TestExecutor = 
     buildCompiler.prepareEntry(program)
     expand(program, diagnostics, projectRoot,
       cBinding.BindOptions(includePaths: includePaths))
-    let resolution = newResolver(diagnostics, projectRoot).resolve(program, suite.file)
+    let resolution = newResolver(diagnostics, projectRoot, parse =
+      proc(importedFile, input: string; diag: Engine): ast.Program =
+        diag.setSource(input, importedFile)
+        result = newParser(newLexer(input, diag).lex(), diag).parse()
+        if not diag.failed:
+          buildCompiler.prepareEntry(result)
+          expand(result, diag, projectRoot,
+            cBinding.BindOptions(includePaths: includePaths))).resolve(program, suite.file)
     program = link(program, resolution)
     lint(program, diagnostics, backend)
     let level = manifest.child("requires").text("base")

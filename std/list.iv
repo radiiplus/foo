@@ -1,7 +1,7 @@
 -- Declares growable lists of borrowed byte pointers.
 public define List as opaque.
-public use "list" function create() of type failable pointer to List.
-public use "list" function push(collection of type pointer to List, item of type pointer to byte) of type failable nothing.
-public use "list" function get(collection of type pointer to List, index of type unsigned 64) of type failable pointer to byte.
-public use "list" function length(collection of type pointer to List) of type failable unsigned 64.
-public use "list" function close(collection of type pointer to List) of type failable nothing.
+public use "list" function create() giving failable pointer to List.
+public use "list" function push(collection pointer to List, item pointer to byte) giving failable nothing.
+public use "list" function get(collection pointer to List, index unsigned) giving failable pointer to byte.
+public use "list" function length(collection pointer to List) giving failable unsigned.
+public use "list" function close(collection pointer to List) giving failable nothing.

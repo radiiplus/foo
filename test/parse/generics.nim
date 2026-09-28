@@ -29,18 +29,18 @@ doAssert maximum.constraints.len == 1
 let library = parseFile(currentSourcePath().parentDir.parentDir.parentDir / "std" / "sequence.iv")
 doAssert library.units[0].body.stmts.anyIt(it.tag == "extern-function" and ast.ExternFunction(it).typeParams.len == 1)
 
-let layouts = parseSource("""#[repr(C)] type Point is record { x of type integer 32. }.
-type Data is c union { number of type integer. }.
+let layouts = parseSource("""#[repr(C)] define Point as record { x of type integer 32. }.
+#[repr(C)] define Data as union { number of type integer. }.
 use sample as other.
 function map[
   Input,
   Output
 ](
-  value of type Input,
-  callback of type function(
+  value Input,
+  callback function taking (
     Input
-  ) of type Output
-) of type Output
+  ) giving Output
+) giving Output
 where
   Input is Copy,
   Output is Copy

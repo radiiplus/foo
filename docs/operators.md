@@ -56,8 +56,7 @@ The complete comparison vocabulary is:
 | At least | `left greater than or equal to right` |
 | At most | `left less than or equal to right` |
 
-Use the direct forms in the table consistently. The removed `is at least` and
-`is at most` spellings are not canonical FOO v1 syntax.
+Use the direct forms in the table consistently.
 
 ## Boolean logic
 

@@ -3,27 +3,22 @@
 public define Handle as opaque.
 public define Registry as opaque.
 public define Winrt as opaque.
-
 public function handle() {
   constant result of type pointer to Handle is uninitialized.
   give result.
 }
-
-public function process(command of type pointer to byte) {
+public function process(command pointer to byte) {
   constant result of type pointer to Handle is uninitialized.
   give result.
 }
-
-public function registry(path of type pointer to byte) {
+public function registry(path pointer to byte) {
   constant result of type pointer to Registry is uninitialized.
   give result.
 }
-
-public function winrt(class of type pointer to byte) {
+public function winrt(class pointer to byte) {
   constant result of type pointer to Winrt is uninitialized.
   give result.
 }
-
-public function release(handle of type pointer to Handle) {
-  give.
+public function release(handle pointer to Handle) {
+  give nothing.
 }

@@ -1,40 +1,31 @@
 -- Measures elapsed time using a monotonic nanosecond clock.
 public define Instant as record {
-  nanoseconds of type unsigned 64.
+  nanoseconds of type unsigned.
 }.
-
 public define Duration as record {
-  nanoseconds of type unsigned 64.
+  nanoseconds of type unsigned.
 }.
-
-public use "time" function current() of type failable unsigned 64.
-public use "time" function sleep(duration of type unsigned 64) of type failable nothing.
-
-public function nanos(value unsigned 64) giving Duration {
+public use "time" function current() giving failable unsigned.
+public use "time" function sleep(duration unsigned) giving failable nothing.
+public function nanos(value unsigned) giving Duration {
   give Duration(value).
 }
-
-public function millis(value unsigned 64) giving Duration {
+public function millis(value unsigned) giving Duration {
   give Duration(value multiply 1000000).
 }
-
-public function seconds(value unsigned 64) giving Duration {
+public function seconds(value unsigned) giving Duration {
   give Duration(value multiply 1000000000).
 }
-
 public function now() giving failable Instant {
   give Instant(current() try).
 }
-
 public function elapsed(first Instant, last Instant) giving Duration {
   give Duration(last.nanoseconds subtract first.nanoseconds).
 }
-
 public function wait(duration Duration) giving failable nothing {
   sleep(duration.nanoseconds) try.
 }
-
-public function measure(task of type function taking () giving nothing) of type failable unsigned 64 {
+public function measure(task function taking () giving nothing) giving failable unsigned {
   constant first is current() try.
   task().
   give (current() try) subtract first.

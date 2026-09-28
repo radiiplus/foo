@@ -148,7 +148,6 @@ proc visit(body: ast.Block; inherited: Table[string, ast.Expression]) =
           let wrapper = ast.Block(tag: "block", span: branch.else.span, stmts: @[ast.Statement(branch.else)])
           visit(wrapper, scope)
     elif statement.tag == "while": visit(ast.`While`(statement).body, scope)
-    elif statement.tag == "repeat": visit(ast.Repeat(statement).body, scope)
     elif statement.tag == "for": visit(ast.`For`(statement).body, scope)
     elif statement.tag == "unsafe": visit(ast.Unsafe(statement).body, scope)
     elif statement.tag == "test": visit(ast.TestBlock(statement).body, scope)

@@ -1,9 +1,10 @@
+import std/strutils
 import ../../src/lex/lexer
 import ../../src/parse/parser
 import ../../src/diag/engine
 import ../../src/ast/node as ast
 
-let source = """constant answer is 1 plus 2 times 3.
+let source = """constant answer is 1 plus 2 multiply 3.
 constant result is add(1, 2).
 constant compared is 4 greater than or equal to 3.
 constant storage is allocate 64 using arena.
@@ -30,7 +31,7 @@ doAssert ast.Call(ast.Constant(program.units[0].body.stmts[7]).value).types.len 
 doAssert ast.Constant(program.units[0].body.stmts[8]).`type`.tag == "vector"
 doAssert not diagnostics.failed
 
-let concise = "define UserID as integer 64.\n" &
+let concise = "define Identity as integer.\n" &
   "dynamic total is 20 subtract 4 multiply 2 divide 8.\n" &
   "constant safe is load() fallback 0.\n" &
   "function tax(price decimal) giving decimal { give price. }"
@@ -42,4 +43,5 @@ doAssert conciseProgram.units[0].body.stmts[1].tag == "mutable"
 doAssert ast.Binary(ast.Constant(conciseProgram.units[0].body.stmts[2]).value).op == "catch"
 doAssert ast.Function(conciseProgram.units[0].body.stmts[3]).returnType != nil
 doAssert not conciseDiagnostics.failed
+
 echo "parser expression parity: ok"

@@ -64,38 +64,38 @@ await check('existing', () => execute('existing', `
 use memory.
 use testing as check.
 eval { constant answer is 40 plus 4. }
-mutable total of type integer is 43.
+dynamic total of type integer is 43.
 start() {
   set total to total plus 1.
   check.expect(total is answer).
-  constant owner is try memory.arena().
-  after { memory.close(owner) catch nothing. }
-  constant data is try allocate 8 using owner.
-  mutable count is 0.
+  constant owner is memory.arena() try.
+  after { memory.close(owner) fallback nothing. }
+  constant data is allocate 8 using owner try.
+  dynamic count is 0.
   for each item in data { check.expect(item is 0). set count to count plus 1. }
   check.expect(count is 8).
-  give.
+  give nothing.
 }`));
 await check('evaluation', () => execute('evaluation', `
 use testing as check.
 function sum(value of type integer) of type integer {
   when value is 0 { give 0. }
-  give value plus sum(value minus 1).
+  give value plus sum(value subtract 1).
 }
 eval { constant answer is sum(8). }
-start() { check.expect(answer is 36). give. }
+start() { check.expect(answer is 36). give nothing. }
 `));
 await check('aggregate', () => execute('aggregate', `
 use testing as check.
-type Pair is record { left of type integer. right of type integer. }.
-mutable pair of type Pair is Pair(20, 24).
-start() { check.expect(pair.left plus pair.right is 44). give. }
+define Pair as record { left of type integer. right of type integer. }.
+dynamic pair of type Pair is Pair(20, 24).
+start() { check.expect(pair.left plus pair.right is 44). give nothing. }
 `));
 await check('allocator', () => execute('allocator', `
 function reserve(owner of type Allocator) of type failable sequence of byte {
-  give try allocate 8 using owner.
+  give allocate 8 using owner try.
 }
-start() { give. }
+start() { give nothing. }
 `));
 await check('hardware', async () => {
   const manifest = await provision('hardware');

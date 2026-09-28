@@ -1,50 +1,67 @@
 -- Combines, trims, and splits text using byte offsets and ASCII whitespace.
 use sequence as items.
-use "sequence" function sized[T](length unsigned 64) giving failable sequence of T.
-public use "text" function concatenate(left of type text, right of type text) of type failable text.
-public use "text" function trim(content of type text) of type failable text.
-public use "text" function length(content of type text) of type unsigned 64.
-public use "text" function slice(content of type text, first of type unsigned 64, last of type unsigned 64) of type failable text.
-public use "text" function find(content of type text, value of type text) of type optional unsigned 64.
-public use "text" function release(content of type text) of type failable nothing.
-public function split(content of type text, separator of type text) of type failable sequence of text {
+use "sequence" function sized[T](length unsigned) giving failable sequence of T.
+public use "text" function concatenate(left text, right text) giving failable text.
+public use "text" function trim(content text) giving failable text.
+public use "text" function length(content text) giving unsigned.
+public use "text" function slice(content text, first unsigned, last unsigned) giving failable text.
+public use "text" function find(content text, value text) giving optional unsigned.
+public use "text" function release(content text) giving failable nothing.
+public function split(content text, separator text) giving failable sequence of text {
   constant separatorLength is length(separator).
   constant contentLength is length(content).
-  when separatorLength is 0 { give fail(Error.EmptySeparator). }
-  dynamic count of type unsigned 64 is 1.
-  dynamic cursor of type unsigned 64 is 0.
-  while cursor plus separatorLength is at most contentLength {
+  when separatorLength is 0 {
+    give fail(Error.EmptySeparator).
+  }
+  dynamic count of type unsigned is 1.
+  dynamic cursor of type unsigned is 0.
+  while cursor plus separatorLength less than or equal to contentLength {
     dynamic matches is true.
-    dynamic index of type unsigned 64 is 0.
+    dynamic index of type unsigned is 0.
     while index less than separatorLength {
-      when content at (cursor plus index) is not separator at index { set matches to false. stop. }
+      when content at (cursor plus index) is not separator at index {
+        set matches to false.
+        stop.
+      }
       set index to index plus 1.
     }
     when matches {
       set count to count plus 1.
       set cursor to cursor plus separatorLength.
-    } otherwise { set cursor to cursor plus 1. }
+    } otherwise {
+      set cursor to cursor plus 1.
+    }
   }
-  dynamic result is try sized[text](count).
-  after error { for each part in result { release(part) fallback nothing. } items.release[text](result) fallback nothing. }
-  dynamic first of type unsigned 64 is 0.
+  dynamic result is sized[text](count) try.
+  after error {
+    for each part in result {
+      release(part) fallback nothing.
+    }
+    items.release[text](result) fallback nothing.
+  }
+  dynamic first of type unsigned is 0.
   set cursor to 0.
-  dynamic resultIndex of type unsigned 64 is 0.
-  while cursor plus separatorLength is at most contentLength {
+  dynamic resultIndex of type unsigned is 0.
+  while cursor plus separatorLength less than or equal to contentLength {
     dynamic matches is true.
-    dynamic index of type unsigned 64 is 0.
+    dynamic index of type unsigned is 0.
     while index less than separatorLength {
-      when content at (cursor plus index) is not separator at index { set matches to false. stop. }
+      when content at (cursor plus index) is not separator at index {
+        set matches to false.
+        stop.
+      }
       set index to index plus 1.
     }
     when matches {
-      constant part is try slice(content, first, cursor).
+      constant part is slice(content, first, cursor) try.
       set result at resultIndex to part.
       set resultIndex to resultIndex plus 1.
       set cursor to cursor plus separatorLength.
       set first to cursor.
-    } otherwise { set cursor to cursor plus 1. }
+    } otherwise {
+      set cursor to cursor plus 1.
+    }
   }
-  set result at resultIndex to try slice(content, first, contentLength).
+  set result at resultIndex to slice(content, first, contentLength) try.
   give result.
 }

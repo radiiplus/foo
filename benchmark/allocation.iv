@@ -2,22 +2,22 @@
 use sequence as items.
 use testing as check.
 
-function double(value unsigned 64) giving unsigned 64 {
+function double(value unsigned) giving unsigned {
   give value multiply 2.
 }
 
-dynamic values is items.sized[unsigned 64](10_000) try.
-dynamic index of type unsigned 64 is 0.
+dynamic values is items.sized[unsigned](10_000) try.
+dynamic index of type unsigned is 0.
 while index less than 10_000 {
   set values at index to index.
   increase index by 1.
 }
 
-constant doubled is items.map[unsigned 64, unsigned 64](values, double) try.
+constant doubled is items.map[unsigned, unsigned](values, double) try.
 after {
-  items.release[unsigned 64](values) fallback nothing.
-  items.release[unsigned 64](doubled) fallback nothing.
+  items.release[unsigned](values) fallback nothing.
+  items.release[unsigned](doubled) fallback nothing.
 }
 
-check.number(items.length[unsigned 64](doubled), 10_000).
+check.number(items.length[unsigned](doubled), 10_000).
 check.number(doubled at 9_999, 19_998).

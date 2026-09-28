@@ -45,9 +45,6 @@ payload variants accept the choice's type arguments. A payload-free generic
 variant is inferred from an expected choice type, or called with explicit type
 arguments and empty parentheses when no expected type is available.
 
-There is no module wrapper or namespace block. The module keyword produces a
-migration diagnostic explaining how to remove the wrapper.
-
 ## Import resolution
 `use name.` binds namespace name and its public declarations. An explicit alias
 imports only qualified names. Resolve a bare name in this order: a sibling

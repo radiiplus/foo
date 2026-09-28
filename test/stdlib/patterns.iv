@@ -8,126 +8,122 @@ use iterator as cursors.
 use transaction as transactions.
 use units as units.
 use calendar as calendar.
-
 function keep(value text) giving failable text {
   give value.
 }
-
 function transition(value integer, event integer) giving failable integer {
   constant next is value plus event.
   give next.
 }
-
-function bounded(index unsigned 64) giving boolean {
-  give index less than 4.
+function bounded(index unsigned) giving boolean {
+  give index is less than 4.
 }
-
-function sample(index unsigned 64) giving unsigned 64 {
+function sample(index unsigned) giving unsigned {
   give index plus 1.
 }
-
-function positive(value unsigned 64) giving boolean {
-  give value greater than 0.
+function positive(value unsigned) giving boolean {
+  give value is greater than 0.
 }
-
-function prepare() giving failable nothing { give nothing. }
-function commit() giving failable nothing { give nothing. }
-function rollback() giving nothing { give nothing. }
-function work() giving failable nothing { give nothing. }
-
+function prepare() giving failable nothing {
+  give nothing.
+}
+function commit() giving failable nothing {
+  give nothing.
+}
+function rollback() giving nothing {
+  give nothing.
+}
+function work() giving failable nothing {
+  give nothing.
+}
 define Step as choice {
-  item(unsigned 64).
+  item(unsigned).
   done.
 }.
-
 define Outcome[T] as choice {
   picked(T).
   ended.
 }.
-
 define Person as record {
   name of type text.
   age of type integer.
 }.
-
-function next(index unsigned 64) giving Step {
-  when index less than 3 { give item(index). }
+function next(index unsigned) giving Step {
+  when index is less than 3 {
+    give item(index).
+  }
   give done.
 }
-
-function finish() giving Outcome[unsigned 64] {
+function finish() giving Outcome[unsigned] {
   give ended.
 }
-
-function proceed(index unsigned 64)
-    giving failable cursors.Step[unsigned 64, unsigned 64] {
-  when index less than 2 {
-    give cursors.item[unsigned 64, unsigned 64](index, index plus 1).
+function proceed(index unsigned) giving failable cursors.Step[unsigned, unsigned] {
+  when index is less than 2 {
+    give cursors.item[unsigned, unsigned](index, index plus 1).
   }
-  give cursors.done[unsigned 64, unsigned 64](index).
+  give cursors.done[unsigned, unsigned](index).
 }
-
 test "library abstractions compose" {
-  constant outcome is picked[unsigned 64](7).
+  constant outcome is picked[unsigned](7).
   match outcome {
-    case picked(value) { check.number(value, 7). }
-    case ended { check.expect(false). }
+    case picked(value) {
+      check.number(value, 7).
+    }
+    case ended {
+      check.expect(false).
+    }
   }
   match finish() {
-    case picked(value) { check.expect(false). }
-    case ended { check.expect(true). }
+    case picked(value) {
+      check.expect(false).
+    }
+    case ended {
+      check.expect(true).
+    }
   }
-
   constant person is Person(age 37, name "Ada").
   constant Person(name, age) is person.
   check.same(name, "Ada").
   check.expect(age is 37).
-
   constant codec is codecs.Codec[text](keep, keep).
   constant encode is codec.encode.
   constant decode is codec.decode.
   check.same(encode("FOO") fallback "failed", "FOO").
   check.same(decode("FOO") fallback "failed", "FOO").
-
   constant machine is states.create[integer, integer](40, transition).
   constant changed is states.step[integer, integer](machine, 2) fallback machine.
   contracts.ensure(changed.value is 42).
-
   constant duration is clock.millis(1).
   check.number(duration.nanoseconds, 1000000).
   constant elapsed is clock.elapsed(clock.Instant(10), clock.Instant(15)).
   check.number(elapsed.nanoseconds, 5).
-
   check.every(4, bounded).
-  constant generator is check.Generator[unsigned 64](sample).
-  check.generate[unsigned 64](3, generator, positive).
-
+  constant generator is check.Generator[unsigned](sample).
+  check.generate[unsigned](3, generator, positive).
   constant participant is transactions.Participant(prepare, commit, rollback).
   transactions.execute(participant, work) fallback nothing.
-
-  constant seed of type unsigned 64 is 0.
-  constant cursor is cursors.create[unsigned 64, unsigned 64](seed, proceed).
-  constant first is cursors.next[unsigned 64, unsigned 64](cursor) fallback cursors.done[unsigned 64, unsigned 64](seed).
+  constant seed of type unsigned is 0.
+  constant cursor is cursors.create[unsigned, unsigned](seed, proceed).
+  constant first is cursors.next[unsigned, unsigned](cursor) fallback cursors.done[unsigned, unsigned](seed).
   check.expect(not first.finished and first.value is not null).
-
   constant length is units.add[units.Length](units.meters(1.5), units.meters(2.0)).
   check.real(length.value, 3.5).
-
   constant day is calendar.date(2024, 2, 29) fallback calendar.Date(1970, 1, 1).
   check.expect(day.year is 2024 and day.day is 29).
   constant zone is calendar.zone(60) fallback calendar.Zone(0).
   constant moment is calendar.moment(day, 12, 30, 0, zone) fallback calendar.Moment(day, 0, 0, 0, calendar.Zone(0)).
   check.expect(moment.hour is 12 and moment.zone.minutes is 60).
-
-  dynamic index of type unsigned 64 is 0.
+  dynamic index of type unsigned is 0.
   dynamic running is true.
   while running {
     match next(index) {
       case item(value) {
         check.number(value, index).
-        increase index by 1.
+        set index to index plus 1.
       }
-      case done { set running to false. }
+      case done {
+        set running to false.
+      }
     }
   }
   check.number(index, 3).

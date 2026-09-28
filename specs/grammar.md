@@ -12,9 +12,7 @@ Imports bind namespaces as specified in [packages](packages.md).
 Identifiers use ASCII letters or `_` initially, followed by ASCII letters,
 digits or `_`. They are case-sensitive. A quoted alphabetic terminal below is
 a reserved word; capitalized type and capability names are identifiers.
-The cleanup words after, cleanup and finally have identical meaning. After is
-the canonical spelling emitted by the formatter; the other two are explicit
-accepted aliases. Defer and on leave are not cleanup syntax.
+`after` is the only cleanup spelling.
 Whitespace and comments separate tokens but do not end statements.
 
 `--` starts a line comment. `--- ... ---` is a non-nesting block comment.
@@ -151,7 +149,7 @@ Match        = "match", Expr, "{", { Arm }, "}" ;
 Arm          = "case", Pattern, [ "when", Expr ], Block ;
 Pattern      = Name, [ "(", IDENT, ")" ]
              | INT | "true" | "false" | "nothing" | "null" | "anything" ;
-After        = ( "after" | "cleanup" | "finally" ), [ "error" ], Block ;
+After        = "after", [ "error" ], Block ;
 
 Expr         = Or, [ "fallback", Expr ] ;
 Or           = And, { "or", And } ;

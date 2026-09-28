@@ -2,16 +2,16 @@
 type
   Kind* = enum
     Int, Float, String, Char, Ident,
-    Module, Constant, Mutable, Is, Are, Give, When, Otherwise,
-    For, Each, In, While, Repeat, Until, Reaches, Advance,
+    Constant, Mutable, Is, Are, Give, When, Otherwise,
+    For, Each, In, While,
     Match, Case, Break, Continue, Use, Public, Unsafe,
-    Native, Evaluate, On, Leave, Try, Catch, And, Or, Not,
-    Where, Of, Type, Plus, Minus, Times, Divided, By, Equals, Does,
+    Native, Try, Catch, And, Or, Not,
+    Where, Of, Type, Plus, Minus, Times, Divided, By,
     Equal, Greater, Than, Less, At, Least, Most, Integer,
-    Unsigned, Decimal, Boolean, Byte, Character, Text, Array,
+    Unsigned, Decimal, Boolean, Byte, Character, Text,
     Sequence, Nothing, Null, Record, Choice, Function, True, False,
-    Uninitialized, Unreachable, Optional, Pointer, To, Address,
-    Reference, Start, Newline, Anything, Test, Context, Eval,
+    Uninitialized, Unreachable, Optional, Pointer, To,
+    Start, Newline, Anything, Test, Eval,
     Reflect, Embed, Open, Shut, Paren, Close, Square, Bracket, Dot, Comma,
     Colon, HashBracket, NewlineToken, Eof, Broken, Derives, Packed, Union,
-    Opaque, Vector, NativeZig, Asm, After
+    Opaque, Vector, After

@@ -43,33 +43,50 @@ Parenthesized calls are the canonical form emitted by `foo fmt`. FOO also
 accepts the sentence-call shorthand in this section when the call remains
 unambiguous.
 
-The next four fragments focus on call spelling and assume the named functions
-and values have already been declared. The shortest call supplies values in
-declaration order:
+The next four complete examples focus on call spelling. The shortest call
+supplies values in declaration order:
 
-<!-- snippet: context -->
 ```foo
+function add(left integer, right integer) giving integer {
+  give left plus right.
+}
+
 constant result is add 10 20.
 ```
 
 Add parameter labels when they prevent ambiguity:
 
-<!-- snippet: context -->
 ```foo
+function connect(host text, port integer, timeout integer) giving boolean {
+  give true.
+}
+
 constant socket is connect host "example.com" port 443 timeout 5000.
 ```
 
 A mixed call puts positional values first:
 
-<!-- snippet: context -->
 ```foo
+function connect(
+    host text,
+    port integer default 443,
+    timeout integer default 5000
+) giving boolean {
+  give true.
+}
+
 constant socket is connect "example.com" timeout 10000.
 ```
 
 Parentheses remain available for nesting and zero-argument calls:
 
-<!-- snippet: context -->
 ```foo
+function tax(value integer) giving integer { give value. }
+function add(left integer, right integer) giving integer { give left plus right. }
+function clock() giving integer { give 0. }
+
+constant price is 20.
+constant shipping is 5.
 constant total is add(tax(price), shipping).
 constant now is clock().
 ```
@@ -169,11 +186,17 @@ storage until the ownership model gains an explicit heap-owned closure form.
 ## Current pattern matching
 
 `match` supports literals, `anything`, choice variants, payload bindings, and
-case guards. This fragment assumes `result` has a choice type with `success`
-and `failure` variants:
+case guards:
 
-<!-- snippet: context -->
 ```foo
+define Result as choice {
+  success(integer).
+  failure(text).
+  empty.
+}.
+
+constant result of type Result is success(1).
+
 match result {
   case success(value) when value greater than 0 { display "Success". }
   case failure(reason) { display reason. }

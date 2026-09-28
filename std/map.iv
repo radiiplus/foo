@@ -1,35 +1,57 @@
 -- Stores typed key/value pairs with equality-based lookup.
 use sequence as items.
-public define Entry[K, V] as record { key of type K. value of type V. }.
-public define Map[K, V] as record { entries of type sequence of Entry[K, V]. }.
-public function create[K, V]() of type Map[K, V] { give Map[K, V](items.create[Entry[K, V]]()). }
-public function length[K, V](collection of type Map[K, V]) of type unsigned 64 { give items.length[Entry[K, V]](collection.entries). }
-public function get[K, V](collection of type Map[K, V], key of type K) of type failable V where K is Equatable {
-  for each entry in collection.entries { when entry.key is key { give entry.value. } }
-  give fail(Error.MissingKey).
+public define Entry[K, V] as record {
+  key of type K.
+  value of type V.
+}.
+public define Map[K, V] as record {
+  entries of type sequence of Entry[K, V].
+}.
+public function create[K, V]() giving Map[K, V] {
+  give Map[K, V](items.create[Entry[K, V]]()).
 }
-public function contains[K, V](collection of type Map[K, V], key of type K) of type boolean where K is Equatable {
-  for each entry in collection.entries { when entry.key is key { give true. } }
-  give false.
+public function length[K, V](collection Map[K, V]) giving unsigned {
+  give items.length[Entry[K, V]](collection.entries).
 }
-public function put[K, V](collection of type Map[K, V], key of type K, value of type V) of type failable Map[K, V] where K is Equatable {
-  dynamic index of type unsigned 64 is 0.
+public function get[K, V](collection Map[K, V], key K) giving failable V where K is Equatable {
   for each entry in collection.entries {
     when entry.key is key {
-      dynamic result is try items.copy[Entry[K, V]](collection.entries).
+      give entry.value.
+    }
+  }
+  give fail(Error.MissingKey).
+}
+public function contains[K, V](collection Map[K, V], key K) giving boolean where K is Equatable {
+  for each entry in collection.entries {
+    when entry.key is key {
+      give true.
+    }
+  }
+  give false.
+}
+public function put[K, V](collection Map[K, V], key K, value V) giving failable Map[K, V] where K is Equatable {
+  dynamic index of type unsigned is 0.
+  for each entry in collection.entries {
+    when entry.key is key {
+      dynamic result is items.copy[Entry[K, V]](collection.entries) try.
       set result at index to Entry[K, V](key, value).
       give Map[K, V](result).
     }
     set index to index plus 1.
   }
-  give Map[K, V](try items.append[Entry[K, V]](collection.entries, Entry[K, V](key, value))).
+  give Map[K, V](items.append[Entry[K, V]](collection.entries, Entry[K, V](key, value)) try).
 }
-public function remove[K, V](collection of type Map[K, V], key of type K) of type failable Map[K, V] where K is Equatable {
-  dynamic index of type unsigned 64 is 0.
+public function remove[K, V](collection Map[K, V], key K) giving failable Map[K, V] where K is Equatable {
+  dynamic index of type unsigned is 0.
   for each entry in collection.entries {
-    when entry.key is key { give Map[K, V](try items.remove[Entry[K, V]](collection.entries, index)). }
+    when entry.key is key {
+      give Map[K, V](items.remove[Entry[K, V]](collection.entries, index) try).
+    }
     set index to index plus 1.
   }
-  give Map[K, V](try items.copy[Entry[K, V]](collection.entries)).
+  give Map[K, V](items.copy[Entry[K, V]](collection.entries) try).
 }
-public function release[K, V](collection of type Map[K, V]) of type failable nothing { try items.release[Entry[K, V]](collection.entries). give. }
+public function release[K, V](collection Map[K, V]) giving failable nothing {
+  items.release[Entry[K, V]](collection.entries) try.
+  give nothing.
+}

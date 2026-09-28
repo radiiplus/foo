@@ -20,7 +20,9 @@ otherwise {
 }
 ```
 
-Only the first matching branch runs. `otherwise` is optional.
+Only the first matching branch runs. Any number of `otherwise when` branches
+may follow the first `when`. A final `otherwise` is optional, must be last, and
+cannot begin a chain without a preceding `when`.
 
 FOO does not have a ternary expression. When a function must choose a value,
 return from each branch or update a deliberately dynamic binding.
@@ -39,9 +41,11 @@ match status {
 }
 ```
 
-`anything` is the catch-all pattern. Put specific cases before it. Choices and
-finite types are checked for exhaustive handling (every possible case must be
-covered).
+`anything` is the catch-all pattern and satisfies exhaustiveness. Put it last;
+later cases are unreachable. Choices, Booleans, and other types whose complete
+set of variants is known to the checker are finite and must be exhaustive.
+Every choice variant needs one case whether or not that variant carries a
+payload.
 
 A case may have an additional guard:
 
@@ -90,11 +94,16 @@ This block runs three times, with `index` equal to `0`, `1`, and `2`.
 
 ## `for each`
 
-Use `for each` to visit the elements of a collection in order. This fragment
-assumes `values` is a sequence and `process` is a function for one element:
+Use `for each` to visit the elements of a collection in order:
 
-<!-- snippet: context -->
 ```foo
+use sequence as items.
+
+function process(item integer) {}
+
+constant values is items.create[integer]().
+after { items.release[integer](values) fallback nothing. }
+
 for each item in values {
   process(item).
 }
@@ -134,14 +143,13 @@ function absolute(value integer) giving integer {
 This is often clearer than wrapping the entire function in `otherwise`.
 
 For a reusable precondition, put a function guard between the parameters and
-result declaration. This fragment assumes a `math.root` operation is in scope:
+result declaration:
 
-<!-- snippet: context -->
 ```foo
 function root(value decimal)
     when value greater than or equal to 0
     giving decimal {
-  give math.root(value).
+  give value.
 }
 ```
 

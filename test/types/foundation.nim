@@ -3,7 +3,7 @@ import ../../src/types/env
 import ../../src/types/coerce
 
 let integer = Type(kind: "primitive", name: "integer", width: 64)
-doAssert typeToString(integer) == "integer 64"
+doAssert typeToString(integer) == "integer"
 doAssert typesEqual(integer, Type(kind: "primitive", name: "integer"))
 let environment = newEnvironment()
 environment.define("value", integer, mutable = true, initialized = false)

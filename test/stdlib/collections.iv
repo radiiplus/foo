@@ -7,102 +7,151 @@ use set as unique.
 use queue as queue.
 use stack as stack.
 use text as words.
-function double(value of type integer) of type integer { give value times 2. }
-function positive(value of type integer) of type boolean { give value greater than 0. }
-function negative(value of type integer) of type boolean { give value less than 0. }
-type Person is record { name of type text. age of type integer. } derives Equatable, Ord.
+function double(value integer) giving integer {
+  give value multiply 2.
+}
+function positive(value integer) giving boolean {
+  give value is greater than 0.
+}
+function negative(value integer) giving boolean {
+  give value is less than 0.
+}
+define Person as record {
+  name of type text.
+  age of type integer.
+} derives Equatable, Ord.
 start() {
   constant missing of type optional integer is null.
   check.expect(missing is null).
   constant empty is sequence.create[integer]().
-  constant first is try sequence.append[integer](empty, 4).
-  constant second is try sequence.append[integer](first, 2).
-  constant repeated is try sequence.append[integer](second, 4).
-  constant sorted is try sequence.sort(second).
-  constant deduplicated is try sequence.dedup[integer](repeated).
-  after { sequence.release[integer](first) catch nothing. sequence.release[integer](second) catch nothing. sequence.release[integer](repeated) catch nothing. sequence.release[integer](sorted) catch nothing. sequence.release[integer](deduplicated) catch nothing. }
+  constant first is sequence.append[integer](empty, 4) try.
+  constant second is sequence.append[integer](first, 2) try.
+  constant repeated is sequence.append[integer](second, 4) try.
+  constant sorted is sequence.sort(second) try.
+  constant deduplicated is sequence.dedup[integer](repeated) try.
+  after {
+    sequence.release[integer](first) fallback nothing.
+    sequence.release[integer](second) fallback nothing.
+    sequence.release[integer](repeated) fallback nothing.
+    sequence.release[integer](sorted) fallback nothing.
+    sequence.release[integer](deduplicated) fallback nothing.
+  }
   check.expect(sorted at 0 is 2).
   check.expect(second at 0 is 4).
   check.expect(sequence.find[integer](sorted, 4) is not null).
   check.expect(sequence.length[integer](deduplicated) is 2).
   dynamic growing is sequence.create[integer]().
   dynamic number is 0.
-  while number less than 12 {
+  while number is less than 12 {
     set growing to sequence.append[integer](growing, number) try.
-    increase number by 1.
+    set number to number plus 1.
   }
   constant snapshot is growing.
   constant noise is words.concatenate("mixed", "allocation") try.
   set growing to sequence.append[integer](growing, 12) try.
   words.release(noise) try.
   constant branch is sequence.append[integer](snapshot, 99) try.
-  after { sequence.release[integer](growing) catch nothing. sequence.release[integer](branch) catch nothing. }
+  after {
+    sequence.release[integer](growing) fallback nothing.
+    sequence.release[integer](branch) fallback nothing.
+  }
   check.expect(sequence.length[integer](snapshot) is 12).
   check.expect(snapshot at 11 is 11).
   check.expect(growing at 12 is 12).
   check.expect(branch at 12 is 99).
-  constant mapped is try sequence.map[integer, integer](sorted, double).
-  constant filtered is try sequence.filter[integer](mapped, positive).
-  constant rejected is try sequence.filter[integer](mapped, negative).
-  after { sequence.release[integer](mapped) catch nothing. sequence.release[integer](filtered) catch nothing. sequence.release[integer](rejected) catch nothing. }
+  constant mapped is sequence.map[integer, integer](sorted, double) try.
+  constant filtered is sequence.filter[integer](mapped, positive) try.
+  constant rejected is sequence.filter[integer](mapped, negative) try.
+  after {
+    sequence.release[integer](mapped) fallback nothing.
+    sequence.release[integer](filtered) fallback nothing.
+    sequence.release[integer](rejected) fallback nothing.
+  }
   check.expect(filtered at 1 is 8).
   check.expect(sequence.length[integer](rejected) is 0).
   constant table is mapping.create[text, integer]().
-  constant entry is try mapping.put[text, integer](table, "answer", 44).
-  constant replaced is try mapping.put[text, integer](entry, "answer", 42).
-  after { mapping.release[text, integer](entry) catch nothing. mapping.release[text, integer](replaced) catch nothing. }
-  check.expect((try mapping.get[text, integer](entry, "answer")) is 44).
-  check.expect((try mapping.get[text, integer](replaced, "answer")) is 42).
+  constant entry is mapping.put[text, integer](table, "answer", 44) try.
+  constant replaced is mapping.put[text, integer](entry, "answer", 42) try.
+  after {
+    mapping.release[text, integer](entry) fallback nothing.
+    mapping.release[text, integer](replaced) fallback nothing.
+  }
+  check.expect((mapping.get[text, integer](entry, "answer") try) is 44).
+  check.expect((mapping.get[text, integer](replaced, "answer") try) is 42).
   check.expect(mapping.length[text, integer](replaced) is 1).
-  constant cache is try fast.create[integer]().
-  after { fast.close[integer](cache) fallback nothing. }
-  try fast.put[integer](cache, "answer", 44).
-  try fast.put[integer](cache, "answer", 42).
-  check.expect((try fast.get[integer](cache, "answer")) is 42).
-  check.expect((try fast.length[integer](cache)) is 1).
-  check.expect(try fast.contains[integer](cache, "answer")).
-  check.expect(try fast.remove[integer](cache, "answer")).
-  check.expect((try fast.length[integer](cache)) is 0).
+  constant cache is fast.create[integer]() try.
+  after {
+    fast.close[integer](cache) fallback nothing.
+  }
+  fast.put[integer](cache, "answer", 44) try.
+  fast.put[integer](cache, "answer", 42) try.
+  check.expect((fast.get[integer](cache, "answer") try) is 42).
+  check.expect((fast.length[integer](cache) try) is 1).
+  check.expect(fast.contains[integer](cache, "answer") try).
+  check.expect(fast.remove[integer](cache, "answer") try).
+  check.expect((fast.length[integer](cache) try) is 0).
   constant set is unique.create[integer]().
-  constant member is try unique.insert[integer](set, 44).
-  constant duplicate is try unique.insert[integer](member, 44).
-  after { unique.release[integer](member) catch nothing. unique.release[integer](duplicate) catch nothing. }
+  constant member is unique.insert[integer](set, 44) try.
+  constant duplicate is unique.insert[integer](member, 44) try.
+  after {
+    unique.release[integer](member) fallback nothing.
+    unique.release[integer](duplicate) fallback nothing.
+  }
   check.expect(unique.length[integer](duplicate) is 1).
   constant line is queue.create[integer]().
-  constant front is try queue.append[integer](line, 44).
-  after { queue.release[integer](front) catch nothing. }
-  check.expect((try queue.first[integer](front)) is 44).
+  constant front is queue.append[integer](line, 44) try.
+  after {
+    queue.release[integer](front) fallback nothing.
+  }
+  check.expect((queue.first[integer](front) try) is 44).
   constant pile is stack.create[text]().
-  constant top is try stack.push[text](pile, "FOO").
-  after { stack.release[text](top) catch nothing. }
-  check.same(try stack.top[text](top), "FOO").
+  constant top is stack.push[text](pile, "FOO") try.
+  after {
+    stack.release[text](top) fallback nothing.
+  }
+  check.same(stack.top[text](top) try, "FOO").
   constant people is unique.create[Person]().
-  constant person is try unique.insert[Person](people, Person("Ada", 44)).
-  after { unique.release[Person](person) catch nothing. }
+  constant person is unique.insert[Person](people, Person("Ada", 44)) try.
+  after {
+    unique.release[Person](person) fallback nothing.
+  }
   check.expect(unique.contains[Person](person, Person("Ada", 44))).
   check.expect(not unique.contains[Person](person, Person("Ada", 43))).
-  constant removed is try mapping.remove[text, integer](entry, "answer").
-  constant absent is try unique.remove[integer](duplicate, 44).
-  after { mapping.release[text, integer](removed) catch nothing. unique.release[integer](absent) catch nothing. }
+  constant removed is mapping.remove[text, integer](entry, "answer") try.
+  constant absent is unique.remove[integer](duplicate, 44) try.
+  after {
+    mapping.release[text, integer](removed) fallback nothing.
+    unique.release[integer](absent) fallback nothing.
+  }
   check.expect(mapping.length[text, integer](removed) is 0).
   check.expect(unique.length[integer](absent) is 0).
   check.expect(sequence.find[integer](empty, 0) is null).
-  constant back is try queue.append(front, 42).
-  constant tail is try queue.remove[integer](back).
-  after { queue.release[integer](back) catch nothing. queue.release[integer](tail) catch nothing. }
-  check.expect((try queue.first[integer](back)) is 44).
-  check.expect((try queue.first[integer](tail)) is 42).
-  constant peak is try stack.push[text](top, "IV").
-  constant lower is try stack.remove[text](peak).
-  after { stack.release[text](peak) catch nothing. stack.release[text](lower) catch nothing. }
-  check.same(try stack.top[text](peak), "IV").
-  check.same(try stack.top[text](lower), "FOO").
+  constant back is queue.append(front, 42) try.
+  constant tail is queue.remove[integer](back) try.
+  after {
+    queue.release[integer](back) fallback nothing.
+    queue.release[integer](tail) fallback nothing.
+  }
+  check.expect((queue.first[integer](back) try) is 44).
+  check.expect((queue.first[integer](tail) try) is 42).
+  constant peak is stack.push[text](top, "IV") try.
+  constant lower is stack.remove[text](peak) try.
+  after {
+    stack.release[text](peak) fallback nothing.
+    stack.release[text](lower) fallback nothing.
+  }
+  check.same(stack.top[text](peak) try, "IV").
+  check.same(stack.top[text](lower) try, "FOO").
   constant records is sequence.create[Person]().
-  constant older is try sequence.append(records, Person("Ada", 44)).
-  constant younger is try sequence.append(older, Person("Ada", 43)).
-  constant ordered is try sequence.sort(younger).
-  after { sequence.release(older) catch nothing. sequence.release(younger) catch nothing. sequence.release(ordered) catch nothing. }
+  constant older is sequence.append(records, Person("Ada", 44)) try.
+  constant younger is sequence.append(older, Person("Ada", 43)) try.
+  constant ordered is sequence.sort(younger) try.
+  after {
+    sequence.release(older) fallback nothing.
+    sequence.release(younger) fallback nothing.
+    sequence.release(ordered) fallback nothing.
+  }
   check.expect(ordered at 0 is Person("Ada", 43)).
-  check.expect((mapping.get[text, integer](entry, "absent") catch 99) is 99).
-  check.expect((stack.top[text](pile) catch "empty") is "empty").
+  check.expect((mapping.get[text, integer](entry, "absent") fallback 99) is 99).
+  check.expect((stack.top[text](pile) fallback "empty") is "empty").
 }

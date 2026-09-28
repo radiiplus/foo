@@ -51,6 +51,12 @@ Both forms create `src/`, `test/`, and `benchmark/`.
 Unknown fields are rejected so misspelled configuration does not silently do
 nothing.
 
+When omitted, `source` defaults to `src` and `entry` defaults to
+`SOURCE/main.iv`. `requires: "base"` selects the portable standard services;
+it is a capability level, not a module or package dependency. The `test/` and
+`benchmark/` directories are conventional discovery roots created by
+`foo new`; `source` may be changed independently.
+
 ## Development, optional, and platform dependencies
 
 Use separate objects when a dependency is not needed in every installation:
@@ -134,6 +140,8 @@ foo test test/orders.iv --filter total
 ```
 
 Selecting one file avoids compiling and running unrelated long suites.
+If the selected project, file, or filter contains no `test` block and no
+explicitly selected `start()` fixture, the command exits unsuccessfully.
 
 ## Benchmarks
 

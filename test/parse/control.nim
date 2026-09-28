@@ -14,11 +14,11 @@ let statements = program.units[0].body.stmts
 doAssert statements.anyIt(it.tag == "alias" and ast.Alias(it).body.tag == "record")
 doAssert statements.anyIt(it.tag == "alias" and ast.Alias(it).body.tag == "choice")
 let imported = statements.filterIt(it.tag == "use")[0]
-doAssert ast.Use(imported).name.text == "filesystem"
+doAssert ast.Use(imported).name.text == "file"
 doAssert ast.Use(imported).path.len == 0
 let start = statements.filterIt(it.tag == "function" and ast.Function(it).name.text == "start")[0]
 let tags = ast.Function(start).body.stmts.mapIt(it.tag)
-for expected in ["when", "repeat", "for", "match", "defer", "unsafe", "give"]:
+for expected in ["when", "while", "for", "match", "defer", "unsafe", "give"]:
   doAssert expected in tags, "missing " & expected
 
 let qualifiedSource = """start() {

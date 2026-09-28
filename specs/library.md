@@ -32,7 +32,7 @@ A module's exported declarations define its detailed API. This specification fix
 | Module | Operations |
 | --- | --- |
 | memory | Scope allocation; explicit owners; bounded byte transfer, clearing, value comparison and explicit pointer identity |
-| io | Standard streams, bounded reads, line reads, writes, display and close |
+| io | Standard streams, bounded reads, line reads, writes, console display/report and close |
 | file | Open, read and write files; create a directory; join paths; flush, seek, position and size controls |
 | net | TCP connect, listen, accept, port, complete or partial send, receive, half-close, socket policy and close |
 | http | Client requests and servers; request headers, redirects and connection reuse controls |
@@ -64,7 +64,7 @@ start() {
   constant destination is allocate 4 try.
   copy "FOO!" into destination try.
   clear destination.
-  io.display("Ready" plus newline) try.
+  io.display("Ready" plus newline).
 }
 ```
 

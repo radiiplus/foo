@@ -5,10 +5,13 @@ use testing as check.
 start() {
   check.expect(crypto_verify_16_bytes() is crypto_verify_16_BYTES).
   constant owner is heap.system().
-  constant left is try heap.allocate(owner, 16).
-  constant right is try heap.allocate(owner, 16).
-  after { heap.release(owner, left) catch nothing. heap.release(owner, right) catch nothing. }
+  constant left is heap.allocate(owner, 16) try.
+  constant right is heap.allocate(owner, 16) try.
+  after {
+    heap.release(owner, left) fallback nothing.
+    heap.release(owner, right) fallback nothing.
+  }
   check.expect(crypto_verify_16(left, right) is 0).
-  try heap.copy(owner, right, "FOO").
+  heap.copy(owner, right, "FOO") try.
   check.expect(crypto_verify_16(left, right) is not 0).
 }

@@ -688,8 +688,6 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
       raise newException(ValueError, "Native operation has no contract")
     state.referenced.incl(instruction.symbol)
     return native(state.contracts[instruction.symbol], state.selection)
-  of InstrKind.NativeZig:
-    raise newException(ValueError, "native zig and Zig-style asm require the Zig backend")
   else: raise newException(ValueError, "C backend does not support IR " & $instruction.kind)
 
 proc integers(): string =
