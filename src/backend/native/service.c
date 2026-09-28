@@ -32,6 +32,10 @@ typedef SOCKET Socket;
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#ifdef __linux__
+#include <sys/epoll.h>
+#include <sys/eventfd.h>
+#endif
 typedef int Socket;
 #define INVALID (-1)
 #define disconnect close
@@ -42,7 +46,7 @@ typedef int Socket;
 
 enum { OK, MEMORY, ARGUMENT, IO, CLOSED, MISSING, SYSTEM, BOUNDS };
 enum { TEXT = 1, FILES, SOCKETS, THREADS, MUTEX, CONDITION,
-       TASK_EXECUTOR, TASK_CHANNEL, TASK_SCOPE };
+       TASK_EXECUTOR, TASK_CHANNEL, TASK_SCOPE, TASK_POOL };
 typedef struct Resource {
   void *data;
   size_t size;
@@ -65,14 +69,10 @@ static void leave(void) {
   atomic_flag_clear_explicit(&gate, memory_order_release);
 }
 static FooResult failure(int code) { return (FooResult){.error = code}; }
-static void *owned(size_t size, int kind) {
+static int adopt(void *data, size_t size, int kind) {
   Resource *entry = calloc(1, sizeof(*entry));
-  void *data = calloc(1, size ? size : 1);
-  if (!entry || !data) {
-    free(entry);
-    free(data);
-    return NULL;
-  }
+  if (!entry)
+    return 0;
   entry->data = data;
   entry->size = size;
   entry->kind = kind;
@@ -80,6 +80,14 @@ static void *owned(size_t size, int kind) {
   entry->next = resources;
   resources = entry;
   leave();
+  return 1;
+}
+static void *owned(size_t size, int kind) {
+  void *data = calloc(1, size ? size : 1);
+  if (!data || !adopt(data, size, kind)) {
+    free(data);
+    return NULL;
+  }
   return data;
 }
 static Resource *resource(void *data, int kind) {
@@ -166,6 +174,37 @@ FooResult foo_text_slice(FooText value, uint64_t first, uint64_t last) {
   if (first > last || last > value.len)
     return failure(BOUNDS);
   return text(value.data ? value.data + first : NULL, (size_t)(last - first));
+}
+FooResult foo_text_find(FooText value, FooText needle) {
+  if (!needle.len)
+    return (FooResult){.pointer = (void *)1};
+  if (!value.data || !needle.data || needle.len > value.len)
+    return (FooResult){0};
+  if (needle.len == 1) {
+    const uint8_t *found = memchr(value.data, needle.data[0], value.len);
+    return found ? (FooResult){.pointer = (void *)1,
+                               .number = (uint64_t)(found - value.data)}
+                 : (FooResult){0};
+  }
+  if (value.len < 64 || needle.len < 4) {
+    for (size_t index = 0; index <= value.len - needle.len; index++)
+      if (!memcmp(value.data + index, needle.data, needle.len))
+        return (FooResult){.pointer = (void *)1, .number = index};
+    return (FooResult){0};
+  }
+  size_t skip[256];
+  for (size_t index = 0; index < 256; index++)
+    skip[index] = needle.len;
+  for (size_t index = 0; index + 1 < needle.len; index++)
+    skip[needle.data[index]] = needle.len - index - 1;
+  size_t index = 0;
+  while (index <= value.len - needle.len) {
+    if (needle.data[needle.len - 1] == value.data[index + needle.len - 1] &&
+        !memcmp(value.data + index, needle.data, needle.len - 1))
+      return (FooResult){.pointer = (void *)1, .number = index};
+    index += skip[value.data[index + needle.len - 1]];
+  }
+  return (FooResult){0};
 }
 typedef struct {
   FILE *file;
@@ -342,6 +381,9 @@ FooResult foo_fs_read(FooText path) {
     return opened;
   FILE *handle = ((File *)opened.pointer)->file;
   size_t size = 0, capacity = 4096;
+  FooResult measured = foo_fs_size(opened.pointer);
+  if (!measured.error && measured.number <= SIZE_MAX)
+    capacity = measured.number ? (size_t)measured.number : 1;
   uint8_t *buffer = malloc(capacity);
   if (!buffer) {
     foo_io_close(opened.pointer);
@@ -350,6 +392,9 @@ FooResult foo_fs_read(FooText path) {
   for (;;) {
     size += fread(buffer + size, 1, capacity - size, handle);
     if (size < capacity)
+      break;
+    int extra = fgetc(handle);
+    if (extra == EOF)
       break;
     if (capacity > SIZE_MAX / 2) {
       free(buffer);
@@ -364,9 +409,20 @@ FooResult foo_fs_read(FooText path) {
     }
     buffer = next;
     capacity *= 2;
+    buffer[size++] = (uint8_t)extra;
   }
-  FooResult result = ferror(handle) ? failure(IO) : text(buffer, size);
-  free(buffer);
+  FooResult result = {0};
+  if (ferror(handle)) {
+    free(buffer);
+    result = failure(IO);
+  } else if (!size) {
+    free(buffer);
+  } else if (!adopt(buffer, size, TEXT)) {
+    free(buffer);
+    result = failure(MEMORY);
+  } else {
+    result.text = (FooText){buffer, size};
+  }
   FooResult closed = foo_io_close(opened.pointer);
   return result.error ? result : closed.error ? closed : result;
 }
@@ -547,7 +603,7 @@ FooResult foo_net_send(void *pointer, FooText value) {
   }
   return (FooResult){.number = sent};
 }
-FooResult foo_net_sendSome(void *pointer, FooText value) {
+FooResult foo_net_push(void *pointer, FooText value) {
   if (!resource(pointer, SOCKETS))
     return failure(CLOSED);
   if (!value.len)
@@ -855,10 +911,148 @@ typedef struct {
   void *threads[128];
   size_t count;
 } TaskScope;
-typedef struct {
+typedef struct ScopedCall {
   void (*callback)(int64_t);
   int64_t argument;
+  struct ScopedCall *next;
 } ScopedCall;
+#if defined(_WIN32) || defined(__linux__)
+typedef struct {
+  atomic_size_t pending;
+  size_t count;
+  atomic_int stopping;
+#ifdef _WIN32
+  HANDLE poll, done, workers[32];
+#else
+  int poll, wake;
+  pthread_t workers[32];
+  pthread_mutex_t lock;
+  pthread_cond_t done;
+  ScopedCall *head, *tail;
+#endif
+} TaskPool;
+
+static size_t workers(void) {
+#ifdef _WIN32
+  DWORD available = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+#else
+  long available = sysconf(_SC_NPROCESSORS_ONLN);
+#endif
+  if (available < 2)
+    return 1;
+  return (size_t)(available > 33 ? 32 : available - 1);
+}
+
+#ifdef _WIN32
+static DWORD WINAPI dispatch(void *pointer) {
+  TaskPool *pool = pointer;
+  for (;;) {
+    DWORD bytes;
+    ULONG_PTR key = 0;
+    OVERLAPPED *overlap = NULL;
+    BOOL ok = GetQueuedCompletionStatus(pool->poll, &bytes, &key, &overlap,
+                                        INFINITE);
+    (void)bytes;
+    (void)overlap;
+    if (!ok && !key)
+      continue;
+    ScopedCall *call = (ScopedCall *)key;
+    if (!call)
+      break;
+    call->callback(call->argument);
+    free(call);
+    if (atomic_fetch_sub_explicit(&pool->pending, 1, memory_order_acq_rel) == 1)
+      SetEvent(pool->done);
+  }
+  return 0;
+}
+#else
+static void *dispatch(void *pointer) {
+  TaskPool *pool = pointer;
+  struct epoll_event event;
+  for (;;) {
+    if (epoll_wait(pool->poll, &event, 1, -1) < 0) {
+      if (errno == EINTR)
+        continue;
+      break;
+    }
+    uint64_t signal;
+    if (read(pool->wake, &signal, sizeof(signal)) != sizeof(signal))
+      continue;
+    pthread_mutex_lock(&pool->lock);
+    ScopedCall *call = pool->head;
+    if (call) {
+      pool->head = call->next;
+      if (!pool->head)
+        pool->tail = NULL;
+    }
+    int stopping = atomic_load_explicit(&pool->stopping, memory_order_acquire);
+    pthread_mutex_unlock(&pool->lock);
+    if (!call) {
+      if (stopping)
+        break;
+      continue;
+    }
+    call->callback(call->argument);
+    free(call);
+    if (atomic_fetch_sub_explicit(&pool->pending, 1, memory_order_acq_rel) == 1) {
+      pthread_mutex_lock(&pool->lock);
+      pthread_cond_broadcast(&pool->done);
+      pthread_mutex_unlock(&pool->lock);
+    }
+  }
+  return NULL;
+}
+#endif
+
+static void dispose(TaskPool *pool) {
+  if (!pool)
+    return;
+#ifdef _WIN32
+  atomic_store_explicit(&pool->stopping, 1, memory_order_release);
+  while (atomic_load_explicit(&pool->pending, memory_order_acquire)) {
+    ResetEvent(pool->done);
+    if (atomic_load_explicit(&pool->pending, memory_order_acquire) &&
+        WaitForSingleObject(pool->done, INFINITE) != WAIT_OBJECT_0)
+      break;
+  }
+  for (size_t index = 0; index < pool->count; index++)
+    PostQueuedCompletionStatus(pool->poll, 0, 0, NULL);
+  for (size_t index = 0; index < pool->count; index++) {
+    WaitForSingleObject(pool->workers[index], INFINITE);
+    CloseHandle(pool->workers[index]);
+  }
+  if (pool->done)
+    CloseHandle(pool->done);
+  if (pool->poll)
+    CloseHandle(pool->poll);
+#else
+  pthread_mutex_lock(&pool->lock);
+  atomic_store_explicit(&pool->stopping, 1, memory_order_release);
+  while (atomic_load_explicit(&pool->pending, memory_order_acquire))
+    pthread_cond_wait(&pool->done, &pool->lock);
+  pthread_mutex_unlock(&pool->lock);
+  uint64_t signal = pool->count;
+  if (pool->wake >= 0)
+    (void)write(pool->wake, &signal, sizeof(signal));
+  for (size_t index = 0; index < pool->count; index++)
+    pthread_join(pool->workers[index], NULL);
+  if (pool->wake >= 0)
+    close(pool->wake);
+  if (pool->poll >= 0)
+    close(pool->poll);
+  pthread_cond_destroy(&pool->done);
+  pthread_mutex_destroy(&pool->lock);
+#endif
+}
+
+static void abandon(TaskPool *pool) {
+  Resource *entry = resource(pool, TASK_POOL);
+  if (entry)
+    entry->closed = 1;
+}
+#endif
+
 static void scoped_work(void *pointer) {
   ScopedCall *call = pointer;
   call->callback(call->argument);
@@ -869,8 +1063,6 @@ static uint64_t task_backend(void) {
   return 3;
 #elif defined(__linux__)
   return 1;
-#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
-  return 2;
 #else
   return 0;
 #endif
@@ -921,7 +1113,71 @@ static FooResult task_scope(void) {
   return scope ? (FooResult){.pointer = scope} : failure(MEMORY);
 }
 FooResult foo_task_scope(void) { return task_scope(); }
-FooResult foo_task_pool(void) { return task_scope(); }
+FooResult foo_task_pool(void) {
+#if defined(_WIN32) || defined(__linux__)
+  TaskPool *pool = owned(sizeof(*pool), TASK_POOL);
+  if (!pool)
+    return failure(MEMORY);
+  atomic_init(&pool->pending, 0);
+  atomic_init(&pool->stopping, 0);
+  size_t desired = workers();
+#ifdef _WIN32
+  pool->poll = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+  pool->done = CreateEventW(NULL, TRUE, TRUE, NULL);
+  if (!pool->poll || !pool->done) {
+    if (pool->done) CloseHandle(pool->done);
+    if (pool->poll) CloseHandle(pool->poll);
+    abandon(pool);
+    return failure(SYSTEM);
+  }
+  for (size_t index = 0; index < desired; index++) {
+    pool->workers[index] = CreateThread(NULL, 0, dispatch, pool, 0, NULL);
+    if (!pool->workers[index]) {
+      dispose(pool);
+      abandon(pool);
+      return failure(SYSTEM);
+    }
+    pool->count++;
+  }
+#else
+  pool->poll = -1;
+  pool->wake = -1;
+  pool->poll = epoll_create1(EPOLL_CLOEXEC);
+  pool->wake = eventfd(0, EFD_CLOEXEC | EFD_SEMAPHORE);
+  if (pool->poll < 0 || pool->wake < 0) {
+    if (pool->wake >= 0) close(pool->wake);
+    if (pool->poll >= 0) close(pool->poll);
+    abandon(pool);
+    return failure(SYSTEM);
+  }
+  if (pthread_mutex_init(&pool->lock, NULL)) {
+    close(pool->wake); close(pool->poll); abandon(pool);
+    return failure(SYSTEM);
+  }
+  if (pthread_cond_init(&pool->done, NULL)) {
+    pthread_mutex_destroy(&pool->lock);
+    close(pool->wake); close(pool->poll); abandon(pool);
+    return failure(SYSTEM);
+  }
+  struct epoll_event event = {.events = EPOLLIN, .data.fd = pool->wake};
+  if (epoll_ctl(pool->poll, EPOLL_CTL_ADD, pool->wake, &event)) {
+    dispose(pool);
+    abandon(pool);
+    return failure(SYSTEM);
+  }
+  for (size_t index = 0; index < desired; index++)
+    if (pthread_create(&pool->workers[index], NULL, dispatch, pool)) {
+      dispose(pool);
+      abandon(pool);
+      return failure(SYSTEM);
+    } else
+      pool->count++;
+#endif
+  return (FooResult){.pointer = pool};
+#else
+  return task_scope();
+#endif
+}
 static FooResult task_launch(void *pointer, void (*callback)(int64_t),
                              int64_t argument) {
   TaskScope *scope = resource(pointer, TASK_SCOPE) ? pointer : NULL;
@@ -931,7 +1187,7 @@ static FooResult task_launch(void *pointer, void (*callback)(int64_t),
   leave();
   ScopedCall *call = malloc(sizeof(*call));
   if (!call) return failure(MEMORY);
-  *call = (ScopedCall){callback, argument};
+  *call = (ScopedCall){callback, argument, NULL};
   FooResult spawned = foo_thread_spawn(scoped_work, call);
   if (spawned.error) { free(call); return spawned; }
   enter();
@@ -943,7 +1199,63 @@ FooResult foo_task_launch(void *scope, void (*callback)(int64_t), int64_t argume
   return task_launch(scope, callback, argument);
 }
 FooResult foo_task_submit(void *pool, void (*callback)(int64_t), int64_t argument) {
+#if defined(_WIN32) || defined(__linux__)
+  TaskPool *queue = resource(pool, TASK_POOL) ? pool : NULL;
+  if (!queue || !callback)
+    return failure(CLOSED);
+  ScopedCall *call = calloc(1, sizeof(*call));
+  if (!call)
+    return failure(MEMORY);
+  call->callback = callback;
+  call->argument = argument;
+#ifdef _WIN32
+  if (atomic_load_explicit(&queue->stopping, memory_order_acquire)) {
+    free(call);
+    return failure(CLOSED);
+  }
+  ResetEvent(queue->done);
+  atomic_fetch_add_explicit(&queue->pending, 1, memory_order_release);
+  if (!PostQueuedCompletionStatus(queue->poll, 0, (ULONG_PTR)call, NULL)) {
+    free(call);
+    if (atomic_fetch_sub_explicit(&queue->pending, 1, memory_order_acq_rel) == 1)
+      SetEvent(queue->done);
+    return failure(SYSTEM);
+  }
+#else
+  pthread_mutex_lock(&queue->lock);
+  if (atomic_load_explicit(&queue->stopping, memory_order_acquire)) {
+    pthread_mutex_unlock(&queue->lock);
+    free(call);
+    return failure(CLOSED);
+  }
+  ScopedCall *previous = queue->tail;
+  if (previous)
+    previous->next = call;
+  else
+    queue->head = call;
+  queue->tail = call;
+  uint64_t signal = 1;
+  ssize_t written;
+  do {
+    written = write(queue->wake, &signal, sizeof(signal));
+  } while (written < 0 && errno == EINTR);
+  if (written != sizeof(signal)) {
+    if (previous)
+      previous->next = NULL;
+    else
+      queue->head = NULL;
+    queue->tail = previous;
+    pthread_mutex_unlock(&queue->lock);
+    free(call);
+    return failure(SYSTEM);
+  }
+  atomic_fetch_add_explicit(&queue->pending, 1, memory_order_release);
+  pthread_mutex_unlock(&queue->lock);
+#endif
+  return (FooResult){.number = 1};
+#else
   return task_launch(pool, callback, argument);
+#endif
 }
 static FooResult task_join(void *pointer) {
   TaskScope *scope = resource(pointer, TASK_SCOPE) ? pointer : NULL;
@@ -956,7 +1268,29 @@ static FooResult task_join(void *pointer) {
   return (FooResult){0};
 }
 FooResult foo_task_join(void *scope) { return task_join(scope); }
-FooResult foo_task_wait(void *pool) { return task_join(pool); }
+FooResult foo_task_wait(void *pool) {
+#if defined(_WIN32) || defined(__linux__)
+  TaskPool *queue = resource(pool, TASK_POOL) ? pool : NULL;
+  if (!queue)
+    return failure(CLOSED);
+#ifdef _WIN32
+  while (atomic_load_explicit(&queue->pending, memory_order_acquire)) {
+    ResetEvent(queue->done);
+    if (atomic_load_explicit(&queue->pending, memory_order_acquire) &&
+        WaitForSingleObject(queue->done, INFINITE) != WAIT_OBJECT_0)
+      return failure(SYSTEM);
+  }
+#else
+  pthread_mutex_lock(&queue->lock);
+  while (atomic_load_explicit(&queue->pending, memory_order_acquire))
+    pthread_cond_wait(&queue->done, &queue->lock);
+  pthread_mutex_unlock(&queue->lock);
+#endif
+  return (FooResult){0};
+#else
+  return task_join(pool);
+#endif
+}
 FooResult foo_task_affinity(uint64_t cpu) {
 #ifdef _WIN32
   if (cpu >= sizeof(DWORD_PTR) * CHAR_BIT) return (FooResult){.number = 0};
@@ -1007,6 +1341,12 @@ void foo_service_close(void) {
         foo_net_close(entry->data);
       if (entry->kind == MUTEX || entry->kind == CONDITION)
         foo_thread_close(entry->data);
+#if defined(_WIN32) || defined(__linux__)
+      if (entry->kind == TASK_POOL) {
+        dispose(entry->data);
+        entry->closed = 1;
+      }
+#endif
     }
     resources = entry->next;
     free(entry->data);

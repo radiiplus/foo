@@ -6,13 +6,15 @@ import ../build/project as buildProject
 import ../build/compiler as buildCompiler
 import ../diag/render
 import ../diag/engine
+import ../diag/palette
+import ../benchmark/runner as benchmarkRunner
 import ../toolchain/manager as toolchainManager
 import ../toolchain/doctor as toolchainDoctor
 import ../pkg/[hash, registry as packageRegistry]
 import "../interop/bind.nim" as interopBind
 import ../lsp/server as lspServer
 
-const usage = "usage: foo <login|init|publish|install|update|outdated|remove|deprecate|search|info|new|check|build|run|watch|graph|ir|test|fmt|doc|add|toolchain|clean|doctor|version|task|lsp|bind|cc> [options]"
+const usage = "usage: foo <login|init|publish|install|update|outdated|remove|deprecate|search|info|new|check|build|run|watch|graph|ir|test|benchmark|fmt|doc|add|toolchain|clean|doctor|version|task|lsp|bind|cc> [options]"
 const packageText = staticRead("../../package.json")
 const projectText = staticRead("../../project.json")
 
@@ -21,6 +23,13 @@ proc productVersion(): string =
   let project = parseJson(projectText)
   "FOO IV\ncompiler " & package.getOrDefault("version").getStr() &
     "\nlanguage " & project.getOrDefault("language").getStr()
+
+proc errorLine(value: string; color = true): string =
+  let label = "error:"
+  if color and getEnv("NO_COLOR").len == 0 and getEnv("TERM") != "dumb":
+    shade("error") & label & "\e[0m " & value
+  else:
+    label & " " & value
 
 proc projectStamp(root: string): string =
   let project = buildProject.newProject(root)
@@ -237,7 +246,9 @@ proc main*(input: seq[string]): int =
         (if args.len > 1: args[1 .. ^1] else: @[])
     let command = args[0]
     var verbose, jsonOutput, watching: bool
-    var target, cpu, backend, filter: string
+    var warmup = 1
+    var iterations = 10
+    var target, cpu, backend, filter, mode: string
     var positional: seq[string]
     var index = 1
     while index < args.len:
@@ -266,11 +277,41 @@ proc main*(input: seq[string]): int =
           if index < args.len: backend = args[index]
         if backend notin ["c", "zig"]:
           raise newException(ValueError, "--backend must be c or zig")
-      elif argument == "--filter" and command == "test":
+      elif argument == "--mode" or argument.startsWith("--mode="):
+        if command notin ["check", "build", "run", "graph", "ir", "benchmark"]:
+          raise newException(ValueError, "--mode is available for project commands and benchmark")
+        if argument.contains("="): mode = argument[7 .. ^1]
+        else:
+          inc index
+          if index < args.len: mode = args[index]
+        if mode notin ["dev", "release"]:
+          raise newException(ValueError, "--mode must be dev or release")
+      elif argument == "--filter" and command in ["test", "benchmark"]:
         inc index
         if index < args.len: filter = args[index]
         if filter.len == 0:
-          raise newException(ValueError, "--filter needs a test name")
+          raise newException(ValueError, "--filter needs a " &
+            (if command == "test": "test" else: "benchmark") & " name")
+      elif argument == "--warmup" or argument.startsWith("--warmup="):
+        if command != "benchmark": raise newException(ValueError, "--warmup is available for benchmark")
+        var value = ""
+        if argument.contains("="): value = argument.split("=", 1)[1]
+        else:
+          inc index
+          if index < args.len: value = args[index]
+        try: warmup = parseInt(value)
+        except ValueError: raise newException(ValueError, "--warmup needs a nonnegative integer")
+        if warmup < 0: raise newException(ValueError, "--warmup needs a nonnegative integer")
+      elif argument == "--iterations" or argument.startsWith("--iterations="):
+        if command != "benchmark": raise newException(ValueError, "--iterations is available for benchmark")
+        var value = ""
+        if argument.contains("="): value = argument.split("=", 1)[1]
+        else:
+          inc index
+          if index < args.len: value = args[index]
+        try: iterations = parseInt(value)
+        except ValueError: raise newException(ValueError, "--iterations needs a positive integer")
+        if iterations < 1: raise newException(ValueError, "--iterations needs a positive integer")
       elif argument.startsWith("-"):
         raise newException(ValueError, "unknown option: " & argument)
       else: positional.add(argument)
@@ -283,7 +324,7 @@ proc main*(input: seq[string]): int =
         else: nil
       activeOperation = operation
       let projectOptions = buildProject.ProjectOptions(backend: backend,
-        target: target, cpu: cpu,
+        target: target, cpu: cpu, mode: mode,
         progress: if operation != nil: operation.reporter() else: nil)
       let project = buildProject.newProject(root, projectOptions)
       let entry = if positional.len > 0: positional[0] else: ""
@@ -335,6 +376,9 @@ proc main*(input: seq[string]): int =
       return 0
     case command
     of "test":
+      if positional.len > 1:
+        raise newException(ValueError,
+          "usage: foo test [file.iv|directory] [--filter name] [--backend c|zig] [--watch]")
       proc executeTests() =
         let results = test(if positional.len > 0: positional[0] else: root,
           filter, if backend.len > 0: backend else: "zig")
@@ -345,6 +389,49 @@ proc main*(input: seq[string]): int =
         if results.anyIt(not it.passed):
           raise newException(ValueError, "One or more tests failed")
       if watching: watch(root, executeTests) else: executeTests()
+    of "benchmark":
+      if watching: raise newException(ValueError, "--watch is not available for benchmark")
+      if positional.len > 1: raise newException(ValueError,
+        "usage: foo benchmark [name|benchmark/file.iv] [--warmup N] [--iterations N] [--backend c|zig] [--mode dev|release]")
+      if positional.len == 1:
+        if filter.len > 0: raise newException(ValueError, "Choose a benchmark name or --filter, not both")
+        filter = positional[0]
+      activeOperation = cliDisplay.newOperation("BENCHMARK", jsonOutput, verbose)
+      let results = benchmarkRunner.runBenchmarks(root, filter,
+        if backend.len > 0: backend else: "zig", warmup, iterations,
+        progress = activeOperation.reporter(), mode = mode)
+      if results.len == 0: raise newException(ValueError,
+        "No benchmarks found in benchmark/" &
+        (if filter.len > 0: " matching '" & filter & "'" else: ""))
+      var failed = 0
+      for item in results:
+        if item.error.len > 0:
+          inc failed
+          activeOperation.update("Results", item.suite.name,
+            cliDisplay.stateFailed, item.error, true)
+        else:
+          let detail = "median " & formatFloat(item.medianMs, ffDecimal, 2) &
+            " ms · p95 " & formatFloat(item.percentile95Ms, ffDecimal, 2) &
+            " ms · mean " & formatFloat(item.meanMs, ffDecimal, 2) &
+            " ms · min " & formatFloat(item.minimumMs, ffDecimal, 2) &
+            " ms · max " & formatFloat(item.maximumMs, ffDecimal, 2) & " ms"
+          activeOperation.update("Results", item.suite.name,
+            cliDisplay.stateComplete, detail, true)
+          if jsonOutput:
+            echo $(%*{"event": "benchmark", "name": item.suite.name,
+              "mode": if mode.len > 0: mode else: "project",
+              "warmup": item.warmup, "iterations": item.iterations,
+              "minimumMs": item.minimumMs, "medianMs": item.medianMs,
+              "meanMs": item.meanMs, "maximumMs": item.maximumMs,
+              "percentile95Ms": item.percentile95Ms,
+              "samplesMs": item.samplesMs,
+              "compilationMs": item.compilationMs, "cached": item.cached,
+              "metrics": item.metrics, "optimization": item.optimization})
+      activeOperation.finish(failed == 0, $results.len &
+        (if results.len == 1: " benchmark" else: " benchmarks") &
+        " · " & $failed & " failed")
+      activeOperation = nil
+      if failed > 0: raise newException(ValueError, "One or more benchmarks failed")
     of "fmt":
       discard fmt(if positional.len > 0: positional[0] else: "main.iv")
     else:
@@ -364,7 +451,7 @@ proc main*(input: seq[string]): int =
   except CatchableError as error:
     if activeOperation != nil and not activeOperation.isFinished():
       activeOperation.finish(false, "1 error")
-    stderr.writeLine(error.msg)
+    stderr.writeLine(errorLine(error.msg, "--json" notin input))
     1
 
 when isMainModule:

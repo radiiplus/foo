@@ -1,17 +1,25 @@
 import std/[sequtils, sets, strutils, tables]
 import ./[kind, node, valid]
+import ../opt/arch as targetArch
+import std/unicode
 
 type
   OptimizeOptions* = object
     inline*: bool
     target*: string
     cpu*: string
+    hot*: HashSet[string]
   OptimizeResult* = object
     module*: Module
     expressions*: int
     functions*: int
     dead*: int
     inlined*: int
+    boundaries*: int
+    allocations*: int
+    pipelines*: int
+    continuations*: int
+    serializations*: int
 
 proc cloneType(value: `Type`; seen: var Table[pointer, `Type`]): `Type` =
   if value == nil: return nil
@@ -75,7 +83,8 @@ proc cloneModule*(input: Module): Module =
   result = Module(version: input.version, stage: input.stage, name: input.name,
     unitPackage: input.unitPackage, unitPath: input.unitPath, target: input.target,
     requires: input.requires, regions: input.regions, traces: input.traces,
-    native: input.native, residue: input.residue)
+    native: input.native, residue: input.residue,
+    optimization: input.optimization)
   for item in input.storage:
     result.storage.add(Storage(name: item.name, public: item.public,
       value: cloneValue(item.value, seen)))
@@ -156,20 +165,384 @@ proc pure(instruction: Instruction): bool =
   if instruction == nil or instruction.dest.name.len == 0 or instruction.effects.len > 0 or
       instruction.panic.len > 0 or instruction.trace.len > 0 or
       instruction.memory.input.len > 0 or instruction.fallback != nil: return false
-  if instruction.kind in {InstrKind.Add, InstrKind.Sub, InstrKind.Mul, InstrKind.Div}:
+  if instruction.kind in {InstrKind.Add, InstrKind.Sub, InstrKind.Mul,
+      InstrKind.Div, InstrKind.Remainder}:
     return instruction.dest.type != nil and instruction.dest.type.kind == TypeKind.Float
-  instruction.kind in {InstrKind.Not, InstrKind.Convert, InstrKind.Compare}
+  if instruction.kind == InstrKind.Construct:
+    return instruction.dest.type != nil and instruction.dest.type.kind != TypeKind.Slice
+  instruction.kind in {InstrKind.Not, InstrKind.Convert, InstrKind.Compare,
+    InstrKind.Length, InstrKind.Splat, InstrKind.Shuffle, InstrKind.Select,
+    InstrKind.Reduce}
+
+proc semanticTypeKey(value: `Type`; active: var HashSet[pointer]): string =
+  if value == nil: return "nil"
+  let identity = cast[pointer](value)
+  if identity in active: return "ref(" & value.name & ")"
+  active.incl(identity)
+  result = $value.kind & "(" & $value.name.len & ":" & value.name & "," &
+    $value.width & "," & $value.constant & "," & $value.volatile & "," &
+    $value.abi.len & ":" & value.abi
+  for attribute in value.attributes:
+    result.add(",a" & $attribute.len & ":" & attribute)
+  if value.elem != nil: result.add(",e" & semanticTypeKey(value.elem, active))
+  for parameter in value.params:
+    result.add(",p" & semanticTypeKey(parameter, active))
+  if value.ret != nil: result.add(",r" & semanticTypeKey(value.ret, active))
+  for name, fieldType in value.fields:
+    result.add(",f" & $name.len & ":" & name & "=" &
+      semanticTypeKey(fieldType, active))
+    for attribute in value.fieldAttrs.getOrDefault(name):
+      result.add("#" & $attribute.len & ":" & attribute)
+  for name, variantType in value.variants:
+    result.add(",v" & $name.len & ":" & name & "=" &
+      semanticTypeKey(variantType, active))
+  result.add(")")
+  active.excl(identity)
+
+proc semanticTypeKey(value: `Type`): string =
+  var active = initHashSet[pointer]()
+  semanticTypeKey(value, active)
 
 proc valueKey(value: Value): string =
-  $value.kind & ":" & value.name & ":" & (if value.type == nil: "" else: $value.type.kind & ":" & $value.type.width)
+  $value.kind & ":" & $value.name.len & ":" & value.name & ":" &
+    $value.bits.len & ":" & value.bits & ":" & semanticTypeKey(value.type)
 proc instructionKey(instruction: Instruction): string =
-  result = $instruction.kind & ":" & instruction.op
+  result = $instruction.kind & ":" & instruction.op & ":" &
+    instruction.field & ":" & instruction.reduceOp
+  for item in instruction.mask: result.add("#" & $item)
   for value in operands(instruction): result.add("|" & valueKey(value))
-  if instruction.dest.type != nil: result.add("->" & $instruction.dest.type.kind & ":" & $instruction.dest.type.width)
+  if instruction.dest.type != nil:
+    result.add("->" & semanticTypeKey(instruction.dest.type))
+
+proc pureFunction(function: node.Function): bool =
+  if function == nil or function.public or function.name == "main" or
+      function.abi.len > 0 or function.attributes.len > 0 or
+      function.blocks.len != 1 or function.ret == nil or
+      function.ret.kind in {TypeKind.Error, TypeKind.Failable}: return false
+  let basicBlock = function.blocks[0]
+  if basicBlock == nil or basicBlock.term == nil or
+      basicBlock.term.kind != InstrKind.Return: return false
+  for parameter in basicBlock.params:
+    if parameter.type == nil or parameter.type.kind != TypeKind.Memory: return false
+  for instruction in basicBlock.instrs:
+    if not pure(instruction): return false
+    for value in operands(instruction):
+      if value.kind == ValueKind.Global: return false
+  basicBlock.term.value.type == nil or basicBlock.term.value.kind != ValueKind.Global
+
+proc canonicalValue(value: Value; names: Table[string, string]): string =
+  if value.type == nil: return "none"
+  let identity = case value.kind
+    of ValueKind.Reg: names.getOrDefault(value.name, "?" & value.name)
+    of ValueKind.Const: value.name & ":" & value.bits
+    of ValueKind.Global: value.name
+  $value.kind & ":" & $identity.len & ":" & identity & ":" &
+    semanticTypeKey(value.type)
+
+proc functionKey(function: node.Function): string =
+  var names = initTable[string, string]()
+  result = "ret=" & semanticTypeKey(function.ret)
+  for index, parameter in function.params:
+    names[parameter.name] = "p" & $index
+    result.add("|param=" & semanticTypeKey(parameter.type))
+  var serial = 0
+  for instruction in function.blocks[0].instrs:
+    result.add("|op=" & $instruction.kind & ":" & instruction.op & ":" &
+      instruction.field & ":" & instruction.reduceOp)
+    for item in instruction.mask: result.add("#" & $item)
+    for value in operands(instruction):
+      result.add(";" & canonicalValue(value, names))
+    result.add("->" & semanticTypeKey(instruction.dest.type))
+    names[instruction.dest.name] = "v" & $serial
+    inc serial
+  result.add("|return=" & canonicalValue(function.blocks[0].term.value, names))
+
+proc addressTaken(module: Module): HashSet[string] =
+  var taken = initHashSet[string]()
+  for function in module.funcs:
+    function.walk(proc(instruction: Instruction) =
+      for value in operands(instruction):
+        if value.kind == ValueKind.Global and value.type != nil and
+            value.type.kind == TypeKind.Function:
+          taken.incl(value.name))
+  taken
+
+proc mergeEquivalent(module: Module; protected: HashSet[string]): int =
+  var representatives = initTable[string, string]()
+  var aliases = initTable[string, string]()
+  var retained: seq[node.Function]
+  for function in module.funcs:
+    if pureFunction(function) and function.name notin protected:
+      let key = functionKey(function)
+      if representatives.hasKey(key):
+        aliases[function.name] = representatives[key]
+        inc result
+        continue
+      representatives[key] = function.name
+    retained.add(function)
+  if aliases.len == 0: return
+  for function in retained:
+    function.walk(proc(instruction: Instruction) =
+      if aliases.hasKey(instruction.func): instruction.func = aliases[instruction.func])
+  module.funcs = retained
+
+proc cost(instruction: Instruction; profile: targetArch.Profile): int =
+  case instruction.kind
+  of InstrKind.Mul: profile.multiply
+  of InstrKind.Div, InstrKind.Remainder: profile.divide
+  of InstrKind.Construct: 4
+  of InstrKind.Splat, InstrKind.Shuffle, InstrKind.Select, InstrKind.Reduce: 2
+  else: 1
+
+proc functionCost(function: node.Function; profile: targetArch.Profile): int =
+  for instruction in function.blocks[0].instrs:
+    result += cost(instruction, profile)
+
+proc inlineCalls(module: Module; options: OptimizeOptions;
+    protected: HashSet[string]; pipelines: var int): int =
+  let profile = targetArch.profile(options.target, options.cpu)
+  let budget = max(1, profile.budget)
+  let maximum = max(4, budget div 4)
+  var candidates = initTable[string, node.Function]()
+  var costs = initTable[string, int]()
+  for function in module.funcs:
+    if pureFunction(function) and function.name notin protected:
+      let weight = functionCost(function, profile)
+      let limit = if function.name in options.hot: maximum * 2 else: maximum
+      if weight <= limit:
+        candidates[function.name] = function
+        costs[function.name] = weight
+  for caller in module.funcs:
+    var remaining = if caller.name in options.hot: budget * 2 else: budget
+    var serial = 0
+    var occupied = initHashSet[string]()
+    for parameter in caller.params: occupied.incl(parameter.name)
+    for basicBlock in caller.blocks:
+      for parameter in basicBlock.params: occupied.incl(parameter.name)
+      for instruction in basicBlock.instrs:
+        if instruction.dest.name.len > 0: occupied.incl(instruction.dest.name)
+    proc fresh(): string =
+      while true:
+        inc serial
+        result = "inlined_" & $serial
+        if result notin occupied:
+          occupied.incl(result)
+          return
+    var replacements = initTable[string, Value]()
+    for basicBlock in caller.blocks:
+      var retained: seq[Instruction]
+      var previous = ""
+      for instruction in basicBlock.instrs:
+        let connected = previous.len > 0 and instruction.kind == InstrKind.Call and
+          instruction.args.anyIt(it.kind == ValueKind.Reg and it.name == previous)
+        substitute(instruction, replacements)
+        if instruction.kind != InstrKind.Call or
+            not candidates.hasKey(instruction.func) or
+            costs[instruction.func] > remaining:
+          retained.add(instruction)
+          previous = ""
+          continue
+        let candidate = candidates[instruction.func]
+        if instruction.args.len != candidate.params.len:
+          retained.add(instruction)
+          continue
+        let returned = candidate.blocks[0].term.value
+        if instruction.dest.type != nil and returned.type == nil:
+          retained.add(instruction)
+          continue
+        var local = initTable[string, Value]()
+        for index, parameter in candidate.params:
+          local[parameter.name] = instruction.args[index]
+        var seen = initTable[pointer, `Type`]()
+        for child in candidate.blocks[0].instrs:
+          let original = child.dest
+          let copy = cloneInstruction(child, seen)
+          substitute(copy, local)
+          if original.type != nil:
+            if returned.type != nil and returned.kind == ValueKind.Reg and
+                returned.name == original.name and instruction.dest.type != nil:
+              copy.dest = instruction.dest
+            else:
+              copy.dest.name = fresh()
+            local[original.name] = copy.dest
+          retained.add(copy)
+        if instruction.dest.type != nil:
+          var value = returned
+          replace(value, local)
+          if value.kind != ValueKind.Reg or value.name != instruction.dest.name:
+            replacements[instruction.dest.name] = value
+        remaining -= costs[instruction.func]
+        inc result
+        if connected: inc pipelines
+        previous = if instruction.dest.type != nil: instruction.dest.name else: ""
+      basicBlock.instrs = retained
+      if basicBlock.term != nil: substitute(basicBlock.term, replacements)
+
+proc promoteSlots(function: node.Function): int =
+  var owners = initTable[string, string]()
+  for basicBlock in function.blocks:
+    for instruction in basicBlock.instrs:
+      if instruction.kind == InstrKind.Alloc and instruction.op == "slot" and
+          instruction.dest.type != nil and instruction.dest.type.kind == TypeKind.Ptr:
+        owners[instruction.dest.name] = basicBlock.label
+  if owners.len == 0: return
+
+  var valid = initTable[string, bool]()
+  var initialized = initTable[string, bool]()
+  for name in owners.keys: valid[name] = true
+  for basicBlock in function.blocks:
+    for instruction in basicBlock.instrs:
+      for value in operands(instruction):
+        if value.kind != ValueKind.Reg or not owners.hasKey(value.name): continue
+        let direct = instruction.ptr.kind == ValueKind.Reg and
+          instruction.ptr.name == value.name and
+          instruction.kind in {InstrKind.Load, InstrKind.Store}
+        if basicBlock.label != owners[value.name] or not direct:
+          valid[value.name] = false
+        elif instruction.kind == InstrKind.Load and
+            not initialized.getOrDefault(value.name):
+          valid[value.name] = false
+        elif instruction.kind == InstrKind.Store:
+          initialized[value.name] = true
+    if basicBlock.term != nil:
+      for value in operands(basicBlock.term):
+        if value.kind == ValueKind.Reg and owners.hasKey(value.name):
+          valid[value.name] = false
+
+  for basicBlock in function.blocks:
+    var current = initTable[string, Value]()
+    var replacements = initTable[string, Value]()
+    var retained: seq[Instruction]
+    for instruction in basicBlock.instrs:
+      substitute(instruction, replacements)
+      if instruction.kind == InstrKind.Alloc and instruction.op == "slot" and
+          valid.getOrDefault(instruction.dest.name):
+        inc result
+        continue
+      if instruction.ptr.kind == ValueKind.Reg and
+          valid.getOrDefault(instruction.ptr.name):
+        if instruction.kind == InstrKind.Store:
+          current[instruction.ptr.name] = instruction.val
+          continue
+        if instruction.kind == InstrKind.Load and
+            current.hasKey(instruction.ptr.name):
+          replacements[instruction.dest.name] = current[instruction.ptr.name]
+          continue
+      retained.add(instruction)
+    basicBlock.instrs = retained
+    if basicBlock.term != nil: substitute(basicBlock.term, replacements)
+
+proc eliminateBoundaries(function: node.Function): int =
+  for basicBlock in function.blocks:
+    var replacements = initTable[string, Value]()
+    var retained: seq[Instruction]
+    for instruction in basicBlock.instrs:
+      substitute(instruction, replacements)
+      if instruction.kind == InstrKind.Convert and instruction.dest.type != nil and
+          instruction.val.type != nil and
+          semanticTypeKey(instruction.dest.type) == semanticTypeKey(instruction.val.type):
+        replacements[instruction.dest.name] = instruction.val
+        inc result
+      else:
+        retained.add(instruction)
+    basicBlock.instrs = retained
+    if basicBlock.term != nil: substitute(basicBlock.term, replacements)
+
+proc specializeContinuations(module: Module): int =
+  var specialized = 0
+  var blocking = initHashSet[string]()
+  for external in module.externs:
+    let symbol = if external.symbol.len > 0: external.symbol else: external.name
+    if external.abi in ["runtime", "runtime.task"] and symbol == "block" and
+        external.params.len == 1 and external.ret != nil and
+        external.ret.kind == TypeKind.Void:
+      blocking.incl(external.name)
+  if blocking.len == 0: return
+  for function in module.funcs:
+    function.walk(proc(instruction: Instruction) =
+      if instruction.kind == InstrKind.Call and instruction.func in blocking and
+          instruction.args.len == 1:
+        let callback = instruction.args[0]
+        if callback.kind == ValueKind.Global and callback.type != nil and
+            callback.type.kind == TypeKind.Function and
+            callback.type.params.len == 0 and callback.type.ret != nil and
+            callback.type.ret.kind == TypeKind.Void:
+          instruction.func = callback.name
+          instruction.callee = Value()
+          instruction.args = @[]
+          instruction.abi = callback.type.abi
+          instruction.symbol = ""
+          instruction.op = "direct-continuation"
+          inc specialized)
+  result = specialized
+
+proc escape(data: openArray[byte]): seq[byte] =
+  result.add(byte('"'))
+  for value in data:
+    case value
+    of byte('"'), byte('\\'):
+      result.add(byte('\\')); result.add(value)
+    of 8'u8: result.add(@[byte('\\'), byte('b')])
+    of 9'u8: result.add(@[byte('\\'), byte('t')])
+    of 10'u8: result.add(@[byte('\\'), byte('n')])
+    of 12'u8: result.add(@[byte('\\'), byte('f')])
+    of 13'u8: result.add(@[byte('\\'), byte('r')])
+    else:
+      if value < 32:
+        const digits = "0123456789abcdef"
+        result.add(@[byte('\\'), byte('u'), byte('0'), byte('0'),
+          byte(digits[int(value shr 4)]), byte(digits[int(value and 15)])])
+      else:
+        result.add(value)
+  result.add(byte('"'))
+
+proc serialize(module: Module): int =
+  var folded = 0
+  var quotes = initHashSet[string]()
+  for external in module.externs:
+    let symbol = if external.symbol.len > 0: external.symbol else: external.name
+    if external.abi == "runtime.json" and symbol == "quote":
+      quotes.incl(external.name)
+  if quotes.len == 0: return
+  for function in module.funcs:
+    function.walk(proc(instruction: Instruction) =
+      if instruction.kind != InstrKind.Call or instruction.func notin quotes or
+          instruction.args.len != 1 or instruction.args[0].kind != ValueKind.Const:
+        return
+      let source = instruction.args[0]
+      if source.type == nil or source.type.kind != TypeKind.Slice or
+          instruction.dest.type == nil or
+          instruction.dest.type.kind != TypeKind.Failable:
+        return
+      let raw = bytes(source.name)
+      var text = newString(raw.len)
+      for index, value in raw: text[index] = char(value)
+      if text.validateUtf8 != -1: return
+      let encoded = escape(raw)
+      instruction.kind = InstrKind.Convert
+      instruction.val = Value(kind: ValueKind.Const, name: quoted(encoded),
+        `type`: instruction.dest.type.elem)
+      instruction.args = @[]
+      instruction.func = ""
+      instruction.symbol = ""
+      instruction.abi = ""
+      instruction.effects = @[]
+      instruction.op = "direct-json"
+      inc folded)
+  result = folded
 
 proc optimize*(input: Module; options = OptimizeOptions()): OptimizeResult =
   result.module = cloneModule(input)
+  let protected = addressTaken(result.module)
+  result.continuations = specializeContinuations(result.module)
+  result.serializations = serialize(result.module)
+  if options.inline:
+    result.functions = mergeEquivalent(result.module, protected)
+    result.inlined = inlineCalls(result.module, options, protected,
+      result.pipelines)
   for function in result.module.funcs:
+    result.allocations += promoteSlots(function)
+    result.boundaries += eliminateBoundaries(function)
     var replacements = initTable[string, Value]()
     for basicBlock in function.blocks:
       var seen = initTable[string, Value]()
@@ -208,6 +581,15 @@ proc optimize*(input: Module; options = OptimizeOptions()): OptimizeResult =
         basicBlock.instrs = retained
   if result.module.version == 1:
     discard seal(result.module)
+  result.module.optimization.expressions += result.expressions
+  result.module.optimization.functions += result.functions
+  result.module.optimization.dead += result.dead
+  result.module.optimization.inlined += result.inlined
+  result.module.optimization.boundaries += result.boundaries
+  result.module.optimization.allocations += result.allocations
+  result.module.optimization.pipelines += result.pipelines
+  result.module.optimization.continuations += result.continuations
+  result.module.optimization.serializations += result.serializations
 
 proc typeKey(value: `Type`; seen: var HashSet[pointer]): string =
   if value == nil: return "void"
@@ -311,6 +693,7 @@ proc monomorphize*(input: Module): Module =
       for index, parameter in parameters: bindings[parameter] = call.typeArgs[index]
       let instanceName = key
       instances[key] = instanceName
+      inc result.optimization.generics
       if genericExterns.hasKey(originalName):
         let original = genericExterns[originalName]
         var seen = initTable[pointer, `Type`]()

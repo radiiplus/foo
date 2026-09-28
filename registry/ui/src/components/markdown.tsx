@@ -1,7 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { CodeBlock } from "./code-block";
+import { Code } from "./code";
 
 type MarkdownProps = {
   source: string;
@@ -17,7 +17,7 @@ export function Markdown({ source }: MarkdownProps) {
         code: ({ className, children, ...props }) => {
           const language = className?.match(/language-([\w-]+)/)?.[1];
           const code = String(children).replace(/\n$/, "");
-          if (language || code.includes("\n")) return <CodeBlock code={code} language={language ?? "text"} />;
+          if (language || code.includes("\n")) return <Code code={code} language={language ?? "text"} />;
           return <code {...props}>{children}</code>;
         },
         a: ({ href, children, ...props }) => {

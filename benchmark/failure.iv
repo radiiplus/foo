@@ -1,0 +1,21 @@
+-- Measures successful typed failure propagation through postfix try.
+use testing as check.
+use system as machine.
+
+#[noinline]
+function next(value unsigned 64) giving failable unsigned 64 {
+  give value plus 1.
+}
+
+dynamic index of type unsigned 64 is 0.
+dynamic checksum of type unsigned 64 is 0.
+dynamic limit of type unsigned 64 is 10_000_000.
+when machine.cores() try greater than 0 { increase limit by 1. }
+
+while index less than limit {
+  constant value is next(index) try.
+  set checksum to checksum plus value.
+  increase index by 1.
+}
+
+check.positive(checksum).

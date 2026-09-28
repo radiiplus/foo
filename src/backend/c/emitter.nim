@@ -6,7 +6,7 @@ import ./runtime
 type
   Options* = object
     target*, cpu*, level*, mode*, substrate*, source*, runtime*, coverage*: string
-    library*: bool
+    library*, benchmark*: bool
 
   Types* = ref object
     declarations*: seq[string]
@@ -145,7 +145,7 @@ proc getImpl(types: Types; value: `Type`; ignoreAtomic: bool): string =
   of TypeKind.Optional:
     types.declarations.add("typedef struct { bool present; " &
       (if elem == "void": "uint8_t" else: elem) & " value; } " & id & ";")
-  of TypeKind.Fallible:
+  of TypeKind.Failable:
     types.declarations.add("typedef struct { const char *error; " &
       (if elem == "void": "uint8_t" else: elem) & " value; } " & id & ";")
   of TypeKind.Array, TypeKind.Vector:
@@ -317,7 +317,7 @@ proc returned(ctx: FunctionState; item: Value): string =
   if ctx.fn.ret.kind == TypeKind.Void:
     return ctx.cleanup() & (if ctx.fn.name == "main":
       "return (" & ctx.returnType & "){0};" else: "return;")
-  if not hasValue and ctx.fn.ret.kind == TypeKind.Fallible and
+  if not hasValue and ctx.fn.ret.kind == TypeKind.Failable and
       ctx.fn.ret.elem != nil and ctx.fn.ret.elem.kind == TypeKind.Void:
     return ctx.cleanup() & "return (" & ctx.returnType & "){0};"
   if not hasValue:
@@ -325,12 +325,12 @@ proc returned(ctx: FunctionState; item: Value): string =
   let temporary = "foo_return_" & $ctx.counter
   inc ctx.counter
   var expression = ctx.emitter.value(item)
-  if ctx.fn.ret.kind == TypeKind.Fallible and item.type.kind != TypeKind.Fallible:
+  if ctx.fn.ret.kind == TypeKind.Failable and item.type.kind != TypeKind.Failable:
     expression = "(" & ctx.returnType & "){NULL, " & expression & "}"
   elif ctx.fn.ret.kind == TypeKind.Optional and item.type.kind != TypeKind.Optional:
     expression = "(" & ctx.returnType & "){true, " & expression & "}"
   ctx.returnType & " " & temporary & " = " & expression & ";\n" &
-    ctx.cleanup(if ctx.fn.ret.kind == TypeKind.Fallible:
+    ctx.cleanup(if ctx.fn.ret.kind == TypeKind.Failable:
       temporary & ".error != NULL" else: "false") &
     "return " & temporary & ";"
 
@@ -386,7 +386,7 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
     if instruction.target.type != nil:
       let id = "allocation" & $ctx.counter
       inc ctx.counter
-      let allocationType = `Type`(kind: TypeKind.Fallible,
+      let allocationType = `Type`(kind: TypeKind.Failable,
         elem: `Type`(kind: TypeKind.Ptr, elem: `Type`(kind: TypeKind.Uint, width: 8)))
       let helper = "$allocation" & $ctx.counter
       state.externs[helper] = Extern(name: helper, abi: "runtime.memory",
@@ -499,7 +499,7 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
     let source = state.value(instruction.val)
     if typ.kind == TypeKind.Optional:
       return d & "(" & state.types.get(typ) & "){ .present = true, .value = " & source & " };"
-    if typ.kind == TypeKind.Fallible:
+    if typ.kind == TypeKind.Failable:
       return d & "(" & state.types.get(typ) & "){ .error = NULL, .value = " & source & " };"
     if typ.kind == TypeKind.Slice:
       return d & "(" & state.types.get(typ) & "){ .data = (" & source &
@@ -560,9 +560,17 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
       (if sequence: "data" else: "lane") & "[" & index & "];"
   of InstrKind.Construct:
     let typ = instruction.dest.type
-    if typ.kind == TypeKind.Fallible and instruction.op == "error":
+    if typ.kind == TypeKind.Failable and instruction.op == "error":
       return d & "(" & state.types.get(typ) & "){ .error = " &
         state.value(instruction.args[0]) & " };"
+    if typ.kind == TypeKind.Slice and instruction.op == "sequence":
+      if instruction.args.len == 0:
+        return d & "(" & state.types.get(typ) & "){ .data = NULL, .len = 0 };"
+      var items: seq[string]
+      for item in instruction.args: items.add(state.value(item))
+      return d & "(" & state.types.get(typ) & "){ .data = (" &
+        state.types.get(typ.elem) & "[]){ " & items.join(", ") &
+        " }, .len = " & $items.len & " };"
     if typ.kind == TypeKind.TaggedUnion:
       var index = 0
       var found = -1
@@ -584,7 +592,7 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
   of InstrKind.Extract:
     let typ = if instruction.val.type.kind == TypeKind.Ptr:
       instruction.val.type.elem else: instruction.val.type
-    if typ.kind == TypeKind.Fallible:
+    if typ.kind == TypeKind.Failable:
       return (if d.len > 0: d else: "(void)") & "(" &
         state.value(instruction.val) & ")." &
         (if instruction.field == "failed": "error != NULL" else: "value") & ";"
@@ -598,8 +606,8 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
       (if instruction.val.type.kind == TypeKind.Ptr: "->" else: ".") & field & ";"
   of InstrKind.Try:
     let expression = state.value(instruction.expr)
-    if ctx.resultType.kind != TypeKind.Fallible:
-      raise newException(ValueError, "try in infallible C function '" & ctx.fn.name & "'")
+    if ctx.resultType.kind != TypeKind.Failable:
+      raise newException(ValueError, "try in non-failable C function '" & ctx.fn.name & "'")
     return "if (" & expression & ".error) { " & ctx.cleanup("true") &
       " return (" & ctx.returnType & "){ .error = " & expression &
       ".error }; }\n" & (if d.len > 0: d & expression & ".value;" else: "")
@@ -747,7 +755,7 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
         raise newException(ValueError, "C backend cannot preserve attributes on '" &
           fn.name & "'; use the Zig backend")
     let resultType = if fn.name == "main" and fn.ret.kind == TypeKind.Void:
-      `Type`(kind: TypeKind.Fallible, elem: fn.ret) else: fn.ret
+      `Type`(kind: TypeKind.Failable, elem: fn.ret) else: fn.ret
     let returnType = state.types.get(resultType)
     var parameters: seq[string]
     var defined = initHashSet[string]()
@@ -755,6 +763,7 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
       parameters.add(state.types.get(parameter.type) & " " & state.value(parameter))
       defined.incl(parameter.name)
     let signature = (if fn.name in state.exported: "FOO_EXPORT " else: "") &
+      (if "noinline" in fn.attributes: "FOO_NOINLINE " else: "") &
       returnType & " " & state.functionName(fn.name) & "(" &
       (if parameters.len > 0: parameters.join(", ") else: "void") & ")"
     state.prototypes.add(signature & ";")
@@ -830,20 +839,22 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
   if entry != nil:
     entrypoint = "int main(int argc, char **argv) {\n#ifdef FOO_SERVICE\n" &
       "foo_service_init(argc, argv);\n#else\n(void)argc; (void)argv;\n#endif\n"
-    if entry.ret.kind in {TypeKind.Fallible, TypeKind.Void}:
+    if entry.ret.kind in {TypeKind.Failable, TypeKind.Void}:
       entrypoint.add("const char *error = " & name("main") &
         "().error; if (error) fprintf(stderr, \"%s\\n\", error);")
     else:
       entrypoint.add(name("main") & "(); const char *error = NULL;")
     if options.coverage.len > 0: entrypoint.add(" foo_report();")
-    entrypoint.add(" foo_shutdown(); return error ? 1 : 0; }\n")
+    entrypoint.add((if options.benchmark: " foo_benchmark_report();" else: "") &
+      " foo_shutdown(); return error ? 1 : 0; }\n")
   result.code = "/* FOO IR -> ISO C11 */\n#include <stdint.h>\n#include <stddef.h>\n" &
     "#include <stdbool.h>\n#include <stdatomic.h>\n#include <stdlib.h>\n" &
     "#include <stdio.h>\n#include <string.h>\n#include <limits.h>\n" &
-    "#if defined(_WIN32)\n#define FOO_EXPORT __declspec(dllexport)\n#else\n" &
-    "#define FOO_EXPORT\n#endif\nstatic _Noreturn void foo_panic(const char *message) " &
+    "#if defined(_WIN32)\n#define FOO_EXPORT __declspec(dllexport)\n#define FOO_NOINLINE __declspec(noinline)\n#else\n" &
+    "#define FOO_EXPORT\n#define FOO_NOINLINE __attribute__((noinline))\n#endif\nstatic _Noreturn void foo_panic(const char *message) " &
     "{ fprintf(stderr, \"%s\\n\", message); exit(1); }\n" & memoryCode & "\n" &
-    traceCode & "\n" & copyDefine & "\n" & copyCode & "\n" &
+    traceCode & "\n" & (if options.benchmark: "#define FOO_BENCHMARK 1\n" else: "") &
+    copyDefine & "\n" & copyCode & "\n" &
     state.types.declarations.join("\n") & "\n" & integers() & "\n" &
     state.strings.join("\n") & "\n" & globals.join("\n") & "\n" &
     state.prototypes.join("\n") & "\n" & runtimeResult.code & "\n" &

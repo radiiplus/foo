@@ -13,7 +13,7 @@ proc typeStr(value: `Type`): string =
   of TypeKind.Ptr: "ptr<" & typeStr(value.elem) & ">"
   of TypeKind.Slice: (if value.constant: "text<" else: "slice<") & typeStr(value.elem) & ">"
   of TypeKind.Optional: "optional<" & typeStr(value.elem) & ">"
-  of TypeKind.Fallible: "fallible<" & typeStr(value.elem) & ">"
+  of TypeKind.Failable: "failable<" & typeStr(value.elem) & ">"
   of TypeKind.Array: "[" & $value.width & "]" & typeStr(value.elem)
   of TypeKind.Struct: (if value.name.len > 0: value.name else: "struct")
   of TypeKind.Void: "void"
@@ -123,7 +123,7 @@ proc encode*(module: Module): string =
     definitions.add(newJNull())
     let names = ["integer", "decimal", "bool", "pointer", "array", "record",
       "unit", "error", "vector", "choice", "packed", "union", "opaque",
-      "function", "integer", "record", "sequence", "optional", "fallible",
+      "function", "integer", "record", "sequence", "optional", "failable",
       "memory", "region", "trace"]
     var definition = newJObject()
     definition["kind"] = %names[value.kind.ord]

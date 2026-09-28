@@ -25,7 +25,7 @@ function finish(flag of type boolean) of type integer {
   give value.
 }
 
-function local() of type fallible nothing {
+function local() of type failable nothing {
   constant bytes is try allocate 44.
   give nothing.
 }

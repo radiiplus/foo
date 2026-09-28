@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=FOO
+Comment=Readable systems programming language
+Exec=foo
+Icon=io.github.radiiplus.foo
+Terminal=true
+Categories=Development;ConsoleOnly;
+Keywords=compiler;programming;terminal;

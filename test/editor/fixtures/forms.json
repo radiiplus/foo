@@ -185,7 +185,7 @@
   },
   {
     "line": 25,
-    "text": "fallible",
+    "text": "failable",
     "scope": "storage.modifier.type.foo"
   },
   {

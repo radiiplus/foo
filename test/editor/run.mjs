@@ -55,7 +55,7 @@ for (const [text, scope] of [['of', 'keyword.other.operator.of.foo'], ['type', '
   assert(tokens.length && tokens.every(token => token.scopes.includes(scope)), `${text} must use ${scope}`);
   assertions++;
 }
-const configuration = JSON.parse(readFileSync(join(root, 'language-configuration.json'), 'utf8'));
+const configuration = JSON.parse(readFileSync(join(root, 'language.json'), 'utf8'));
 const increase = new RegExp(configuration.indentationRules.increaseIndentPattern);
 const decrease = new RegExp(configuration.indentationRules.decreaseIndentPattern);
 for (const line of ['function visit() {', 'start() {', 'module app {', '  } otherwise {']) assert(increase.test(line), `Block must indent: ${line}`);
@@ -63,7 +63,17 @@ for (const line of ['-- comment {', '--- comment {', 'constant brace is "{".', '
 assert(decrease.test('  } otherwise {'));
 assert.equal('data.value'.match(new RegExp(configuration.wordPattern, 'g')).join(','), 'data,value');
 assert.deepEqual(configuration.comments, { lineComment: '--', blockComment: ['---', '---'] });
-assert(!manifest.contributes.configuration && !manifest.contributes.iconThemes && !manifest.main, 'Extension must remain declarative and expose no custom settings/LSP');
+assert.equal(manifest.main, './extension.js');
+assert(existsSync(join(root, 'extension.js')), 'Language client entry point must be packaged');
+assert(manifest.activationEvents.includes('onLanguage:foo'));
+assert.deepEqual(manifest.contributes.commands.map(item => item.command).sort(), ['foo.restartLanguageServer', 'foo.startWatch']);
+assert.equal(manifest.contributes.configuration.properties['foo.server.enabled'].default, true);
+assert.equal(manifest.contributes.configuration.properties['foo.server.path'].default, 'foo');
+const client = readFileSync(join(root, 'extension.js'), 'utf8');
+for (const behavior of ["spawn(command, ['lsp']", 'textDocument/didOpen', 'textDocument/didChange', 'publishDiagnostics']) {
+  assert(client.includes(behavior), `Language client is missing ${behavior}`);
+}
+assert(!manifest.contributes.iconThemes, 'Extension must not replace the selected icon theme');
 assert(!manifest.contributes.themes, 'Syntax colors must not contribute a VS Code theme');
 assert.deepEqual(Object.keys(manifest.contributes.configurationDefaults).sort(), ['[foo]', 'editor.semanticTokenColorCustomizations', 'editor.tokenColorCustomizations']);
 for (const variant of ['light', 'dark']) assert.match(readFileSync(resolve(root, manifest.contributes.languages[0].icon[variant]), 'utf8'), /<svg\b/);
@@ -84,6 +94,34 @@ for (const name of ['keywords', 'forms']) {
     }
     assertions++;
   }
+}
+const current = tokenize([
+  'function greet name text punctuation text default "!" giving text {',
+  '  give name plus punctuation.',
+  '}',
+  'constant users are source fallback empty.',
+  'dynamic count is 0.',
+  'increase count by 1.',
+  'decrease count by 1.',
+  'constant content is file.read("settings.json") try.',
+].join('\n'));
+for (const [line, word, scope] of [
+  [1, 'greet', 'entity.name.function.foo'],
+  [1, 'name', 'variable.other.foo'],
+  [1, 'text', 'support.type.primitive.foo'],
+  [1, 'default', 'keyword.other.foo'],
+  [1, 'giving', 'keyword.other.foo'],
+  [4, 'are', 'keyword.operator.foo'],
+  [4, 'fallback', 'keyword.control.foo'],
+  [6, 'increase', 'keyword.operator.foo'],
+  [7, 'decrease', 'keyword.operator.foo'],
+  [8, 'try', 'keyword.control.foo'],
+]) {
+  const row = current[line - 1];
+  const start = row.line.indexOf(word);
+  const tokens = row.tokens.filter(token => token.endIndex > start && token.startIndex < start + word.length);
+  assert(tokens.length && tokens.every(token => token.scopes.includes(scope)), `Current syntax ${word} must use ${scope}`);
+  assertions++;
 }
 // Check coverage against the compiler when running in the FOO checkout.
 // The standalone grammar package does not require the compiler to run tests.

@@ -33,6 +33,8 @@ fn result(comptime T: type, value: c.FooResult) T {
     return switch (@typeInfo(T)) {
         .void => {},
         .int => @intCast(value.number),
+        .optional => |info| if (value.pointer == null) null else
+            @as(info.child, @intCast(value.number)),
         .pointer => |info| if (info.size == .slice) if (value.text.len == 0) &.{} else @as([*]const u8, @ptrCast(value.text.data))[0..value.text.len] else @ptrCast(@alignCast(value.pointer.?)),
         else => @compileError("Unsupported service result"),
     };

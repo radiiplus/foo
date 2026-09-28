@@ -9,12 +9,14 @@ import ../diag/span
 type
   Lexer* = ref object
     src: string
+    file: string
     pos, line, col: int
     diag: Engine
     start, startLine, startCol: int
 
 proc newLexer*(src: string; diag: Engine): Lexer =
-  Lexer(src: src, diag: diag, line: 1, col: 1, startLine: 1, startCol: 1)
+  Lexer(src: src, file: diag.getFile, diag: diag, line: 1, col: 1,
+    startLine: 1, startCol: 1)
 
 proc mark(lexer: Lexer) =
   lexer.start = lexer.pos
@@ -22,7 +24,8 @@ proc mark(lexer: Lexer) =
   lexer.startCol = lexer.col
 
 proc span(lexer: Lexer): Span =
-  Span(start: lexer.start, `end`: lexer.pos, line: lexer.startLine, col: lexer.startCol)
+  Span(start: lexer.start, `end`: lexer.pos, line: lexer.startLine,
+    col: lexer.startCol, file: lexer.file)
 
 proc read(lexer: Lexer): char =
   if lexer.pos >= lexer.src.len: return '\0'
@@ -154,6 +157,7 @@ proc keywordKind(text: string): Kind =
   of "on": On
   of "leave": Leave
   of "try": Try
+  of "are": Are
   of "fallback", "catch": Catch
   of "after", "cleanup", "finally": After
   of "and": And
@@ -186,6 +190,7 @@ proc keywordKind(text: string): Kind =
   of "array": Array
   of "sequence": Sequence
   of "nothing": Nothing
+  of "null": Null
   of "record": Record
   of "choice": Choice
   of "packed": Packed

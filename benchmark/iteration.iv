@@ -1,0 +1,18 @@
+-- Measures ordered traversal independently from append and lookup loops.
+use sequence as items.
+use testing as check.
+
+dynamic values is items.sized[unsigned 64](1_000_000) try.
+dynamic index of type unsigned 64 is 0.
+while index less than 1_000_000 {
+  set values at index to index.
+  increase index by 1.
+}
+
+dynamic checksum of type unsigned 64 is 0.
+for each value in values {
+  set checksum to checksum plus value.
+}
+after { items.release[unsigned 64](values) fallback nothing. }
+
+check.number(checksum, 499_999_500_000).

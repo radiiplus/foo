@@ -131,6 +131,9 @@ static int64_t foo_memory_compare(FOOText left, FOOText right) {
   int order = size ? memcmp(left.data, right.data, size) : 0;
   return order ? (order > 0 ? 1 : -1) : (left.len > right.len) - (left.len < right.len);
 }
+static bool foo_memory_identical(const void *left, const void *right) {
+  return left == right;
+}
 static FOOResult foo_memory_copy(void *handle, uint8_t *pointer,
                                  FOOText content) {
   FOOResult result = foo_memory_view(handle, pointer, content.len);

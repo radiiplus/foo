@@ -3,9 +3,52 @@ const std = @import("std");
 const builtin = @import("builtin");
 const allocator = std.heap.page_allocator;
 const managed = @import("storage.zig");
+const instrumented = FOO_BENCHMARK_ENABLED;
 pub const memory = managed.memory;
 pub const list = managed.list;
 pub const streams = @import("stream.zig");
+const Metrics = struct {
+    allocations: u64 = 0,
+    allocated_bytes: u64 = 0,
+    reallocations: u64 = 0,
+    copied_bytes: u64 = 0,
+    growths: u64 = 0,
+    growth_bytes: u64 = 0,
+    capacity_total: u64 = 0,
+    capacity_max: u64 = 0,
+    capacity_samples: u64 = 0,
+    requested: u64 = 0,
+    live: u64 = 0,
+    peak: u64 = 0,
+    retained: u64 = 0,
+    slowpaths: u64 = 0,
+    branches: u64 = 0,
+    branchbytes: u64 = 0,
+};
+var metrics: Metrics = .{};
+fn metric(counter: *u64, amount: usize) void {
+    if (!instrumented) return;
+    counter.* = std.math.add(u64, counter.*, std.math.cast(u64, amount) orelse std.math.maxInt(u64)) catch std.math.maxInt(u64);
+}
+fn metricPeak() void {
+    if (instrumented) metrics.peak = @max(metrics.peak, metrics.live);
+}
+fn metricRelease(size: usize, retired: bool) void {
+    if (!instrumented) return;
+    metrics.live -= size;
+    if (retired) metrics.retained -= size;
+}
+fn metricCapacity(capacity: usize) void {
+    if (!instrumented) return;
+    metric(&metrics.capacity_total, capacity);
+    metric(&metrics.capacity_samples, 1);
+    metrics.capacity_max = @max(metrics.capacity_max, capacity);
+}
+pub fn benchmarkReport() void {
+    const average = if (metrics.capacity_samples == 0) 0.0 else @as(f64, @floatFromInt(metrics.capacity_total)) / @as(f64, @floatFromInt(metrics.capacity_samples));
+    const factor: f64 = if (metrics.requested == 0) 0.0 else @as(f64, @floatFromInt(metrics.capacity_total)) / @as(f64, @floatFromInt(metrics.requested));
+    std.debug.print("FOO_METRICS {{\"allocations\":{d},\"allocatedBytes\":{d},\"reallocations\":{d},\"bytesCopied\":{d},\"growthOperations\":{d},\"growthBytesCopied\":{d},\"averageCapacity\":{d:.3},\"maximumCapacity\":{d},\"growthFactor\":{d:.3},\"liveBytes\":{d},\"peakBytes\":{d},\"olderVersionBytes\":{d},\"slowPathHits\":{d},\"branchOperations\":{d},\"branchBytesCopied\":{d}}}\n", .{ metrics.allocations, metrics.allocated_bytes, metrics.reallocations, metrics.copied_bytes, metrics.growths, metrics.growth_bytes, average, metrics.capacity_max, factor, metrics.live, metrics.peak, metrics.retained, metrics.slowpaths, metrics.branches, metrics.branchbytes });
+}
 pub fn order(left: anytype, right: @TypeOf(left)) std.math.Order {
     const T = @TypeOf(left);
     return switch (@typeInfo(T)) {
@@ -64,7 +107,16 @@ pub fn join(a: []const u8, b: []const u8) []const u8 {
     defer allocator.free(bytes);
     return retain(u8, bytes) catch @panic("OutOfMemory");
 }
-const Allocation = struct { bytes: []u8, alignment: std.mem.Alignment };
+const Allocation = struct {
+    bytes: []u8,
+    alignment: std.mem.Alignment,
+    used: usize = 0,
+    capacity: usize = 0,
+    element: usize = 0,
+    references: usize = 0,
+    sequence: bool = false,
+    retired: bool = false,
+};
 var retained: std.AutoHashMap(usize, Allocation) = .init(allocator);
 var lock: std.atomic.Value(bool) = .init(false);
 var threaded: std.Io.Threaded = undefined;
@@ -90,11 +142,57 @@ fn retain(comptime T: type, bytes: []const T) ![]T {
     if (bytes.len == 0) return &.{};
     const result = try allocator.alloc(T, bytes.len);
     errdefer allocator.free(result);
+    metric(&metrics.allocations, 1);
+    metric(&metrics.allocated_bytes, bytes.len * @sizeOf(T));
+    metric(&metrics.live, bytes.len * @sizeOf(T));
+    metricPeak();
+    metric(&metrics.copied_bytes, bytes.len * @sizeOf(T));
     managed.memory.copyExact(std.mem.sliceAsBytes(result), std.mem.sliceAsBytes(bytes));
     acquire();
     defer lock.store(false, .release);
     try retained.put(@intFromPtr(result.ptr), .{ .bytes = std.mem.sliceAsBytes(result), .alignment = .of(T) });
     return result;
+}
+fn adopt(comptime T: type, bytes: []T) ![]T {
+    metric(&metrics.allocations, 1);
+    metric(&metrics.allocated_bytes, bytes.len * @sizeOf(T));
+    metric(&metrics.live, bytes.len * @sizeOf(T));
+    metricPeak();
+    acquire();
+    defer lock.store(false, .release);
+    try retained.put(@intFromPtr(bytes.ptr), .{
+        .bytes = std.mem.sliceAsBytes(bytes),
+        .alignment = .of(T),
+    });
+    return bytes;
+}
+fn sequenceReserve(comptime T: type, capacity: usize, used: usize) ![]T {
+    if (capacity == 0) return &.{};
+    if (used > capacity) return error.Overflow;
+    const size = std.math.mul(usize, capacity, @sizeOf(T)) catch return error.Overflow;
+    const items = try allocator.alloc(T, capacity);
+    errdefer allocator.free(items);
+    metric(&metrics.allocations, 1);
+    metric(&metrics.allocated_bytes, size);
+    metric(&metrics.live, size);
+    metricPeak();
+    acquire();
+    defer lock.store(false, .release);
+    try retained.put(@intFromPtr(items.ptr), .{
+        .bytes = std.mem.sliceAsBytes(items),
+        .alignment = .of(T),
+        .used = used,
+        .capacity = capacity,
+        .element = @sizeOf(T),
+        .references = 1,
+        .sequence = true,
+    });
+    return items[0..used];
+}
+fn sequenceCapacity(count: usize) !usize {
+    var capacity: usize = 8;
+    while (capacity < count) capacity = try std.math.mul(usize, capacity, 2);
+    return capacity;
 }
 fn cloneBytes(bytes: []const u8) ![]u8 {
     const result = try allocator.alloc(u8, bytes.len);
@@ -209,9 +307,10 @@ pub const io = struct {
     }
     pub fn read(value: *Stream, size: u64) ![]const u8 {
         if (size > std.math.maxInt(usize)) return error.InvalidSize;
+        if (size == 0) return retain(u8, "");
         const buffer = try allocator.alloc(u8, @intCast(size));
         defer allocator.free(buffer);
-        const count = try streams.read(value, buffer.ptr, size);
+        const count = try streams.read(value, &buffer[0], size);
         return retain(u8, buffer[0..@intCast(count)]);
     }
     pub fn line(value: *Stream) ![]const u8 {
@@ -238,8 +337,17 @@ pub const buffers = struct {
         acquire();
         defer lock.store(false, .release);
         const allocation = retained.get(@intFromPtr(value.ptr)) orelse return error.UnknownBuffer;
-        if (allocation.bytes.len != value.len * @sizeOf(T) or allocation.alignment != std.mem.Alignment.of(T)) return error.InvalidBuffer;
+        const valid = if (allocation.sequence)
+            allocation.element == @sizeOf(T) and value.len <= allocation.used
+        else
+            allocation.bytes.len == value.len * @sizeOf(T);
+        if (!valid or allocation.alignment != std.mem.Alignment.of(T)) return error.InvalidBuffer;
+        if (allocation.sequence and allocation.references > 1) {
+            retained.getPtr(@intFromPtr(value.ptr)).?.references -= 1;
+            return;
+        }
         _ = retained.remove(@intFromPtr(value.ptr));
+        metricRelease(allocation.bytes.len, allocation.retired);
         allocator.rawFree(allocation.bytes, allocation.alignment, @returnAddress());
     }
     pub fn free(value: []const u8) !void {
@@ -343,11 +451,12 @@ fn convert(comptime T: type, value: anytype) T {
     return value;
 }
 pub fn call(comptime module: []const u8, comptime name: []const u8, comptime Result: type, args: anytype) Result {
-    inline for (.{ "fs", "net", "process", "thread", "time", "text" }) |namespace| {
+    inline for (.{ "fs", "io", "net", "process", "thread", "time", "text" }) |namespace| {
         if (comptime std.mem.eql(u8, module, namespace)) return @import("service.zig").call(module, name, Result, args);
     }
     if (comptime std.mem.eql(u8, module, "sequence")) return sequence(name, Result, args);
-    if (comptime std.mem.eql(u8, module, "hashmap")) return hashmap(name, Result, args);
+    if (comptime std.mem.eql(u8, module, "table")) return table(name, Result, args);
+    if (comptime std.mem.eql(u8, module, "codec")) return codec(name, Result, args);
     const locked = comptime std.mem.eql(u8, module, "list") or std.mem.eql(u8, module, "memory") or std.mem.eql(u8, module, "stream");
     if (locked) managed.enter();
     defer if (locked) managed.leave();
@@ -360,7 +469,22 @@ pub fn call(comptime module: []const u8, comptime name: []const u8, comptime Res
     return convert(Result, @call(.auto, function, converted));
 }
 
-fn hashmap(comptime name: []const u8, comptime Result: type, args: anytype) Result {
+fn codec(comptime name: []const u8, comptime Result: type, args: anytype) Result {
+    const Payload = @typeInfo(Result).error_union.payload;
+    if (comptime std.mem.eql(u8, name, "encode")) {
+        const encoded = try std.json.Stringify.valueAlloc(allocator, args[0], .{});
+        errdefer allocator.free(encoded);
+        return try adopt(u8, encoded);
+    }
+    if (comptime std.mem.eql(u8, name, "decode"))
+        return try std.json.parseFromSliceLeaky(Payload, allocator, args[0], .{
+            .allocate = .alloc_always,
+            .duplicate_field_behavior = .@"error",
+        });
+    @compileError("Unknown codec operation");
+}
+
+fn table(comptime name: []const u8, comptime Result: type, args: anytype) Result {
     acquire();
     defer lock.store(false, .release);
     const Payload = @typeInfo(Result).error_union.payload;
@@ -396,7 +520,7 @@ fn hashmap(comptime name: []const u8, comptime Result: type, args: anytype) Resu
         const pointer: *align(1) const Payload = @ptrCast(entry.value.ptr);
         return pointer.*;
     }
-    @compileError("Unknown hashmap operation");
+    @compileError("Unknown table operation");
 }
 
 fn sequence(comptime name: []const u8, comptime Result: type, args: anytype) Result {
@@ -406,17 +530,18 @@ fn sequence(comptime name: []const u8, comptime Result: type, args: anytype) Res
         const Slice = @typeInfo(Result).error_union.payload;
         const T = @typeInfo(Slice).pointer.child;
         const count: usize = std.math.cast(usize, args[0]) orelse return error.Overflow;
-        const temporary = try allocator.alloc(T, count);
-        defer allocator.free(temporary);
-        @memset(temporary, std.mem.zeroes(T));
-        return retain(T, temporary);
+        const items = try sequenceReserve(T, count, count);
+        @memset(items, std.mem.zeroes(T));
+        return items;
     }
     const T = @typeInfo(@TypeOf(args[0])).pointer.child;
     if (comptime std.mem.eql(u8, name, "compact")) {
         const count: usize = std.math.cast(usize, args[1]) orelse return error.Overflow;
         if (count > args[0].len) return error.Bounds;
         if (count == args[0].len) return args[0];
-        const result = try retain(T, args[0][0..count]);
+        const result = try sequenceReserve(T, count, count);
+        managed.memory.copyExact(std.mem.sliceAsBytes(result), std.mem.sliceAsBytes(args[0][0..count]));
+        metric(&metrics.copied_bytes, count * @sizeOf(T));
         buffers.discard(T, args[0]) catch |err| {
             buffers.discard(T, result) catch {};
             return err;
@@ -424,23 +549,81 @@ fn sequence(comptime name: []const u8, comptime Result: type, args: anytype) Res
         return result;
     }
     if (comptime std.mem.eql(u8, name, "release")) return buffers.discard(T, args[0]);
-    if (comptime std.mem.eql(u8, name, "copy")) return retain(T, args[0]);
+    if (comptime std.mem.eql(u8, name, "copy")) {
+        const result = try sequenceReserve(T, args[0].len, args[0].len);
+        managed.memory.copyExact(std.mem.sliceAsBytes(result), std.mem.sliceAsBytes(args[0]));
+        metric(&metrics.copied_bytes, args[0].len * @sizeOf(T));
+        return result;
+    }
     if (comptime std.mem.eql(u8, name, "append")) {
         const count = std.math.add(usize, args[0].len, 1) catch return error.Overflow;
-        const items = try allocator.alloc(T, count);
-        defer allocator.free(items);
+        metric(&metrics.growths, 1);
+        metric(&metrics.requested, count);
+        var capacity = try sequenceCapacity(count);
+        var branch = false;
+        var retire: ?usize = null;
+        acquire();
+        if (retained.getPtr(@intFromPtr(args[0].ptr))) |allocation| {
+            if (allocation.sequence and allocation.element == @sizeOf(T)) {
+                if (args[0].len > allocation.used) {
+                    lock.store(false, .release);
+                    return error.InvalidBuffer;
+                }
+                if (args[0].len == allocation.used and allocation.used < allocation.capacity) {
+                    if (allocation.references == std.math.maxInt(usize)) {
+                        lock.store(false, .release);
+                        return error.Overflow;
+                    }
+                    const pointer: [*]T = @ptrCast(@alignCast(allocation.bytes.ptr));
+                    pointer[args[0].len] = args[1];
+                    allocation.used = count;
+                    allocation.references += 1;
+                    capacity = allocation.capacity;
+                    lock.store(false, .release);
+                    metricCapacity(capacity);
+                    return pointer[0..count];
+                }
+                branch = args[0].len < allocation.used;
+                if (!branch) capacity = std.math.mul(usize, allocation.capacity, 2) catch {
+                    lock.store(false, .release);
+                    return error.Overflow;
+                };
+                if (!branch and !allocation.retired) retire = @intFromPtr(args[0].ptr);
+            }
+        }
+        lock.store(false, .release);
+        const items = try sequenceReserve(T, capacity, count);
+        if (retire) |key| {
+            acquire();
+            if (retained.getPtr(key)) |previous| {
+                if (!previous.retired) {
+                    previous.retired = true;
+                    metric(&metrics.retained, previous.bytes.len);
+                }
+            }
+            lock.store(false, .release);
+        }
+        const copied = args[0].len * @sizeOf(T);
+        metric(&metrics.slowpaths, 1);
+        metric(&metrics.growth_bytes, copied);
+        metricCapacity(capacity);
+        metric(&metrics.copied_bytes, copied);
+        if (branch) {
+            metric(&metrics.branches, 1);
+            metric(&metrics.branchbytes, copied);
+        }
         managed.memory.copyExact(std.mem.sliceAsBytes(items[0..args[0].len]), std.mem.sliceAsBytes(args[0]));
         items[count - 1] = args[1];
-        return retain(T, items);
+        return items;
     }
     if (comptime std.mem.eql(u8, name, "remove")) {
         if (args[1] >= args[0].len) return error.Bounds;
         const index: usize = @intCast(args[1]);
-        const items = try allocator.alloc(T, args[0].len - 1);
-        defer allocator.free(items);
+        const items = try sequenceReserve(T, args[0].len - 1, args[0].len - 1);
+        metric(&metrics.copied_bytes, (args[0].len - 1) * @sizeOf(T));
         managed.memory.copyExact(std.mem.sliceAsBytes(items[0..index]), std.mem.sliceAsBytes(args[0][0..index]));
         managed.memory.copyExact(std.mem.sliceAsBytes(items[index..]), std.mem.sliceAsBytes(args[0][index + 1 ..]));
-        return retain(T, items);
+        return items;
     }
     @compileError("Unknown sequence operation");
 }
@@ -658,7 +841,7 @@ pub const http = struct {
         return result;
     }
     pub fn close(value: *Client) void {
-        clearHeaders(value);
+        clear(value);
         value.inner.deinit();
         allocator.destroy(value);
     }
@@ -676,7 +859,7 @@ pub const http = struct {
         for (content) |byte| if (byte == '\r' or byte == '\n') return false;
         return true;
     }
-    pub fn addHeader(value: *Client, name: []const u8, content: []const u8) !void {
+    pub fn attach(value: *Client, name: []const u8, content: []const u8) !void {
         if (!validHeader(name, content)) return error.InvalidHeader;
         const stored_name = try cloneBytes(name);
         errdefer allocator.free(stored_name);
@@ -690,7 +873,7 @@ pub const http = struct {
         next[value.headers.len] = .{ .name = stored_name, .value = stored_value };
         value.headers = next;
     }
-    pub fn clearHeaders(value: *Client) void {
+    pub fn clear(value: *Client) void {
         for (value.headers) |entry| {
             allocator.free(entry.name);
             allocator.free(entry.value);
@@ -747,9 +930,13 @@ pub const http = struct {
     pub fn port(value: *Server) u16 {
         return value.socket.address.getPort();
     }
-    pub fn closeServer(value: *Server) void {
+    pub fn stop(value: *Server) void {
         value.deinit(runtimeIo());
         allocator.destroy(value);
+    }
+
+    pub fn shutdown(value: *Server) void {
+        stop(value);
     }
     pub fn accept(value: *Server) !*Peer {
         const result = try allocator.create(Peer);

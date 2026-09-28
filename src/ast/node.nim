@@ -30,6 +30,7 @@ type
   `True`* = ref object of Node
   `False`* = ref object of Node
   Nothing* = ref object of Node
+  Null* = ref object of Node
   Uninitialized* = ref object of Node
   Unreachable* = ref object of Node
   Quantity* = ref object of Node
@@ -41,7 +42,16 @@ type
   Call* = ref object of Node
     callee*: Expression
     args*: seq[Expression]
+    names*: seq[string]
     types*: seq[`Type`]
+    normalized*: bool
+  Values* = ref object of Node
+    items*: seq[Expression]
+  Closure* = ref object of Node
+    params*: seq[Parameter]
+    returnType*: `Type`
+    captures*: seq[Name]
+    body*: Block
   Allocation* = ref object of Node
     size*: Expression
     owner*: Expression
@@ -91,18 +101,26 @@ type
 
   Constant* = ref object of Node
     public*: bool
+    plural*: bool
     evaluated*: bool
     name*: Name
     `type`*: `Type`
     value*: Expression
   Mutable* = ref object of Node
     public*: bool
+    plural*: bool
     name*: Name
     `type`*: `Type`
+    value*: Expression
+  Destructure* = ref object of Node
+    recordType*: `Type`
+    fields*: seq[Name]
+    bindings*: seq[Name]
     value*: Expression
   Function* = ref object of Node
     public*: bool
     name*: Name
+    dispatch*: string
     typeParams*: seq[TypeParam]
     params*: seq[Parameter]
     returnType*: `Type`
@@ -110,6 +128,7 @@ type
     constraint*: Constraint
     constraints*: seq[Constraint]
     attributes*: seq[string]
+    guard*: Expression
     body*: Block
   Alias* = ref object of Node
     public*: bool
@@ -235,6 +254,8 @@ type
   Parameter* = ref object of Node
     name*: Name
     `type`*: `Type`
+    default*: Expression
+    variadic*: bool
   Constraint* = ref object of Node
     subject*: Name
     trait*: Name

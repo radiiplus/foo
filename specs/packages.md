@@ -9,7 +9,13 @@ joined by `::`. For example, src/network/server.iv in myapp has namespace
 paths do not participate in public names. Paths differing only by ASCII case
 are rejected so names remain portable.
 
-Declarations are private unless prefixed with `public`. Public functions, constants, dynamic values and types form the file's interface. Imports are private bindings; importing a file does not re-export it. A public signature can mention only publicly reachable types and capabilities. A file cannot access another file's private declarations.
+Declarations are private unless prefixed with `public`. Public functions,
+constants, dynamic values and types form the file's interface. Imports are
+private bindings unless written as `public use`. A public use re-exports the
+imported module's public declarations, cannot have an alias, and participates
+in normal duplicate-name checks. A public signature can mention only publicly
+reachable types and capabilities. A file cannot access another file's private
+declarations.
 
 ```iv
 -- Arithmetic operations.
@@ -30,6 +36,14 @@ start() {
   give nothing.
 }
 ```
+
+Public choice variants are part of the choice's module interface. For example,
+an aliased import of a public `Step` choice exposes its constructors as
+`alias.item(...)` and `alias.done` as well as the type `alias.Step`. Match
+patterns use the same qualifier, such as `case alias.item(value)`. Generic
+payload variants accept the choice's type arguments. A payload-free generic
+variant is inferred from an expected choice type, or called with explicit type
+arguments and empty parentheses when no expected type is available.
 
 There is no module wrapper or namespace block. The module keyword produces a
 migration diagnostic explaining how to remove the wrapper.

@@ -77,7 +77,7 @@ an object cannot contain itself by value.
 | bool, unit, error | kind only |
 | pointer | element; optional constant and volatile permissions |
 | sequence | element; optional constant permission |
-| optional, fallible | element |
+| optional, failable | element |
 | array, vector | element; positive width |
 | function | parameters array; result; optional ABI |
 | record, packed, union | name; ordered fields; optional parameters, width, fieldAttrs and layout |
@@ -142,12 +142,12 @@ one terminator; terminators cannot occur in its instruction list.
 | --- | --- |
 | add, subtract, multiply, divide, remainder | Typed arithmetic; checked integer operations name a panic successor |
 | compare, not | Comparison relation in op, or Boolean negation |
-| convert | Lossless numeric widening, readonly view or optional/fallible injection |
+| convert | Lossless numeric widening, readonly view or optional/failable injection |
 | construct, extract | Ordered record/choice construction, named error construction and validated field, tag or result projection |
 | index, length | Bounded element projection and element count; address projection is explicit |
 | slot, load, store | Typed mutable storage and memory effects |
 | region | op is open or close; region identifies the arena |
-| allocate | Integer size, region, optional allocator target and fallible byte-sequence result |
+| allocate | Integer size, region, optional allocator target and failable byte-sequence result |
 | call | Direct or indirect typed invocation with an ABI and effect contract |
 | result.value | Error propagation, a trace slot and optional success result |
 | result.catch | Conditional success/fallback selection with a validated fallback block |

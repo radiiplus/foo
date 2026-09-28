@@ -324,12 +324,39 @@
           "patterns": [
             {
               "include": "#generics"
+            },
+            {
+              "include": "#comments"
+            },
+            {
+              "include": "#strings"
+            },
+            {
+              "include": "#characters"
+            },
+            {
+              "include": "#connectives"
+            },
+            {
+              "include": "#types"
+            },
+            {
+              "include": "#keywords"
+            },
+            {
+              "include": "#numbers"
+            },
+            {
+              "include": "#punctuation"
+            },
+            {
+              "include": "#variables"
             }
           ]
         },
         {
           "name": "meta.type.foo",
-          "begin": "\\b(define|type)([ \\t]+)((?!(?:integer|unsigned|decimal|boolean|byte|character|text|array|sequence|nothing|record|choice|union|opaque|vector|function|optional|pointer|address|reference|fallible)\\b)[A-Za-z_][A-Za-z0-9_]*)(?=[ \\t]*(?:\\[|as\\b|is\\b))",
+          "begin": "\\b(define|type)([ \\t]+)((?!(?:integer|unsigned|decimal|boolean|byte|character|text|array|sequence|nothing|record|choice|union|opaque|vector|function|optional|pointer|address|reference|failable)\\b)[A-Za-z_][A-Za-z0-9_]*)(?=[ \\t]*(?:\\[|as\\b|is\\b))",
           "beginCaptures": {
             "1": {
               "name": "storage.type.foo"
@@ -438,7 +465,7 @@
           "name": "support.type.primitive.foo"
         },
         {
-          "match": "\\b(?:optional|pointer|address|reference|fallible)\\b",
+          "match": "\\b(?:optional|pointer|address|reference|failable)\\b",
           "name": "storage.modifier.type.foo"
         },
         {
@@ -458,11 +485,11 @@
           "name": "keyword.control.foo"
         },
         {
-          "match": "\\b(?:is|and|or|not|plus|subtract|multiply|divide|minus|times|divided|by|equals|does|equal|greater|than|less|at|least|most)\\b",
+          "match": "\\b(?:is|are|and|or|not|plus|subtract|multiply|divide|minus|times|divided|by|equals|does|equal|greater|than|less|at|least|most|increase|decrease)\\b",
           "name": "keyword.operator.foo"
         },
         {
-          "match": "\\b(?:module|use|where|define|type|giving|context|derives|as)\\b",
+          "match": "\\b(?:module|use|where|define|type|giving|context|derives|as|default)\\b",
           "name": "keyword.other.foo"
         },
         {
@@ -470,7 +497,7 @@
           "name": "storage.modifier.foo"
         },
         {
-          "match": "\\b(?:true|false|uninitialized|unreachable|newline|anything)\\b",
+          "match": "\\b(?:true|false|null|uninitialized|unreachable|newline|anything)\\b",
           "name": "constant.language.foo"
         }
       ]

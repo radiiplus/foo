@@ -396,7 +396,7 @@
   },
   {
     "line": 81,
-    "text": "fallible",
+    "text": "failable",
     "scope": "storage.modifier.type.foo"
   },
   {
@@ -483,5 +483,10 @@
     "line": 98,
     "text": "skip",
     "scope": "keyword.control.foo"
+  },
+  {
+    "line": 100,
+    "text": "null",
+    "scope": "constant.language.foo"
   }
 ]

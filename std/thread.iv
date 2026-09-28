@@ -2,12 +2,12 @@
 public define Thread as opaque.
 public define Mutex as opaque.
 public define Condition as opaque.
-public use "thread" function spawn(task of type function taking () giving nothing) of type fallible pointer to Thread.
-public use "thread" function wait(task of type pointer to Thread) of type fallible nothing.
-public use "thread" function mutex() of type fallible pointer to Mutex.
-public use "thread" function lock(mutex of type pointer to Mutex) of type fallible nothing.
-public use "thread" function unlock(mutex of type pointer to Mutex) of type fallible nothing.
-public use "thread" function condition() of type fallible pointer to Condition.
-public use "thread" function signal(condition of type pointer to Condition) of type fallible nothing.
-public use "thread" function pause(condition of type pointer to Condition, mutex of type pointer to Mutex) of type fallible nothing.
-public use "thread" function close[T](resource of type pointer to T) of type fallible nothing.
+public use "thread" function spawn(task of type function taking () giving nothing) of type failable pointer to Thread.
+public use "thread" function wait(task of type pointer to Thread) of type failable nothing.
+public use "thread" function mutex() of type failable pointer to Mutex.
+public use "thread" function lock(mutex of type pointer to Mutex) of type failable nothing.
+public use "thread" function unlock(mutex of type pointer to Mutex) of type failable nothing.
+public use "thread" function condition() of type failable pointer to Condition.
+public use "thread" function signal(condition of type pointer to Condition) of type failable nothing.
+public use "thread" function pause(condition of type pointer to Condition, mutex of type pointer to Mutex) of type failable nothing.
+public use "thread" function close[T](resource of type pointer to T) of type failable nothing.

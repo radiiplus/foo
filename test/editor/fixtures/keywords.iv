@@ -78,7 +78,7 @@ optional
 pointer
 address
 reference
-fallible
+failable
 true
 false
 uninitialized
@@ -96,3 +96,5 @@ divide
 define
 stop
 skip
+are
+null

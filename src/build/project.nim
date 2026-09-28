@@ -13,6 +13,8 @@ type
     backend*: string
     target*: string
     cpu*: string
+    mode*: string
+    benchmark*: bool
     progress*: BuildProgress
   Project* = ref object
     root*: string
@@ -43,8 +45,24 @@ proc strings(node: JsonNode; key: string): seq[string] =
 proc boolean(node: JsonNode; key: string): bool =
   node.hasKey(key) and node[key].kind == JBool and node[key].getBool()
 
+proc validEntryName(name: string): bool =
+  if name.len == 0 or not name[0].isAlphaAscii: return false
+  for character in name:
+    if not (character.isAlphaNumeric or character == '-'): return false
+  true
+
+proc validEntryPath(path: string): bool =
+  path.len > 3 and path.toLowerAscii().endsWith(".iv") and
+    not isAbsolute(path) and ".." notin path.replace('\\', '/').split('/')
+
 proc newProject*(root = getCurrentDir(); options = ProjectOptions()): Project =
   Project(root: absolutePath(root), options: options)
+
+proc mode(project: Project; config: BuildConfig): string =
+  result = if project.options.mode.len > 0: project.options.mode
+    elif config.optimize.len > 0: config.optimize else: "dev"
+  if result notin ["dev", "release"]:
+    raise newException(ValueError, "Build mode must be dev or release")
 
 proc manifest*(project: Project): Manifest =
   let file = project.root / "project.json"
@@ -57,6 +75,18 @@ proc manifest*(project: Project): Manifest =
   result.language = field(node, "language", result.language).getStr()
   result.source = field(node, "source", "").getStr()
   result.entry = field(node, "entry", "").getStr()
+  if result.entry.len > 0 and not validEntryPath(result.entry):
+    raise newException(ValueError, "entry must be a project-relative .iv file")
+  result.entries = initTable[string, string]()
+  if node.hasKey("entries") and node["entries"].kind == JObject:
+    for name, entry in node["entries"]:
+      if not validEntryName(name):
+        raise newException(ValueError,
+          "Entry names begin with a letter and use letters, digits, or hyphens")
+      if entry.kind != JString or not validEntryPath(entry.getStr()):
+        raise newException(ValueError,
+          "Entry '" & name & "' must name a project-relative .iv file")
+      result.entries[name] = entry.getStr()
   result.requires = field(node, "requires", "").getStr()
   result.dependencies = initTable[string, string]()
   if node.hasKey("dependencies") and node["dependencies"].kind == JObject:
@@ -79,6 +109,7 @@ proc config*(project: Project): BuildConfig =
     result.substrate = field(build, "substrate", "").getStr()
     result.runtime = field(build, "runtime", "").getStr()
     result.coverage = field(build, "coverage", "").getStr()
+    result.profile = field(build, "profile", "").getStr()
     result.cpu = field(build, "cpu", "").getStr()
     result.sanitize = field(build, "sanitize", "").getStr()
     result.semantic = boolean(build, "semantic")
@@ -131,15 +162,18 @@ proc compiler*(project: Project): Compiler =
   if project.cachedCompiler != nil: return project.cachedCompiler
   let config = project.config()
   let backend = if project.options.backend.len > 0: project.options.backend else: (if config.backend.len > 0: config.backend else: "zig")
-  let mode = if config.optimize.len > 0: config.optimize else: "dev"
+  let mode = project.mode(config)
   let selectedTarget = if project.options.target.len > 0: project.options.target
     elif config.target.len > 0: config.target[0] else: host
   let selectedCpu = if project.options.cpu.len > 0: project.options.cpu else: config.cpu
+  let selectedProfile = if config.profile.len == 0: ""
+    elif isAbsolute(config.profile): config.profile else: project.root / config.profile
   var includes: seq[string]
   for path in config.c.`include`:
     includes.add(if isAbsolute(path): path else: project.root / path)
   project.cachedCompiler = newCompiler(project.root, backend, includes, mode,
-    mode == "release" or config.semantic, triple(selectedTarget), selectedCpu)
+    mode == "release" or config.semantic, triple(selectedTarget), selectedCpu,
+    selectedProfile)
   project.cachedCompiler
 
 proc taskDefinitions(config: BuildConfig): Table[string, buildTasks.Task] =
@@ -163,14 +197,42 @@ proc prepare(project: Project; config: BuildConfig) =
 proc task*(project: Project; selected: seq[string] = @[]): seq[string] =
   buildTasks.tasks(project.root, taskDefinitions(project.config()), selected)
 
+var cachedCompilerIdentity = ""
+
+proc compilerIdentity*(): string =
+  if cachedCompilerIdentity.len == 0:
+    let executable = getAppFilename()
+    cachedCompilerIdentity = if fileExists(executable):
+      sha256Hex(readFile(executable))
+    else:
+      sha256Hex(executable)
+  cachedCompilerIdentity
+
+proc buildIdentity*(projectDigest, compilerDigest, backend, target, entry,
+    mode, native: string; semantic: bool): string =
+  sha256Hex($(%*{
+    "project": projectDigest,
+    "compiler": compilerDigest,
+    "backend": backend,
+    "target": target,
+    "entry": entry,
+    "mode": mode,
+    "semantic": semantic,
+    "native": native
+  }))
+
 proc graph*(project: Project): JsonNode = project.compiler().graph(project.files())
 
-proc entryPath(project: Project; entry = ""): string =
+proc entryPath*(project: Project; entry = ""): string =
   var selected = ""
   if entry.len > 0:
-    selected = if isAbsolute(entry): entry else: absolutePath(project.root / entry)
+    let manifest = project.manifest()
+    if manifest.entries.hasKey(entry):
+      selected = confined(project.root, manifest.entries[entry])
+    else:
+      selected = if isAbsolute(entry): entry else: confined(project.root, entry)
   elif project.manifest().entry.len > 0:
-    selected = absolutePath(project.root / project.manifest().entry)
+    selected = confined(project.root, project.manifest().entry)
   else:
     let sourceRoot = project.manifest().source
     let conventional = if sourceRoot.len > 0:
@@ -185,6 +247,8 @@ proc entryPath(project: Project; entry = ""): string =
   if selected.len == 0:
     raise newException(ValueError,
       "No application entry found; set 'entry' in project.json or add main.iv")
+  if not fileExists(selected):
+    raise newException(ValueError, "Application entry not found: " & selected)
   selected
 
 proc ir*(project: Project; entry = ""): Module =
@@ -193,7 +257,7 @@ proc ir*(project: Project; entry = ""): Module =
 proc check*(project: Project; entry = "") =
   project.prepare(project.config())
   let selected = if entry.len > 0:
-      @[if isAbsolute(entry): entry else: absolutePath(project.root / entry)]
+      @[project.entryPath(entry)]
     else: project.files()
   for file in selected:
     let name = relativePath(file, project.root).replace('\\', '/')
@@ -224,6 +288,8 @@ proc build*(project: Project; entry = ""): Table[string, string] =
         project.config().`type` else: "exe")
   let backend = if project.options.backend.len > 0: project.options.backend else: (if config.backend.len > 0: config.backend else: "zig")
   project.prepare(config)
+  let projectDigest = hashDirectory(project.root)
+  let compilerDigest = compilerIdentity()
   let tool = if backend == "zig": install(pin(project.root)).path else: ""
   var active = initTable[string, bool]()
   proc visit(name: string) =
@@ -254,6 +320,8 @@ proc build*(project: Project; entry = ""): Table[string, string] =
     for dependency in product.needs: objects.add(artifacts[][dependency])
     var includes: seq[string]
     for path in config.c.`include`: includes.add(if isAbsolute(path): path else: project.root / path)
+    let profilePath = if config.profile.len == 0: ""
+      elif isAbsolute(config.profile): config.profile else: project.root / config.profile
     let nativeOptions = Native(name: name, kind: if product.kind.len > 0: product.kind else: "exe", target: target,
       compile: true, compiler: config.compiler, runtime: config.runtime, sources: sourcePaths,
       includePaths: includes, flags: config.c.flags, libs: config.link.libs, frameworks: config.link.frameworks,
@@ -267,10 +335,17 @@ proc build*(project: Project; entry = ""): Table[string, string] =
       native: NativeBinding(substrate: config.native.substrate,
         clobbers: config.native.clobbers), substrate: config.substrate,
       cpu: if project.options.cpu.len > 0: project.options.cpu else: config.cpu,
-      coverage: config.coverage, sanitize: config.sanitize, docs: config.docs,
+      coverage: config.coverage,
+      profile: if profilePath.len > 0 and fileExists(profilePath):
+        sha256Hex(readFile(profilePath)) else: "",
+      sanitize: config.sanitize, docs: config.docs,
+      benchmark: project.options.benchmark,
       threads: target.startsWith("wasm32") and target.contains("threads"))
     let artifactPathExpected = output / artifact(nativeOptions)
-    let fingerprint = sha256Hex(hashDirectory(project.root) & backend & target & $nativeOptions)
+    let mode = project.mode(config)
+    let fingerprint = buildIdentity(projectDigest,
+      compilerDigest, backend, target, selected, mode, $nativeOptions,
+      config.semantic)
     let cachePath = output / "build.json"
     if fileExists(cachePath) and fileExists(artifactPathExpected):
       let cache = parseJson(readFile(cachePath))
@@ -285,14 +360,25 @@ proc build*(project: Project; entry = ""): Table[string, string] =
     var artifactPath, buildError: string
     try:
       let compiled = project.compiler().ir(selected)
+      writeFile(output / "optimization.json", pretty(%*{
+        "genericSpecializations": compiled.optimization.generics,
+        "expressionsEliminated": compiled.optimization.expressions,
+        "functionsMerged": compiled.optimization.functions,
+        "deadInstructionsEliminated": compiled.optimization.dead,
+        "callsInlined": compiled.optimization.inlined,
+        "boundariesEliminated": compiled.optimization.boundaries,
+        "allocationsEliminated": compiled.optimization.allocations,
+        "pipelinesFused": compiled.optimization.pipelines,
+        "continuationsSpecialized": compiled.optimization.continuations,
+        "serializationsSpecialized": compiled.optimization.serializations,
+        "boundsChecksEliminated": compiled.optimization.bounds
+      }) & "\n")
       if backend == "c":
-        let built = cDriver.build(compiled,
-          if config.optimize.len > 0: config.optimize else: "dev", output,
+        let built = cDriver.build(compiled, mode, output,
           nativeOptions, selected, project.options.progress)
         success = built.success; artifactPath = built.artifact; buildError = built.error
       else:
-        let built = zigDriver.build(compiled,
-          if config.optimize.len > 0: config.optimize else: "dev", output,
+        let built = zigDriver.build(compiled, mode, output,
           tool, selected, nativeOptions, project.options.progress)
         success = built.success; artifactPath = built.artifact; buildError = built.error
     except CatchableError:

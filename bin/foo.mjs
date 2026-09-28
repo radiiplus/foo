@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { chmodSync, existsSync, readFileSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { homedir } from "node:os";
+import { arch, homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,6 +11,7 @@ const candidates = [
   process.env.FOO_COMPILER,
   resolve(root, "bin", executable),
   resolve(root, ".artifacts", "native", executable),
+  resolve(root, ".artifacts", "native", `${process.platform}-${arch()}`, executable),
 ].filter(Boolean);
 const compiler = candidates.find(existsSync);
 if (!compiler) {

@@ -1,13 +1,17 @@
 # Chapter 6: Concurrency
 
-FOO provides two concurrency families. `thread` runs function-valued work on OS
-threads. `task` exposes the runtime-selected task executor, integer channels,
-scopes, pools, and asynchronous networking.
+Concurrency means making progress on more than one piece of work during the
+same period. FOO provides two concurrency families. `thread` runs
+function-valued work on OS threads. `task` exposes the runtime-selected task
+executor (the service that schedules work), integer channels (queues used by
+workers to exchange values), scopes, pools, and asynchronous networking (work
+that can continue while a network operation waits).
 
 ## Threads
 
 `thread.spawn` accepts a function taking no arguments and giving `nothing`. It
-returns a fallible thread handle, so both creation and waiting must be handled.
+returns a failable thread handle (a result that may contain an error), so both
+creation and waiting must be handled.
 
 ```foo
 use thread as threads.
@@ -23,14 +27,15 @@ display "Waiting for worker".
 threads.wait(handle) try.
 ```
 
-Threads also provide mutexes and conditions. Lock and unlock the same mutex,
+Threads also provide mutexes (locks that allow one worker into protected code)
+and conditions. Lock and unlock the same mutex,
 and use `after` to guarantee that a successful lock is released.
 
 ```foo
 use thread as threads.
 
-function protectedWork(mutex pointer to threads.Mutex)
-  giving fallible nothing {
+function protect(mutex pointer to threads.Mutex)
+  giving failable nothing {
   threads.lock(mutex) try.
   after { threads.unlock(mutex) fallback nothing. }
 }
@@ -38,10 +43,15 @@ function protectedWork(mutex pointer to threads.Mutex)
 
 ## Tasks
 
-The task substrate records IOCP on Windows, epoll on Linux, and kqueue on
-Darwin/BSD as the target reactor. Scoped work and channels currently use the
-backend's native threads and atomics; network reactor operations remain the
-advanced low-level surface. Its operations use explicit handles and callbacks:
+The hosted C task pool dispatches callbacks (functions run after work becomes
+ready) through IOCP (Windows completion events) on Windows and epoll with
+`eventfd` (Linux readiness and wake-up services) on Linux. Zig, Darwin/BSD, and
+other targets currently select the threaded fallback. Scoped work still uses
+native threads, while pools reuse a bounded worker set (a limited number of
+reusable workers). Socket readiness (whether network work can proceed) and
+suspended language continuations (saved work that will resume later) are not
+yet attached to these event queues. Operations use explicit handles and
+callbacks:
 
 ```foo
 use task.
@@ -59,15 +69,18 @@ work. Channel values are signed 64-bit integers; `task.send` and `task.receive`
 return booleans so the caller can handle a closed or unavailable channel.
 
 Backend selection is a compile-time optimization decision, not a source-level
-fork. A backend must preserve the same scope, ordering, cleanup, and error
-contracts even when it uses different OS primitives. New fast paths should be
+fork (two different versions written by the programmer). A backend must
+preserve the same scope, ordering, cleanup, and error contracts even when it
+uses different OS primitives (basic services supplied by the operating
+system). New fast paths should be
 kept only when benchmarks show a gain on their target and the portable path
 remains the fallback.
 
 ## Atomics
 
-The `atomic` module provides explicit memory ordering. Each operation that can
-fail is handled like any other fallible FOO call.
+The `atomic` module provides explicit memory ordering (rules for when one
+worker may observe another worker's changes). Each operation that can
+fail is handled like any other failable FOO call.
 
 ```foo
 use atomic.

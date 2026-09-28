@@ -13,6 +13,9 @@ proc inspectExpression(node: ast.Expression; diag: Engine) =
   of "call":
     inspectExpression(ast.Call(node).callee, diag)
     for argument in ast.Call(node).args: inspectExpression(argument, diag)
+  of "sequence-value":
+    for item in ast.Values(node).items: inspectExpression(item, diag)
+  of "closure": inspectBlock(ast.Closure(node).body, diag)
   of "unary": inspectExpression(ast.Unary(node).operand, diag)
   of "binary": inspectExpression(ast.Binary(node).left, diag); inspectExpression(ast.Binary(node).right, diag)
   of "group": inspectExpression(ast.Group(node).expr, diag)
@@ -30,7 +33,9 @@ proc inspectStatement(node: ast.Statement; diag: Engine) =
   case node.tag
   of "constant": inspectExpression(ast.Constant(node).value, diag)
   of "mutable": inspectExpression(ast.Mutable(node).value, diag)
-  of "function": inspectBlock(ast.Function(node).body, diag)
+  of "function":
+    inspectExpression(ast.Function(node).guard, diag)
+    inspectBlock(ast.Function(node).body, diag)
   of "give": inspectExpression(ast.Give(node).value, diag)
   of "assignment": inspectExpression(ast.Assignment(node).target, diag); inspectExpression(ast.Assignment(node).value, diag)
   of "when":

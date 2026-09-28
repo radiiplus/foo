@@ -7,7 +7,10 @@ exports.run = async function run() {
   const report = { version: vscode.version, checks: [] };
   try {
     const theme = vscode.workspace.getConfiguration('workbench').get('colorTheme');
-    assert(vscode.extensions.getExtension('foo.foo'), 'FOO extension not registered');
+    const extension = vscode.extensions.getExtension('radiiplus.foo-iv');
+    assert(extension, 'FOO extension not registered');
+    await extension.activate();
+    assert(extension.isActive, 'FOO extension must activate for live language support');
     const document = await vscode.workspace.openTextDocument(path.resolve(__dirname, 'cases/pointers.iv'));
     assert.equal(document.languageId, 'foo', '.iv must select FOO without file associations');
     assert.equal(vscode.workspace.getConfiguration('editor', document).get('bracketPairColorization.enabled'), true);
@@ -65,10 +68,13 @@ exports.run = async function run() {
     await vscode.commands.executeCommand('revealInExplorer', document.uri);
     await vscode.window.showTextDocument(document);
     const commands = await vscode.commands.getCommands(true);
+    assert(commands.includes('foo.restartLanguageServer'));
+    assert(commands.includes('foo.startWatch'));
+    report.checks.push('language server and watch commands');
     if (commands.includes('workbench.action.closeAuxiliaryBar')) await vscode.commands.executeCommand('workbench.action.closeAuxiliaryBar');
     display.selection = new vscode.Selection(0, 0, 0, 0);
     assert.equal(vscode.workspace.getConfiguration('workbench').get('colorTheme'), theme, 'FOO must preserve the selected theme');
-    assert(!vscode.extensions.getExtension('foo.foo').packageJSON.contributes.themes, 'FOO must not install a theme');
+    assert(!vscode.extensions.getExtension('radiiplus.foo-iv').packageJSON.contributes.themes, 'FOO must not install a theme');
     assert.deepEqual(vscode.workspace.getConfiguration('workbench').get('colorCustomizations'), {}, 'FOO must not override interface colors');
     report.checks.push('selected theme and interface colors preserved');
     report.success = true;

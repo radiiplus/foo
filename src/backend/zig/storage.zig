@@ -81,6 +81,7 @@ pub const memory = struct {
     }
     pub fn clear(buffer: []u8) void { @memset(buffer, 0); }
     pub fn compare(left: []const u8, right: []const u8) i64 { return switch (std.mem.order(u8, left, right)) { .lt => -1, .eq => 0, .gt => 1 }; }
+    pub fn identical(left: *anyopaque, right: *anyopaque) bool { return left == right; }
     pub fn system() *Allocator {
         return &global;
     }

@@ -327,11 +327,11 @@ proc projectDependencies(project: JsonNode): JsonNode =
 
 proc bundledSource(root: string): JsonNode =
   var paths = @[root / "project.json"]
-  for path in walkDirRec(root):
-    if not fileExists(path) or not path.endsWith(".iv"): continue
-    let relative = relativePath(path, root).replace('\\', '/')
-    if relative.split('/').anyIt(it in [".git", ".foo", "node_modules", ".artifacts"]): continue
-    paths.add(path)
+  let sourceRoot = root / "src"
+  if dirExists(sourceRoot):
+    for path in walkDirRec(sourceRoot):
+      if not fileExists(path) or not path.endsWith(".iv"): continue
+      paths.add(path)
   paths = paths.deduplicate()
   paths.sort()
   var files = newJArray()

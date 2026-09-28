@@ -12,7 +12,7 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | `foo init [directory\|.]` | Scaffolds a publishable package. |
 | `foo publish` | Validates and publishes the current committed package. |
 | `foo add <package[@version]> [url\|path]` | Adds a registry, URL, Git, or local dependency. |
-| `foo install` | Resolves the manifest, fetches exact commits, and writes `foo.lock`. |
+| `foo install` | Resolves the manifest (project configuration), fetches exact commits, and writes `foo.lock`. |
 | `foo search <query>` | Searches the public Git registry index. |
 | `foo info <package[@version]>` | Shows a canonical package release. |
 | `foo new <name>` | Creates a brand new project folder. |
@@ -21,6 +21,7 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | `foo build` | Compiles your code into a final, optimized executable. |
 | `foo run` | Builds and immediately runs your app. |
 | `foo test` | Finds and runs all your test blocks. |
+| `foo benchmark [name\|file.iv]` | Builds and repeatedly measures programs under `benchmark/`. |
 | `foo fmt` | Automatically formats your code to look perfect. |
 | `foo watch` | Re-checks your code instantly every time you hit save. |
 | `foo doctor` | Reports installed and missing toolchain components. |
@@ -30,6 +31,29 @@ Long-running commands share the FOO operation view. Add `--explain` to `build`,
 `run`, `check`, `install`, `update`, `remove`, `publish`, or `toolchain` to show
 diagnostic details that are hidden by default. Use `--json` with compiler
 commands when another program needs structured progress events.
+
+### Diagnostic controls
+
+| Option or environment | Effect |
+| :--- | :--- |
+| `--explain` / `--verbose` | Adds stable codes, related locations, and technical context. |
+| `--json` | Emits structured output without ANSI color or human progress. |
+| `NO_COLOR=1` | Disables terminal colors. |
+| `TERM=dumb` | Selects plain terminal output. |
+
+Equivalent human-facing errors are shown once with all affected line numbers.
+JSON and LSP output retain every individual source span.
+
+### Entries and benchmarks
+
+| Command | Selection |
+| :--- | :--- |
+| `foo run` | The `entry` path in `project.json`. |
+| `foo run worker` | The `worker` path in the `entries` object. |
+| `foo benchmark` | Every `.iv` file below `benchmark/`. |
+| `foo benchmark parser` | Benchmark names containing `parser`. |
+| `foo benchmark benchmark/parser.iv` | Only the exact benchmark file. |
+| `foo benchmark --warmup 3 --iterations 25` | Three untimed runs, then 25 measured runs. |
 
 ---
 
@@ -84,8 +108,8 @@ commands when another program needs structured progress events.
 
 | Keyword | Meaning |
 | :--- | :--- |
-| `fallible` | Marks a function as "can fail". |
-| `try` | Follows a fallible value and unwraps it, or stops the function if it fails. |
+| `failable` | Marks a function as "can fail". |
+| `try` | Follows a failable value and unwraps it, or stops the function if it fails. |
 | `fallback` | Provides an alternative value if an operation fails. |
 | `Error` | The type used to represent failures. |
 
@@ -94,8 +118,8 @@ commands when another program needs structured progress events.
 ## 6. Quantities
 
 FOO v1 uses ordinary numeric expressions for quantities. Library APIs document
-their base units; give converted values names such as `twoSeconds` or
-`fiveMegabytes` at the call site.
+their base units; use a nearby type or module to keep a one-word value's unit
+clear at the call site.
 
 ---
 
@@ -107,17 +131,21 @@ their base units; give converted values names such as `twoSeconds` or
 | `decimal` | Numbers with fractions (e.g., `3.14`). |
 | `text` | Strings of characters (e.g., `"hello"`). |
 | `boolean` | True or false. |
-| `sequence` | A list of values (like an array). |
+| `sequence` | A bounded typed view of contiguous values. |
 | `record` | A struct grouping related fields. |
-| `choice` | A tagged union (like an enum). |
+| `choice` | A tagged union (one value selected from a fixed set of named forms). |
 | `pointer to` | A memory address pointing to a value. |
-| `optional` | A value that might be missing (`nothing`). |
-| `fallible` | A value that might be an error. |
+| `optional` | A value that might be missing (`null`). |
+| `failable` | A value that might be an error. |
 
 ---
 
 ## Summary
 
 Keep this page bookmarked! Whether you are writing your first "Hello World" or optimizing a high-performance server, this cheat sheet will help you find the right FOO word in seconds.
+
+For contracts that are easy to assume incorrectly, see
+[Feature Status](status.md). For tests and error output, see
+[Testing](testing.md) and [Diagnostics](diagnostics.md).
 
 In the next chapter, we will look at **Advanced** features, where we will explore compile-time execution, custom allocators, and hardware-level programming!

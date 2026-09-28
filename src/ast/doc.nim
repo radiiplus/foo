@@ -55,6 +55,11 @@ proc publicItems*(program: Program): seq[PublicItem] =
         item = PublicItem(kind: "value", name: value.name.text,
           declaration: "public dynamic " & value.name.text &
             (if value.`type` != nil: " of type " & print(value.`type`) else: "") & ".")
+      of "use":
+        let value = Use(statement)
+        if not value.public: continue
+        item = PublicItem(kind: "module", name: value.name.text,
+          declaration: print(value))
       else: continue
       item.start = statement.span.start
       result.add(item)

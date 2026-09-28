@@ -2,7 +2,12 @@
 
 In many high-performance languages, managing memory (RAM) is a manual, error-prone nightmare. You have to remember to free every single byte you allocate, or your app will crash. 
 
-FOO takes a completely different approach. It gives you the speed of manual memory management with the safety of automatic garbage collection, using two superpowers: **Regions** and **Sealing**.
+FOO uses scoped regions (groups of memory released together), explicit
+allocator values (objects that reserve and release memory), and compile-time
+lifetime checks (checks of how long data may safely be used). It is not a
+tracing garbage collector (a runtime that searches for unused memory):
+ownership (responsibility for a resource) and cleanup remain
+visible where a program asks for storage or acquires a resource.
 
 Let’s look at how FOO stores your data.
 
@@ -15,7 +20,10 @@ A **Record** is FOO’s version of a `struct` or `class`. It groups related data
 FOO gives you three layout options depending on your needs:
 
 ### The Default `record` (Optimized for Speed)
-By default, FOO aligns your data to match your CPU's natural preferences (using the `opt` engine we discussed earlier). This makes reading and writing fields lightning-fast.
+By default, FOO gives fields the target's natural alignment (the memory
+positions preferred by the processor). Field order remains
+the order written in source; the compiler does not silently rearrange a public
+record based on access frequency.
 ```foo
 public define User as record {
   id of type unsigned 64.
@@ -25,9 +33,11 @@ public define User as record {
 ```
 
 ### The `packed` Record (Optimized for Space)
-If you are talking to hardware or sending data over a network, you need every bit to be exactly where you expect it. A `packed` record strips out all the empty alignment space.
+If you are talking to hardware or sending data over a network, you need every
+bit to be exactly where you expect it. A `packed` record strips out padding
+(unused bytes inserted to align fields) between its fields.
 ```foo
-public define NetworkHeader as packed record {
+public define Header as packed record {
   version of type integer 4.
   flags of type integer 4.
   length of type integer 16.
@@ -53,7 +63,7 @@ In languages like C or C++, if you allocate 100 objects, you have to manually fr
 FOO encourages **Region-Based Memory Management** (also known as Arenas). Think of a Region as a dedicated workbench. You build everything on that bench, and when you are done, you just sweep the entire bench clean in one motion.
 
 ```foo
-function processRequest() giving fallible nothing {
+function process() giving failable nothing {
   -- 1. Create a temporary workspace (Region)
   constant arena is memory.arena() try.
   
@@ -70,9 +80,10 @@ function processRequest() giving fallible nothing {
 }
 ```
 
-**Why this is awesome:** 
-1. **Speed:** Freeing one giant Region is thousands of times faster than freeing 1,000 individual objects.
-2. **Safety:** It is mathematically impossible to leak memory because the Region cleanup is guaranteed by the `after` block.
+Closing a region reclaims its allocations (reserved pieces of memory) together. `after` makes that cleanup
+run for normal returns, propagated failures, `stop`, and `skip`. A panic or
+forced process termination does not guarantee cleanup, and foreign code can
+still leak resources when its declared contract is wrong.
 
 ---
 
@@ -80,7 +91,10 @@ function processRequest() giving fallible nothing {
 
 You might be wondering: *"What if I try to use the buffer after I close the arena?"*
 
-This is where FOO’s **Sealing** superpower kicks in. As the compiler builds your program, it creates a mathematical dependency map of your memory. It tracks exactly when memory is created, used, and destroyed.
+This is where FOO's **Sealing** (checking that memory operations follow their
+required order) kicks in. As the compiler builds your program, it creates a
+dependency map of your memory. It tracks exactly when memory is created, used,
+and destroyed.
 
 If you try to access data after it has been sealed (closed), FOO will stop the build with a clear error:
 ```text
@@ -90,22 +104,81 @@ main.iv:15:10
   Cannot use 'buffer' after its owning region has been closed.
 ```
 
-This means FOO prevents **Use-After-Free** bugs (one of the most dangerous security vulnerabilities in software) *before your code even runs*.
+Safe FOO rejects a view that is provably used after its owner closes or escapes
+to a longer lifetime (period during which data remains valid). Raw native code remains responsible for honoring the
+contract it declares.
 
 ---
 
-## 4. Smart Optimization (`opt`)
+## 4. Ownership, Borrowing, and Movement
 
-Because FOO knows exactly how your data is laid out (thanks to `record` and `packed`), its `opt` (optimization) engine can do incredible things for your specific hardware.
+Every storage-backed value has an owner (the value responsible for keeping and
+releasing the storage). A sequence, pointer, or resource view may borrow (use
+without taking ownership of) that storage only while the owner remains alive. Returning a borrowed
+value requires an ownership relationship that the caller can prove. Passing a
+value to an operation that may retain it requires an explicit longer-lived
+owner.
 
-*   **Vectorization:** If you have an array of numbers, FOO will automatically align them so your CPU can process 4, 8, or 16 numbers at the same time using AVX or NEON instructions.
-*   **Cache Friendliness:** FOO arranges your records so that the data you use most often sits close together in memory, making your CPU's cache work much more efficiently.
+FOO v1 tracks these relationships through types, scopes, and library contracts;
+there is no `borrow`, `move`, or source lifetime-annotation syntax. Assignment
+of scalar values copies the value. Collection operations document whether they
+return a view, shallow copy (a copy that still refers to the same inner data),
+or separately owned allocation. A shallow copy of
+a pointer or nested collection does not extend the underlying lifetime.
+
+FOO v1 also has no user-defined `Copy` or `Drop` trait, reference-counted smart
+pointer, or weak reference. Resource cleanup is expressed with `after`, and
+custom ownership is expressed with an `Allocator` (an object that reserves and
+releases memory).
+
+---
+
+## 5. Stack, Scope, and Heap Storage
+
+Stack storage (short-lived memory tied to a function call) belongs to the
+current function call; heap storage (memory with an explicitly managed
+lifetime) can remain
+after that call, while scope describes the part of the program using it.
+
+Plain local scalars and fixed records can use ordinary local storage when they
+do not escape. `allocate count` uses the current scope arena and returns a
+zero-filled `failable sequence of byte`. `allocate count using owner` uses an
+explicit allocator. The compiler may change physical placement when observable
+ownership, layout, and lifetime behavior stays the same.
+
+Storage is never silently promoted to a longer-lived arena. Explicit allocators
+provide allocate, resize, release, and close contracts.
+
+Alignment control, address arithmetic, and lifetime assertions require an
+`unsafe` or native block at the appropriate capability level. Ordinary pointers
+are non-null and provenance-aware (the compiler tracks where an address came
+from); nullability is written as
+`optional pointer to T`.
+
+---
+
+## 6. Optimized Storage Operations
+
+Runtime copy, clearing, allocation growth, hashing, text splitting, and
+collection transforms use backend-specific implementations behind one portable
+contract. Release builds may select AVX2, AArch64, Zig, or portable C paths for
+a compatible target. This does not change record layout or weaken bounds and
+overlap checks.
+
+Copy selection also considers size and overlap. AVX2 serves the measured medium
+range, `rep movsb` is restricted to non-overlapping 1 KiB through 8 KiB machine
+copies, and other C transfers retain `memmove`. Zig copies forward or backward
+in target-sized blocks. Zero-length and identical-address transfers do no work.
+See [Optimization Under the Hood](tuning.md) for the exact path table and
+benchmark rules.
 
 ---
 
 ## Summary: The FOO Memory Philosophy
 
-FOO believes that you shouldn't have to choose between safety and performance. 
-By using **Regions** for bulk cleanup and **Sealing** for compile-time safety, FOO allows you to write high-performance systems code without ever worrying about memory leaks or segmentation faults.
+FOO combines bulk cleanup with checked lifetimes and explicit low-level escape
+hatches. Safe code prevents the ownership errors it can prove; native code,
+panic paths, and external resources still require deliberate contracts and
+testing.
 
 In the next chapter, we will look at **Systems**, where we will learn how to talk to files, processes, and the operating system itself!

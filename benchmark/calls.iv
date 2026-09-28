@@ -1,0 +1,20 @@
+-- Measures a preserved private function-call boundary.
+use testing as check.
+use system as machine.
+
+#[noinline]
+function next(value unsigned 64) giving unsigned 64 {
+  give value plus 1.
+}
+
+dynamic index of type unsigned 64 is 0.
+dynamic checksum of type unsigned 64 is 0.
+dynamic limit of type unsigned 64 is 10_000_000.
+when machine.cores() try greater than 0 { increase limit by 1. }
+
+while index less than limit {
+  set checksum to checksum plus next(index).
+  increase index by 1.
+}
+
+check.positive(checksum).

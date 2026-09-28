@@ -1,12 +1,12 @@
 -- Opens files, transfers their contents, creates directories, and joins paths.
 use io as streams.
-public use "fs" function open(path text, mode text) giving fallible pointer to streams.Stream.
-public use "fs" function read(path text) giving fallible text.
-public use "fs" function write(path text, content text) giving fallible nothing.
-public use "fs" function directory(path text) giving fallible nothing.
-public use "fs" function join(left text, right text) giving fallible text.
+public use "fs" function open(path text, mode text) giving failable pointer to streams.Stream.
+public use "fs" function read(path text) giving failable text.
+public use "fs" function write(path text, content text) giving failable nothing.
+public use "fs" function directory(path text) giving failable nothing.
+public use "fs" function join(left text, right text) giving failable text.
 -- Advanced stream controls. Offsets are byte offsets; origin is start, current, or end.
-public use "fs" function flush(stream pointer to streams.Stream) giving fallible nothing.
-public use "fs" function seek(stream pointer to streams.Stream, offset integer 64, origin text) giving fallible nothing.
-public use "fs" function position(stream pointer to streams.Stream) giving fallible unsigned 64.
-public use "fs" function size(stream pointer to streams.Stream) giving fallible unsigned 64.
+public use "fs" function flush(stream pointer to streams.Stream) giving failable nothing.
+public use "fs" function seek(stream pointer to streams.Stream, offset integer 64, origin text) giving failable nothing.
+public use "fs" function position(stream pointer to streams.Stream) giving failable unsigned 64.
+public use "fs" function size(stream pointer to streams.Stream) giving failable unsigned 64.

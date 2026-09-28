@@ -1,4 +1,4 @@
-import std/[algorithm, os, sequtils, strutils]
+import std/[algorithm, os, strutils]
 
 const roundConstants: array[64, uint32] = [
   0x428a2f98'u32, 0x71374491'u32, 0xb5c0fbcf'u32, 0xe9b5dba5'u32,
@@ -81,12 +81,12 @@ proc hashFile*(path: string): string = hashBuffer(readFile(path))
 
 proc hashDirectory*(directory: string): string =
   var files: seq[string]
-  for path in walkDirRec(directory):
-    if not fileExists(path): continue
-    let relative = relativePath(path, directory).replace('\\', '/')
-    let parts = relative.split('/')
-    if parts.anyIt(it in [".git", "node_modules", ".artifacts"]): continue
-    files.add(path)
+  proc visit(path: string) =
+    for kind, child in walkDir(path):
+      if child.lastPathPart in [".git", "node_modules", ".artifacts"]: continue
+      if kind == pcDir: visit(child)
+      elif kind == pcFile: files.add(child)
+  visit(directory)
   files.sort()
   var content: seq[byte]
   for path in files:

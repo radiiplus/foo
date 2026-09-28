@@ -13,7 +13,7 @@ Every function and lexical block has a scope arena. The current scope owns
 allocations made without an explicit allocator:
 
 ```iv
-function sample() giving fallible nothing {
+function sample() giving failable nothing {
   constant data is allocate 1024 try.
   after { inspect(data). }
   give nothing.
@@ -21,12 +21,12 @@ function sample() giving fallible nothing {
 ```
 
 The allocation operand is a byte count. Its result is
-`fallible sequence of byte`, zero-filled on success. A negative count is a
+`failable sequence of byte`, zero-filled on success. A negative count is a
 type error when constant and a recoverable size error otherwise. An allocation
 of zero bytes succeeds with an empty sequence and provides no dereferenceable
 element. Failure leaves existing allocations unchanged.
 
-`constant data is allocate 1024.` binds the fallible result itself; it does not
+`constant data is allocate 1024.` binds the failable result itself; it does not
 silently handle failure. Use try or fallback before accessing its successful value.
 A computed count uses parentheses: `allocate (count multiply 8)`.
 
@@ -42,7 +42,7 @@ System capability permits explicit Allocator values:
 ```iv
 use memory.
 
-function load(owner Allocator) giving fallible sequence of byte {
+function load(owner Allocator) giving failable sequence of byte {
   give allocate 1024 using owner try.
 }
 ```

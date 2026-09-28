@@ -8,7 +8,7 @@ proc evaluate*(expression: ast.Expression; bindings: Table[string, ast.Expressio
     active: HashSet[string]): ast.Expression =
   if expression == nil: raise newException(ValueError, "Compile-time evaluation cannot execute an empty expression")
   if expression.tag in ["integer", "decimal", "text", "character", "true",
-      "false", "nothing", "newline"]:
+      "false", "nothing", "null", "newline"]:
     return expression
   if expression.tag == "group":
     return evaluate(ast.Group(expression).expr, bindings, active)

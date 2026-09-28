@@ -11,7 +11,8 @@ These documents define FOO v1 conformance. A specification requirement is not a 
 | Tokens, productions and binding rules | [Grammar](grammar.md) |
 | Canonical types, conversions and constraints | [Types](types.md) |
 | Scope arenas, allocators and raw access | [Memory](memory.md) |
-| Fallible values, propagation and cleanup | [Errors](errors.md) |
+| Persistent sequence representation and ownership | [Sequences](sequences.md) |
+| Failable values, propagation and cleanup | [Errors](errors.md) |
 | File namespaces, visibility and dependencies | [Packages](packages.md) |
 | Tasks, synchronization and lifetimes | [Concurrency](concurrency.md) |
 | Portable library boundaries | [Library](library.md) |
@@ -27,6 +28,7 @@ These documents define FOO v1 conformance. A specification requirement is not a 
 | CPU selection, equivalence and performance | [Optimization](optimization.md) |
 | Human and machine diagnostics | [Diagnostics](diagnostics.md) |
 | Tests, formatting and editor behavior | [Testing](testing.md) |
+| Application benchmark discovery and measurement | [Benchmarking](benchmarking.md) |
 | Removed duplicate spellings | [Consolidation](consolidation.md) |
 
 Each format carries version 1 independently of an application's release version. Filenames describe their subject without embedding a version or development milestone.

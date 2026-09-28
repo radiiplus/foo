@@ -51,6 +51,11 @@ if (-not $SkipWindows) {
 
   & $isccCandidates[0] "/DAppVersion=$Version" "/DSourceDir=$windowsSource" "/DOutputDir=$ReleaseDirectory" "/DProjectRoot=$projectRoot" (Join-Path $projectRoot 'installers\windows\foo.iss')
   if ($LASTEXITCODE -ne 0) { throw 'The Windows installer build failed.' }
+
+  $windowsArchive = Join-Path $ReleaseDirectory 'foo-windows-x64.zip'
+  if (Test-Path $windowsArchive) { Remove-Item -LiteralPath $windowsArchive -Force }
+  Compress-Archive -LiteralPath $windowsSource -DestinationPath $windowsArchive -CompressionLevel Optimal
+  Write-Host "Created $windowsArchive"
 }
 
 if (-not $SkipLinux) {
@@ -65,7 +70,24 @@ if (-not $SkipLinux) {
     $linuxInput = ConvertTo-WslPath $linuxSource
     & wsl -d Ubuntu-22.04 -- sh $linuxScript $Version $linuxInput $linuxOutput $target.DebianArchitecture
     if ($LASTEXITCODE -ne 0) { throw "The $($target.Name) installer build failed." }
+
+    $linuxArchive = Join-Path $ReleaseDirectory "foo-$($target.Name).tar.gz"
+    $linuxArchivePath = ConvertTo-WslPath $linuxArchive
+    $linuxParent = ConvertTo-WslPath (Split-Path -Parent $linuxSource)
+    $linuxName = Split-Path -Leaf $linuxSource
+    & wsl -d Ubuntu-22.04 -- tar -C $linuxParent -czf $linuxArchivePath $linuxName
+    if ($LASTEXITCODE -ne 0) { throw "The $($target.Name) archive build failed." }
+    Write-Host "Created $linuxArchive"
   }
+}
+
+Push-Location $projectRoot
+try {
+  & npm pack --pack-destination $ReleaseDirectory
+  if ($LASTEXITCODE -ne 0) { throw 'The npm release archive build failed.' }
+}
+finally {
+  Pop-Location
 }
 
 $installers = Get-ChildItem $ReleaseDirectory -File | Where-Object { $_.Name -match '\.exe$|\.deb$' }
@@ -73,7 +95,7 @@ if (-not $installers) { throw 'No installer artifacts were produced.' }
 $installers | ForEach-Object { Write-Host "Created $($_.FullName)" }
 
 $releaseFiles = Get-ChildItem $ReleaseDirectory -File | Where-Object {
-  $_.Name -match '\.(deb|exe|tgz|vsix|zip)$' -or $_.Name -match '\.tar\.gz$'
+  $_.Name -match '\.(asc|deb|exe|tgz|vsix|zip)$' -or $_.Name -match '\.tar\.gz$'
 } | Sort-Object Name
 $checksumLines = $releaseFiles | ForEach-Object {
   $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()

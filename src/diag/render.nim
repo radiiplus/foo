@@ -1,8 +1,11 @@
 import std/strutils
 import std/json
+import std/algorithm
+import std/tables
 import ./engine
 import ./code
 import ./span
+import ./palette
 
 type
   RenderOptions* = object
@@ -60,6 +63,10 @@ proc codeDescription(code: Code): string =
 
 proc codeName(code: Code): string = "FOO" & align($ord(code), 4, '0')
 
+proc paint(value, role: string; options: RenderOptions): string =
+  if options.color: shade(role) & value & "\e[0m"
+  else: value
+
 proc expandTabs(value: string; width = 4): string =
   for character in value:
     if character == '\t': result.add(' '.repeat(width - (result.len mod width)))
@@ -92,43 +99,89 @@ proc location(message: Message; options: RenderOptions): tuple[file: string, lin
 proc renderShort(message: Message; source: string; options: RenderOptions): string =
   let position = location(message, options)
   let lines = source.replace("\r\n", "\n").replace("\r", "\n").split('\n')
-  var output = @[position.file & ":" & $position.line & ":" & $position.column, ""]
+  var output = @[paint(position.file & ":" & $position.line & ":" & $position.column, "info", options), ""]
   if source.len > 0 and position.line - 1 < lines.len:
     let sourceLine = lines[position.line - 1]
     output.add("  " & expandTabs(sourceLine))
-    output.add("  " & sourceMarker(sourceLine, position.column, message.span))
+    output.add("  " & paint(sourceMarker(sourceLine, position.column, message.span), "error", options))
     output.add("")
-  for part in friendlyText(message).split('\n'): output.add("  " & part)
+  for part in friendlyText(message).split('\n'): output.add("  " & paint(part, "error", options))
   for related in message.relatedSpans:
     output.add("")
-    output.add("  " & related.text & " (" & (if related.file.len > 0: related.file else: position.file) & ":" & $related.span.line & ":" & $related.span.col & ")")
+    output.add("  " & paint("Related:", "info", options) & " " & related.text & " (" & (if related.file.len > 0: related.file else: position.file) & ":" & $related.span.line & ":" & $related.span.col & ")")
   var fix = ""
   for item in message.notes:
     if item.fix.len > 0: fix = item.fix; break
   if fix.len == 0: fix = message.suggestion
   if fix.len == 0 and message.fixes.len > 0: fix = message.fixes[0].title
-  if fix.len > 0: output.add(""); output.add("  Try: " & fix)
-  if options.codes: output.add(""); output.add("  Code: " & codeName(message.code))
+  if fix.len > 0: output.add(""); output.add("  " & paint("Try:", "info", options) & " " & fix)
+  if options.codes: output.add(""); output.add("  " & paint("Code:", "muted", options) & " " & codeName(message.code))
   output.join("\n")
 
 proc renderVerbose(message: Message; source: string; options: RenderOptions): string =
   let position = location(message, options)
-  var output = @["error[" & codeName(message.code) & "]: " & message.text,
-    "  --> " & position.file & ":" & $position.line & ":" & $position.column]
+  var output = @[paint("error[" & codeName(message.code) & "]", "error", options) & ": " & message.text,
+    "  " & paint("-->", "info", options) & " " & position.file & ":" & $position.line & ":" & $position.column]
   let lines = source.replace("\r\n", "\n").replace("\r", "\n").split('\n')
   if source.len > 0 and position.line - 1 < lines.len:
     let sourceLine = lines[position.line - 1]
     output.add("  |")
     output.add("  " & $position.line & " | " & expandTabs(sourceLine))
-    output.add("    | " & sourceMarker(sourceLine, position.column, message.span) & " " & codeDescription(message.code))
+    output.add("    | " & paint(sourceMarker(sourceLine, position.column, message.span), "error", options) & " " & codeDescription(message.code))
     output.add("  |")
-  if message.context.len > 0: output.add("  = context: " & message.context)
+  if message.context.len > 0: output.add("  = " & paint("context:", "muted", options) & " " & message.context)
   for item in message.notes:
-    output.add("  = note: " & item.text)
-    if item.fix.len > 0: output.add("  = help: " & item.fix)
+    output.add("  = " & paint("note:", "muted", options) & " " & item.text)
+    if item.fix.len > 0: output.add("  = " & paint("help:", "info", options) & " " & item.fix)
   for related in message.relatedSpans:
-    output.add("  = related: " & related.text & " (" & (if related.file.len > 0: related.file else: position.file) & ":" & $max(1, related.span.line) & ":" & $max(1, related.span.col) & ")")
-  if message.suggestion.len > 0: output.add("  = help: " & message.suggestion)
+    output.add("  = " & paint("related:", "info", options) & " " & related.text & " (" & (if related.file.len > 0: related.file else: position.file) & ":" & $max(1, related.span.line) & ":" & $max(1, related.span.col) & ")")
+  if message.suggestion.len > 0: output.add("  = " & paint("help:", "info", options) & " " & message.suggestion)
+  output.join("\n")
+
+proc sameNotes(left, right: Message): bool =
+  if left.notes.len != right.notes.len: return false
+  for index in 0 ..< left.notes.len:
+    if left.notes[index].text != right.notes[index].text or
+        left.notes[index].fix != right.notes[index].fix:
+      return false
+  true
+
+proc sameFixes(left, right: Message): bool =
+  if left.fixes.len != right.fixes.len: return false
+  for index in 0 ..< left.fixes.len:
+    if left.fixes[index].title != right.fixes[index].title or
+        left.fixes[index].text != right.fixes[index].text:
+      return false
+  true
+
+proc sameDiagnostic(left, right: Message): bool =
+  ## Related spans carry relationships that should remain individually visible.
+  if left.relatedSpans.len > 0 or right.relatedSpans.len > 0: return false
+  left.code == right.code and
+    left.text == right.text and
+    left.suggestion == right.suggestion and
+    left.context == right.context and
+    sameNotes(left, right) and
+    sameFixes(left, right)
+
+proc affectedLocations(messages: seq[Message]; options: RenderOptions): string =
+  var byFile = initOrderedTable[string, seq[int]]()
+  for message in messages:
+    let position = location(message, options)
+    if not byFile.hasKey(position.file): byFile[position.file] = @[]
+    if position.line notin byFile[position.file]: byFile[position.file].add(position.line)
+  for file in byFile.keys:
+    byFile[file].sort()
+
+  if byFile.len == 1:
+    for _, lines in byFile:
+      let label = if lines.len == 1: "Affected line:" else: "Affected lines:"
+      return paint(label, "info", options) & " " & lines.join(", ")
+
+  var output = @[paint("Affected locations:", "info", options)]
+  for file, lines in byFile:
+    let label = if lines.len == 1: "line " else: "lines "
+    output.add("  " & file & ": " & label & lines.join(", "))
   output.join("\n")
 
 proc positionJson(position: Position): JsonNode = %* {"line": position.line, "character": position.character}
@@ -167,6 +220,19 @@ proc renderAll*(messages: seq[Message]; options = RenderOptions(color: true)): s
     var diagnostics = newJArray()
     for message in messages: diagnostics.add(jsonMessage(message, message.source, options))
     return pretty(%* {"format": "foo.diagnostics", "version": 1, "diagnostics": diagnostics})
+  var groups: seq[seq[Message]]
+  for message in messages:
+    var matched = false
+    for group in groups.mitems:
+      if sameDiagnostic(group[0], message):
+        group.add(message)
+        matched = true
+        break
+    if not matched: groups.add(@[message])
+
   var rendered: seq[string]
-  for message in messages: rendered.add(render(message, message.source, options))
+  for group in groups:
+    var value = render(group[0], group[0].source, options)
+    if group.len > 1: value.add("\n\n" & affectedLocations(group, options))
+    rendered.add(value)
   rendered.join("\n\n")

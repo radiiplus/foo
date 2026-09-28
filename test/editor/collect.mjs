@@ -7,10 +7,10 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const target = resolve(root, 'test/editor/cases');
 mkdirSync(target, { recursive: true });
 const sources = {
-  declarations: 'docs/editors/naming.md',
+  declarations: 'docs/functions.md',
   types: 'specs/types.md',
   interop: 'specs/native.md',
-  concurrency: 'specs/concurrency.md',
+  concurrency: 'docs/concurrency.md',
   control: 'test/lex/fixtures/sample.iv',
   pointers: 'std/deque.iv',
   errors: 'std/crypto.iv',

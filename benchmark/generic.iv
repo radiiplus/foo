@@ -1,0 +1,19 @@
+-- Measures concrete generic specialization in a checked loop.
+use testing as check.
+use system as machine.
+
+function identity[T](value T) giving T {
+  give value.
+}
+
+dynamic index of type unsigned 64 is 0.
+dynamic checksum of type unsigned 64 is 0.
+dynamic limit of type unsigned 64 is 10_000_000.
+when machine.cores() try greater than 0 { increase limit by 1. }
+
+while index less than limit {
+  set checksum to checksum plus identity[unsigned 64](index).
+  increase index by 1.
+}
+
+check.positive(checksum).

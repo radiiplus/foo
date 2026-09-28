@@ -1,5 +1,32 @@
-#include <time.h>
 #include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#if defined(_WIN32) && (defined(__x86_64__) || defined(_M_X64))
+#include <intrin.h>
+#endif
+
+#include "../../src/backend/c/copy.c"
+
+#define candidate foo_transfer
+
+static int host_supports_avx2(void) {
+#if defined(_WIN32) && (defined(__x86_64__) || defined(_M_X64))
+  int registers[4];
+  __cpuid(registers, 1);
+  if (!(registers[2] & (1 << 27)) || !(registers[2] & (1 << 28)) ||
+      (_xgetbv(0) & 6) != 6) return 0;
+  __cpuidex(registers, 7, 0);
+  return (registers[1] & (1 << 5)) != 0;
+#elif (defined(__x86_64__) || defined(_M_X64)) && \
+      (defined(__clang__) || defined(__GNUC__))
+  return __builtin_cpu_supports("avx2");
+#else
+  return 0;
+#endif
+}
 
 __attribute__((noinline)) static void reference(void *destination, const void *source, size_t size) {
   memmove(destination, source, size);
@@ -32,6 +59,12 @@ static double median(double *values, size_t count) {
 
 int main(int argc, char **argv) {
   (void)argv;
+#if defined(FOO_COPY_AVX)
+  if (!host_supports_avx2()) {
+    puts("copy AVX2 execution skipped: host does not support AVX2");
+    return 0;
+  }
+#endif
   uint8_t actual[2048], expected[2048];
   for (size_t size = 0; size <= 520; ++size) for (size_t offset = 0; offset < 33; ++offset) {
     for (size_t i = 0; i < sizeof(actual); ++i) actual[i] = expected[i] = (uint8_t)(i * 31);
@@ -59,5 +92,5 @@ int main(int argc, char **argv) {
     double actual = median(selected, 9), expected = median(plain, 9);
     printf("%s{\"size\":%zu,\"offset\":%zu,\"foo\":%.3f,\"c\":%.3f,\"ratio\":%.4f}", index || alignment ? "," : "", size, offset, actual, expected, actual / expected);
   }
-  puts("]"); foo_shutdown(); return 0;
+  puts("]"); return 0;
 }

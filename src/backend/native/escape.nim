@@ -56,7 +56,8 @@ proc cType(value: `Type`; declarations: var seq[string]; declared: var HashSet[s
     name
   else: raise newException(ValueError, "Native bindings require C-compatible values")
 
-proc escape*(input: Module; options: Selection): tuple[module: Module, code: string] =
+proc escape*(input: Module; options: Selection): tuple[module: Module, code: string,
+    decisions: seq[Decision]] =
   let bound = `bind`(input, options)
   var module = bound.module
   var contracts = initTable[string, EscapeContract]()
@@ -140,4 +141,5 @@ proc escape*(input: Module; options: Selection): tuple[module: Module, code: str
     definitions.add(returnType & " " & identifier(name) & "(" & (if params.len > 0: params.join(", ") else: "void") & ") {\n" & body & "\n}")
   module.native = @[]
   result.module = module
+  result.decisions = bound.decisions
   result.code = if definitions.len > 0: "#include <stdint.h>\n#include <stdbool.h>\n#include <stdlib.h>\n" & includes.join("\n") & "\n" & declarations.join("\n") & "\n" & definitions.join("\n\n") & "\n" else: ""

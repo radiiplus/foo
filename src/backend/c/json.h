@@ -216,12 +216,13 @@ static FOOJson *foo_node(FOOParser *p) {
   }
   if (node->kind != 's' && node->kind != '[' && node->kind != '{') {
     size_t length = p->index - start;
-    uint8_t *data = malloc(length ? length : 1);
+    uint8_t *data = malloc(length + 1);
     if (!data) {
       p->error = "OutOfMemory";
       goto failed;
     }
     foo_transfer(data, p->source.data + start, length);
+    data[length] = 0;
     node->raw = (FOOText){data, length};
   }
   p->depth--;
@@ -317,8 +318,13 @@ static void foo_serialize(FOOWriter *w, FOOJson *node) {
 static FOOResult foo_json_write(void *value) {
   FOOWriter writer = {0};
   foo_serialize(&writer, value);
-  FOOResult result = writer.failed ? foo_error("OutOfMemory")
-                                   : foo_copy(writer.data, writer.length);
+  FOOResult result;
+  if (writer.failed || !foo_adopt(writer.data, writer.length))
+    result = foo_error("OutOfMemory");
+  else {
+    result = (FOOResult){.text = {writer.data, writer.length}};
+    writer.data = NULL;
+  }
   free(writer.data);
   return result;
 }
@@ -327,8 +333,13 @@ static FOOResult foo_json_quote(FOOText value) {
     return foo_error("InvalidUtf8");
   FOOWriter writer = {0};
   foo_quote(&writer, value);
-  FOOResult result = writer.failed ? foo_error("OutOfMemory")
-                                   : foo_copy(writer.data, writer.length);
+  FOOResult result;
+  if (writer.failed || !foo_adopt(writer.data, writer.length))
+    result = foo_error("OutOfMemory");
+  else {
+    result = (FOOResult){.text = {writer.data, writer.length}};
+    writer.data = NULL;
+  }
   free(writer.data);
   return result;
 }

@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.4.0 - 2026-09-28
+
+- Align highlighting and snippets with the `failable`, postfix `try`, plural
+  binding, named argument, closure, guard, type, collection, and native syntax
+  shipped by FOO 0.4.0.
+- Ship the live language-server client and project watcher with current command,
+  configuration, diagnostic, hover, and definition behavior.
+- Refresh the extension metadata and documentation for the current package and
+  repository assets.
+
+## 2.3.0 - 2026-09-26
+
+- Highlight sentence-style function parameters, defaults, plural declarations,
+  postfix failure handling, and intentional increase/decrease mutations.
+- Update completions to emit current function syntax and add loops, matching,
+  mutation, failure handling, explicit entry points, and native C/Zig blocks.
+- Verify modern syntax through both TextMate scope tests and the live FOO
+  language server before publishing diagnostics for invalid edits.
+
+## 2.2.0 - 2026-09-26
+
+- Start `foo lsp` for live diagnostics as `.iv` documents are opened and
+  changed, with hover and go-to-definition support.
+- Add commands to restart the language server and launch `foo watch` in a
+  project terminal.
+- Allow a custom compiler path while keeping syntax highlighting available
+  when the compiler is not installed.
+
 ## 2.1.0 - 2026-09-25
 
 - Replace the former mark with a clear numeral 4 across the Marketplace icon,

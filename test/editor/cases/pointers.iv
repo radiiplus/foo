@@ -2,7 +2,7 @@
 --- Double-ended queue ---
 --- Efficient insertion/removal at both ends ---
 
-public type Deque is record {
+public define Deque as record {
   data of type pointer to byte.
   length of type integer 64.
 }.

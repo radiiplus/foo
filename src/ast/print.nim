@@ -76,11 +76,19 @@ proc print*(value: Node; depth: int = 0): string =
   of "constant":
     let item = Constant(value)
     result = indent(depth) & (if item.public: "public " else: "") & "constant " & item.name.text &
-      (if item.`type` != nil: " of type " & print(item.`type`) else: "") & " is " & print(item.value) & "."
+      (if item.`type` != nil: " of type " & print(item.`type`) else: "") &
+      (if item.plural: " are " else: " is ") & print(item.value) & "."
   of "mutable":
     let item = Mutable(value)
     result = indent(depth) & (if item.public: "public " else: "") & "dynamic " & item.name.text &
-      (if item.`type` != nil: " of type " & print(item.`type`) else: "") & " is " & print(item.value) & "."
+      (if item.`type` != nil: " of type " & print(item.`type`) else: "") &
+      (if item.plural: " are " else: " is ") & print(item.value) & "."
+  of "destructure":
+    let item = Destructure(value)
+    var bindings: seq[string]
+    for binding in item.bindings: bindings.add(binding.text)
+    result = indent(depth) & "constant " & print(item.recordType) & "(" &
+      bindings.join(", ") & ") is " & print(item.value) & "."
   of "function":
     let item = Function(value)
     var params: seq[string]
@@ -88,6 +96,7 @@ proc print*(value: Node; depth: int = 0): string =
     let name = if item.name.text == "start": "start" else: "function " & item.name.text
     result = indent(depth) & printAttributes(item.attributes) & (if item.public: "public " else: "") & name &
       printTypeParams(item.typeParams) & "(" & params.join(", ") & ")" &
+      (if item.guard != nil: " when " & print(item.guard) else: "") &
       (if item.returnType != nil: " giving " & print(item.returnType) else: "") &
       (if item.abi.len > 0: " for " & item.abi else: "") & constraints(item.typeParams, item.constraints) & " " & printBlock(item.body, depth)
   of "alias":
@@ -158,6 +167,7 @@ proc print*(value: Node; depth: int = 0): string =
   of "true": result = "true"
   of "false": result = "false"
   of "nothing": result = "nothing"
+  of "null": result = "null"
   of "uninitialized": result = "uninitialized"
   of "unreachable": result = "unreachable"
   of "newline": result = "newline"
@@ -166,9 +176,24 @@ proc print*(value: Node; depth: int = 0): string =
   of "call":
     let item = Call(value)
     var args, types: seq[string]
-    for arg in item.args: args.add(print(arg))
+    for index, arg in item.args:
+      let label = if index < item.names.len: item.names[index] else: ""
+      args.add((if label.len > 0: label & " " else: "") & print(arg))
     for kind in item.types: types.add(print(kind))
     result = print(item.callee) & (if types.len > 0: "[" & types.join(", ") & "]" else: "") & "(" & args.join(", ") & ")"
+  of "sequence-value":
+    var items: seq[string]
+    for item in Values(value).items: items.add(print(item))
+    result = "[" & items.join(", ") & "]"
+  of "closure":
+    let item = Closure(value)
+    var params, captures: seq[string]
+    for parameter in item.params: params.add(print(parameter))
+    for capture in item.captures: captures.add(capture.text)
+    result = "function" & (if params.len > 0: "(" & params.join(", ") & ")" else: "") &
+      (if item.returnType != nil: " giving " & print(item.returnType) else: "") &
+      (if captures.len > 0: " using (" & captures.join(", ") & ")" else: "") &
+      " " & printBlock(item.body, depth)
   of "unary":
     let item = Unary(value)
     result = if item.op == "try": print(item.operand) & " try" else: item.op & " " & print(item.operand)
@@ -191,7 +216,7 @@ proc print*(value: Node; depth: int = 0): string =
   of "allocation": result = "allocate " & print(Allocation(value).size) & (if Allocation(value).owner != nil: " using " & print(Allocation(value).owner) else: "")
   of "assignment": result = indent(depth) & "set " & print(Assignment(value).target) & " to " & print(Assignment(value).value) & "."
   of "optional": result = "optional " & print(Optional(value).elem)
-  of "error": result = "fallible " & print(Error(value).elem)
+  of "error": result = "failable " & print(Error(value).elem)
   of "pointer": result = "pointer to " & print(Pointer(value).elem)
   of "named": result = Named(value).name.text
   of "generic-inst":
@@ -204,7 +229,10 @@ proc print*(value: Node; depth: int = 0): string =
     for param in FunctionType(value).params: params.add(print(param))
     result = "function taking (" & params.join(", ") & ") giving " & print(FunctionType(value).ret) &
       (if FunctionType(value).abi.len > 0: " for " & FunctionType(value).abi else: "")
-  of "parameter": result = Parameter(value).name.text & " " & print(Parameter(value).`type`)
+  of "parameter":
+    let item = Parameter(value)
+    result = item.name.text & (if item.variadic: " are sequence of " else: " ") &
+      print(item.`type`) & (if item.default != nil: " default " & print(item.default) else: "")
   of "constraint": result = Constraint(value).subject.text & " is " & Constraint(value).trait.text
   of "case":
     let item = `Case`(value)

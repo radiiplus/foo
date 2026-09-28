@@ -15,7 +15,7 @@ doAssert concise.contains("function identity(value integer) giving integer")
 let renamed = formatSource("type UserID is integer 64.\nwhile true { break. continue. }")
 doAssert renamed.contains("define UserID as integer 64.")
 doAssert renamed.contains("stop.") and renamed.contains("skip.")
-let natural = formatSource("function load() giving fallible integer { give try read(). }\n" &
+let natural = formatSource("function load() giving failable integer { give try read(). }\n" &
   "when count is at least 10 { display \"ready\". }")
 doAssert natural.contains("give read() try.")
 doAssert natural.contains("count greater than or equal to 10")

@@ -82,7 +82,8 @@ CHAR, MEMBER, STOP, NATIVE and EOF are the lexical tokens defined above.
 
 ```ebnf
 File         = { Top }, EOF ;
-Top          = Import | Entry | Test | Eval | Native | Statement | [ "public" ], Definition ;
+Top          = [ "public" ], ( Import | Definition )
+             | Entry | Test | Eval | Native | Statement ;
 Definition   = Function | Constant | Dynamic | Alias | Foreign | NativeFunction ;
 Import       = "use", ( IDENT | TEXT ), [ "as", IDENT ], STOP | "use", "c", TEXT, STOP ;
 Entry        = "start", "(", ")", Block ;
@@ -104,6 +105,8 @@ Native       = "native", [ "c" | "asm" ], NATIVE ;
 NativeFunction = "native", [ "c" | "asm" ], "function", IDENT,
                  "(", [ Formals ], ")", [ FunctionResult ], NATIVE ;
 Constant     = "constant", IDENT, [ Annotation ], "is", Expr, STOP ;
+Destructure  = "constant", Name, "(", IDENT, { ",", IDENT }, ")",
+               "is", Expr, STOP ;
 Dynamic      = "dynamic", IDENT, [ Annotation ], "is", Expr, STOP ;
 Alias        = "define", IDENT, [ Parameters ], "as", DefinitionType,
                [ Derives ], [ Bounds ], STOP ;
@@ -118,7 +121,7 @@ Variant      = IDENT, [ "(", Type, ")" | "is", INT ], STOP ;
 Type         = Primitive | Name, [ ArgumentsType ]
              | "pointer", "to", Type
              | "sequence", "of", Type
-             | "fallible", Type | "optional", Type
+             | "failable", Type | "optional", Type
              | "function", "taking", "(", [ Types ], ")", "giving", Type
              | "vector", "[", INT, ",", Type, "]" ;
 Primitive    = "integer", [ INT ] | "unsigned", [ INT ]
@@ -129,7 +132,7 @@ ArgumentsType = "[", Types, "]" ;
 Types        = Type, { ",", Type } ;
 
 Block        = "{", { Statement }, "}" ;
-Statement    = Constant | Dynamic | Alias | Set | Give | When | While | For
+Statement    = Constant | Destructure | Dynamic | Alias | Set | Give | When | While | For
              | Match | "stop", STOP | "skip", STOP | After | Eval
              | "unsafe", Block | Native | Machine | Expr, STOP ;
 Machine      = "atomic", "add", IDENT, "by", Expr, STOP
@@ -147,7 +150,7 @@ For          = "for", "each", IDENT, "in", Expr, Block ;
 Match        = "match", Expr, "{", { Arm }, "}" ;
 Arm          = "case", Pattern, [ "when", Expr ], Block ;
 Pattern      = Name, [ "(", IDENT, ")" ]
-             | INT | "true" | "false" | "nothing" | "anything" ;
+             | INT | "true" | "false" | "nothing" | "null" | "anything" ;
 After        = ( "after" | "cleanup" | "finally" ), [ "error" ], Block ;
 
 Expr         = Or, [ "fallback", Expr ] ;
@@ -168,13 +171,14 @@ Atom         = IDENT, [ ArgumentsType ] | Literal | "(", Expr, ")"
              | "newline" | "uninitialized" | "unreachable" | System
              | "reflect", "[", Type, "]", "(", ")"
              | "embed", "(", TEXT, ")" ;
-Literal      = INT | DECIMAL | TEXT | CHAR | "true" | "false" | "nothing" ;
+Literal      = INT | DECIMAL | TEXT | CHAR | "true" | "false" | "nothing"
+             | "null" ;
 ```
 
 A file contains at most one `start()`. Executable top-level statements are
 collected into an implicit entry when `start()` is absent. A project selects
 `src/main.iv` by default unless its manifest or product chooses another entry.
-The entry result is `fallible nothing`.
+The entry result is `failable nothing`.
 Test bodies have the same result type. Reaching the end of a unit-returning
 body succeeds with nothing; a non-unit body must return on every reachable path.
 `give nothing.` returns unit. A function with no declared result infers a
@@ -183,10 +187,12 @@ Function declarations occur at file level, not inside functions.
 
 The ABI string in Foreign is exactly `"C"`. A period declares an import;
 a body defines a C-callable function. Foreign declarations have no generics.
-`public` is valid on definitions, not imports, tests, eval blocks or start.
+`public` is valid on definitions and module imports, not tests, eval blocks or
+start. `public use` re-exports the imported module's public declarations and
+cannot use an alias. An ordinary import remains private.
 
 An expression statement must call an operation, perform allocation, propagate
-an error, or be `unreachable`. Discarding an unhandled fallible result is an
+an error, or be `unreachable`. Discarding an unhandled failable result is an
 error. `set` requires a dynamic place; the final `to` separates its destination
 from its value. Reading an uninitialized place is forbidden.
 
@@ -209,7 +215,7 @@ initializer expression, so `constant ready is not busy.` is unambiguous.
 Operands and arguments evaluate left to right. `and` and `or` short-circuit;
 fallback evaluates its alternative only on failure. Use `read() try` to
 propagate read's error, or `read() fallback value` to recover locally.
-Try applied to an infallible value and fallback applied to a non-fallible value are
+Try applied to a non-failable value and fallback applied to a non-failable value are
 type errors, not alternate interpretations.
 
 Calls always use parentheses, including zero-argument calls. A name followed by
@@ -217,8 +223,10 @@ type arguments denotes a specialization: `sort[integer](items)`.
 Type names used as calls construct records positionally in field order; choice
 payload constructors use qualified variant names.
 
-All branches have braces. An otherwise belongs to the immediately preceding
-when at the same nesting depth. Loop bindings are immutable element values.
+All branches have braces. An `otherwise` belongs to the immediately preceding
+`when` at the same nesting depth. It may contain a block or another `when`, so
+`otherwise when` forms a checked conditional chain. Loop bindings are immutable
+element values.
 Match arms are checked in source order; guards do not establish exhaustiveness.
 A payload-free choice may assign unique integer tags; a payload choice may not.
 Either every payload-free variant supplies a tag or none does. Empty choices

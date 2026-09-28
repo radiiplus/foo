@@ -151,4 +151,94 @@ let externDiagnostics = newEngine()
 newChecker(externDiagnostics).check(externProgram)
 doAssert externDiagnostics.messages.anyIt("not safe to pass by value" in it.text)
 
+let optionalInteger = ast.Optional(tag: "optional", span: position,
+  elem: integerType())
+let nullProgram = ast.Program(tag: "program", span: position, units: @[
+  ast.Unit(tag: "unit", span: position, name: name("optional"),
+    body: ast.Block(tag: "block", span: position, stmts: @[
+      ast.Statement(ast.Constant(tag: "constant", span: position,
+        name: name("missing"), `type`: optionalInteger,
+        value: ast.Null(tag: "null", span: position)))
+    ]))
+])
+let nullDiagnostics = newEngine()
+newChecker(nullDiagnostics).check(nullProgram)
+doAssert not nullDiagnostics.failed
+
+let untypedNull = ast.Program(tag: "program", span: position, units: @[
+  ast.Unit(tag: "unit", span: position, name: name("invalid"),
+    body: ast.Block(tag: "block", span: position, stmts: @[
+      ast.Statement(ast.Constant(tag: "constant", span: position,
+        name: name("missing"), value: ast.Null(tag: "null", span: position)))
+    ]))
+])
+let untypedNullDiagnostics = newEngine()
+newChecker(untypedNullDiagnostics).check(untypedNull)
+doAssert untypedNullDiagnostics.messages.anyIt(
+  "null needs an expected optional type" in it.text)
+
+let personType = ast.Alias(tag: "alias", span: position, name: name("Person"),
+  body: ast.Record(tag: "record", span: position, fields: @[
+    ast.Member(tag: "member", span: position, name: name("name"),
+      `type`: ast.Primitive(tag: "primitive", span: position, name: "text")),
+    ast.Member(tag: "member", span: position, name: name("age"),
+      `type`: integerType())
+  ]))
+let namedRecordCall = ast.Call(tag: "call", span: position,
+  callee: name("Person"), names: @["age", "name"], args: @[
+    ast.Expression(ast.Integer(tag: "integer", span: position, value: "42")),
+    ast.Expression(ast.Text(tag: "text", span: position, value: "Ada"))
+  ])
+let recordProgram = ast.Program(tag: "program", span: position, units: @[
+  ast.Unit(tag: "unit", span: position, name: name("records"),
+    body: ast.Block(tag: "block", span: position, stmts: @[
+      ast.Statement(personType),
+      ast.Statement(ast.Constant(tag: "constant", span: position,
+        name: name("person"), value: namedRecordCall))
+    ]))
+])
+let recordDiagnostics = newEngine()
+newChecker(recordDiagnostics).check(recordProgram)
+doAssert not recordDiagnostics.failed
+doAssert ast.Text(namedRecordCall.args[0]).value == "Ada"
+doAssert ast.Integer(namedRecordCall.args[1]).value == "42"
+
+proc boxType(): ast.GenericInst = ast.GenericInst(tag: "generic-inst",
+  span: position, name: name("Box"), args: @[ast.`Type`(unsignedType())])
+let someCall = ast.Call(tag: "call", span: position, callee: name("some"),
+  types: @[ast.`Type`(unsignedType())], args: @[
+    ast.Expression(ast.Integer(tag: "integer", span: position, value: "42"))])
+let noneCall = ast.Call(tag: "call", span: position, callee: name("none"),
+  types: @[ast.`Type`(unsignedType())], args: @[])
+let noneValue = name("none")
+let box = ast.Alias(tag: "alias", span: position, name: name("Box"),
+  typeParams: @[ast.TypeParam(tag: "type-param", span: position,
+    name: name("T"))], body: ast.Choice(tag: "choice", span: position,
+    variants: @[
+      ast.Variant(tag: "variant", span: position, name: name("some"),
+        payload: ast.Named(tag: "named", span: position, name: name("T"))),
+      ast.Variant(tag: "variant", span: position, name: name("none"))
+    ]))
+let choiceProgram = ast.Program(tag: "program", span: position, units: @[
+  ast.Unit(tag: "unit", span: position, name: name("choices"),
+    body: ast.Block(tag: "block", span: position, stmts: @[
+      ast.Statement(box),
+      ast.Statement(ast.Constant(tag: "constant", span: position,
+        name: name("present"), `type`: boxType(), value: someCall)),
+      ast.Statement(ast.Constant(tag: "constant", span: position,
+        name: name("absent"), `type`: boxType(), value: noneCall)),
+      ast.Statement(ast.Constant(tag: "constant", span: position,
+        name: name("contextual"), `type`: boxType(), value: noneValue))
+    ]))
+])
+let choiceDiagnostics = newEngine()
+let choiceChecker = newChecker(choiceDiagnostics)
+choiceChecker.check(choiceProgram)
+doAssert not choiceDiagnostics.failed,
+  if choiceDiagnostics.messages.len > 0:
+    choiceDiagnostics.messages[0].text else: "generic choice check failed"
+doAssert choiceChecker.types[cast[pointer](someCall)].name == "Box[unsigned 64]"
+doAssert choiceChecker.types[cast[pointer](noneCall)].name == "Box[unsigned 64]"
+doAssert choiceChecker.types[cast[pointer](noneValue)].name == "Box[unsigned 64]"
+
 echo "type checker parity: ok"

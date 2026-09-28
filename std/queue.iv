@@ -3,10 +3,10 @@ use sequence as items.
 public define Queue[T] as record { values of type sequence of T. }.
 public function create[T]() of type Queue[T] { give Queue[T](items.create[T]()). }
 public function length[T](collection of type Queue[T]) of type unsigned 64 { give items.length[T](collection.values). }
-public function append[T](collection of type Queue[T], value of type T) of type fallible Queue[T] { give Queue[T](try items.append[T](collection.values, value)). }
-public function first[T](collection of type Queue[T]) of type fallible T {
+public function append[T](collection of type Queue[T], value of type T) of type failable Queue[T] { give Queue[T](try items.append[T](collection.values, value)). }
+public function first[T](collection of type Queue[T]) of type failable T {
   when length[T](collection) is 0 { give fail(Error.EmptyCollection). }
   give collection.values at 0.
 }
-public function remove[T](collection of type Queue[T]) of type fallible Queue[T] { give Queue[T](try items.remove[T](collection.values, 0)). }
-public function release[T](collection of type Queue[T]) of type fallible nothing { try items.release[T](collection.values). give. }
+public function remove[T](collection of type Queue[T]) of type failable Queue[T] { give Queue[T](try items.remove[T](collection.values, 0)). }
+public function release[T](collection of type Queue[T]) of type failable nothing { try items.release[T](collection.values). give. }

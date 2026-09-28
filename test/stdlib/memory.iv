@@ -1,13 +1,14 @@
 -- Checks allocation contents, resizing, ownership and arena cleanup.
 use "../../std/memory.iv".
 use testing.
-function drop(allocator of type pointer to Allocator, buffer of type pointer to byte) of type fallible text {
+function drop(allocator of type pointer to Allocator, buffer of type pointer to byte) of type failable text {
   try release(allocator, buffer).
   give "released".
 }
 start() {
   constant allocator is system().
   constant buffer is try allocate(allocator, 4).
+  expect(identical[byte](buffer, buffer)).
   same(try view(allocator, buffer, 4), "\0\0\0\0").
   try copy(allocator, buffer, "FOO!").
   constant grown is try expand(allocator, buffer, 8).

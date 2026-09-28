@@ -1,2 +1,17 @@
 -- Exercises interop syntax.
-use c "curl/curl.h".
+native c {
+  #include <stdio.h>
+  int answer(void) { return 44; }
+}
+extern "C" function answer() giving integer 32.
+
+native c function increment(value integer 32) giving integer 32 {
+  return value + 1;
+}
+
+native asm function mirror(value unsigned 64) giving unsigned 64 {
+  "movq %[value], %[result]"
+    : [result] "=r"(result)
+    : [value] "r"(value)
+    : "memory", "cc"
+}

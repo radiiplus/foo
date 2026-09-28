@@ -4,6 +4,7 @@ import { Header } from "../components/header";
 import { Palette } from "../components/palette";
 import { Sidebar } from "../components/sidebar";
 import { health } from "../utils/registry";
+import { seo } from "../utils/seo";
 import Detail from "./detail";
 import Discover, { type Action } from "./discover";
 import Landing from "./landing";
@@ -45,6 +46,18 @@ function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    if (route.page === "docs" || route.page === "detail") return;
+    const values = {
+      landing: ["FOO Language - Documentation, Packages, and Downloads", "A readable systems language with native performance, explicit safety, documentation, packages, and toolchain downloads."],
+      registry: ["FOO Package Registry", "Discover verified packages for the FOO programming language and inspect their versions, APIs, and documentation."],
+      standard: ["FOO Standard Library", "Browse the FOO standard library for files, networking, collections, concurrency, cryptography, and low-level systems work."],
+      downloads: ["Download FOO", "Download the latest FOO compiler and toolchain release for Windows, Linux x64, and Linux ARM64."],
+    } as const;
+    const [title, description] = values[route.page];
+    seo({ title, description });
+  }, [route]);
+
   if (route.page === "landing") {
     return <Landing onEnter={() => navigate()} />;
   }
@@ -75,7 +88,7 @@ function Home() {
         />
         <main className={`min-w-0 flex-1 ${selected || route.page === "docs" || route.page === "downloads" ? "overflow-y-auto" : "overflow-hidden"}`}>
           {route.page === "docs"
-            ? <Suspense fallback={<div className="grid h-full place-items-center font-mono text-[10px] text-[#707070]">Opening the FOO Book...</div>}><Docs chapterId={route.chapter} section={route.section} /></Suspense>
+            ? <Suspense fallback={<div className="grid h-full place-items-center font-mono text-[10px] text-[#707070]">Opening the FOO Book...</div>}><Docs id={route.chapter} section={route.section} /></Suspense>
             : route.page === "downloads"
             ? <Suspense fallback={<div className="grid h-full place-items-center font-mono text-[10px] text-[#707070]">Loading releases...</div>}><Downloads /></Suspense>
             : route.page === "standard"

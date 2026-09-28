@@ -29,7 +29,7 @@ proc supported(provider, operation: string): bool =
   let operations = {
     "list": @["create", "push", "get", "length", "close"],
     "memory": @["system", "arena", "allocate", "release", "expand", "copy",
-      "view", "close", "transfer", "clear", "compare"],
+      "view", "close", "transfer", "clear", "compare", "identical"],
     "stream": @["input", "output", "report", "write", "read", "close", "print"],
     "testing": @["expect", "same", "number", "positive", "real", "point"],
     "system": @["cores", "host", "page"],
@@ -41,8 +41,8 @@ proc supported(provider, operation: string): bool =
     "compress": @["pack", "unpack"],
     "json": @["parse", "write", "field", "item", "quote", "kind", "size",
       "set", "append", "release", "stream", "feed", "next", "data", "close"],
-    "http": @["client", "trust", "addHeader", "clearHeaders", "redirects", "reuse", "request", "status", "body", "release",
-      "close", "listen", "port", "closeServer", "accept", "receive", "method",
+    "http": @["client", "trust", "attach", "clear", "redirects", "reuse", "request", "status", "body", "release",
+      "close", "listen", "port", "shutdown", "accept", "receive", "method",
       "header", "read", "reply", "disconnect"]
   }.toTable
   operations.hasKey(provider) and operation in operations[provider]
@@ -52,7 +52,9 @@ proc runtime*(externs: seq[Extern];
     namePrinter: proc(value: string): string;
     target = ""): RuntimeResult =
   if externs.len == 0:
-    return RuntimeResult(code: "static void foo_shutdown(void) {}", libraries: @[])
+    return RuntimeResult(code:
+      "static void foo_benchmark_report(void) { fprintf(stderr, \"FOO_METRICS {\\\"allocations\\\":0,\\\"allocatedBytes\\\":0,\\\"reallocations\\\":0,\\\"bytesCopied\\\":0,\\\"growthOperations\\\":0,\\\"growthBytesCopied\\\":0,\\\"averageCapacity\\\":0.0,\\\"maximumCapacity\\\":0,\\\"growthFactor\\\":0.0,\\\"liveBytes\\\":0,\\\"peakBytes\\\":0,\\\"olderVersionBytes\\\":0,\\\"slowPathHits\\\":0,\\\"branchOperations\\\":0,\\\"branchBytesCopied\\\":0}\\n\"); }\n" &
+      "static void foo_shutdown(void) {}", libraries: @[])
   let textType = `Type`(kind: TypeKind.Slice, constant: true,
     elem: `Type`(kind: TypeKind.Uint, width: 8))
   let wideType = `Type`(kind: TypeKind.Slice,
@@ -64,6 +66,109 @@ proc runtime*(externs: seq[Extern];
     "typedef " & typePrinter(pointType) & " FOOPoints;"
   var modules = initHashSet[string]()
   var wrappers: seq[string]
+
+  proc write(typ: `Type`; value: string; serial: var int): string
+  proc write(typ: `Type`; value: string; serial: var int): string =
+    if typ == nil: raise newException(ValueError, "Codec needs a concrete type")
+    case typ.kind
+    of TypeKind.Bool:
+      result = "foo_put(&writer, " & value & " ? \"true\" : \"false\", " &
+        value & " ? 4 : 5);"
+    of TypeKind.Int, TypeKind.Uint, TypeKind.Float:
+      inc serial
+      let buffer = "number" & $serial
+      let count = "count" & $serial
+      let format = if typ.kind == TypeKind.Int: "%lld"
+        elif typ.kind == TypeKind.Uint: "%llu" else: "%.17g"
+      let conversion = if typ.kind == TypeKind.Int: "(long long)"
+        elif typ.kind == TypeKind.Uint: "(unsigned long long)" else: "(double)"
+      result = "char " & buffer & "[64]; int " & count & " = snprintf(" &
+        buffer & ", sizeof(" & buffer & "), \"" & format & "\", " & conversion &
+        value & "); if (" & count & " < 0 || (size_t)" & count & " >= sizeof(" &
+        buffer & ")) { codec_error = \"NumberOverflow\"; goto codec_failed; } " &
+        "foo_put(&writer, " & buffer & ", (size_t)" & count & ");"
+    of TypeKind.Slice:
+      if typ.elem == nil or typ.elem.kind != TypeKind.Uint or typ.elem.width != 8:
+        raise newException(ValueError, "Codec supports text but not arbitrary sequences")
+      result = "if (!foo_unicode_valid((FOOText){" & value & ".data, " & value &
+        ".len})) { codec_error = \"InvalidUtf8\"; goto codec_failed; } " &
+        "foo_quote(&writer, (FOOText){" & value & ".data, " & value & ".len});"
+    of TypeKind.Struct, TypeKind.ExternStruct:
+      result = "foo_put(&writer, \"{\", 1);"
+      var index = 0
+      for field, fieldType in typ.fields:
+        if index > 0: result.add("foo_put(&writer, \",\", 1);")
+        result.add("foo_quote(&writer, (FOOText){(const uint8_t *)\"" & field &
+          "\", " & $field.len & "}); foo_put(&writer, \":\", 1);")
+        result.add(write(fieldType, value & "." & namePrinter(field), serial))
+        inc index
+      result.add("foo_put(&writer, \"}\", 1);")
+    else:
+      raise newException(ValueError, "Codec does not support " & $typ.kind)
+
+  proc read(typ: `Type`; target, source: string; serial: var int): string
+  proc read(typ: `Type`; target, source: string; serial: var int): string =
+    if typ == nil: raise newException(ValueError, "Codec needs a concrete type")
+    case typ.kind
+    of TypeKind.Bool:
+      result = "if (" & source & "->kind != 't' && " & source &
+        "->kind != 'f') { codec_error = \"ExpectedBoolean\"; goto codec_failed; } " &
+        target & " = " & source & "->kind == 't';"
+    of TypeKind.Int, TypeKind.Uint:
+      inc serial
+      let number = "number" & $serial
+      let ending = "ending" & $serial
+      let signed = typ.kind == TypeKind.Int
+      result = "if (" & source & "->kind != 'd') { codec_error = \"ExpectedNumber\"; goto codec_failed; } " &
+        (if not signed: "if (" & source & "->raw.len && " & source &
+          "->raw.data[0] == '-') { codec_error = \"NumberOverflow\"; goto codec_failed; } " else: "") &
+        "errno = 0; char *" & ending & " = NULL; " &
+        (if signed: "long long " else: "unsigned long long ") & number & " = " &
+        (if signed: "strtoll" else: "strtoull") & "((const char *)" & source &
+        "->raw.data, &" & ending & ", 10); if (errno || " & ending &
+        " != (const char *)" & source & "->raw.data + " & source &
+        "->raw.len) { codec_error = \"NumberOverflow\"; goto codec_failed; } "
+      if typ.width > 0 and typ.width < 64:
+        let limit = if signed:
+          "(" & number & " < -(INT64_C(1) << " & $(typ.width - 1) & ") || " &
+            number & " > (INT64_C(1) << " & $(typ.width - 1) & ") - 1)"
+          else:
+            "(" & number & " > (UINT64_C(1) << " & $typ.width & ") - 1)"
+        result.add("if " & limit & " { codec_error = \"NumberOverflow\"; goto codec_failed; } ")
+      result.add(target & " = (" & typePrinter(typ) & ")" & number & ";")
+    of TypeKind.Float:
+      inc serial
+      let number = "number" & $serial
+      let ending = "ending" & $serial
+      result = "if (" & source & "->kind != 'd') { codec_error = \"ExpectedNumber\"; goto codec_failed; } " &
+        "errno = 0; char *" & ending & " = NULL; double " & number &
+        " = strtod((const char *)" & source & "->raw.data, &" & ending &
+        "); if (errno || " & ending & " != (const char *)" & source &
+        "->raw.data + " & source & "->raw.len) { codec_error = \"NumberOverflow\"; goto codec_failed; } " &
+        target & " = (" & typePrinter(typ) & ")" & number & ";"
+    of TypeKind.Slice:
+      if typ.elem == nil or typ.elem.kind != TypeKind.Uint or typ.elem.width != 8:
+        raise newException(ValueError, "Codec supports text but not arbitrary sequences")
+      inc serial
+      let copied = "copied" & $serial
+      result = "if (" & source & "->kind != 's') { codec_error = \"ExpectedText\"; goto codec_failed; } " &
+        "FOOResult " & copied & " = foo_copy(" & source & "->raw.data, " & source &
+        "->raw.len); if (" & copied & ".error) { codec_error = " & copied &
+        ".error; goto codec_failed; } " & target & " = (" & typePrinter(typ) &
+        "){" & copied & ".text.data, " & copied & ".text.len};"
+    of TypeKind.Struct, TypeKind.ExternStruct:
+      result = "if (" & source & "->kind != '{') { codec_error = \"ExpectedObject\"; goto codec_failed; }"
+      for field, fieldType in typ.fields:
+        inc serial
+        let child = "child" & $serial
+        result.add("FOOJson *" & child & " = " & source & "->child; while (" & child &
+          " && (" & child & "->key.len != " & $field.len & " || memcmp(" & child &
+          "->key.data, \"" & field & "\", " & $field.len & "))) " & child &
+          " = " & child & "->next; if (!" & child &
+          ") { codec_error = \"MissingField\"; goto codec_failed; }")
+        result.add(read(fieldType, target & "." & namePrinter(field), child, serial))
+    else:
+      raise newException(ValueError, "Codec does not support " & $typ.kind)
 
   for declaration in externs:
     let provider = if declaration.abi == "runtime": "task"
@@ -98,7 +203,7 @@ proc runtime*(externs: seq[Extern];
         "await" else: operation
       let call = "foo_" & provider & "_" & serviceOperation & "(" &
         arguments.join(", ") & ")"
-      let returnType = if declaration.ret.kind == TypeKind.Fallible:
+      let returnType = if declaration.ret.kind == TypeKind.Failable:
         declaration.ret.elem else: declaration.ret
       let returnedValue =
         if returnType.kind == TypeKind.Void: "0"
@@ -106,9 +211,11 @@ proc runtime*(externs: seq[Extern];
           "(" & typePrinter(returnType) & ")result.pointer"
         elif returnType.kind == TypeKind.Slice:
           "(" & typePrinter(returnType) & "){result.text.data, result.text.len}"
+        elif returnType.kind == TypeKind.Optional:
+          "(" & typePrinter(returnType) & "){result.pointer != NULL, result.number}"
         else: "result.number"
       let returned =
-        if declaration.ret.kind == TypeKind.Fallible:
+        if declaration.ret.kind == TypeKind.Failable:
           "return (" & typePrinter(declaration.ret) &
             "){foo_service_error(result.error), " & returnedValue & "};"
         elif returnType.kind == TypeKind.Void: "return;"
@@ -126,6 +233,38 @@ proc runtime*(externs: seq[Extern];
         " FooResult result = " & call & "; " & returned & " }")
       continue
 
+    if provider == "codec":
+      modules.incl("json")
+      modules.incl("codec")
+      var serial = 0
+      if operation == "encode":
+        if declaration.params.len != 1 or declaration.ret == nil or
+            declaration.ret.kind != TypeKind.Failable or
+            declaration.ret.elem.kind != TypeKind.Slice:
+          raise newException(ValueError, "codec.encode needs one value and a failable text result")
+        let body = write(declaration.params[0], "p0", serial)
+        wrappers.add(signature & " { const char *codec_error = NULL; FOOWriter writer = {0}; " &
+          body & " if (writer.failed || !foo_adopt(writer.data, writer.length)) " &
+          "codec_error = \"OutOfMemory\"; if (codec_error) goto codec_failed; return (" &
+          typePrinter(declaration.ret) & "){NULL, (" & typePrinter(declaration.ret.elem) &
+          "){writer.data, writer.length}}; codec_failed: free(writer.data); return (" &
+          typePrinter(declaration.ret) & "){codec_error, {0}}; }")
+      elif operation == "decode":
+        if declaration.params.len != 1 or declaration.ret == nil or
+            declaration.ret.kind != TypeKind.Failable:
+          raise newException(ValueError, "codec.decode needs text and a failable concrete result")
+        let body = read(declaration.ret.elem, "value", "root", serial)
+        wrappers.add(signature & " { FOOResult parsed = foo_json_parse((FOOText){p0.data, p0.len}); " &
+          "if (parsed.error) return (" & typePrinter(declaration.ret) & "){parsed.error, {0}}; " &
+          typePrinter(declaration.ret.elem) & " value = {0}; const char *codec_error = NULL; " &
+          "FOOJson *root = parsed.pointer; " & body &
+          " foo_json_release(root); return (" & typePrinter(declaration.ret) & "){NULL, value}; " &
+          "codec_failed: foo_json_release(root); return (" & typePrinter(declaration.ret) &
+          "){codec_error, {0}}; }")
+      else:
+        raise newException(ValueError, "Unknown codec operation '" & operation & "'")
+      continue
+
     if provider == "sequence":
       if operation == "create":
         wrappers.add(signature & " { return (" & typePrinter(declaration.ret) & "){0}; }")
@@ -138,7 +277,7 @@ proc runtime*(externs: seq[Extern];
           ")) return (" & typePrinter(declaration.ret) &
           "){\"Overflow\", {0}}; size_t count = (size_t)p0; if (!count) return (" &
           typePrinter(declaration.ret) & "){0}; " & elementType &
-          " *items = foo_owned(count * sizeof(*items)); if (!items) return (" &
+          " *items = foo_sequence_owned(sizeof(*items), count, count); if (!items) return (" &
           typePrinter(declaration.ret) &
           "){\"OutOfMemory\", {0}}; memset(items, 0, count * sizeof(*items)); return (" &
           typePrinter(declaration.ret) & "){0, (" & sliceType & "){items, count}}; }")
@@ -149,25 +288,31 @@ proc runtime*(externs: seq[Extern];
           typePrinter(declaration.ret) &
           "){\"Bounds\", {0}}; if (p1 == p0.len) return (" &
           typePrinter(declaration.ret) & "){0, p0}; size_t count = (size_t)p1; " &
-          elementType & " *items = 0; if (count) { items = foo_owned(count * sizeof(*items)); if (!items) return (" &
+          elementType & " *items = 0; if (count) { items = foo_sequence_owned(sizeof(*items), count, count); if (!items) return (" &
           typePrinter(declaration.ret) &
           "){\"OutOfMemory\", {0}}; foo_transfer(items, p0.data, count * sizeof(*items)); } " &
-          "FOOResult released = foo_buffer_free((FOOText){(const uint8_t*)p0.data, p0.len * sizeof(*p0.data)}); " &
-          "if (released.error) { if (items) (void)foo_buffer_free((FOOText){(const uint8_t*)items, count * sizeof(*items)}); return (" &
+          "FOOResult released = foo_sequence_free(p0.data, p0.len, sizeof(*p0.data)); " &
+          "if (released.error) { if (items) (void)foo_sequence_free(items, count, sizeof(*items)); return (" &
           typePrinter(declaration.ret) & "){released.error, {0}}; } return (" &
           typePrinter(declaration.ret) & "){0, (" & sliceType & "){items, count}}; }")
       elif operation == "release":
         wrappers.add(signature &
-          " { FOOResult result = foo_buffer_free((FOOText){(const uint8_t*)p0.data, p0.len * sizeof(*p0.data)}); return (" &
+          " { FOOResult result = foo_sequence_free(p0.data, p0.len, sizeof(*p0.data)); return (" &
           typePrinter(declaration.ret) & "){result.error, 0}; }")
+      elif operation == "append":
+        let sliceType = typePrinter(declaration.ret.elem)
+        let elementType = typePrinter(declaration.ret.elem.elem)
+        wrappers.add(signature & " { FOOResult result = foo_sequence_append(p0.data, p0.len, sizeof(" &
+          elementType & "), &p1); return (" & typePrinter(declaration.ret) &
+          "){result.error, (" & sliceType & "){(" & elementType &
+          "*)result.text.data, result.text.len}}; }")
       else:
-        if operation notin ["copy", "append", "remove"]:
+        if operation notin ["copy", "remove"]:
           raise newException(ValueError, "Unknown sequence operation '" & operation & "'")
         let sliceType = typePrinter(declaration.ret.elem)
         let elementType = typePrinter(declaration.ret.elem.elem)
         let count =
-          if operation == "append": "p0.len + 1"
-          elif operation == "remove": "p0.len - 1"
+          if operation == "remove": "p0.len - 1"
           else: "p0.len"
         let guard = if operation == "remove":
           "if (p1 >= p0.len) return (" & typePrinter(declaration.ret) &
@@ -176,24 +321,24 @@ proc runtime*(externs: seq[Extern];
           if operation == "remove":
             "if (p1) foo_transfer(items, p0.data, p1 * sizeof(*items)); if (p0.len > p1 + 1) foo_transfer(items + p1, p0.data + p1 + 1, (p0.len - p1 - 1) * sizeof(*items));"
           else:
-            "if (p0.len) foo_transfer(items, p0.data, p0.len * sizeof(*items)); " &
-              (if operation == "append": "items[p0.len] = p1;" else: "")
+            "if (p0.len) foo_transfer(items, p0.data, p0.len * sizeof(*items)); "
         wrappers.add(signature & " { " & guard &
           " if (p0.len >= SIZE_MAX / sizeof(" & elementType &
           ")) return (" & typePrinter(declaration.ret) &
-          "){\"Overflow\", {0}}; size_t count = " & count &
+          "){\"Overflow\", {0}}; " &
+          " size_t count = " & count &
           "; if (!count) return (" & typePrinter(declaration.ret) &
           "){0}; " & elementType &
-          " *items = foo_owned(count * sizeof(*items)); if (!items) return (" &
+          " *items = foo_sequence_owned(sizeof(*items), count, count); if (!items) return (" &
           typePrinter(declaration.ret) &
           "){\"OutOfMemory\", {0}}; " & copying & " return (" &
           typePrinter(declaration.ret) & "){0, (" & sliceType &
           "){items, count}}; }")
       continue
 
-    if provider == "hashmap":
+    if provider == "table":
       modules.incl("hashmap")
-      let returnType = if declaration.ret.kind == TypeKind.Fallible:
+      let returnType = if declaration.ret.kind == TypeKind.Failable:
         declaration.ret.elem else: declaration.ret
       var call = ""
       case operation
@@ -205,7 +350,7 @@ proc runtime*(externs: seq[Extern];
       of "remove": call = "foo_hashmap_remove(p0, (FOOText){p1.data, p1.len})"
       of "length": call = "foo_hashmap_length(p0)"
       of "close": call = "foo_hashmap_close(p0)"
-      else: raise newException(ValueError, "Unknown hashmap operation '" & operation & "'")
+      else: raise newException(ValueError, "Unknown table operation '" & operation & "'")
       var value = "0"
       if operation == "create": value = "(" & typePrinter(returnType) & ")result.pointer"
       elif operation == "get": value = "*(" & typePrinter(returnType) & "*)result.pointer"
@@ -231,10 +376,10 @@ proc runtime*(externs: seq[Extern];
         arguments.add("p" & $index)
     let call = "foo_" & provider & "_" & operation & "(" & arguments.join(", ") & ")"
     let locked = provider in ["list", "memory", "stream"] and not
-      (provider == "memory" and operation in ["transfer", "clear", "compare"])
+      (provider == "memory" and operation in ["transfer", "clear", "compare", "identical"])
     let leave = if locked: "foo_leave();" else: ""
     var body: string
-    if declaration.ret.kind == TypeKind.Fallible:
+    if declaration.ret.kind == TypeKind.Failable:
       body = "FOOResult result = " & call & "; " & leave & " return (" &
         typePrinter(declaration.ret) & "){ result.error, " &
         (if declaration.ret.elem.kind == TypeKind.Ptr:
@@ -263,6 +408,7 @@ proc runtime*(externs: seq[Extern];
     .replace("#include \"storage.h\"", storageSource)
     .replace("#include \"stream.h\"", streamSource)
   result.code = aliases & "\n" & defines.join("\n") & "\n" &
+    (if "codec" in modules: "#include <errno.h>\n" else: "") &
     serviceCode & header & "\n" & wrappers.join("\n")
   if "crypto" in modules: result.libraries.add("sodium")
   if "compress" in modules: result.libraries.add("z")

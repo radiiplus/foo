@@ -45,9 +45,9 @@ Text `\n` remains a literal escape needed for interchange; formatted text
 expressions use `newline`. This is a lexical encoding rule, not a second line
 break value. Block and documentation comments retain distinct structural roles.
 
-Unit nothing and optional absence share a literal with an explicit contextual
-conversion, not separate null/nil spellings. Byte, character and text are distinct
-semantic types, not numeric or sequence aliases. The full rules are in
+Unit uses `nothing`; optional absence uses `null`. A bare pointer remains
+non-null, and FOO has no separate `nil` spelling. Byte, character and text are
+distinct semantic types, not numeric or sequence aliases. The full rules are in
 [grammar](grammar.md) and [types](types.md).
 
 Cleanup has one explicit exception: cleanup and finally are accepted aliases

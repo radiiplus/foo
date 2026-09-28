@@ -10,10 +10,10 @@ Prism.languages.foo = {
   string: { pattern: /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/, greedy: true },
   attribute: /#\[[^\]]+\]/,
   declaration: word("constant|dynamic|define|function|record|choice|public|packed|extern|use"),
-  control: word("give|try|fallback|fallible|when|otherwise|match|case|while|for|each|stop|skip|after|eval|native|asm"),
+  control: word("give|try|fallback|failable|when|otherwise|match|case|while|for|each|stop|skip|after|eval|native|asm"),
   connective: word("of|to"),
   type: word("integer|unsigned|decimal|boolean|byte|text|nothing|pointer|sequence|optional|vector|Error"),
-  boolean: word("true|false"),
+  boolean: word("true|false|null"),
   operator: word("is|not|as|plus|subtract|multiply|divide|remainder|and|or|greater|less|than|equal"),
   number: /\b(?:0x[\da-f]+|0b[01]+|\d+(?:\.\d+)?)\b/i,
   function: /\b[A-Za-z_][A-Za-z0-9_]*(?=\s*\()/,
@@ -30,37 +30,37 @@ Prism.languages.shell = {
   punctuation: /[|;&]/,
 };
 
-type CodeBlockProps = {
+type Props = {
   code: string;
   language: string;
 };
 
-export function CodeBlock({ code, language }: CodeBlockProps) {
-  const [copied, setCopied] = useState(false);
-  const normalized = language === "sh" || language === "bash" || language === "shell" ? "shell" : language === "iv" ? "foo" : language;
-  const grammar = Prism.languages[normalized];
-  const highlighted = useMemo(() => grammar ? Prism.highlight(code, grammar, normalized) : Prism.util.encode(code), [code, grammar, normalized]);
+export function Code({ code, language }: Props) {
+  const [copied, mark] = useState(false);
+  const syntax = language === "sh" || language === "bash" || language === "shell" ? "shell" : language === "iv" ? "foo" : language;
+  const grammar = Prism.languages[syntax];
+  const html = useMemo(() => grammar ? Prism.highlight(code, grammar, syntax) : Prism.util.encode(code), [code, grammar, syntax]);
 
   useEffect(() => {
     if (!copied) return;
-    const timeout = window.setTimeout(() => setCopied(false), 1600);
+    const timeout = window.setTimeout(() => mark(false), 1600);
     return () => window.clearTimeout(timeout);
   }, [copied]);
 
   return (
     <figure className="docs-code">
       <figcaption>
-        <span><i />{normalized === "foo" ? "FOO" : normalized || "text"}</span>
+        <span><i />{syntax === "foo" ? "FOO" : syntax || "text"}</span>
         <button
           type="button"
-          onClick={() => void navigator.clipboard.writeText(code).then(() => setCopied(true))}
+          onClick={() => void navigator.clipboard.writeText(code).then(() => mark(true))}
           title="Copy code"
           aria-label="Copy code"
         >
           {copied ? <Check size={13} /> : <Copy size={13} />}
         </button>
       </figcaption>
-      <pre><code className={`language-${normalized}`} dangerouslySetInnerHTML={{ __html: String(highlighted) }} /></pre>
+      <pre><code className={`language-${syntax}`} dangerouslySetInnerHTML={{ __html: String(html) }} /></pre>
     </figure>
   );
 }

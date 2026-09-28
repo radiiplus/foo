@@ -17,7 +17,7 @@ corpus, not a single executable program.
 | concurrency | Concurrency specification's complete scoped-task example |
 | control | Existing compiler lexer fixture with branches, loops, match, and cleanup |
 | pointers | Real deque module with pointer parameters and fields |
-| errors | Real crypto module's fallible API declarations |
+| errors | Real crypto module's failable API declarations |
 | platforms | Real Windows module declarations |
 | library | Sequence and text modules, plus collections and services tests |
 

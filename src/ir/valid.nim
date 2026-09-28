@@ -145,7 +145,7 @@ proc validate*(module: Module): seq[ValidationError] =
     of TypeKind.Array, TypeKind.Vector:
       if value.width < 1: fail("Array and vector types need a positive length")
       if value.elem == nil: fail("Container type needs an element type")
-    of TypeKind.Ptr, TypeKind.Slice, TypeKind.Optional, TypeKind.Fallible:
+    of TypeKind.Ptr, TypeKind.Slice, TypeKind.Optional, TypeKind.Failable:
       if value.elem == nil: fail("Container type needs an element type")
     of TypeKind.Function:
       if value.ret == nil: fail("Function type needs parameters and a result")
@@ -199,7 +199,7 @@ proc validate*(module: Module): seq[ValidationError] =
 
   proc compatible(value: Value; target: `Type`): bool =
     same(value.`type`, target) or
-      (target != nil and target.kind == TypeKind.Fallible and same(value.`type`, target.elem)) or
+      (target != nil and target.kind == TypeKind.Failable and same(value.`type`, target.elem)) or
       (target != nil and target.kind == TypeKind.Optional and
         (same(value.`type`, target.elem) or (value.`type` != nil and value.`type`.kind == TypeKind.Void)))
 
@@ -396,9 +396,9 @@ proc validate*(module: Module): seq[ValidationError] =
           fail("Atomic store/fence has no result")
       if instruction.kind == InstrKind.Allocate:
         if instruction.region.len == 0 or instruction.dest.`type` == nil or
-            instruction.dest.`type`.kind != TypeKind.Fallible or instruction.dest.`type`.elem == nil or
+            instruction.dest.`type`.kind != TypeKind.Failable or instruction.dest.`type`.elem == nil or
             instruction.dest.`type`.elem.kind != TypeKind.Slice or instruction.val.`type` == nil:
-          fail("Arena allocation needs a size, region and fallible sequence result")
+          fail("Arena allocation needs a size, region and failable sequence result")
         elif instruction.val.`type`.kind notin {TypeKind.Int, TypeKind.Uint}:
           fail("Allocation size must be an integer")
       if instruction.kind == InstrKind.Region and
@@ -416,7 +416,7 @@ proc validate*(module: Module): seq[ValidationError] =
            elif source.kind != TypeKind.Float and target.kind == TypeKind.Float:
              bits(source) - (if source.kind == TypeKind.Int: 1 else: 0) <= (if bits(target) == 32: 24 else: 53)
            else: false)
-        let lifted = source != nil and target != nil and target.kind in {TypeKind.Optional, TypeKind.Fallible} and same(source, target.elem)
+        let lifted = source != nil and target != nil and target.kind in {TypeKind.Optional, TypeKind.Failable} and same(source, target.elem)
         let view = source != nil and target != nil and source.kind == TypeKind.Slice and
           target.kind == TypeKind.Slice and target.constant and same(source.elem, target.elem)
         if not widened and not lifted and not view and not same(source, target):
@@ -436,8 +436,11 @@ proc validate*(module: Module): seq[ValidationError] =
         let target = instruction.dest.`type`
         var fields: seq[`Type`]
         var found = false
-        if target != nil and target.kind == TypeKind.Fallible and instruction.op == "error":
+        if target != nil and target.kind == TypeKind.Failable and instruction.op == "error":
           fields = @[`Type`(kind: TypeKind.Error)]; found = true
+        elif target != nil and target.kind == TypeKind.Slice and instruction.op == "sequence":
+          found = true
+          for _ in instruction.args: fields.add(target.elem)
         elif target != nil and target.kind == TypeKind.TaggedUnion and target.variants.hasKey(instruction.field):
           found = true
           if target.variants[instruction.field] != nil: fields.add(target.variants[instruction.field])
@@ -454,7 +457,7 @@ proc validate*(module: Module): seq[ValidationError] =
         let original = instruction.val.`type`
         let source = if original != nil and original.kind == TypeKind.Ptr: original.elem else: original
         var projected: `Type`
-        if source != nil and source.kind == TypeKind.Fallible:
+        if source != nil and source.kind == TypeKind.Failable:
           if instruction.field == "failed": projected = `Type`(kind: TypeKind.Bool)
           elif instruction.field == "value": projected = source.elem
         elif source != nil and source.kind == TypeKind.TaggedUnion:
@@ -516,7 +519,7 @@ proc validate*(module: Module): seq[ValidationError] =
       if instruction.kind == InstrKind.Return:
         if instruction.value.`type` != nil:
           if not compatible(instruction.value, functionResult): fail("Return does not match @" & functionName & "'s result")
-        elif functionResult.kind != TypeKind.Void and not (functionResult.kind == TypeKind.Fallible and functionResult.elem != nil and functionResult.elem.kind == TypeKind.Void):
+        elif functionResult.kind != TypeKind.Void and not (functionResult.kind == TypeKind.Failable and functionResult.elem != nil and functionResult.elem.kind == TypeKind.Void):
           fail("Return does not match @" & functionName & "'s result")
       if instruction.kind == InstrKind.Load and
           (instruction.`ptr`.`type` == nil or instruction.`ptr`.`type`.kind != TypeKind.Ptr or
@@ -532,8 +535,8 @@ proc validate*(module: Module): seq[ValidationError] =
           (instruction.region.len == 0 or instruction.dest.`type` == nil or instruction.dest.`type`.kind != TypeKind.Ptr):
         fail("Allocation needs a region and pointer result")
       if instruction.kind == InstrKind.Try and
-          (instruction.expr.`type` == nil or instruction.expr.`type`.kind notin {TypeKind.Fallible, TypeKind.Error}):
-        fail("Try requires a fallible operand")
+          (instruction.expr.`type` == nil or instruction.expr.`type`.kind notin {TypeKind.Failable, TypeKind.Error}):
+        fail("Try requires a failable operand")
 
     for basicBlock in function.blocks:
       var memory = ""

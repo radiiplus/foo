@@ -6,7 +6,12 @@ if dirExists(root): removeDir(root)
 let projectRoot = create(root / "demo-app")
 doAssert fileExists(projectRoot / "project.json")
 doAssert fileExists(projectRoot / "src" / "main.iv")
+doAssert fileExists(projectRoot / "test" / "main.iv")
+doAssert fileExists(projectRoot / "benchmark" / "main.iv")
 doAssert readFile(projectRoot / "src" / "main.iv") == "display \"Hello, world!\".\n"
+let generatedManifest = parseJson(readFile(projectRoot / "project.json"))
+doAssert generatedManifest["entry"].getStr() == "src/main.iv"
+doAssert generatedManifest["entries"].kind == JObject
 dependency("add", "std/testing", "1.0.0", projectRoot)
 var manifest = parseJson(readFile(projectRoot / "project.json"))
 doAssert manifest["dependencies"]["std/testing"].getStr() == "1.0.0"
@@ -43,6 +48,8 @@ try:
   doAssert create(".") == currentRoot
   doAssert fileExists(currentRoot / "project.json")
   doAssert fileExists(currentRoot / "src" / "main.iv")
+  doAssert dirExists(currentRoot / "test")
+  doAssert dirExists(currentRoot / "benchmark")
   var rejected = false
   try: discard create(".")
   except ValueError: rejected = true
@@ -54,6 +61,8 @@ removeDir(currentRoot)
 let packageRoot = createPackage(root / "foo-example")
 doAssert fileExists(packageRoot / "README.md")
 doAssert fileExists(packageRoot / "src" / "main.iv")
+doAssert dirExists(packageRoot / "test")
+doAssert dirExists(packageRoot / "benchmark")
 let packageManifest = parseJson(readFile(packageRoot / "project.json"))
 doAssert packageManifest["name"].getStr() == "foo-example"
 doAssert packageManifest["repository"].getStr().endsWith("/foo-example")

@@ -19,6 +19,8 @@ start() {
   constant trimmed is try words.trim("  FOO  ").
   after { words.release(joined) catch nothing. words.release(trimmed) catch nothing. }
   check.same(joined, trimmed).
+  check.expect(words.find(trimmed, "OO") is not null).
+  check.expect(words.find(trimmed, "missing") is null).
   constant parts is try words.split("four::four::", "::").
   after { for each part in parts { words.release(part) catch nothing. } items.release[text](parts) catch nothing. }
   check.expect(items.length[text](parts) is 3).
@@ -83,7 +85,7 @@ start() {
   try network.keepalive(client, true).
   constant server is try network.accept(listener).
   after { network.close(server) catch nothing. }
-  check.expect((try network.sendSome(client, "44")) is 2).
+  check.expect((try network.push(client, "44")) is 2).
   try network.shutdown(client, "write").
   constant received is try network.receive(server, 2).
   after { words.release(received) catch nothing. }

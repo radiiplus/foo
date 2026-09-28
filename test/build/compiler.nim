@@ -1,6 +1,6 @@
 import std/os
 import ../../src/build/compiler
-import ../../src/ir/valid
+import ../../src/ir/[kind, valid]
 
 let root = getTempDir() / "foo-build-compiler-test"
 if dirExists(root): removeDir(root)
@@ -19,5 +19,17 @@ doAssert lowered.unitPath == "main.iv"
 doAssert lowered.requires == "system"
 writeFile(file, "start() { give. }")
 doAssert not c.check(file).cached
+writeFile(file, """
+use time as clock.
+constant delay is clock.millis(0).
+clock.wait(delay) try.
+""")
+let script = c.ir(file)
+var foundFailableMain = false
+for function in script.funcs:
+  if function.name == "main":
+    foundFailableMain = function.ret.kind == TypeKind.Failable
+doAssert foundFailableMain
+doAssert validate(script).len == 0
 removeDir(root)
 echo "build compiler parity: ok"

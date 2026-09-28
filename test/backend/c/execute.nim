@@ -35,7 +35,8 @@ let main = Function(name: "main", ret: nothing, blocks: @[
   Block(label: "done", term: Instruction(kind: InstrKind.Return))
 ])
 let module = Module(name: "control", funcs: @[choose, main])
-let output = ".artifacts" / "test-c-execute"
+let run = getEnv("FOOTESTID", "local")
+let output = ".artifacts" / ("test-c-execute-" & run)
 if dirExists(output): removeDir(output)
 let built = build(module, "dev", output,
   Native(name: "control", compile: true, compiler: "clang", run: true))
@@ -43,7 +44,7 @@ doAssert built.success, built.error
 doAssert fileExists(built.artifact)
 doAssert built.output.len == 0
 
-let compatibilityOutput = ".artifacts" / "test-c-execute-compatibility"
+let compatibilityOutput = ".artifacts" / ("test-c-execute-compatibility-" & run)
 if dirExists(compatibilityOutput): removeDir(compatibilityOutput)
 createDir(compatibilityOutput)
 let nativeSource = compatibilityOutput / "extra.c"

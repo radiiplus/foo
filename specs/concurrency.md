@@ -8,7 +8,7 @@ A task belongs to an explicit task scope. Leaving that scope joins every child b
 
 A child may borrow its scope's storage while the scope remains alive. A child that outlives that scope must own its data or use a longer-lived allocator. Unprovable lifetimes are rejected; dynamic checks supplement, rather than replace, the static rules.
 
-Task failures remain fallible results. Joining reports failures through the single Error model. When several children fail, their creation order determines which failure propagates; all children are still joined. A failure already leaving the parent keeps precedence over child failures encountered during cleanup.
+Task failures remain failable results. Joining reports failures through the single Error model. When several children fail, their creation order determines which failure propagates; all children are still joined. A failure already leaving the parent keeps precedence over child failures encountered during cleanup.
 
 ## Synchronization
 Ordinary concurrent conflicting accesses without synchronization are invalid. Channels transfer values under their ownership contract and establish a happens-before relation between a successful send and its matching receive. Closing a channel prevents new sends; buffered values remain receivable before the closed result.

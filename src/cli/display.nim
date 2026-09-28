@@ -167,6 +167,7 @@ proc report*(operation: Operation; phase, name, detail: string; cached = false) 
   of "checked": operation.update("Source", name, stateComplete)
   of "build": operation.update("Compilation", name, stateWorking)
   of "path": operation.update("Compilation", "path", stateComplete, detail, true)
+  of "strategy": operation.update("Optimization", name, stateComplete, detail)
   of "tick":
     inc operation.frame
     operation.render()

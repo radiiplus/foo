@@ -1,12 +1,13 @@
 -- Combines, trims, and splits text using byte offsets and ASCII whitespace.
 use sequence as items.
-use "sequence" function sized[T](length unsigned 64) giving fallible sequence of T.
-public use "text" function concatenate(left of type text, right of type text) of type fallible text.
-public use "text" function trim(content of type text) of type fallible text.
+use "sequence" function sized[T](length unsigned 64) giving failable sequence of T.
+public use "text" function concatenate(left of type text, right of type text) of type failable text.
+public use "text" function trim(content of type text) of type failable text.
 public use "text" function length(content of type text) of type unsigned 64.
-public use "text" function slice(content of type text, first of type unsigned 64, last of type unsigned 64) of type fallible text.
-public use "text" function release(content of type text) of type fallible nothing.
-public function split(content of type text, separator of type text) of type fallible sequence of text {
+public use "text" function slice(content of type text, first of type unsigned 64, last of type unsigned 64) of type failable text.
+public use "text" function find(content of type text, value of type text) of type optional unsigned 64.
+public use "text" function release(content of type text) of type failable nothing.
+public function split(content of type text, separator of type text) of type failable sequence of text {
   constant separatorLength is length(separator).
   constant contentLength is length(content).
   when separatorLength is 0 { give fail(Error.EmptySeparator). }

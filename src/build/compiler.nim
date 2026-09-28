@@ -1,4 +1,4 @@
-import std/[json, os, sequtils, strutils, tables]
+import std/[json, os, sequtils, sets, strutils, tables]
 import ../diag/engine
 import ../lex/lexer
 import ../parse/parser
@@ -15,6 +15,7 @@ import ../ir/valid
 import ../ast/node
 import ../pkg/hash
 import ../pkg/lint
+import ../opt/profile as optimizationProfile
 import ../interop/expand as interopExpand
 import "../interop/bind.nim" as cBinding
 
@@ -31,14 +32,18 @@ type
     optimization*: bool
     target*: string
     cpu*: string
+    hot*: HashSet[string]
     checked*: Table[string, string]
     programs*: Table[string, Program]
     typings*: Table[string, Table[pointer, semantic.Type]]
 
 proc newCompiler*(root: string; backend = "zig"; includes: seq[string] = @[];
-    mode = "dev"; optimization = false; target = ""; cpu = ""): Compiler =
+    mode = "dev"; optimization = false; target = ""; cpu = "";
+    profile = ""): Compiler =
+  let counts = optimizationProfile.load(profile)
   Compiler(root: absolutePath(root), backend: backend, includes: includes, mode: mode,
     optimization: optimization, target: target, cpu: cpu,
+    hot: optimizationProfile.hot(counts),
     checked: initTable[string, string](), programs: initTable[string, Program](),
     typings: initTable[string, Table[pointer, semantic.Type]]())
 
@@ -63,7 +68,9 @@ proc prepareEntry(program: Program) =
     if imported.name.text == "io": ioQualifier = qualifier
     elif imported.name.text == "log": logQualifier = qualifier
 
-  var needsIo, needsLog: bool
+  var needsIo, needsLog, foundTry, foundRuntime: bool
+  var failableTop = initTable[pointer, bool]()
+  var runtimeTop = initTable[pointer, bool]()
   proc inspect(expression: Expression)
   proc inspectBlock(body: Block)
   proc inspectStatement(statement: Statement)
@@ -71,6 +78,7 @@ proc prepareEntry(program: Program) =
     if expression == nil: return
     case expression.tag
     of "call":
+      foundRuntime = true
       let call = Call(expression)
       if call.callee.tag == "name":
         let name = Name(call.callee).text
@@ -78,12 +86,20 @@ proc prepareEntry(program: Program) =
         elif name in ["__bare_log.message", "__bare_log.error"]: needsLog = true
       inspect(call.callee)
       for argument in call.args: inspect(argument)
-    of "unary": inspect(Unary(expression).operand)
+    of "sequence-value":
+      for item in Values(expression).items: inspect(item)
+    of "closure": inspectBlock(Closure(expression).body)
+    of "unary":
+      if Unary(expression).op == "try": foundTry = true
+      inspect(Unary(expression).operand)
     of "binary": inspect(Binary(expression).left); inspect(Binary(expression).right)
     of "group": inspect(Group(expression).expr)
     of "field": inspect(Field(expression).object)
     of "index": inspect(Index(expression).object); inspect(Index(expression).index)
-    of "allocation": inspect(Allocation(expression).size); inspect(Allocation(expression).owner)
+    of "allocation":
+      foundRuntime = true
+      inspect(Allocation(expression).size)
+      inspect(Allocation(expression).owner)
     of "error-chain": inspect(ErrorChain(expression).expr); inspect(ErrorChain(expression).context)
     else: discard
   proc inspectStatement(statement: Statement) =
@@ -91,7 +107,8 @@ proc prepareEntry(program: Program) =
     case statement.tag
     of "constant": inspect(Constant(statement).value)
     of "mutable": inspect(Mutable(statement).value)
-    of "function": inspectBlock(Function(statement).body)
+    of "destructure": inspect(Destructure(statement).value)
+    of "function": inspect(Function(statement).guard); inspectBlock(Function(statement).body)
     of "give": inspect(Give(statement).value)
     of "assignment": inspect(Assignment(statement).target); inspect(Assignment(statement).value)
     of "when":
@@ -119,7 +136,12 @@ proc prepareEntry(program: Program) =
   proc inspectBlock(body: Block) =
     if body != nil:
       for statement in body.stmts: inspectStatement(statement)
-  inspectBlock(unit.body)
+  for statement in unit.body.stmts:
+    foundTry = false
+    foundRuntime = false
+    inspectStatement(statement)
+    if foundTry: failableTop[cast[pointer](statement)] = true
+    if foundRuntime: runtimeTop[cast[pointer](statement)] = true
 
   if needsIo and ioQualifier.len == 0: ioQualifier = "__prelude_io"
   if needsLog and logQualifier.len == 0: logQualifier = "__prelude_log"
@@ -135,10 +157,13 @@ proc prepareEntry(program: Program) =
       if call.callee.tag == "name":
         let name = Name(call.callee)
         if name.text == "display": name.text = ioQualifier & ".show"
-        elif name.text == "__bare_log.message": name.text = logQualifier & ".showMessage"
-        elif name.text == "__bare_log.error": name.text = logQualifier & ".showError"
+        elif name.text == "__bare_log.message": name.text = logQualifier & ".note"
+        elif name.text == "__bare_log.error": name.text = logQualifier & ".alert"
       rewrite(call.callee)
       for argument in call.args: rewrite(argument)
+    of "sequence-value":
+      for item in Values(expression).items: rewrite(item)
+    of "closure": rewriteBlock(Closure(expression).body)
     of "unary": rewrite(Unary(expression).operand)
     of "binary": rewrite(Binary(expression).left); rewrite(Binary(expression).right)
     of "group": rewrite(Group(expression).expr)
@@ -152,7 +177,8 @@ proc prepareEntry(program: Program) =
     case statement.tag
     of "constant": rewrite(Constant(statement).value)
     of "mutable": rewrite(Mutable(statement).value)
-    of "function": rewriteBlock(Function(statement).body)
+    of "destructure": rewrite(Destructure(statement).value)
+    of "function": rewrite(Function(statement).guard); rewriteBlock(Function(statement).body)
     of "give": rewrite(Give(statement).value)
     of "assignment": rewrite(Assignment(statement).target); rewrite(Assignment(statement).value)
     of "when":
@@ -199,12 +225,27 @@ proc prepareEntry(program: Program) =
     "assignment", "break", "continue", "try", "defer", "unsafe", "action",
     "machine", "advance", "unreachable-statement"]
   var declarations, body: seq[Statement]
+  var runtimeStarted, entryFailable: bool
   for statement in unit.body.stmts:
-    if statement.tag in executable: body.add(statement)
-    else: declarations.add(statement)
+    let failable = failableTop.getOrDefault(cast[pointer](statement))
+    let runtimeBinding = statement.tag in ["constant", "mutable"] and
+      runtimeTop.getOrDefault(cast[pointer](statement))
+    let bindingAfterRuntime = runtimeStarted and
+      statement.tag in ["constant", "mutable"]
+    if statement.tag in executable or runtimeBinding or bindingAfterRuntime:
+      body.add(statement)
+      runtimeStarted = true
+      if failable: entryFailable = true
+    else:
+      declarations.add(statement)
   if body.len == 0: return
   declarations.add(Function(tag: "function", span: body[0].span,
     name: Name(tag: "name", span: body[0].span, text: "start"), params: @[],
+    returnType: if entryFailable:
+      Error(tag: "error", span: body[0].span,
+        elem: Primitive(tag: "primitive", span: body[0].span,
+          name: "nothing"))
+    else: nil,
     body: Block(tag: "block", span: body[0].span, stmts: body)))
   unit.body.stmts = declarations
 
@@ -269,7 +310,7 @@ proc ir*(compiler: Compiler; file: string): Module =
   if errors.len > 0: raise newException(ValueError, errors.mapIt(it.msg).join("\n"))
   if compiler.optimization or compiler.mode == "release":
     let optimized = optimize(lowered, OptimizeOptions(inline: compiler.mode == "release",
-      target: compiler.target, cpu: compiler.cpu)).module
+      target: compiler.target, cpu: compiler.cpu, hot: compiler.hot)).module
     let invalid = validate(optimized)
     if invalid.len > 0: raise newException(ValueError, invalid.mapIt(it.msg).join("\n"))
     return optimized

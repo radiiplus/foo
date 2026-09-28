@@ -1,0 +1,5 @@
+-- Measures standard runtime initialization and one hosted query.
+use system as machine.
+use testing as check.
+
+check.expect(machine.cores() try greater than 0).

@@ -1,51 +1,20 @@
 -- Exercises types syntax.
-type Box[T] is record { value of type T. } derives Equatable, Hash.
-function identity[T](value of type T) { give value. }
+define Person as record {
+  name of type text.
+  age of type unsigned 32.
+} derives Equatable, Hash.
 
-type Message is choice {
-  Data(sequence of byte).
-  Failure(ErrorInfo).
+define Message as choice {
+  Data(text).
   Closed.
 }.
 
-match message {
-  case Data(bytes) when bytes.length is greater than 0 { consume(bytes). }
-  case Data(bytes) { ignore(bytes). }
-  case Failure(info) { report(info). }
-  case Closed { stop. }
+define Handle as opaque.
+define Visitor as function taking (pointer to Handle, integer 32) giving nothing.
+
+function choose[T, U](left T, right U)
+  giving T where T is Equatable, U is Hash {
+  give left.
 }
 
-function dot(left of type vector[8, decimal 32], right of type vector[8, decimal 32]) {
-  constant product is left times right.
-  constant answer of type decimal 32 is reduce(product, "add").
-  give answer.
-}
-
-constant ones of type vector[8, decimal 32] is splat(1.0).
-constant reversed is shuffle(ones, ones, 7, 6, 5, 4, 3, 2, 1, 0).
-constant chosen is select(mask, left, right).
-
-type Flags is packed record {
-  mode of type unsigned 3.
-  enabled of type boolean.
-  kind of type unsigned 4.
-}.
-
-type Value is c union {
-  signed of type integer 32.
-  real of type decimal 64.
-}.
-
-type Window is opaque.
-
-type Visitor is function(pointer to Window, integer 32) of type nothing for c.
-
-function visit(window of type pointer to Window, event of type integer 32)
-  of type nothing for c {
-  give.
-}
-
-use "c" function install(
-  callback of type Visitor,
-  window of type pointer to Window
-) of type nothing.
+define Box[T] as record { value of type T. } where T is Equatable.

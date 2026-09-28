@@ -29,7 +29,7 @@ identified by package, file and declaration.
 | `sequence of T` | A bounded contiguous view of T elements with a lifetime |
 | `pointer to T` | A non-null, aligned address of a T with provenance and a lifetime |
 | `optional T` | An absent value or a present T |
-| `fallible T` | A successful T or an Error with its trace |
+| `failable T` | A successful T or an Error with its trace |
 | `function taking (A, B) giving C` | A callable signature |
 | `Error` | An open error identity; see [errors](errors.md) |
 | `Allocator` | A managed allocation capability; see [memory](memory.md) |
@@ -48,15 +48,14 @@ Permitted implicit conversions are:
 
 1. An integer literal to a numeric type that represents it exactly.
 2. A numeric value to a wider type only if every source value is representable.
-3. T to `optional T`, as present, and T to `fallible T`, as success.
-4. A unit literal to `optional T`, as absent; this rule has priority over
-   present-value conversion when T itself is nothing.
+3. T to `optional T`, as present, and T to `failable T`, as success.
+4. The `null` literal to `optional T`, as absent. It has no non-optional type.
 5. A value of bottom type to any required type, and region weakening from a
    longer valid lifetime to a shorter one.
 
 Numeric-to-Boolean, text-to-byte-sequence, pointer-to-integer, narrowing and
 lossy integer-to-floating conversions are never implicit.
-Explicit conversions are ordinary library calls and are fallible when their
+Explicit conversions are ordinary library calls and are failable when their
 input can be invalid. There is no source cast operator.
 
 An unconstrained integer literal defaults to integer and an unconstrained
@@ -69,10 +68,11 @@ operand types or a unique least common type under the lossless numeric
 conversions above. Ambiguous or unrepresentable combinations require an explicit
 library conversion. Boolean operators accept only Boolean values.
 
-Lifting does not reorder wrappers: `optional fallible T` and
-`fallible optional T` differ. There is no implicit unwrap.
+Lifting does not reorder wrappers: `optional failable T` and
+`failable optional T` differ. There is no implicit unwrap.
 A present unit requires explicit construction through the option library;
-`nothing` in an expected optional type always denotes absence.
+`null` in an expected optional type always denotes absence, while `nothing`
+always denotes unit.
 Error values are ordinary values; only `fail(error)` constructs a failure.
 
 Signed arithmetic overflow, division by zero, invalid indexing and invalid
@@ -100,7 +100,11 @@ define Handle as opaque.
 define Visitor as function taking (pointer to Handle, integer 32) giving nothing.
 ```
 
-Record constructors supply one value per field in declaration order.
+Record constructors supply one value per field in declaration order, or label
+every argument to supply fields in any order. Labeled construction rejects
+unknown, repeated, missing, or mixed positional fields. A declaration such as
+`constant Person(name, age) is person.` destructures a record into immutable
+field bindings and must name every field exactly once.
 Choice variants carry zero or one payload; a record groups multiple payload
 fields. A choice value is always tagged. Plain records have no foreign layout
 guarantee. An opaque value has no accessible size or fields and is used only
@@ -115,7 +119,8 @@ operation. Mutating a sequence requires a mutable, unaliased write permission.
 Pointer identity includes the allocation it came from. Raw address arithmetic,
 alignment changes and provenance removal require unsafe or native access.
 Ordinary code cannot fabricate a pointer from a number. Nullability is expressed
-only by `optional pointer to T`.
+only by `optional pointer to T`; `null` constructs the absent optional state and
+never a bare pointer.
 
 ## Functions and constraints
 

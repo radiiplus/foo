@@ -9,6 +9,10 @@ let opened = lsp.handle(%*{"jsonrpc": "2.0", "method": "textDocument/didOpen", "
 doAssert opened.len == 1
 doAssert opened[0]["method"].getStr() == "textDocument/publishDiagnostics"
 doAssert opened[0]["params"]["diagnostics"].len == 0
+let invalid = lsp.handle(%*{"jsonrpc": "2.0", "method": "textDocument/didChange", "params": {"textDocument": {"uri": "file:///main.iv", "version": 2}, "contentChanges": [{"text": "constant answer is ."}]}})
+doAssert invalid[0]["params"]["diagnostics"].len > 0
+let repaired = lsp.handle(%*{"jsonrpc": "2.0", "method": "textDocument/didChange", "params": {"textDocument": {"uri": "file:///main.iv", "version": 3}, "contentChanges": [{"text": "constant answer is 42.\nstart() { give answer. }"}]}})
+doAssert repaired[0]["params"]["diagnostics"].len == 0
 let definition = lsp.handle(%*{"jsonrpc": "2.0", "id": 4, "method": "textDocument/definition", "params": {"textDocument": {"uri": "file:///main.iv"}, "position": {"line": 1, "character": 16}}})
 doAssert definition[0]["result"].kind == JObject
 doAssert definition[0]["result"]["range"]["start"]["line"].getInt() == 0

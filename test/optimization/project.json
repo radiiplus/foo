@@ -1,0 +1,10 @@
+{
+  "name": "optimization-fixture",
+  "version": "0.1.0",
+  "language": "1",
+  "build": {
+    "backend": "c",
+    "optimize": "release",
+    "semantic": true
+  }
+}

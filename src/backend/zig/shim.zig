@@ -49,6 +49,10 @@ pub fn deinit() void {
     }
 }
 
+pub fn benchmark() void {
+    library.benchmarkReport();
+}
+
 pub fn allocScope(comptime T: type) Error!*T {
     return global_arena.allocator().create(T) catch return Error.OutOfMemory;
 }
@@ -258,12 +262,7 @@ pub fn task_backend_name() [*:0]const u8 {
 }
 
 fn task_backend() TaskBackend {
-    return switch (builtin.os.tag) {
-        .linux => .epoll,
-        .macos, .ios, .freebsd, .netbsd, .openbsd => .kqueue,
-        .windows => .iocp,
-        else => .threaded,
-    };
+    return .threaded;
 }
 
 pub fn task_executor_init() Error!*TaskExecutor {
@@ -290,9 +289,32 @@ pub fn task_block_on(func: *const fn () callconv(.c) void) void {
     func();
 }
 
+fn taskConvert(comptime T: type, value: anytype) T {
+    return switch (@typeInfo(T)) {
+        .pointer => |pointer| if (pointer.size == .one)
+            @ptrCast(@alignCast(value))
+        else
+            value,
+        .int => @intCast(value),
+        else => value,
+    };
+}
+
+pub fn taskCall(comptime operation: []const u8, comptime Result: type, call_args: anytype) Result {
+    const function = @field(@This(), operation);
+    const info = @typeInfo(@TypeOf(function)).@"fn";
+    var converted: std.meta.ArgsTuple(@TypeOf(function)) = undefined;
+    inline for (info.params, 0..) |param, index|
+        converted[index] = taskConvert(param.type.?, call_args[index]);
+    if (@typeInfo(Result) == .error_union)
+        return taskConvert(@typeInfo(Result).error_union.payload,
+            try @call(.auto, function, converted));
+    return taskConvert(Result, @call(.auto, function, converted));
+}
+
 pub const TaskChannel = struct {
     lock: std.atomic.Value(u8) = .init(0),
-    slots: [256]usize = undefined,
+    slots: [256]i64 = undefined,
     head: usize = 0,
     tail: usize = 0,
     count: usize = 0,
@@ -304,7 +326,7 @@ pub fn task_channel_init() Error!*TaskChannel {
     return handle;
 }
 
-pub fn task_channel_send(channel_handle: *TaskChannel, value: usize) bool {
+pub fn task_channel_send(channel_handle: *TaskChannel, value: i64) bool {
     task_lock(&channel_handle.lock);
     defer task_unlock(&channel_handle.lock);
     if (channel_handle.count == channel_handle.slots.len) return false;
@@ -314,7 +336,7 @@ pub fn task_channel_send(channel_handle: *TaskChannel, value: usize) bool {
     return true;
 }
 
-pub fn task_channel_recv(channel_handle: *TaskChannel, out: *usize) bool {
+pub fn task_channel_recv(channel_handle: *TaskChannel, out: *i64) bool {
     task_lock(&channel_handle.lock);
     defer task_unlock(&channel_handle.lock);
     if (channel_handle.count == 0) return false;
@@ -327,17 +349,17 @@ pub fn task_channel_recv(channel_handle: *TaskChannel, out: *usize) bool {
 pub fn channel() Error!*TaskChannel {
     return task_channel_init();
 }
-pub fn send(channel_handle: *TaskChannel, value: u64) bool {
+pub fn send(channel_handle: *TaskChannel, value: i64) bool {
     return task_channel_send(channel_handle, value);
 }
-pub fn receive(channel_handle: *TaskChannel, out: *u64) bool {
-    var value: usize = 0;
+pub fn receive(channel_handle: *TaskChannel, out: *i64) bool {
+    var value: i64 = 0;
     if (!task_channel_recv(channel_handle, &value)) return false;
     out.* = value;
     return true;
 }
 
-const ScopedCall = struct { func: *const fn (usize) callconv(.c) void, arg: usize };
+const ScopedCall = struct { func: *const fn (i64) callconv(.c) void, arg: i64 };
 
 fn run_scoped(call: ScopedCall) void {
     call.func(call.arg);
@@ -354,7 +376,7 @@ pub fn task_scope_init() Error!*TaskScope {
     return handle;
 }
 
-pub fn task_scope_spawn(scope_handle: *TaskScope, func: *const fn (usize) callconv(.c) void, argument: usize) bool {
+pub fn task_scope_spawn(scope_handle: *TaskScope, func: *const fn (i64) callconv(.c) void, argument: i64) bool {
     task_lock(&scope_handle.lock);
     defer task_unlock(&scope_handle.lock);
     for (&scope_handle.threads) |*slot| {
@@ -385,7 +407,7 @@ fn task_unlock(state: *std.atomic.Value(u8)) void {
 pub fn scope() Error!*TaskScope {
     return task_scope_init();
 }
-pub fn launch(scope_handle: *TaskScope, callback: *const fn (usize) callconv(.c) void, argument: u64) bool {
+pub fn launch(scope_handle: *TaskScope, callback: *const fn (i64) callconv(.c) void, argument: i64) bool {
     return task_scope_spawn(scope_handle, callback, argument);
 }
 pub fn join(scope_handle: *TaskScope) void {
@@ -396,7 +418,7 @@ pub const TaskPool = TaskScope;
 pub fn task_pool_init() Error!*TaskPool {
     return task_scope_init();
 }
-pub fn task_pool_spawn(pool_handle: *TaskPool, func: *const fn (usize) callconv(.c) void, argument: usize) bool {
+pub fn task_pool_spawn(pool_handle: *TaskPool, func: *const fn (i64) callconv(.c) void, argument: i64) bool {
     return task_scope_spawn(pool_handle, func, argument);
 }
 pub fn task_pool_join(pool_handle: *TaskPool) void {
@@ -405,7 +427,7 @@ pub fn task_pool_join(pool_handle: *TaskPool) void {
 pub fn pool() Error!*TaskPool {
     return task_pool_init();
 }
-pub fn submit(pool_handle: *TaskPool, callback: *const fn (usize) callconv(.c) void, argument: u64) bool {
+pub fn submit(pool_handle: *TaskPool, callback: *const fn (i64) callconv(.c) void, argument: i64) bool {
     return task_pool_spawn(pool_handle, callback, argument);
 }
 pub fn wait(pool_handle: *TaskPool) void {

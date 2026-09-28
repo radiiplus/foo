@@ -5,7 +5,6 @@ type TaskBackend* = enum
 
 proc taskBackend*(os: string): TaskBackend =
   if os == "linux": tbEpoll
-  elif os in ["macos", "ios", "freebsd", "openbsd", "netbsd"]: tbKqueue
   elif os == "windows": tbIocp
   else: tbThreaded
 

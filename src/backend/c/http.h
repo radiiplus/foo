@@ -118,7 +118,7 @@ static bool foo_http_header_name(FOOText name) {
   }
   return true;
 }
-static FOOResult foo_http_addHeader(void *pointer, FOOText name,
+static FOOResult foo_http_attach(void *pointer, FOOText name,
                                      FOOText content) {
   FOOClient *value = pointer;
   if (!foo_http_header_name(name) || memchr(content.data, '\r', content.len) ||
@@ -174,7 +174,7 @@ static FOOResult foo_http_addHeader(void *pointer, FOOText name,
 #endif
   return (FOOResult){0};
 }
-static void foo_http_clearHeaders(void *pointer) {
+static void foo_http_clear(void *pointer) {
   FOOClient *value = pointer;
 #ifdef _WIN32
   free(value->headers);
@@ -584,9 +584,13 @@ static FOOResult foo_http_listen(FOOText host, uint16_t port) {
 static uint16_t foo_http_port(void *value) {
   return ((FOOServer *)value)->port;
 }
-static void foo_http_closeServer(void *value) {
+static void foo_http_stop(void *value) {
   FOO_HTTP_CLOSE(((FOOServer *)value)->socket);
   free(value);
+}
+
+static void foo_http_shutdown(void *value) {
+  foo_http_stop(value);
 }
 static FOOResult foo_http_accept(void *value) {
   FOOHttpSocket fd;

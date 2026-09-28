@@ -10,7 +10,8 @@ type Checker* = ref object
   environment: Environment
   typeDefs: Table[string, semantic.Type]
   aliases: Table[string, ast.Alias]
-  functions: Table[string, ast.Function]
+  functions: Table[string, seq[ast.Function]]
+  closures: HashSet[string]
   checked: HashSet[pointer]
   checking: HashSet[pointer]
   defining: HashSet[string]
@@ -35,9 +36,9 @@ proc newChecker*(diag: Engine): Checker =
   result = Checker(diag: diag, environment: newEnvironment(),
     typeDefs: initTable[string, semantic.Type](),
     aliases: initTable[string, ast.Alias](),
-    functions: initTable[string, ast.Function](),
+    functions: initTable[string, seq[ast.Function]](),
     checked: initHashSet[pointer](), checking: initHashSet[pointer](),
-    defining: initHashSet[string](),
+    defining: initHashSet[string](), closures: initHashSet[string](),
     resultType: unknown(), parameters: initTable[string, semantic.Type](),
     types: initTable[pointer, semantic.Type]())
   for name in ["integer", "unsigned", "decimal", "boolean", "byte",
@@ -267,8 +268,40 @@ proc annotation(checker: Checker; node: ast.`Type`): semantic.Type =
   else: result = unknown()
   discard checker.remember(node, result)
 
+proc constructor(checker: Checker; alias: ast.Alias; choice: semantic.Type;
+    name: string): semantic.Type =
+  let payload = choice.variants.getOrDefault(name)
+  if alias.typeParams.len == 0:
+    return if payload == nil: choice else:
+      semantic.Type(kind: "function", params: @[payload], ret: choice)
+
+  var replacements = initTable[string, semantic.Type]()
+  var arguments: seq[semantic.Type]
+  var generics: seq[string]
+  var constraints: seq[tuple[subject: string, trait: string]]
+  for parameter in alias.typeParams:
+    let parameterType = semantic.Type(kind: "named", name: parameter.name.text)
+    replacements[parameter.name.text] = parameterType
+    arguments.add(parameterType)
+    generics.add(parameter.name.text)
+    if parameter.bound != nil:
+      constraints.add((parameter.name.text, parameter.bound.text))
+  for constraint in alias.constraints:
+    constraints.add((constraint.subject.text, constraint.trait.text))
+
+  let specialized = substitute(choice, replacements)
+  specialized.arguments = arguments
+  specialized.name = alias.name.text & "[" & generics.join(", ") & "]"
+  let specializedPayload = specialized.variants.getOrDefault(name)
+  semantic.Type(kind: "function",
+    params: if specializedPayload == nil: @[] else: @[specializedPayload],
+    ret: specialized, generics: generics, constraints: constraints)
+
 proc signature(checker: Checker; node: ast.Node): semantic.Type =
   var params: seq[semantic.Type]
+  var labels: seq[string]
+  var defaults: seq[bool]
+  var variadic = false
   var returnType: semantic.Type
   var abi = ""
   var generics: seq[string]
@@ -281,7 +314,13 @@ proc signature(checker: Checker; node: ast.Node): semantic.Type =
       generics.add(parameter.name.text)
       checker.parameters[parameter.name.text] = semantic.Type(kind: "named", name: parameter.name.text)
       if parameter.bound != nil: constraints.add((parameter.name.text, parameter.bound.text))
-    for parameter in function.params: params.add(checker.annotation(parameter.type))
+    for parameter in function.params:
+      let parameterType = checker.annotation(parameter.type)
+      params.add(if parameter.variadic:
+        semantic.Type(kind: "sequence", elem: parameterType, constant: true) else: parameterType)
+      labels.add(parameter.name.text)
+      defaults.add(parameter.default != nil)
+      if parameter.variadic: variadic = true
     returnType = if function.returnType == nil: unknown() else: checker.annotation(function.returnType)
     abi = function.abi
     for constraint in function.constraints: constraints.add((constraint.subject.text, constraint.trait.text))
@@ -291,17 +330,270 @@ proc signature(checker: Checker; node: ast.Node): semantic.Type =
       generics.add(parameter.name.text)
       checker.parameters[parameter.name.text] = semantic.Type(kind: "named", name: parameter.name.text)
       if parameter.bound != nil: constraints.add((parameter.name.text, parameter.bound.text))
-    for parameter in function.params: params.add(checker.annotation(parameter.type))
+    for parameter in function.params:
+      params.add(checker.annotation(parameter.type))
+      labels.add(parameter.name.text)
+      defaults.add(false)
     returnType = checker.annotation(function.returnType)
     abi = function.abi
     for constraint in function.constraints: constraints.add((constraint.subject.text, constraint.trait.text))
   checker.parameters = savedParameters
   semantic.Type(kind: "function", params: params, ret: returnType,
     abi: abi, generics: generics, constraints: constraints,
+    labels: labels, defaults: defaults, variadic: variadic,
     borrows: if node.tag == "extern-function" and
       ((abi == "runtime.memory" and ast.ExternFunction(node).symbol in
-        ["transfer", "clear", "compare"]) or abi in ["runtime", "runtime.hashmap"]):
+        ["transfer", "clear", "compare", "identical"]) or abi in ["runtime", "runtime.table"]):
         toSeq(0 ..< params.len) else: @[])
+
+proc clone(node: ast.Expression;
+    replacements: Table[string, ast.Expression]): ast.Expression =
+  if node == nil: return nil
+  case node.tag
+  of "name":
+    let value = ast.Name(node)
+    if replacements.hasKey(value.text): return replacements[value.text]
+    ast.Name(tag: "name", span: node.span, text: value.text)
+  of "integer": ast.Integer(tag: "integer", span: node.span, value: ast.Integer(node).value)
+  of "decimal": ast.Decimal(tag: "decimal", span: node.span, value: ast.Decimal(node).value)
+  of "text": ast.Text(tag: "text", span: node.span, value: ast.Text(node).value)
+  of "character": ast.Character(tag: "character", span: node.span, value: ast.Character(node).value)
+  of "true": ast.`True`(tag: "true", span: node.span)
+  of "false": ast.`False`(tag: "false", span: node.span)
+  of "nothing": ast.Nothing(tag: "nothing", span: node.span)
+  of "null": ast.Null(tag: "null", span: node.span)
+  of "newline": ast.NewlineExpr(tag: "newline", span: node.span)
+  of "group": ast.Group(tag: "group", span: node.span,
+    expr: clone(ast.Group(node).expr, replacements))
+  of "unary":
+    let value = ast.Unary(node)
+    ast.Unary(tag: "unary", span: node.span, op: value.op,
+      operand: clone(value.operand, replacements))
+  of "binary":
+    let value = ast.Binary(node)
+    ast.Binary(tag: "binary", span: node.span, op: value.op,
+      left: clone(value.left, replacements),
+      right: clone(value.right, replacements))
+  of "call":
+    let value = ast.Call(node)
+    var arguments: seq[ast.Expression]
+    for argument in value.args:
+      arguments.add(clone(argument, replacements))
+    ast.Call(tag: "call", span: node.span,
+      callee: clone(value.callee, replacements), args: arguments,
+      names: value.names, types: value.types)
+  of "field":
+    let value = ast.Field(node)
+    ast.Field(tag: "field", span: node.span,
+      `object`: clone(value.object, replacements), field: value.field)
+  of "index":
+    let value = ast.Index(node)
+    ast.Index(tag: "index", span: node.span,
+      `object`: clone(value.object, replacements),
+      index: clone(value.index, replacements))
+  of "sequence-value":
+    var items: seq[ast.Expression]
+    for item in ast.Values(node).items:
+      items.add(clone(item, replacements))
+    ast.Values(tag: "sequence-value", span: node.span, items: items)
+  else: node
+
+proc normalize(checker: Checker; call: ast.Call;
+    declaration: ast.Function) =
+  if declaration.params.len == 0:
+    if call.names.anyIt(it.len > 0):
+      checker.diag.emit(Code.Invalid, call.span, "This function has no named parameters")
+    return
+  var ordered = newSeq[ast.Expression](declaration.params.len)
+  var supplied = newSeq[bool](declaration.params.len)
+  var packed: seq[ast.Expression]
+  var positional = 0
+  let rest = if declaration.params[^1].variadic:
+    declaration.params.high else: -1
+  for index, argument in call.args:
+    let label = if index < call.names.len: call.names[index] else: ""
+    if label.len > 0:
+      var found = -1
+      for parameterIndex, parameter in declaration.params:
+        if parameter.name.text == label: found = parameterIndex
+      if found < 0:
+        checker.diag.emit(Code.Invalid, argument.span,
+          "unknown named argument '" & label & "'")
+      elif found == rest:
+        checker.diag.emit(Code.Invalid, argument.span,
+          "variadic parameter '" & label & "' is supplied positionally")
+      elif supplied[found]:
+        checker.diag.emit(Code.Duplicate, argument.span,
+          "argument '" & label & "' was supplied more than once")
+      else:
+        ordered[found] = argument
+        supplied[found] = true
+    elif rest >= 0 and positional >= rest:
+      packed.add(argument)
+    elif positional < declaration.params.len:
+      ordered[positional] = argument
+      supplied[positional] = true
+      inc positional
+    else:
+      checker.diag.emit(Code.Invalid, argument.span, "too many arguments")
+  var replacements = initTable[string, ast.Expression]()
+  for index, parameter in declaration.params:
+    if index == rest:
+      ordered[index] = ast.Values(tag: "sequence-value", span: call.span,
+        items: packed)
+      supplied[index] = true
+    elif not supplied[index] and parameter.default != nil:
+      ordered[index] = clone(parameter.default, replacements)
+      supplied[index] = true
+    elif not supplied[index]:
+      checker.diag.emit(Code.Invalid, call.span,
+        "missing argument '" & parameter.name.text & "'")
+      ordered[index] = ast.Broken(tag: "broken", span: call.span)
+    replacements[parameter.name.text] = ordered[index]
+  call.args = ordered
+  call.names = newSeq[string](ordered.len)
+  call.normalized = true
+
+proc normalizeRecord(checker: Checker; call: ast.Call;
+    recordType: semantic.Type) =
+  var names: seq[string]
+  for name in recordType.fields.keys: names.add(name)
+  var ordered = newSeq[ast.Expression](names.len)
+  var supplied = newSeq[bool](names.len)
+  var positional = 0
+  for index, argument in call.args:
+    let label = if index < call.names.len: call.names[index] else: ""
+    if label.len > 0:
+      let found = names.find(label)
+      if found < 0:
+        checker.diag.emit(Code.Invalid, argument.span,
+          "unknown record field '" & label & "'")
+      elif supplied[found]:
+        checker.diag.emit(Code.Duplicate, argument.span,
+          "record field '" & label & "' was supplied more than once")
+      else:
+        ordered[found] = argument
+        supplied[found] = true
+    elif positional < names.len:
+      ordered[positional] = argument
+      supplied[positional] = true
+      inc positional
+    else:
+      checker.diag.emit(Code.Invalid, argument.span,
+        "too many record field values")
+  for index, field in names:
+    if not supplied[index]:
+      checker.diag.emit(Code.Invalid, call.span,
+        "missing record field '" & field & "'")
+      ordered[index] = ast.Broken(tag: "broken", span: call.span)
+  call.args = ordered
+  call.names = newSeq[string](ordered.len)
+  call.normalized = true
+
+proc parameter(call: ast.Call; declaration: ast.Function;
+    argumentIndex: int): int =
+  let label = if argumentIndex < call.names.len: call.names[argumentIndex] else: ""
+  if label.len > 0:
+    for index, parameter in declaration.params:
+      if parameter.name.text == label: return index
+    return -1
+  var position = 0
+  for index in 0 .. argumentIndex:
+    let current = if index < call.names.len: call.names[index] else: ""
+    if current.len == 0:
+      if index == argumentIndex: return min(position, declaration.params.high)
+      inc position
+  -1
+
+proc matches(pattern, actual: semantic.Type; generics: seq[string]): bool =
+  if pattern == nil or actual == nil: return false
+  if pattern.kind == "named" and pattern.name in generics: return true
+  if pattern.kind != actual.kind: return canCoerce(actual, pattern).ok
+  case pattern.kind
+  of "array", "sequence", "optional", "error", "pointer":
+    actual.elem != nil and matches(pattern.elem, actual.elem, generics)
+  of "named", "record", "choice", "union", "opaque":
+    if pattern.arguments.len != actual.arguments.len: return false
+    let left = pattern.name.find('[')
+    let right = actual.name.find('[')
+    if left >= 0 and right >= 0 and
+        pattern.name[0 ..< left] != actual.name[0 ..< right]: return false
+    if (left < 0 or right < 0) and pattern.name != actual.name: return false
+    for index, expected in pattern.arguments:
+      if not matches(expected, actual.arguments[index], generics): return false
+    true
+  of "vector":
+    pattern.length == actual.length and actual.elem != nil and
+      matches(pattern.elem, actual.elem, generics)
+  of "function":
+    if pattern.params.len != actual.params.len: return false
+    for index, expected in pattern.params:
+      if not matches(expected, actual.params[index], generics): return false
+    matches(pattern.ret, actual.ret, generics)
+  else: canCoerce(actual, pattern).ok
+
+proc generic(pattern: semantic.Type; generics: seq[string]): bool =
+  if pattern == nil: return false
+  if pattern.kind == "named": return pattern.name in generics
+  if pattern.elem != nil and generic(pattern.elem, generics): return true
+  for argument in pattern.arguments:
+    if generic(argument, generics): return true
+  for parameter in pattern.params:
+    if generic(parameter, generics): return true
+  generic(pattern.ret, generics)
+
+proc select(checker: Checker; call: ast.Call; environment: Environment):
+    ast.Function =
+  if call.normalized or call.callee.tag != "name": return nil
+  let name = ast.Name(call.callee).text
+  if not checker.functions.hasKey(name): return nil
+  var actual: seq[semantic.Type]
+  for argument in call.args: actual.add(checker.infer(argument, environment))
+  var rank = low(int)
+  var best: seq[ast.Function]
+  for declaration in checker.functions[name]:
+    let signature = checker.signature(declaration)
+    var valid = true
+    var score = 0
+    var supplied = newSeq[bool](declaration.params.len)
+    for index, argumentType in actual:
+      let parameterIndex = parameter(call, declaration, index)
+      if parameterIndex < 0 or parameterIndex >= declaration.params.len:
+        valid = false
+        break
+      let parameter = declaration.params[parameterIndex]
+      let expected = if parameter.variadic: checker.annotation(parameter.type)
+        else: signature.params[parameterIndex]
+      let flexible = generic(expected, signature.generics)
+      if flexible and not matches(expected, argumentType, signature.generics):
+        valid = false
+        break
+      if not flexible and not canCoerce(argumentType, expected).ok:
+        valid = false
+        break
+      supplied[parameterIndex] = true
+      score += (if flexible: 1 elif typesEqual(argumentType, expected): 4 else: 2)
+    if not valid: continue
+    for index, parameter in declaration.params:
+      if not supplied[index] and parameter.default == nil and not parameter.variadic:
+        valid = false
+      elif supplied[index]: score += 1
+      elif parameter.default != nil: dec score
+    if declaration.params.len > 0 and declaration.params[^1].variadic: dec score
+    if not valid: continue
+    if score > rank:
+      rank = score
+      best = @[declaration]
+    elif score == rank:
+      best.add(declaration)
+  if best.len == 0:
+    checker.diag.emit(Code.Invalid, call.span,
+      "no overload of '" & name & "' accepts these arguments")
+    return checker.functions[name][0]
+  if best.len > 1:
+    checker.diag.emit(Code.Invalid, call.span,
+      "call to '" & name & "' is ambiguous between " & $best.len & " overloads")
+  best[0]
 
 proc boolean(checker: Checker; value: semantic.Type; at: Span) =
   if value == nil or value.kind != "primitive" or value.name != "boolean":
@@ -462,6 +754,12 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
   of "character": result = primitive("character")
   of "true", "false": result = primitive("boolean")
   of "nothing": result = primitive("nothing")
+  of "null":
+    if expected != nil and expected.kind == "optional": result = expected
+    else:
+      checker.diag.emit(Code.TypeMismatch, node.span,
+        "null needs an expected optional type")
+      result = unknown()
   of "uninitialized": result = if expected == nil: unknown() else: expected
   of "unreachable": result = primitive("never")
   of "newline": result = primitive("text")
@@ -476,8 +774,30 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
       result = unknown()
     elif not environment.initialized(name):
       checker.diag.emit(Code.Invalid, node.span, "Read of uninitialized '" & name & "'")
+    elif result.kind == "function" and result.generics.len > 0 and
+        result.params.len == 0 and result.ret != nil and
+        result.ret.kind == "choice" and expected != nil and
+        expected.kind == "choice" and
+        result.ret.name.split('[')[0] == expected.name.split('[')[0] and
+        result.ret.arguments.len == expected.arguments.len:
+      var replacements = initTable[string, semantic.Type]()
+      for index, argument in result.ret.arguments:
+        if argument.kind == "named" and argument.name in result.generics:
+          replacements[argument.name] = expected.arguments[index]
+      if result.generics.allIt(replacements.hasKey(it)):
+        result = substitute(result.ret, replacements)
   of "call":
     let call = ast.Call(node)
+    for argument in call.args:
+      if argument.tag == "closure" or
+          (argument.tag == "name" and ast.Name(argument).text in checker.closures):
+        checker.diag.emit(Code.ScopeEscape, argument.span,
+          "a scoped closure cannot be passed to another function")
+        checker.diag.suggestion("Call the closure directly within its defining scope")
+    let selected = checker.select(call, environment)
+    if selected != nil:
+      checker.normalize(call, selected)
+      ast.Name(call.callee).text = selected.name.text
     if call.callee.tag == "name" and ast.Name(call.callee).text == "fail" and
         environment.lookup("fail") == nil and call.args.len == 1:
       discard checker.infer(call.args[0], environment, checker.typeDefs["Error"])
@@ -495,6 +815,7 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
         checker.diag.emit(Code.Invalid, call.callee.span,
           "cannot construct non-record type")
         return checker.remember(node, unknown())
+      checker.normalizeRecord(call, result)
       var fields: seq[semantic.Type]
       for value in result.fields.values: fields.add(value)
       if call.args.len != fields.len:
@@ -519,13 +840,17 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
           proc bindGeneric(pattern, actual: semantic.Type) =
             if pattern == nil or actual == nil: return
             if pattern.kind == "named" and pattern.name in callee.generics:
-              let value = checker.defaultType(actual, node.span)
               if replacements.hasKey(pattern.name):
-                if not canCoerce(value, replacements[pattern.name]).ok:
+                if not canCoerce(actual, replacements[pattern.name]).ok:
                   checker.diag.emit(Code.TypeMismatch, node.span, "Conflicting types for '" & pattern.name & "'")
-              else: replacements[pattern.name] = value
+              else:
+                replacements[pattern.name] = checker.defaultType(actual, node.span)
             elif pattern.kind == actual.kind and pattern.elem != nil and actual.elem != nil:
               bindGeneric(pattern.elem, actual.elem)
+            elif pattern.kind == actual.kind and pattern.arguments.len > 0 and
+                pattern.arguments.len == actual.arguments.len:
+              for index, argument in pattern.arguments:
+                bindGeneric(argument, actual.arguments[index])
             elif pattern.kind == "function" and actual.kind == "function":
               for index, parameter in pattern.params:
                 if index < actual.params.len: bindGeneric(parameter, actual.params[index])
@@ -550,6 +875,48 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
           let parameter = if index < callee.params.len: callee.params[index] else: nil
           discard checker.infer(argument, environment, parameter)
         result = callee.ret
+  of "sequence-value":
+    let sequence = ast.Values(node)
+    let wanted = if expected != nil and expected.kind == "sequence":
+      expected.elem else: nil
+    var element = wanted
+    for item in sequence.items:
+      let current = checker.infer(item, environment, wanted)
+      if element == nil: element = checker.defaultType(current, item.span)
+      elif not canCoerce(current, element).ok:
+        checker.diag.emit(Code.TypeMismatch, item.span,
+          "sequence items must have one compatible type")
+    if element == nil: element = unknown()
+    result = semantic.Type(kind: "sequence", elem: element)
+  of "closure":
+    let closure = ast.Closure(node)
+    var params: seq[semantic.Type]
+    let local = environment.child
+    for parameter in closure.params:
+      let parameterType = checker.annotation(parameter.type)
+      params.add(parameterType)
+      local.define(parameter.name.text, parameterType)
+    let savedResult = checker.resultType
+    let savedReturns = checker.returns
+    let savedPropagates = checker.propagates
+    let expectedReturn = if expected != nil and expected.kind == "function":
+      expected.ret else: nil
+    checker.resultType = if closure.returnType != nil:
+      checker.annotation(closure.returnType)
+    elif expectedReturn != nil: expectedReturn
+    else: unknown()
+    checker.returns = @[]
+    checker.propagates = checker.resultType.kind == "error"
+    for child in closure.body.stmts: checker.statement(child, local)
+    if checker.resultType.kind == "unknown":
+      checker.resultType = if checker.returns.len > 0:
+        checker.defaultType(checker.returns[0], node.span)
+      else: primitive("nothing")
+    result = semantic.Type(kind: "function", params: params,
+      ret: checker.resultType)
+    checker.resultType = savedResult
+    checker.returns = savedReturns
+    checker.propagates = savedPropagates
   of "unary":
     let unary = ast.Unary(node)
     let operand = checker.infer(unary.operand, environment)
@@ -563,9 +930,9 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
           "after cannot propagate an error; handle it with fallback")
       if not checker.propagates:
         checker.diag.emit(Code.Invalid, node.span,
-          "This function needs a fallible return type to use try")
+          "This function needs a failable return type to use try")
       if operand.kind == "error": result = operand.elem
-      else: checker.diag.emit(Code.Invalid, node.span, "try needs a fallible value"); result = unknown()
+      else: checker.diag.emit(Code.Invalid, node.span, "try needs a failable value"); result = unknown()
     else: result = operand
   of "binary":
     let binary = ast.Binary(node)
@@ -576,7 +943,7 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
       if comparison or binary.op == "catch" or
         (context != nil and context.kind == "literal"): nil else: context)
     if binary.op == "catch":
-      if left.kind != "error": checker.diag.emit(Code.Invalid, binary.left.span, "catch needs a fallible value"); result = unknown()
+      if left.kind != "error": checker.diag.emit(Code.Invalid, binary.left.span, "catch needs a failable value"); result = unknown()
       else: discard checker.infer(binary.right, environment, left.elem); result = left.elem
     else:
       let right = checker.infer(binary.right, environment,
@@ -620,9 +987,12 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
     if field.object.tag == "name" and checker.typeDefs.hasKey(ast.Name(field.object).text):
       let choice = checker.typeDefs[ast.Name(field.object).text]
       if choice.kind == "choice" and choice.variants.hasKey(field.field.text):
-        let payload = choice.variants[field.field.text]
-        result = if payload == nil: choice else:
-          semantic.Type(kind: "function", params: @[payload], ret: choice)
+        let alias = checker.aliases.getOrDefault(ast.Name(field.object).text)
+        result = if alias == nil:
+          let payload = choice.variants[field.field.text]
+          if payload == nil: choice else:
+            semantic.Type(kind: "function", params: @[payload], ret: choice)
+        else: checker.constructor(alias, choice, field.field.text)
         discard checker.remember(node, result)
         return result
     let owner = checker.infer(field.object, environment)
@@ -686,11 +1056,40 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
     let declared = if node.tag == "constant": ast.Constant(node).type else: ast.Mutable(node).type
     let value = if node.tag == "constant": ast.Constant(node).value else: ast.Mutable(node).value
     let name = if node.tag == "constant": ast.Constant(node).name.text else: ast.Mutable(node).name.text
+    if value.tag == "closure" and environment == checker.scope:
+      checker.diag.emit(Code.Invalid, value.span,
+        "a scoped closure must be declared inside a function")
     let declaredType = if declared == nil: nil else: checker.annotation(declared)
     let valueType = checker.infer(value, environment, declaredType)
     let finalType = if declaredType != nil: declaredType elif node.tag == "constant" and valueType.kind == "literal": valueType else: checker.defaultType(valueType, value.span)
     environment.define(name, finalType, node.tag == "mutable", value.tag != "uninitialized")
+    if value.tag == "closure": checker.closures.incl(name)
     discard checker.remember(node, finalType)
+  of "destructure":
+    let destructure = ast.Destructure(node)
+    let recordType = checker.annotation(destructure.recordType)
+    if recordType.kind != "record":
+      checker.diag.emit(Code.TypeMismatch, destructure.recordType.span,
+        "record destructuring needs a record type")
+      discard checker.infer(destructure.value, environment)
+    else:
+      discard checker.infer(destructure.value, environment, recordType)
+      if destructure.fields.len != recordType.fields.len:
+        checker.diag.emit(Code.Invalid, node.span,
+          "record destructuring must bind every field exactly once")
+      var seen = initHashSet[string]()
+      for index, field in destructure.fields:
+        if field.text in seen:
+          checker.diag.emit(Code.Duplicate, field.span,
+            "record field '" & field.text & "' was bound more than once")
+        seen.incl(field.text)
+        if not recordType.fields.hasKey(field.text):
+          checker.diag.emit(Code.Missing, field.span,
+            "record " & recordType.name & " has no field '" & field.text & "'")
+        elif index < destructure.bindings.len:
+          environment.define(destructure.bindings[index].text,
+            recordType.fields[field.text])
+      discard checker.remember(node, recordType)
   of "function":
     let function = ast.Function(node)
     if nodeKey(node) in checker.checked: return
@@ -726,6 +1125,22 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
     environment.define(function.name.text, functionType)
     let local = environment.child
     for index, parameter in function.params: local.define(parameter.name.text, functionType.params[index])
+    var optionalSeen = false
+    for index, parameter in function.params:
+      if parameter.variadic:
+        if index != function.params.high:
+          checker.diag.emit(Code.Invalid, parameter.span,
+            "an each parameter must be the final parameter")
+        if parameter.default != nil:
+          checker.diag.emit(Code.Invalid, parameter.span,
+            "an each parameter cannot also have a default")
+      elif parameter.default != nil:
+        optionalSeen = true
+        discard checker.infer(parameter.default, local,
+          checker.annotation(parameter.type))
+      elif optionalSeen:
+        checker.diag.emit(Code.Invalid, parameter.span,
+          "required parameters must come before default parameters")
     let savedResult = checker.resultType
     let savedReturns = checker.returns
     let savedLoops = checker.loops
@@ -733,6 +1148,8 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
     checker.resultType = functionType.ret; checker.returns = @[]; checker.loops = 0
     checker.propagates = function.returnType == nil or
       functionType.ret.kind == "error" or function.name.text == "start"
+    if function.guard != nil:
+      checker.boolean(checker.infer(function.guard, local), function.guard.span)
     checker.checkBlock(function.body, local)
     checkEscape(function.body, local, checker.diag, checker.types)
     if functionType.ret.kind == "unknown":
@@ -777,6 +1194,11 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
       checker.diag.emit(Code.Invalid, node.span,
         "A cleanup block cannot return from its function")
     let value = ast.Give(node).value
+    if value != nil and (value.tag == "closure" or
+        (value.tag == "name" and ast.Name(value).text in checker.closures)):
+      checker.diag.emit(Code.ScopeEscape, value.span,
+        "a scoped closure cannot leave its defining function")
+      checker.diag.suggestion("Call the closure within the scope that owns its captured values")
     let found = if value == nil: primitive("nothing") else: checker.infer(value, environment, if checker.resultType.kind == "unknown": nil else: checker.resultType)
     if value == nil and checker.resultType.kind != "unknown" and
         not canCoerce(found, checker.resultType).ok:
@@ -856,10 +1278,10 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
       checker.diag.emit(Code.Invalid, node.span,
         "after cannot propagate an error; handle it with fallback")
     let value = checker.infer(ast.`Try`(node).expr, environment)
-    if value.kind != "error": checker.diag.emit(Code.Invalid, node.span, "try needs a fallible value")
+    if value.kind != "error": checker.diag.emit(Code.Invalid, node.span, "try needs a failable value")
     if not checker.propagates:
       checker.diag.emit(Code.Invalid, node.span,
-        "This function needs a fallible return type to use try")
+        "This function needs a failable return type to use try")
   of "unsafe": inc checker.unsafeDepth; checker.checkBlock(ast.Unsafe(node).body, environment.child); dec checker.unsafeDepth
   of "defer":
     let deferred = ast.`Defer`(node)
@@ -911,8 +1333,17 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
 proc check*(checker: Checker; program: ast.Program) =
   for unit in program.units:
     for node in unit.body.stmts:
+      if node.tag == "function":
+        let function = ast.Function(node)
+        function.dispatch = function.name.text
+        checker.functions.mgetOrPut(function.dispatch, @[]).add(function)
+  for sourceName, overloads in checker.functions.mpairs:
+    if overloads.len > 1:
+      for index, function in overloads:
+        function.name.text = sourceName & "__overload_" & $(index + 1)
+  for unit in program.units:
+    for node in unit.body.stmts:
       if node.tag == "alias": checker.aliases[ast.Alias(node).name.text] = ast.Alias(node)
-      elif node.tag == "function": checker.functions[ast.Function(node).name.text] = ast.Function(node)
     for alias in checker.aliases.values: checker.defineAlias(alias)
     let moduleEnv = checker.environment.child
     checker.scope = moduleEnv
@@ -930,9 +1361,10 @@ proc check*(checker: Checker; program: ast.Program) =
             checker.allocators.add(if functionType.ret.kind == "error":
               functionType.ret.elem else: functionType.ret)
       elif node.tag == "alias" and ast.Alias(node).body.tag == "choice":
-        let choice = checker.typeDefs[ast.Alias(node).name.text]
-        for name, payload in choice.variants:
-          moduleEnv.define(name, if payload == nil: choice else: semantic.Type(kind: "function", params: @[payload], ret: choice))
+        let alias = ast.Alias(node)
+        let choice = checker.typeDefs[alias.name.text]
+        for name in choice.variants.keys:
+          moduleEnv.define(name, checker.constructor(alias, choice, name))
     for node in unit.body.stmts:
       if node.tag in ["constant", "mutable"]:
         let declared = if node.tag == "constant":
@@ -943,7 +1375,8 @@ proc check*(checker: Checker; program: ast.Program) =
           ast.Constant(node).name.text else: ast.Mutable(node).name.text
         let valueType = if declared != nil: checker.annotation(declared)
           elif expression.tag in ["integer", "decimal", "text", "true",
-              "false", "nothing"]: checker.infer(expression, moduleEnv)
+              "false", "nothing", "null"]: checker.infer(expression, moduleEnv,
+                if declared != nil: checker.annotation(declared) else: nil)
           else: unknown()
         moduleEnv.define(name, valueType)
     for node in unit.body.stmts: checker.statement(node, moduleEnv)

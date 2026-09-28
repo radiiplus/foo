@@ -12,10 +12,11 @@ Use this guide when you know *what* you want to do, but just need to remember th
 | :--- | :--- | :--- |
 | `constant` | Creates a value that cannot be changed. | `constant pi is 3.14.` |
 | `dynamic` | Creates a value that can be changed. | `dynamic score is 0.` |
+| `are` | Declares a binding that represents multiple values. | `constant users are active.` |
 | `function` | Defines a reusable block of code. | `function greet() { ... }` |
-| `public` | Makes a declaration visible to other files. | `public constant maxUsers is 100.` |
+| `public` | Makes a declaration visible to other files. | `public constant limit is 100.` |
 | `use` | Imports another file or module. | `use io.` or `use "math.iv".` |
-| `define` | Introduces a named type. | `define UserID as integer 64.` |
+| `define` | Introduces a named type. | `define Identity as integer 64.` |
 | `record` | Groups related fields together. | `define Point as record { x of type integer. y of type integer. }.` |
 | `choice` | Defines a value that can be one of several variants. | `define Color as choice { red. blue. }.` |
 
@@ -31,12 +32,13 @@ Use this guide when you know *what* you want to do, but just need to remember th
 | `boolean` | True or false. | `true` or `false` |
 | `byte` | A single 8-bit unsigned number. | `255` |
 | `text` | A string of characters. | `"hello world"` |
-| `nothing` | The absence of a value (like void). | `nothing` |
+| `nothing` | The single unit value used when there is no useful result. | `nothing` |
+| `null` | An absent optional value. | `null` |
 | `pointer to` | A memory address pointing to a value. | `pointer to integer` |
 | `sequence of` | A dynamic list of values. | `sequence of text` |
 | `optional` | A value that might be missing. | `optional text` |
-| `fallible` | A value that might be an error. | `fallible integer` |
-| `vector` | A fixed-size array for SIMD math. | `vector[4, decimal]` |
+| `failable` | A value that might be an error. | `failable integer` |
+| `vector` | A fixed-size array for SIMD math (one instruction processing several values). | `vector[4, decimal]` |
 
 ---
 
@@ -110,10 +112,14 @@ match userLevel {
 ### Loops
 ```foo
 -- Repeat while a condition is true
-while health greater than 0 { ... }
+while health greater than 0 {
+  decrease health by 1.
+}
 
 -- Loop over every item in a list
-for each item in shoppingCart { ... }
+for each item in shoppingCart {
+  display item.
+}
 
 -- Stop a loop completely
 stop.
@@ -128,7 +134,7 @@ skip.
 
 ```foo
 -- A function that returns nothing
-function doWork() {
+function work() {
   -- Do work here
 }
 
@@ -138,13 +144,61 @@ function add(a integer, b integer) giving integer {
 }
 ```
 
+The recommended sentence form omits punctuation that does not add clarity:
+
+```foo
+function connect
+    host text
+    port integer default 443
+    timeout integer default 5000
+    giving boolean {
+  give true.
+}
+
+constant first is connect "example.com".
+constant second is connect host "localhost" port 8080.
+```
+
+Use `values are sequence of integer` as the final parameter to consume all
+remaining integer arguments. Multiple functions may share a name; the compiler
+requires one unambiguous match by labels, arity (argument count), and types.
+
+Local closures capture lexical bindings (names visible in the surrounding
+written block):
+
+```foo
+function countTwice() giving integer {
+  dynamic count is 0.
+  constant next is function giving integer {
+    increase count by 1.
+    give count.
+  }.
+  next().
+  give next().
+}
+```
+
+Captured closures are scoped and cannot leave the function that owns their
+captured storage.
+
+Function guards state mandatory preconditions (rules that must be true before
+the function runs):
+
+```foo
+function positive value integer
+    when value greater than 0
+    giving integer {
+  give value.
+}
+```
+
 ---
 
 ## 6. Error Handling
 
 | Keyword | Plain Meaning | Example |
 | :--- | :--- | :--- |
-| `try` | Unwraps the preceding fallible value, or bails out if it fails. | `file.read("data.txt") try.` |
+| `try` | Unwraps the preceding failable value, or bails out if it fails. | `file.read("data.txt") try.` |
 | `fallback` | Provides an alternative if the left side fails. | `load() fallback "default".` |
 | `after` | Runs cleanup code when the scope ends. | `after { io.close(stream) fallback nothing. }` |
 
@@ -157,17 +211,19 @@ function add(a integer, b integer) giving integer {
 use log.
 
 display "Hello!".
-log.showMessage("System started.").
-log.showError("Something went wrong.").
+log.note("System started.").
+log.alert("Something went wrong.").
 ```
 
 ### Quantities
 Use ordinary numeric expressions in the units required by the library.
 
 ```foo
-constant twoSeconds is 2000000000.
-time.sleep(twoSeconds) try.
-constant sixteenGibibytes is 16 multiply 1024 multiply 1024 multiply 1024.
+use time.
+
+constant duration is 2000000000.
+time.sleep(duration) try.
+constant capacity is 16 multiply 1024 multiply 1024 multiply 1024.
 ```
 
 ---
@@ -179,7 +235,7 @@ constant sixteenGibibytes is 16 multiply 1024 multiply 1024 multiply 1024.
 extern "C" function puts(value pointer to byte) giving integer.
 
 -- Write a raw C block
-native c function fastMath(a integer) giving integer {
+native c function fast(a integer) giving integer {
   return a * a;
 }
 

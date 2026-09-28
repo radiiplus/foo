@@ -3,6 +3,196 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## Unreleased
+
+## 0.4.0 - 2026-09-28
+
+### Language
+
+- Add default and punctuation-free named arguments, final variadic parameters,
+  type-directed overload sets, and sentence-style function declarations and
+  calls while retaining parenthesized compatibility forms.
+- Add scoped captured closures that share lexical dynamic storage and reject
+  unsafe escape, plus declaration-level Boolean function guards.
+- Accept `are` for plural bindings and add checked `increase ... by ...` and
+  `decrease ... by ...` mutation statements.
+- Adopt one-word filenames and language-facing names, enforce the convention
+  for standard modules, functions, and types, and rename `hashmap` to `table`.
+- Rename the recoverable-result type to `failable T` throughout the language,
+  compiler, standard library, examples, editor support, and benchmarks.
+- Add `null` as the absence literal for `optional T` while keeping `nothing`
+  exclusively as the unit value and raw pointers non-null.
+- Add labeled record construction, checked structural record destructuring,
+  and unaliased `public use` re-exports with collision diagnostics.
+- Preserve `otherwise` and chained `otherwise when` conditionals, with direct
+  parser regression coverage.
+- Make choice constructors and match patterns compose across aliased imports,
+  specialize generic payload and payload-free variants, and retain source-file
+  ownership for diagnostics emitted from imported modules.
+
+### Standard Library
+
+- Add explicit `Codec[T]` and immutable `Machine[S, E]` abstractions for typed
+  conversion and application-defined state transitions.
+- Add typed monotonic `Instant` and `Duration` values, unit constructors,
+  elapsed-time calculation, and typed waiting while retaining raw nanosecond
+  compatibility operations.
+- Add application contracts, bounded deterministic property checks, and an
+  explicit pointer-identity operation with checked borrowing on both backends.
+- Add explicit iterator cursors, one-process transaction participants,
+  deterministic typed generators, checked Gregorian calendar values, fixed
+  UTC offsets, and dimension-tagged quantities.
+
+### Optimization
+
+- Replace quadratic persistent sequence append with a shared geometric buffer
+  and mutable tail, copy only when a buffer grows or code branches from an older
+  version, and add build-gated allocation, copy, peak-memory, and branch metrics.
+- Add a shared evidence-gated specialization engine with backend, target, CPU,
+  mode, size, overlap, contract, and fallback constraints.
+- Eliminate block-local non-escaping stack slots and redundant same-type
+  conversions; fuse adjacent private pure calls by removing both call
+  boundaries within the target-weighted inlining budget.
+- Specialize proven synchronous task continuations into direct calls and fold
+  constant JSON quoting into validated compile-time values.
+- Add typed generated JSON codecs for scalar and record values on C and Zig,
+  including direct final-buffer ownership plus syntax, duplicate-field, kind,
+  field, and numeric-range checks.
+- Add versioned profile consumption through `build.profile`, use measured hot
+  functions to guide inlining, and include profile contents in build identity.
+- Dispatch hosted C task pools through IOCP on Windows and epoll/eventfd on
+  Linux while retaining honest threaded fallbacks elsewhere.
+- Use exact-size direct ownership for seekable file reads and select single-byte,
+  small linear, or large skip-table text search by workload.
+- Add target-weighted release inlining for small private pure functions and
+  canonical sharing of equivalent private pure functions while preserving
+  public and address-taken identity.
+- Include the compiler executable, optimization mode, and semantic mode in
+  artifact cache identities, with explicit cache-key regression coverage.
+- Establish internal optimization substitution as a language-wide engineering
+  contract: eliminate work first, preserve semantics, retain portable and OS
+  fallbacks, and require parity tests plus workload-specific benchmark evidence.
+- Formalize execution specialization, boundary elimination, and operation
+  fusion as compiler-wide principles, with a mandatory optimization and
+  internal implementation review for foundational work.
+- Report each selected runtime substrate and its reason through `foo build
+  --explain` and `foo run --explain`, including byte transfer, sequence, table,
+  task, atomic, and explicit native paths.
+- Document current byte-transfer thresholds, generic specialization,
+  single-allocation collection transforms, open-addressed tables, reported task
+  strategies, cache identity, and the boundaries of planned adaptive work.
+- Exercise portable, x86, and AVX2 byte-transfer paths against `memmove` across
+  boundary sizes, alignments, and overlapping regions, with benchmark baselines
+  kept separate from claims about planned fixed-size expansion.
+- Replace the misleading whole-process benchmark comparison with startup and
+  runtime baselines, handwritten C/Zig controls, separate build timing, raw
+  samples, runtime allocation/copy counters, and compiler optimization facts.
+- Expose exact-size sequence construction, remove Zig's second allocation and
+  copy when adopting sequence buffers, and retain a dedicated persistent-append
+  regression showing its required flat-representation cost.
+- Add the portable `#[noinline]` function attribute so call and successful
+  failure-propagation workloads measure real call boundaries on C and Zig.
+
+### Website
+
+- Expand the homepage into a responsive language and toolchain overview with
+  current syntax, build stages, standard-library layers, project workflows,
+  and direct documentation, registry, source, and download paths.
+- Add a crawler sitemap and robots policy covering every public documentation
+  chapter, plus canonical, Open Graph, Twitter, and structured software
+  metadata with route-aware titles and descriptions.
+- Generate `/llm.txt` from the complete book, normative specifications, and
+  changelog during every website build, then advertise it through page metadata
+  and the sitemap.
+
+### Diagnostics
+
+- Group equivalent terminal diagnostics into one source report followed by the
+  sorted affected line numbers, including per-file locations when necessary.
+- Preserve one record per source span for JSON and LSP consumers, and keep
+  diagnostics with related spans separate so important relationships remain
+  visible.
+- Apply the shared FOO palette to short, verbose, and top-level CLI errors while
+  honoring `NO_COLOR`, `TERM=dumb`, and color-free JSON output.
+- Preserve each token's source file through parsing and linking so semantic
+  diagnostics from an imported module render that module's path and source.
+
+### Editor
+
+- Update foo.iv highlighting, snippets, and live LSP regression coverage for
+  sentence declarations, defaults, plural bindings, postfix failure handling,
+  intentional mutation, and explicit native C and Zig containers.
+
+### Documentation
+
+- Add dedicated diagnostics, testing, and feature-status chapters to the book
+  and registry documentation website.
+- Split the beginner path into focused basics, variables, types, operators,
+  control-flow, functions, collections, errors, modules, and project lessons,
+  each with examples, exercises, and common mistakes.
+- Add a categorized standard-library index covering everyday, collection,
+  network, data, security, memory, concurrency, platform, and testing modules.
+- Rename multiword book and editor files to the one-word `flow`, `expressions`,
+  `catalog`, `status`, `language`, and `code` names while retaining old doc URL
+  aliases.
+- Document declaration scope, mutation, function limitations, collection
+  ownership, modules, missing-package behavior, memory placement, borrowing,
+  native fixtures, and current tooling boundaries without implying unsupported
+  syntax.
+- Add a compile-ready patterns chapter covering constructors, codecs, state
+  machines, cursors, injected capabilities, explicit transactions, typed time,
+  contracts, pointer identity, and facade modules.
+- Add a foundations chapter covering inference, absence, comparison, generics,
+  modules, data models, memory, ABI, effects, concurrency, time, testing,
+  metaprogramming, transactions, and the exact boundary of design-stage ideas.
+- Isolate generated documentation-audit snippets by process so concurrent test
+  runs cannot overwrite one another or create false compiler failures.
+
+### Projects And Benchmarks
+
+- Generate `src/`, `test/`, and `benchmark/` starters for new applications and
+  packages, and clean benchmark artifacts with the other generated outputs.
+- Write the default `src/main.iv` entry explicitly in new project manifests and
+  add named `entries` so `foo run NAME` selects another executable without
+  requiring its path at the command line.
+- Add `foo benchmark` with recursive benchmark discovery, selectable C or Zig
+  backends, configurable warmups and iterations, raw JSON samples, and
+  min/median/mean summaries that exclude compilation time.
+- Let `foo test test/file.iv` and `foo benchmark benchmark/file.iv` limit a run
+  to one exact file, avoiding unrelated long-running suites.
+- Separate generated test artifacts by backend and compiler process so any
+  tests for the same suite can run concurrently without locking or overwriting
+  each other.
+- Isolate native-suite binaries, Nim caches, repository artifacts, and temporary
+  directories by invocation so complete native test runs can overlap safely.
+
+### Editor Support
+
+- Stream `foo lsp` requests as they arrive so diagnostics can update while a
+  document is edited instead of waiting for the editor process to disconnect.
+- Connect the VS Code extension to `foo lsp` for live diagnostics, hover, and
+  go-to-definition; add restart and project-watch commands plus a configurable
+  compiler path.
+
+### Distribution
+
+- Cross-build Linux ARM64 from x64 Linux or WSL with the pinned managed Zig
+  toolchain, and regenerate portable archives, npm packaging, and checksums with
+  the installer command instead of retaining stale release files.
+- Add an ignored signing environment file with a tracked template and a
+  `binaries:signed` command that passes only the GPG fingerprint into WSL.
+- Add a release-key generator that creates or reuses a protected Ed25519 GPG
+  key, configures the signing fingerprint, exports the release public key, and
+  writes a recoverable private/public pair outside the repository from an
+  ignored environment-based signing configuration.
+- Add a host-aware binary release command that builds Linux directly on Linux,
+  builds Windows locally on Windows, and adds a Linux build through WSL when it
+  is available while printing the WSL installation command when it is absent.
+- Embed the application icon in Windows PE binaries and install Linux desktop,
+  icon-theme, and AppStream metadata with packaged ELF binaries.
+- Add detached armored GPG signing and verification for Linux ELF binaries,
+  selecting the production key only through `FOOSIGNKEY`.
+
 ## 0.3.0 - 2026-09-26
 
 ### Build Performance
@@ -100,7 +290,7 @@ changes are recorded here.
   older `try read()` spelling in canonical source and formatted output.
 - Add direct `greater than or equal to` and `less than or equal to`
   comparisons so positive conditions do not require `not` wrappers.
-- Keep `fallible` for functions that may fail.
+- Keep `failable` for functions that may fail.
 - Require native C source to live in an explicit native container so it cannot
   be confused with FOO code.
 

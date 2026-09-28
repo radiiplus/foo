@@ -1,0 +1,36 @@
+-- Keeps values from unrelated physical dimensions in distinct generic types.
+public define Quantity[D] as record {
+  value of type decimal.
+}.
+
+public define Length as opaque.
+public define Mass as opaque.
+public define Temperature as opaque.
+
+public function quantity[D](value decimal) giving Quantity[D] {
+  give Quantity[D](value).
+}
+
+public function add[D](left Quantity[D], right Quantity[D]) giving Quantity[D] {
+  give Quantity[D](left.value plus right.value).
+}
+
+public function difference[D](left Quantity[D], right Quantity[D]) giving Quantity[D] {
+  give Quantity[D](left.value subtract right.value).
+}
+
+public function scale[D](value Quantity[D], factor decimal) giving Quantity[D] {
+  give Quantity[D](value.value multiply factor).
+}
+
+public function meters(value decimal) giving Quantity[Length] {
+  give Quantity[Length](value).
+}
+
+public function kilograms(value decimal) giving Quantity[Mass] {
+  give Quantity[Mass](value).
+}
+
+public function celsius(value decimal) giving Quantity[Temperature] {
+  give Quantity[Temperature](value).
+}

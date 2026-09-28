@@ -57,8 +57,11 @@ proc insert(resolver: Resolver; target: Scope; name: string; form: Form;
   let item = Symbol(name: name, form: form, visible: visible, node: node,
     module: moduleName, qualified: moduleName & "::" & name)
   if not target.insert(name, item):
-    resolver.diag.emit(Code.Duplicate, node.span, "duplicate symbol '" & name & "'")
     let original = target.lookupLocal(name)
+    if form == Form.Function and original.found and
+        original.symbol.form == Form.Function:
+      return
+    resolver.diag.emit(Code.Duplicate, node.span, "duplicate symbol '" & name & "'")
     if original.found:
       resolver.diag.related(original.symbol.node.span, "First declared here")
 
@@ -131,6 +134,20 @@ proc expression(resolver: Resolver; node: ast.Expression; target: Scope;
     if call.callee.tag != "name" or ast.Name(call.callee).text notin ["splat", "shuffle", "select", "reduce", "fail"]:
       resolver.expression(call.callee, target, moduleName)
     for argument in call.args: resolver.expression(argument, target, moduleName)
+  of "sequence-value":
+    for item in ast.Values(node).items:
+      resolver.expression(item, target, moduleName)
+  of "closure":
+    let closure = ast.Closure(node)
+    let closureScope = newScope(target)
+    for capture in closure.captures:
+      resolver.expression(capture, target, moduleName)
+    for parameter in closure.params:
+      resolver.resolveType(parameter.type, closureScope, moduleName)
+      resolver.insert(closureScope, parameter.name.text, Form.Parameter,
+        false, parameter, moduleName)
+    resolver.resolveType(closure.returnType, closureScope, moduleName)
+    resolver.resolveBlock(closure.body, closureScope, moduleName, false)
   of "unary": resolver.expression(ast.Unary(node).operand, target, moduleName)
   of "binary":
     resolver.expression(ast.Binary(node).left, target, moduleName)
@@ -175,10 +192,14 @@ proc declare(resolver: Resolver; node: ast.Statement; target: Scope;
     let declaration = ast.Mutable(node)
     resolver.insert(target, declaration.name.text, Form.Mutable,
       declaration.public, node, moduleName)
+  of "destructure":
+    for binding in ast.Destructure(node).bindings:
+      resolver.insert(target, binding.text, Form.Constant,
+        false, binding, moduleName)
   of "function":
     let declaration = ast.Function(node)
     for attribute in declaration.attributes:
-      if attribute notin ["start", "interrupt", "naked"] and not attribute.startsWith("target_feature(\""):
+      if attribute notin ["start", "interrupt", "naked", "noinline"] and not attribute.startsWith("target_feature(\""):
         resolver.diag.emit(Code.Invalid, node.span,
           "unknown function attribute '#[" & attribute & "]'")
     if "start" in declaration.attributes and declaration.params.len > 0:
@@ -230,6 +251,10 @@ proc collect(resolver: Resolver; node: ast.Statement; target: Scope;
   of "mutable":
     resolver.insert(target, ast.Mutable(node).name.text, Form.Mutable,
       false, node, moduleName)
+  of "destructure":
+    for binding in ast.Destructure(node).bindings:
+      resolver.insert(target, binding.text, Form.Constant,
+        false, binding, moduleName)
   else: discard
 
 proc resolveBlock(resolver: Resolver; node: ast.Block; target: Scope;
@@ -240,7 +265,7 @@ proc resolveBlock(resolver: Resolver; node: ast.Block; target: Scope;
     if childNode.tag == "alias": resolver.declare(childNode, blockScope, moduleName)
   for childNode in node.stmts:
     resolver.statement(childNode, blockScope, moduleName)
-    if childNode.tag in ["constant", "mutable"]:
+    if childNode.tag in ["constant", "mutable", "destructure"]:
       resolver.collect(childNode, blockScope, moduleName)
 
 proc functionBody(resolver: Resolver; node: ast.Function; parent: Scope;
@@ -253,7 +278,9 @@ proc functionBody(resolver: Resolver; node: ast.Function; parent: Scope;
     resolver.insert(functionScope, parameter.name.text, Form.Parameter,
       false, parameter, moduleName)
     resolver.resolveType(parameter.type, functionScope, moduleName)
+    resolver.expression(parameter.default, functionScope, moduleName)
   resolver.resolveType(node.returnType, functionScope, moduleName)
+  resolver.expression(node.guard, functionScope, moduleName)
   resolver.resolveBlock(node.body, functionScope, moduleName, false)
 
 proc moduleName(resolver: Resolver; path: string): string =
@@ -298,6 +325,7 @@ proc modulePath(resolver: Resolver; useNode: ast.Use; current: string): string =
 proc symbols(resolver: Resolver; name: string): seq[Symbol] =
   if not resolver.units.hasKey(name): return
   let semanticUnit = resolver.units[name]
+  var seen = initHashSet[string]()
   for node in semanticUnit.node.body.stmts:
     let found = case node.tag
       of "constant": semanticUnit.scope.lookupLocal(ast.Constant(node).name.text)
@@ -306,10 +334,34 @@ proc symbols(resolver: Resolver; name: string): seq[Symbol] =
       of "extern-function": semanticUnit.scope.lookupLocal(ast.ExternFunction(node).name.text)
       of "alias": semanticUnit.scope.lookupLocal(ast.Alias(node).name.text)
       else: (found: false, symbol: Symbol())
-    if found.found: result.add(found.symbol)
+    if found.found and found.symbol.qualified notin seen:
+      seen.incl(found.symbol.qualified)
+      result.add(found.symbol)
+    if node.tag == "alias":
+      let declaration = ast.Alias(node)
+      if declaration.public and declaration.body != nil and
+          declaration.body.tag == "choice":
+        for variant in ast.Choice(declaration.body).variants:
+          let constructor = semanticUnit.scope.lookupLocal(variant.name.text)
+          if constructor.found and constructor.symbol.qualified notin seen:
+            seen.incl(constructor.symbol.qualified)
+            result.add(constructor.symbol)
+    if node.tag == "use" and ast.Use(node).public:
+      let imported = ast.Use(node)
+      if imported.alias == nil and
+          semanticUnit.imports.hasKey(imported.name.text):
+        for symbol in resolver.symbols(semanticUnit.imports[imported.name.text]):
+          if symbol.visible and symbol.qualified notin seen:
+            seen.incl(symbol.qualified)
+            result.add(symbol)
 
 proc useModule(resolver: Resolver; useNode: ast.Use; target: Scope;
     current: string) =
+  if useNode.public and useNode.alias != nil:
+    resolver.diag.emit(Code.Invalid, useNode.span,
+      "A public use cannot have an alias")
+    resolver.diag.suggestion("Remove the alias or publish forwarding declarations")
+    return
   let path = resolver.modulePath(useNode, current)
   let importedName = resolver.moduleName(path)
   if importedName in resolver.importedSymbols[current]:
@@ -353,6 +405,10 @@ proc statement(resolver: Resolver; node: ast.Statement; target: Scope;
   of "mutable":
     resolver.resolveType(ast.Mutable(node).type, target, moduleName)
     resolver.expression(ast.Mutable(node).value, target, moduleName)
+  of "destructure":
+    let destructure = ast.Destructure(node)
+    resolver.resolveType(destructure.recordType, target, moduleName)
+    resolver.expression(destructure.value, target, moduleName)
   of "function": resolver.functionBody(ast.Function(node), target, moduleName)
   of "extern-function":
     let function = ast.ExternFunction(node)
@@ -407,6 +463,7 @@ proc statement(resolver: Resolver; node: ast.Statement; target: Scope;
         resolver.expression(arm.pattern, caseScope, moduleName)
       elif arm.pattern != nil and arm.pattern.tag == "variant-pattern":
         let pattern = ast.VariantPattern(arm.pattern)
+        resolver.expression(pattern.name, caseScope, moduleName)
         if pattern.binding != nil:
           resolver.insert(caseScope, pattern.binding.text, Form.Parameter, false, pattern.binding, moduleName)
       resolver.expression(arm.guard, caseScope, moduleName)

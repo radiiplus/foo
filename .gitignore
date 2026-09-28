@@ -35,6 +35,7 @@ zig-out/
 .env
 .env.*
 !.env.example
+!.env.sign.example
 tmp/
 temp/
 

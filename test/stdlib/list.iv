@@ -2,7 +2,7 @@
 use "../../std/list.iv".
 use "../../std/memory.iv" as heap.
 use testing.
-function bounds(collection of type pointer to List) of type fallible text {
+function bounds(collection of type pointer to List) of type failable text {
   constant item is try get(collection, 10).
   give "unexpected".
 }

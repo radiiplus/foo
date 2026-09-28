@@ -13,7 +13,7 @@
   function line() of type text { give newline. }
   function greeting(value of type text) of type text { give value plus newline plus "World". }
   function recover() of type text { give zip.unpack("bad", "gzip", 8) catch "recovered". }
-  function digest() of type fallible text { give secret.hash("abc"). }
+  function digest() of type failable text { give secret.hash("abc"). }
   function fail() of type text { check.expect(false). give "bad". }
 
   start() {

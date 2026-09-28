@@ -1,4 +1,4 @@
-import std/[json, os, strutils, tables]
+import std/[json, os, strutils, tables, uri]
 import ../ast/node as ast
 import ../diag/engine
 import ../lex/lexer
@@ -30,12 +30,17 @@ proc failure(id: JsonNode; code: int; message: string): JsonNode = %*{"jsonrpc":
 
 proc documentPath(root, uri: string): string =
   if uri.startsWith("file:///"):
-    result = uri[8 .. ^1]
-    when defined(windows): result = result.replace('/', '\\')
+    let path = decodeUrl(uri[8 .. ^1])
+    when defined(windows): result = path.replace('/', '\\')
+    else: result = "/" & path
   elif uri.startsWith("file://"):
-    result = uri[7 .. ^1]
+    result = decodeUrl(uri[7 .. ^1])
   elif isAbsolute(uri): result = uri
   else: result = root / uri
+
+proc fileUri(path: string): string =
+  when defined(windows): "file:///" & absolutePath(path).replace('\\', '/')
+  else: "file://" & absolutePath(path)
 
 proc analyze(root, uri, source: string; version: int): Document =
   let engine = newEngine()
@@ -95,7 +100,7 @@ proc definition(document: Document; line, character: int): JsonNode =
   let symbol = document.resolution.resolutions[key]
   var file = document.file
   if document.resolution.units.hasKey(symbol.module): file = document.resolution.units[symbol.module].file
-  let uri = "file:///" & absolutePath(file).replace('\\', '/')
+  let uri = fileUri(file)
   %*{"uri": uri, "range": lspRange(symbol.node)}
 
 proc hover(document: Document; line, character: int): JsonNode =
@@ -114,6 +119,11 @@ proc handle*(server: Server; message: JsonNode): seq[JsonNode] =
   let id = if message.hasKey("id"): message["id"] else: newJNull()
   case methodName
   of "initialize":
+    let params = message.getOrDefault("params")
+    if params != nil and params.kind == JObject:
+      let rootUri = params.getOrDefault("rootUri")
+      if rootUri != nil and rootUri.kind == JString and rootUri.getStr().len > 0:
+        server.root = absolutePath(documentPath(server.root, rootUri.getStr()))
     result.add(response(id, %*{"capabilities": {"textDocumentSync": {"openClose": true, "change": 1}, "definitionProvider": true, "hoverProvider": true}}))
   of "shutdown":
     server.stopped = true
@@ -153,23 +163,34 @@ proc frame*(message: JsonNode): string =
   let content = $message
   "Content-Length: " & $content.len & "\r\n\r\n" & content
 
-proc serve*(server = newServer()) =
-  let input = stdin.readAll()
+proc readFrame(input: File): string =
+  var contentLength = -1
+  var line: string
+  while input.readLine(line):
+    let header = line.strip()
+    if header.len == 0: break
+    let separator = header.find(':')
+    if separator > 0 and
+        header[0 ..< separator].strip().toLowerAscii() == "content-length":
+      contentLength = parseInt(header[separator + 1 .. ^1].strip())
+  if contentLength < 0: return ""
+  result = newString(contentLength)
   var offset = 0
-  while offset < input.len:
-    let marker = input.find("\r\n\r\n", offset)
-    if marker < 0: break
-    let header = input[offset ..< marker]
-    let label = "Content-Length:"
-    let location = header.toLowerAscii().find(label.toLowerAscii())
-    if location < 0: break
-    let length = parseInt(header[location + label.len .. ^1].strip())
-    let start = marker + 4
-    if start + length > input.len: break
+  while offset < contentLength:
+    let count = input.readBuffer(addr result[offset], contentLength - offset)
+    if count <= 0: return ""
+    offset += count
+
+proc serve*(server = newServer()) =
+  while true:
+    let content = readFrame(stdin)
+    if content.len == 0: break
     try:
-      for reply in server.handle(parseJson(input[start ..< start + length])): stdout.write(frame(reply))
+      for reply in server.handle(parseJson(content)):
+        stdout.write(frame(reply))
+      stdout.flushFile()
     except CatchableError as error:
       stdout.write(frame(failure(newJNull(), -32700, error.msg)))
-    offset = start + length
+      stdout.flushFile()
 
 when isMainModule: serve()

@@ -134,6 +134,19 @@ type
     state*: string
     payload*: string
 
+  Optimization* = object
+    generics*: int
+    expressions*: int
+    functions*: int
+    dead*: int
+    inlined*: int
+    boundaries*: int
+    allocations*: int
+    pipelines*: int
+    continuations*: int
+    serializations*: int
+    bounds*: int
+
   Module* = ref object
     storage*: seq[Storage]
     version*: int
@@ -146,6 +159,7 @@ type
     traces*: seq[Trace]
     native*: seq[NativeContract]
     residue*: seq[Residue]
+    optimization*: Optimization
     name*: string
     funcs*: seq[Function]
     externs*: seq[Extern]
@@ -160,7 +174,7 @@ proc label*(value: `Type`): string =
     return "sequence of " & label(value.elem)
   of TypeKind.Ptr: return "pointer to " & label(value.elem)
   of TypeKind.Optional: return "optional " & label(value.elem)
-  of TypeKind.Fallible: return "fallible " & label(value.elem)
+  of TypeKind.Failable: return "failable " & label(value.elem)
   else: discard
   let name = case value.kind
     of TypeKind.Int: "integer"

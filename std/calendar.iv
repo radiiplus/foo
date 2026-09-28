@@ -1,0 +1,64 @@
+-- Provides validated Gregorian dates and fixed UTC offsets.
+public define Date as record {
+  year of type integer.
+  month of type unsigned 64.
+  day of type unsigned 64.
+}.
+
+public define Zone as record {
+  minutes of type integer.
+}.
+
+public define Moment as record {
+  date of type Date.
+  hour of type unsigned 64.
+  minute of type unsigned 64.
+  second of type unsigned 64.
+  zone of type Zone.
+}.
+
+public function leap(year integer) giving boolean {
+  when year remainder 400 is 0 { give true. }
+  when year remainder 100 is 0 { give false. }
+  give year remainder 4 is 0.
+}
+
+public function days(year integer, month unsigned 64) giving unsigned 64 {
+  when month is 2 {
+    when leap(year) { give 29. }
+    give 28.
+  }
+  when month is 4 or month is 6 or month is 9 or month is 11 { give 30. }
+  give 31.
+}
+
+public function date(year integer, month unsigned 64, day unsigned 64)
+    giving failable Date {
+  when month less than 1 or month greater than 12 {
+    give fail(Error.InvalidDate).
+  }
+  when day less than 1 or day greater than days(year, month) {
+    give fail(Error.InvalidDate).
+  }
+  give Date(year, month, day).
+}
+
+public function zone(minutes integer) giving failable Zone {
+  when minutes less than (0 subtract 1439) or minutes greater than 1439 {
+    give fail(Error.InvalidZone).
+  }
+  give Zone(minutes).
+}
+
+public function moment(
+    date Date,
+    hour unsigned 64,
+    minute unsigned 64,
+    second unsigned 64,
+    zone Zone
+) giving failable Moment {
+  when hour greater than 23 or minute greater than 59 or second greater than 59 {
+    give fail(Error.InvalidTime).
+  }
+  give Moment(date, hour, minute, second, zone).
+}

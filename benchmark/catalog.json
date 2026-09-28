@@ -1,0 +1,50 @@
+{
+  "arithmetic": {
+    "purpose": "Baseline checked loop execution",
+    "work": "10,000,000 checked additions, comparisons, increments, assignments, and final validation"
+  },
+  "calls": {
+    "purpose": "Preserved private function-call overhead",
+    "work": "10,000,000 private function calls inside a checked accumulation loop"
+  },
+  "failure": {
+    "purpose": "Typed success and try propagation overhead",
+    "work": "10,000,000 successful failable calls and postfix try operations"
+  },
+  "generic": {
+    "purpose": "Concrete generic specialization",
+    "work": "10,000,000 specialized generic identity calls inside a checked loop"
+  },
+  "known": {
+    "purpose": "Build-time-known value validation",
+    "work": "A compile-time constant and one runtime result validation"
+  },
+  "allocation": {
+    "purpose": "Known-size allocation and sequence transformation",
+    "work": "One exact-size 10,000-element construction followed by one exact-size generic map"
+  },
+  "branch": {
+    "purpose": "Persistent append from an older sequence version",
+    "work": "Build 10,000 values, retain the 5,000-value version, then perform 1,000 independent appends from it"
+  },
+  "growth": {
+    "purpose": "Persistent shared-tail newest-version append cost",
+    "work": "10,000 newest-version appends, one retained 5,000-value version, and one verified branch from that version"
+  },
+  "iteration": {
+    "purpose": "Ordered sequence iteration latency",
+    "work": "Construct and iterate 1,000,000 unsigned 64-bit values with checksum validation"
+  },
+  "lookup": {
+    "purpose": "Checked sequence lookup latency",
+    "work": "1,000,000 checked dynamic lookups over a 10,000-element exact-size sequence"
+  },
+  "startup": {
+    "purpose": "Process and generated-runtime startup baseline",
+    "work": "No user or standard-library work"
+  },
+  "runtime": {
+    "purpose": "Standard runtime and one hosted query baseline",
+    "work": "Runtime initialization, one core-count query, validation, and shutdown"
+  }
+}

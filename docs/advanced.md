@@ -30,7 +30,7 @@ when answer is 42 { display "42". }
 
 In Chapter 4, we learned about **Regions** (bulk cleanup). But sometimes, you need even more control. Maybe you want a special memory pool for a game engine, or a memory buffer that lives on a specific hardware device.
 
-FOO allows you to create custom **Allocators**.
+FOO allows you to create custom **Allocators** (objects that reserve and release memory).
 
 ```foo
 use memory.
@@ -40,37 +40,53 @@ after { memory.close(arena) fallback nothing. }
 constant buffer is memory.allocate(arena, 1024) try.
 ```
 
-**The Benefit:** You can dictate exactly *where* your memory lives, ensuring your high-performance app never suffers from fragmentation or slow allocation delays.
+**The Benefit:** You can dictate exactly *where* your memory lives, ensuring
+your high-performance app never suffers from fragmentation (free memory broken
+into pieces that are hard to reuse) or slow allocation (memory reservation)
+delays.
 
 ---
 
 ## 3. Advanced Standard-Library Controls
 
-The ordinary standard-library calls choose conservative defaults. The same modules also expose lower-level controls when an application needs to manage protocol or operating-system behavior directly. These controls remain typed and fallible; they do not expose backend-specific handles.
+The ordinary standard-library calls choose conservative defaults. The same
+modules also expose lower-level controls when an application needs to manage a
+protocol (the rules systems use to communicate) or operating-system behavior
+directly. These controls remain typed and failable (able to return an error);
+they do not expose backend-specific (code-generator-specific) handles.
 
 ### HTTP client policy
 
-Headers added to a client are sent on subsequent requests until they are cleared. Redirect limits are explicit, and connection reuse can be disabled for isolation-sensitive workloads.
+Headers added to a client are sent on subsequent requests until they are
+cleared. Redirect limits are explicit, and connection reuse can be disabled for
+isolation-sensitive workloads (work that must not share a connection or state).
 
 ```foo
 use http.
 
 constant client is http.client() try.
 after { http.close(client). }
-http.addHeader(client, "Accept", "application/json") try.
-http.addHeader(client, "X-Request-ID", "build-44") try.
+http.attach(client, "Accept", "application/json") try.
+http.attach(client, "X-Request-ID", "build-44") try.
 http.redirects(client, 2) try.
 http.reuse(client, false).
 
 constant response is http.request(client, "https://example.com/data", "GET", "", 1048576) try.
 after { http.release(response). }
-constant responseStatus is http.status(response).
-when responseStatus is 200 { display "Request succeeded". }
+constant status is http.status(response).
+when status is 200 { display "Request succeeded". }
 ```
 
-Repeated header names are preserved. This supports fields such as `Set-Cookie`, but it also means callers must clear credentials before reusing a client for another trust domain.
+Repeated header names are preserved. This supports fields such as `Set-Cookie`,
+but it also means callers must clear credentials before reusing a client for
+another trust domain (a system or organization trusted under different rules).
 
-On Windows, the C backend uses WinHTTP and the operating-system certificate store, so HTTP and HTTPS do not require a separate curl or OpenSSL installation. Loading an additional PEM file with `http.trust` is not supported by WinHTTP and fails with `CustomTrustUnavailable`; the Zig and POSIX implementations support explicit certificate files.
+On Windows, the C backend uses WinHTTP and the operating-system certificate
+store, so HTTP and HTTPS do not require a separate curl or OpenSSL installation.
+Loading an additional PEM file (a text file containing certificates) with
+`http.trust` is not supported by WinHTTP and fails with
+`CustomTrustUnavailable`; the Zig and POSIX (Unix-compatible operating-system
+interface) implementations support explicit certificate files.
 
 ### TCP socket policy
 
@@ -82,11 +98,14 @@ after { net.close(connection) fallback nothing. }
 net.nodelay(connection, true) try.
 net.keepalive(connection, true) try.
 
-constant written is net.sendSome(connection, "request") try.
+constant written is net.push(connection, "request") try.
 net.shutdown(connection, "write") try.
 ```
 
-`send` writes the complete input or fails. `sendSome` performs one operating-system send and may return a short count. `shutdown` accepts `read`, `write`, or `both`; it half-closes the selected direction but does not release the connection.
+`send` writes the complete input or fails. `push` performs one operating-system
+send and may return a short count. `shutdown` accepts `read`, `write`, or
+`both`; it half-closes (disables one direction of) the selected connection but
+does not release it.
 
 ### File positioning
 
@@ -103,7 +122,10 @@ constant offset is file.position(stream) try.
 
 Positions and sizes are byte counts. Seek origins are `start`, `current`, and `end`. `flush` explicitly commits buffered output without closing the stream.
 
-Streaming JSON, explicit allocators, atomics, dynamic libraries, task handles, and the target-specific `os.unix` and `os.windows` modules provide the other advanced standard-library surfaces.
+Streaming JSON, explicit allocators, atomics (shared operations completed as
+one step), dynamic libraries (compiled code loaded while a program runs), task
+handles, and the target-specific `os.unix` and `os.windows` modules provide the
+other advanced standard-library surfaces.
 
 ---
 
@@ -115,7 +137,7 @@ FOO gives you an **Escape Hatch**. Native code always lives in an explicitly mar
 
 ### Native C
 ```foo
-native c function addIntegers(a integer, b integer) giving integer {
+native c function add(a integer, b integer) giving integer {
   return a + b;
 }
 ```
@@ -145,9 +167,21 @@ foo build -mcpu apple_m1
 foo build -mcpu x86-64-v3
 ```
 
-**The Benefit:** FOO will automatically generate vector instructions, tune memory alignment, and optimize math operations to match the exact physical wiring of your target CPU.
+**The benefit:** the selected profile permits compatible instructions and
+runtime paths. For example, x86-64-v3 enables the measured AVX2 byte-transfer
+path. It does not promise that every expression is vectorized.
 
-Runtime hot paths use the same target profile. Byte transfer, sequence transforms, mutable hash lookup, atomics, and task backends have named optimization contracts, so a C or Zig implementation can be replaced without changing FOO source. The compiler always retains a portable implementation; target-specific code is selected only for a compatible CPU and build mode.
+Runtime hot paths (frequently executed code) use the same target profile. Byte
+transfer, sequence transforms, mutable hash lookup, atomics (shared operations
+completed as one step), and task backends have named optimization contracts, so
+a C or Zig implementation can be replaced without changing FOO source. The
+compiler always retains a portable implementation; target-specific code is
+selected only for a compatible CPU and build mode.
+
+Run `foo build --explain` to see each selected substrate (low-level service)
+and its reason. The exact thresholds and semantic restrictions (limits needed
+to preserve program meaning) are in
+[Optimization Under the Hood](tuning.md).
 
 ---
 

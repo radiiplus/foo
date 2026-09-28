@@ -92,7 +92,7 @@ mutable pair of type Pair is Pair(20, 24).
 start() { check.expect(pair.left plus pair.right is 44). give. }
 `));
 await check('allocator', () => execute('allocator', `
-function reserve(owner of type Allocator) of type fallible sequence of byte {
+function reserve(owner of type Allocator) of type failable sequence of byte {
   give try allocate 8 using owner.
 }
 start() { give. }

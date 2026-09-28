@@ -2,7 +2,7 @@
 
 In many ecosystems, building your app for a different operating system means you have to actually *own* a computer running that operating system. If you are on a Mac and want to build a Windows `.exe`, you usually have to boot up a virtual machine or use a clunky third-party tool.
 
-FOO completely shatters this limitation. Because FOO translates your code down to native C or Zig, it supports **Cross-Compilation** out of the box. You can sit on your Mac, type a single command, and generate a lightning-fast executable for Windows, Linux, ARM, or even the Web.
+FOO completely shatters this limitation. Because FOO translates your code down to native C or Zig, it supports **Cross-Compilation** (building for a different kind of computer) out of the box. You can sit on your Mac, type a single command, and generate a lightning-fast executable for Windows, Linux, ARM, or even the Web.
 
 Let’s look at how FOO conquers the hardware world.
 
@@ -22,12 +22,14 @@ Want to build an app for a standard Windows PC?
 foo build --target windows-x64
 ```
 
-Want to build a highly optimized app for a modern Linux server using AVX vector instructions?
+Want to allow AVX2-backed runtime paths on a compatible modern Linux server?
 ```sh
 foo build --target linux-x64-v3
 ```
 
-**The Benefit:** FOO’s `opt` (optimization) engine reads the preset and automatically tunes your math and memory operations to match the exact physical wiring of that specific CPU. 
+**The benefit:** the preset (a named group of target settings) records the CPU deployment promise, participates in
+cache identity, and enables compatible runtime paths. It does not imply that
+every operation is vectorized (performed on several values at once).
 
 ---
 
@@ -35,7 +37,9 @@ foo build --target linux-x64-v3
 
 Because FOO manages its own toolchains, cross-compilation is seamless. You do not need to install Windows SDKs or Linux headers on your Mac. 
 
-If you type `foo build --target windows-x64` while sitting on a Linux machine, FOO’s backend will automatically generate standard Windows PE executables (`.exe` files). 
+If you type `foo build --target windows-x64` while sitting on a Linux machine,
+FOO's backend (code generator) will automatically generate standard Windows PE
+(Portable Executable) files (`.exe` files).
 
 ```sh
 # Run this on a Mac:
@@ -44,13 +48,17 @@ foo build --target windows-x64
 # FOO outputs:
 # .artifacts/build/my_app.exe
 ```
-You can now copy that `.exe` file to a Windows machine, double-click it, and it will run natively at maximum speed.
+You can now copy that `.exe` file to a compatible Windows machine and run it
+natively. A CPU-specific preset still requires the destination CPU features.
 
 ---
 
 ## 3. WebAssembly (FOO in the Browser)
 
-WebAssembly (WASM) is a technology that allows you to run high-performance, compiled code directly inside a web browser. FOO has first-class support for WASM through the **WASI** (WebAssembly System Interface) preset.
+WebAssembly (WASM, a portable binary format for sandboxed programs) allows
+compiled code to run inside a web browser or another compatible host. FOO has
+first-class support for WASM through the **WASI** (WebAssembly System Interface,
+a standard way for WebAssembly programs to request system services) preset.
 
 ```sh
 foo build --target wasi
@@ -81,7 +89,9 @@ You might be wondering: *"If I am building for Windows, doesn't my compiler need
 
 Normally, yes. But FOO has a built-in **Toolchain Manager**. Debian installation provisions the pinned Zig backend, while `foo run`, `foo build`, and cross-compilation check the managed cache and install it on demand when necessary. `foo doctor` reports the current state without changing the machine. Clang remains an optional external tool used only for C-header bindings and explicitly selected C builds.
 
-You never have to manually install cross-compilers, linkers, or sysroots. FOO acts as its own IT department.
+You never have to manually install cross-compilers, linkers (tools that join
+compiled pieces), or sysroots (folders containing another target system's
+libraries and headers). FOO acts as its own IT department.
 
 ---
 

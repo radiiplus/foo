@@ -17,6 +17,19 @@ proc rewriteExpression(node: ast.Expression; resolution: Resolution;
 proc rewriteBlock(node: ast.Block; resolution: Resolution;
     names: Table[pointer, string])
 
+proc rewritePattern(node: ast.Pattern; resolution: Resolution;
+    names: Table[pointer, string]) =
+  if node == nil: return
+  case node.tag
+  of "name":
+    let replacement = linkedName(node, resolution, names)
+    if replacement.len > 0: ast.Name(node).text = replacement
+  of "variant-pattern":
+    let pattern = ast.VariantPattern(node)
+    let replacement = linkedName(pattern.name, resolution, names)
+    if replacement.len > 0: pattern.name.text = replacement
+  else: discard
+
 proc rewriteType(node: ast.`Type`; resolution: Resolution;
     names: Table[pointer, string]) =
   if node == nil: return
@@ -55,6 +68,17 @@ proc rewriteExpression(node: ast.Expression; resolution: Resolution;
     for index in 0 ..< call.args.len:
       call.args[index] = rewriteExpression(call.args[index], resolution, names)
     for argument in call.types: rewriteType(argument, resolution, names)
+  of "sequence-value":
+    let sequence = ast.Values(node)
+    for index in 0 ..< sequence.items.len:
+      sequence.items[index] = rewriteExpression(sequence.items[index], resolution, names)
+  of "closure":
+    let closure = ast.Closure(node)
+    for parameter in closure.params: rewriteType(parameter.type, resolution, names)
+    rewriteType(closure.returnType, resolution, names)
+    for index in 0 ..< closure.captures.len:
+      closure.captures[index] = ast.Name(rewriteExpression(closure.captures[index], resolution, names))
+    rewriteBlock(closure.body, resolution, names)
   of "allocation":
     let allocation = ast.Allocation(node)
     allocation.size = rewriteExpression(allocation.size, resolution, names)
@@ -115,10 +139,17 @@ proc rewriteStatement(node: ast.Statement; resolution: Resolution;
     let declaration = ast.Mutable(node)
     rewriteType(declaration.type, resolution, names)
     declaration.value = rewriteExpression(declaration.value, resolution, names)
+  of "destructure":
+    let declaration = ast.Destructure(node)
+    rewriteType(declaration.recordType, resolution, names)
+    declaration.value = rewriteExpression(declaration.value, resolution, names)
+    for binding in declaration.bindings:
+      if names.hasKey(key(binding)): binding.text = names[key(binding)]
   of "function":
     let function = ast.Function(node)
     for parameter in function.params: rewriteType(parameter.type, resolution, names)
     rewriteType(function.returnType, resolution, names)
+    function.guard = rewriteExpression(function.guard, resolution, names)
     rewriteBlock(function.body, resolution, names)
   of "extern-function":
     let function = ast.ExternFunction(node)
@@ -133,7 +164,9 @@ proc rewriteStatement(node: ast.Statement; resolution: Resolution;
       of "union":
         for field in ast.Union(alias.body).fields: rewriteType(field.type, resolution, names)
       of "choice":
-        for variant in ast.Choice(alias.body).variants: rewriteType(variant.payload, resolution, names)
+        for variant in ast.Choice(alias.body).variants:
+          rewriteType(variant.payload, resolution, names)
+          if names.hasKey(key(variant)): variant.name.text = names[key(variant)]
       of "opaque": discard
       else: rewriteType(alias.body, resolution, names)
   of "give":
@@ -163,6 +196,7 @@ proc rewriteStatement(node: ast.Statement; resolution: Resolution;
     let statement = ast.Match(node)
     statement.scrutinee = rewriteExpression(statement.scrutinee, resolution, names)
     for arm in statement.cases:
+      rewritePattern(arm.pattern, resolution, names)
       arm.guard = rewriteExpression(arm.guard, resolution, names)
       rewriteBlock(arm.body, resolution, names)
   of "assignment":
@@ -215,9 +249,17 @@ proc link*(entry: Program; resolution: Resolution): Program =
       case statement.tag
       of "constant": names[key(statement)] = prefix & ast.Constant(statement).name.text
       of "mutable": names[key(statement)] = prefix & ast.Mutable(statement).name.text
+      of "destructure":
+        for binding in ast.Destructure(statement).bindings:
+          names[key(binding)] = prefix & binding.text
       of "function": names[key(statement)] = prefix & ast.Function(statement).name.text
       of "extern-function": names[key(statement)] = prefix & ast.ExternFunction(statement).name.text
-      of "alias": names[key(statement)] = prefix & ast.Alias(statement).name.text
+      of "alias":
+        let declaration = ast.Alias(statement)
+        names[key(statement)] = prefix & declaration.name.text
+        if declaration.body != nil and declaration.body.tag == "choice":
+          for variant in ast.Choice(declaration.body).variants:
+            names[key(variant)] = prefix & variant.name.text
       else: discard
 
   var modules: seq[ast.Unit]

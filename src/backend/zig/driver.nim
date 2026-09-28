@@ -62,14 +62,21 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
       native: substrate.NativeSelection(substrate: options.native.substrate,
         clobbers: options.native.clobbers))
     let escaped = escape(module, selection)
+    if progress != nil:
+      for decision in escaped.decisions:
+        progress("strategy", decision.operation,
+          decision.stage & " / " & decision.implementation & " | " & decision.reason,
+          false)
     stageEmbeds(escaped.module, sourceFile, outDir)
     let generated = emit(escaped.module, mode, EmitOptions(
       library: options.kind in ["static", "shared"], runtime: options.runtime,
-      coverage: options.coverage, target: options.target))
+      coverage: options.coverage, target: options.target,
+      benchmark: options.benchmark))
     let mainPath = outDir / "main.zig"
     writeFile(mainPath, generated.code)
     writeFile(outDir / "shim.zig", zigShim.`shim`)
-    writeFile(outDir / "library.zig", runtimeLibrary)
+    writeFile(outDir / "library.zig", runtimeLibrary.replace(
+      "FOO_BENCHMARK_ENABLED", if options.benchmark: "true" else: "false"))
     let copy = select("copy", selection)
     let transferBlock = case copy.implementation
       of "block-32": "32"

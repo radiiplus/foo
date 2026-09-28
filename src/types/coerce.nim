@@ -71,12 +71,21 @@ proc substitute*(value: Type; replacements: Table[string, Type]): Type =
     constant: value.constant, abi: value.abi, length: value.length,
     layout: value.layout, value: value.value, borrows: value.borrows,
     generics: value.generics, constraints: value.constraints,
+    labels: value.labels, defaults: value.defaults,
+    variadic: value.variadic,
     fields: initOrderedTable[string, Type](),
     variants: initOrderedTable[string, Type]())
   if value.elem != nil: result.elem = substitute(value.elem, replacements)
   for parameter in value.params: result.params.add(substitute(parameter, replacements))
   if value.ret != nil: result.ret = substitute(value.ret, replacements)
   for argument in value.arguments: result.arguments.add(substitute(argument, replacements))
+  if result.arguments.len > 0:
+    let bracket = result.name.find('[')
+    if bracket >= 0:
+      var names: seq[string]
+      for argument in result.arguments: names.add(typeToString(argument))
+      result.name = result.name[0 ..< bracket] & "[" &
+        names.join(", ") & "]"
   for name, field in value.fields: result.fields[name] = substitute(field, replacements)
   for name, variant in value.variants:
     result.variants[name] = if variant == nil: nil else: substitute(variant, replacements)
@@ -98,7 +107,6 @@ proc canCoerce*(fromType, toType: Type): Coercion =
   if typesEqual(fromType, toType): return yes
   if fromType.kind == "primitive" and fromType.name == "text" and toType.kind == "sequence" and toType.constant and toType.elem.kind == "primitive" and toType.elem.name == "byte": return yes
   if fromType.kind == "primitive" and fromType.name == "never": return yes
-  if toType.kind == "optional" and fromType.kind == "primitive" and fromType.name == "nothing": return yes
   if (fromType.kind == "optional" and toType.kind == "optional") or (fromType.kind == "error" and toType.kind == "error"): return if canCoerce(fromType.elem, toType.elem).ok: yes else: no
   if toType.kind == "optional" or toType.kind == "error": return if canCoerce(fromType, toType.elem).ok: yes else: no
   if fromType.kind == "sequence" and toType.kind == "sequence" and not fromType.constant and toType.constant and typesEqual(fromType.elem, toType.elem): return yes

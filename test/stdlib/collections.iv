@@ -2,15 +2,18 @@
 use sequence as sequence.
 use testing as check.
 use map as mapping.
-use hashmap as fastmap.
+use table as fast.
 use set as unique.
 use queue as queue.
 use stack as stack.
+use text as words.
 function double(value of type integer) of type integer { give value times 2. }
 function positive(value of type integer) of type boolean { give value greater than 0. }
 function negative(value of type integer) of type boolean { give value less than 0. }
 type Person is record { name of type text. age of type integer. } derives Equatable, Ord.
 start() {
+  constant missing of type optional integer is null.
+  check.expect(missing is null).
   constant empty is sequence.create[integer]().
   constant first is try sequence.append[integer](empty, 4).
   constant second is try sequence.append[integer](first, 2).
@@ -20,8 +23,24 @@ start() {
   after { sequence.release[integer](first) catch nothing. sequence.release[integer](second) catch nothing. sequence.release[integer](repeated) catch nothing. sequence.release[integer](sorted) catch nothing. sequence.release[integer](deduplicated) catch nothing. }
   check.expect(sorted at 0 is 2).
   check.expect(second at 0 is 4).
-  check.expect(sequence.find[integer](sorted, 4) is not nothing).
+  check.expect(sequence.find[integer](sorted, 4) is not null).
   check.expect(sequence.length[integer](deduplicated) is 2).
+  dynamic growing is sequence.create[integer]().
+  dynamic number is 0.
+  while number less than 12 {
+    set growing to sequence.append[integer](growing, number) try.
+    increase number by 1.
+  }
+  constant snapshot is growing.
+  constant noise is words.concatenate("mixed", "allocation") try.
+  set growing to sequence.append[integer](growing, 12) try.
+  words.release(noise) try.
+  constant branch is sequence.append[integer](snapshot, 99) try.
+  after { sequence.release[integer](growing) catch nothing. sequence.release[integer](branch) catch nothing. }
+  check.expect(sequence.length[integer](snapshot) is 12).
+  check.expect(snapshot at 11 is 11).
+  check.expect(growing at 12 is 12).
+  check.expect(branch at 12 is 99).
   constant mapped is try sequence.map[integer, integer](sorted, double).
   constant filtered is try sequence.filter[integer](mapped, positive).
   constant rejected is try sequence.filter[integer](mapped, negative).
@@ -35,15 +54,15 @@ start() {
   check.expect((try mapping.get[text, integer](entry, "answer")) is 44).
   check.expect((try mapping.get[text, integer](replaced, "answer")) is 42).
   check.expect(mapping.length[text, integer](replaced) is 1).
-  constant fast is try fastmap.create[integer]().
-  after { fastmap.close[integer](fast) fallback nothing. }
-  try fastmap.put[integer](fast, "answer", 44).
-  try fastmap.put[integer](fast, "answer", 42).
-  check.expect((try fastmap.get[integer](fast, "answer")) is 42).
-  check.expect((try fastmap.length[integer](fast)) is 1).
-  check.expect(try fastmap.contains[integer](fast, "answer")).
-  check.expect(try fastmap.remove[integer](fast, "answer")).
-  check.expect((try fastmap.length[integer](fast)) is 0).
+  constant cache is try fast.create[integer]().
+  after { fast.close[integer](cache) fallback nothing. }
+  try fast.put[integer](cache, "answer", 44).
+  try fast.put[integer](cache, "answer", 42).
+  check.expect((try fast.get[integer](cache, "answer")) is 42).
+  check.expect((try fast.length[integer](cache)) is 1).
+  check.expect(try fast.contains[integer](cache, "answer")).
+  check.expect(try fast.remove[integer](cache, "answer")).
+  check.expect((try fast.length[integer](cache)) is 0).
   constant set is unique.create[integer]().
   constant member is try unique.insert[integer](set, 44).
   constant duplicate is try unique.insert[integer](member, 44).
@@ -67,7 +86,7 @@ start() {
   after { mapping.release[text, integer](removed) catch nothing. unique.release[integer](absent) catch nothing. }
   check.expect(mapping.length[text, integer](removed) is 0).
   check.expect(unique.length[integer](absent) is 0).
-  check.expect(sequence.find[integer](empty, 0) is nothing).
+  check.expect(sequence.find[integer](empty, 0) is null).
   constant back is try queue.append(front, 42).
   constant tail is try queue.remove[integer](back).
   after { queue.release[integer](back) catch nothing. queue.release[integer](tail) catch nothing. }

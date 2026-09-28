@@ -5,6 +5,7 @@ var manifest = defaultManifest()
 doAssert manifest.name == "app"
 doAssert manifest.version == "0.1.0"
 doAssert manifest.language == "1"
+doAssert manifest.entries.len == 0
 doAssert not manifest.hasBuild()
 
 var product = ProductConfig(entry: "src/main.iv", kind: "exe")

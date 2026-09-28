@@ -2,7 +2,7 @@ type
   TypeKind* = enum
     Int, Float, Bool, Ptr, Array, Struct, Void, Error, Vector, TaggedUnion,
     PackedStruct, ExternUnion, Opaque, Function, Uint, ExternStruct, Slice,
-    Optional, Fallible, Memory, Region, Trace
+    Optional, Failable, Memory, Region, Trace
 
   ValueKind* = enum
     Reg, Const, Global

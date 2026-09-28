@@ -14,17 +14,17 @@ This context is a call convention detail; ordinary function declarations do
 not contain context parameters.
 
 The physical signature uses the target C procedure-call convention. It returns
-an unsigned eight-bit status: zero for success, one for failure. An infallible
+an unsigned eight-bit status: zero for success, one for failure. A non-failable
 function always returns zero. Arguments, in order, are:
 
 1. A non-null pointer to the call context.
-2. A pointer to result storage, omitted only for an infallible unit result.
+2. A pointer to result storage, omitted only for a non-failable unit result.
 3. Explicit arguments in declaration order.
 
 Scalars with exact target C representations pass by value. All other arguments
 pass by a pointer to read-only storage; explicit mutable access passes a pointer
 with its declared permissions. Aggregate results always use caller-provided
-storage. Fallible result storage is a tag, success storage or Error identity,
+storage. Failable result storage is a tag, success storage or Error identity,
 and a trace reference. No callee-owned scope storage may escape through it.
 
 Layout follows the selected target's scalar size/alignment rules. Records place
@@ -42,7 +42,7 @@ an unsigned 64-bit scalar and is passed indirectly.
 An optional stores an eight-bit tag, padding, then its value. A choice stores an
 unsigned 32-bit tag and an aligned union of payload storage. An implicit choice
 tag is its zero-based declaration order; explicit tags must fit unsigned 32.
-A fallible stores an eight-bit tag and an aligned success/error payload plus
+A failable stores an eight-bit tag and an aligned success/error payload plus
 trace reference. Tag zero means absent/success as appropriate; tag one means
 present/failure. Choice tags have no such two-state interpretation.
 
@@ -124,7 +124,7 @@ C signatures use the target's C ABI directly, without the FOO context/status
 parameters. Integers and decimals must map exactly to the target's corresponding
 C types; byte maps to unsigned char. Boolean maps to the target C Boolean type.
 Pointers retain pointee alignment requirements. Opaque types cross only by pointer.
-Text, sequences, Error, optional/fallible values, packed records and vectors do
+Text, sequences, Error, optional/failable values, packed records and vectors do
 not cross by value. A named record crosses by value only when a verified foreign
 layout contract is supplied by a native interface; ordinary records alone do
 not establish that contract.

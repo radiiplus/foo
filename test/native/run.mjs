@@ -18,8 +18,14 @@ const files = readdirSync(join(root, "test"), { recursive: true, withFileTypes: 
   .filter(entry => entry.isFile() && entry.name.endsWith(".nim"))
   .map(entry => join(entry.parentPath, entry.name))
   .sort();
-const output = join(root, ".artifacts", "native-tests");
+const base = join(root, ".artifacts", "native-tests");
+const run = `run-${process.pid}-${Date.now()}`;
+const output = join(base, run);
+const temporary = join(output, "temp");
 mkdirSync(output, { recursive: true });
+mkdirSync(temporary, { recursive: true });
+const environment = { ...process.env, TEMP: temporary, TMP: temporary,
+  TMPDIR: temporary, FOOTESTID: run };
 const results = [];
 
 for (const file of files) {
@@ -32,14 +38,19 @@ for (const file of files) {
   if (process.platform === "win32") args.push("--cc:clang");
   args.push(file);
   const started = performance.now();
-  const run = spawnSync(compiler, args, { cwd: root, encoding: "utf8", timeout: 180000, windowsHide: true });
-  const result = { file: name, passed: run.status === 0, code: run.status, elapsed: performance.now() - started,
-    stdout: run.stdout ?? "", stderr: run.stderr ?? "", error: run.error?.message };
+  const execution = spawnSync(compiler, args, { cwd: root, env: environment,
+    encoding: "utf8", timeout: 180000, windowsHide: true });
+  const result = { file: name, passed: execution.status === 0,
+    code: execution.status, elapsed: performance.now() - started,
+    stdout: execution.stdout ?? "", stderr: execution.stderr ?? "",
+    error: execution.error?.message };
   results.push(result);
   console.log(`${result.passed ? "PASS" : "FAIL"} ${name} (${Math.round(result.elapsed)} ms)`);
   if (!result.passed) process.stderr.write(result.stderr || result.stdout || result.error || "Unknown native test failure\n");
 }
 
-writeFileSync(join(output, "results.json"), JSON.stringify(results, null, 2) + "\n");
+const report = JSON.stringify(results, null, 2) + "\n";
+writeFileSync(join(output, "results.json"), report);
+writeFileSync(join(base, "results.json"), report);
 console.log(`${results.filter(result => result.passed).length}/${results.length} native tests passed.`);
 if (results.some(result => !result.passed)) process.exitCode = 1;

@@ -31,4 +31,36 @@ doAssert linked.units[0].body.stmts[0].tag == "constant"
 doAssert ast.Constant(linked.units[0].body.stmts[0]).name.text == "import_0_value"
 doAssert ast.Give(linked.units[0].body.stmts[1]).value.tag == "name"
 doAssert ast.Name(ast.Give(linked.units[0].body.stmts[1]).value).text == "import_0_value"
+
+let item = ast.Variant(tag: "variant", name: ast.Name(tag: "name", text: "item"),
+  payload: ast.Primitive(tag: "primitive", name: "integer", width: "64"))
+let choices = ast.Unit(
+  tag: "unit", span: Span(), name: ast.Name(tag: "name", text: "choices"),
+  body: ast.Block(tag: "block", stmts: @[
+    ast.Statement(ast.Alias(tag: "alias", public: true,
+      name: ast.Name(tag: "name", text: "Result"),
+      body: ast.Choice(tag: "choice", variants: @[item])))
+  ]))
+let patternName = ast.Name(tag: "name", text: "choices.item")
+let pattern = ast.VariantPattern(tag: "variant-pattern", name: patternName,
+  binding: ast.Name(tag: "name", text: "found"))
+let matching = ast.Unit(
+  tag: "unit", span: Span(), name: ast.Name(tag: "name", text: "matching"),
+  body: ast.Block(tag: "block", stmts: @[
+    ast.Statement(ast.Match(tag: "match", scrutinee: ast.Name(tag: "name", text: "result"),
+      cases: @[ast.Case(tag: "case", pattern: pattern,
+        body: ast.Block(tag: "block", stmts: @[]))]))
+  ]))
+var choiceUnits = initTable[string, semaModule.Unit]()
+choiceUnits["choices"] = semaModule.Unit(name: "choices", node: choices, scope: newScope())
+var choiceResolutions = initTable[pointer, Symbol]()
+choiceResolutions[cast[pointer](patternName)] = Symbol(node: item)
+let choiceResolution = semaModule.Resolution(units: choiceUnits,
+  resolutions: choiceResolutions, order: @["choices"])
+let choiceLinked = link(Program(tag: "program", units: @[matching]), choiceResolution)
+let linkedAlias = ast.Alias(choiceLinked.units[0].body.stmts[0])
+let linkedItem = ast.Choice(linkedAlias.body).variants[0].name.text
+let linkedMatch = ast.Match(choiceLinked.units[0].body.stmts[1])
+doAssert linkedItem == "import_0_item"
+doAssert ast.VariantPattern(linkedMatch.cases[0].pattern).name.text == linkedItem
 echo "semantic link parity: ok"

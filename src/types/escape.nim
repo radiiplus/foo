@@ -109,12 +109,15 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
           callee.abi in ["runtime", "runtime.crypto", "runtime.unicode", "runtime.compress",
             "runtime.json", "runtime.http", "runtime.system", "runtime.arch",
             "runtime.atomic", "runtime.list", "runtime.memory", "runtime.stream",
-            "runtime.hashmap",
+            "runtime.table",
             "runtime.io", "runtime.fs", "runtime.net", "runtime.process",
             "runtime.thread", "runtime.time", "runtime.text"]:
         return
       for origins in arguments: result = merge(result, origins)
       result.incl(depth)
+    of "sequence-value":
+      for item in ast.Values(node).items:
+        result = merge(result, expression(item, bindings, depth))
     else: discard
 
   proc visit(bodyNode: ast.Block; outer: var Table[string, Binding]; depth: int) =
@@ -134,6 +137,12 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
         bindings[declaration.name.text] = Binding(
           origins: expression(declaration.value, bindings, depth),
           depth: depth, span: declaration.span)
+      of "destructure":
+        let declaration = ast.Destructure(statement)
+        let origins = expression(declaration.value, bindings, depth)
+        for binding in declaration.bindings:
+          bindings[binding.text] = Binding(origins: merge(origins),
+            depth: depth, span: binding.span)
       of "give":
         let value = ast.Give(statement).value
         if value != nil:

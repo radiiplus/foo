@@ -41,6 +41,7 @@ type
     semantic*: bool
     runtime*: string
     coverage*: string
+    profile*: string
     cpu*: string
     sanitize*: string
     docs*: bool
@@ -61,6 +62,7 @@ type
     requires*: string
     source*: string
     entry*: string
+    entries*: Table[string, string]
     build*: BuildConfig
     dependencies*: Table[string, string]
     registry*: RegistryConfig
@@ -70,6 +72,7 @@ proc defaultManifest*(): Manifest =
   result.name = "app"
   result.version = "0.1.0"
   result.language = "1"
+  result.entries = initTable[string, string]()
 
 proc hasBuild*(manifest: Manifest): bool =
   manifest.build.backend.len > 0 or manifest.build.compiler.len > 0 or

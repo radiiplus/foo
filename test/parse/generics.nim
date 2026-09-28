@@ -19,12 +19,12 @@ proc parseSource(source: string): ast.Program =
 
 let declarations = parseFile(currentSourcePath().parentDir.parentDir / "editor" / "cases" / "declarations.iv")
 let statements = declarations.units[0].body.stmts
-let box = ast.Alias(statements[0])
-doAssert box.typeParams.len == 1
-doAssert box.derives.traits.len == 2
-let sort = ast.Function(statements[2])
-doAssert sort.typeParams.len == 1
-doAssert sort.constraints.len == 1
+let functions = statements.filterIt(it.tag == "function").mapIt(ast.Function(it))
+let choose = functions.filterIt(it.name.text == "choose")[0]
+doAssert choose.typeParams.len == 1
+let maximum = functions.filterIt(it.name.text == "maximum")[0]
+doAssert maximum.typeParams.len == 1
+doAssert maximum.constraints.len == 1
 
 let library = parseFile(currentSourcePath().parentDir.parentDir.parentDir / "std" / "sequence.iv")
 doAssert library.units[0].body.stmts.anyIt(it.tag == "extern-function" and ast.ExternFunction(it).typeParams.len == 1)

@@ -22,5 +22,8 @@ doAssert not canCoerce(literal("9007199254740993"),
   primitive("decimal", 64)).ok
 doAssert canCoerce(primitive("unsigned", 32),
   primitive("integer", 64)).ok
+let optionalInteger = Type(kind: "optional", elem: primitive("integer", 64))
+doAssert not canCoerce(Type(kind: "primitive", name: "nothing"),
+  optionalInteger).ok
 
 echo "type coercion parity: ok"

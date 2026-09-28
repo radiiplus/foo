@@ -1,8 +1,63 @@
 #if defined(FOO_COPY_AVX)
 #include <immintrin.h>
 #endif
+static uint64_t foo_metric_allocations;
+static uint64_t foo_metric_allocated_bytes;
+static uint64_t foo_metric_reallocations;
+static uint64_t foo_metric_copied_bytes;
+static uint64_t foo_metric_growths;
+static uint64_t foo_metric_growth_bytes;
+static uint64_t foo_metric_capacity_total;
+static uint64_t foo_metric_capacity_max;
+static uint64_t foo_metric_capacity_samples;
+static uint64_t foo_metric_requested_total;
+static uint64_t foo_metric_live_bytes;
+static uint64_t foo_metric_peak_bytes;
+static uint64_t foo_metric_retained_bytes;
+static uint64_t foo_metric_slow_paths;
+static uint64_t foo_metric_branches;
+static uint64_t foo_metric_branch_bytes;
+static void foo_metric_add(uint64_t *counter, size_t amount) {
+#if defined(FOO_BENCHMARK)
+  uint64_t value = (uint64_t)amount;
+  *counter = UINT64_MAX - *counter < value ? UINT64_MAX : *counter + value;
+#else
+  (void)counter;
+  (void)amount;
+#endif
+}
+static void foo_metric_allocate(size_t size) {
+#if defined(FOO_BENCHMARK)
+  foo_metric_add(&foo_metric_allocations, 1);
+  foo_metric_add(&foo_metric_allocated_bytes, size);
+  foo_metric_add(&foo_metric_live_bytes, size);
+  if (foo_metric_live_bytes > foo_metric_peak_bytes)
+    foo_metric_peak_bytes = foo_metric_live_bytes;
+#else
+  (void)size;
+#endif
+}
+static void foo_metric_release(size_t size, int retired) {
+#if defined(FOO_BENCHMARK)
+  foo_metric_live_bytes -= size;
+  if (retired) foo_metric_retained_bytes -= size;
+#else
+  (void)size;
+  (void)retired;
+#endif
+}
+static void foo_metric_capacity(size_t capacity) {
+#if defined(FOO_BENCHMARK)
+  foo_metric_add(&foo_metric_capacity_total, capacity);
+  foo_metric_add(&foo_metric_capacity_samples, 1);
+  if (capacity > foo_metric_capacity_max) foo_metric_capacity_max = capacity;
+#else
+  (void)capacity;
+#endif
+}
 static void foo_transfer(void *destination, const void *source, size_t size) {
   if (!size || destination == source) return;
+  foo_metric_add(&foo_metric_copied_bytes, size);
 #if defined(FOO_COPY_AVX)
   if (size < 128 || size > 256) { memmove(destination, source, size); return; }
   /* Read the entire range before writing, including overlapping copies.

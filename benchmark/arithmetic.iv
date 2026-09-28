@@ -1,0 +1,16 @@
+-- Measures checked integer arithmetic and loop control.
+-- The final assertion keeps the work observable without timing terminal output.
+use testing as check.
+use system as machine.
+
+dynamic index of type unsigned 64 is 0.
+dynamic checksum of type unsigned 64 is 0.
+dynamic limit of type unsigned 64 is 10_000_000.
+when machine.cores() try greater than 0 { increase limit by 1. }
+
+while index less than limit {
+  set checksum to checksum plus index.
+  increase index by 1.
+}
+
+check.positive(checksum).

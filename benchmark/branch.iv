@@ -1,0 +1,30 @@
+-- Measures the deliberate copy path when appending from an older version.
+use sequence as items.
+use testing as check.
+
+dynamic values is items.create[unsigned 64]().
+dynamic older is items.create[unsigned 64]().
+dynamic index of type unsigned 64 is 0.
+while index less than 10_000 {
+  set values to items.append[unsigned 64](values, index) try.
+  increase index by 1.
+  when index is 5_000 { set older to values. }
+}
+
+dynamic branches of type unsigned 64 is 0.
+dynamic checksum of type unsigned 64 is 0.
+while branches less than 1_000 {
+  constant branch is items.append[unsigned 64](older, branches) try.
+  set checksum to checksum plus branch at 5_000.
+  items.release[unsigned 64](branch) fallback nothing.
+  increase branches by 1.
+}
+after {
+  items.release[unsigned 64](older) fallback nothing.
+  items.release[unsigned 64](values) fallback nothing.
+}
+
+check.number(items.length[unsigned 64](older), 5_000).
+check.number(older at 4_999, 4_999).
+check.number(values at 5_000, 5_000).
+check.number(checksum, 499_500).

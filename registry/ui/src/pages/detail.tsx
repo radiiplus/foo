@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Markdown } from "../components/markdown";
 import { item as loadItem, type Package, type VersionSummary } from "../utils/registry";
 import { date, displayPackageName } from "../utils/format";
+import { seo } from "../utils/seo";
 
 type DetailProps = {
   name: string;
@@ -63,6 +64,15 @@ export default function Detail({ name, onBack, onTag }: DetailProps) {
     if (readmeOpen && !dialog.open) dialog.showModal();
     if (!readmeOpen && dialog.open) dialog.close();
   }, [readmeOpen]);
+
+  useEffect(() => {
+    if (!item) return;
+    seo({
+      title: `${displayPackageName(item.name)} - FOO Package Registry`,
+      description: item.description || `Versions, API, and documentation for ${displayPackageName(item.name)}.`,
+      path: `/package/${encodeURIComponent(item.name)}`,
+    });
+  }, [item]);
 
   if (error) {
     return <div className="grid min-h-full place-items-center p-6 text-center"><div><PackageOpen className="mx-auto text-[#555]" /><p className="mt-3 text-sm text-[#aaa]">{error}</p><button className="mt-3 text-xs text-[#60D5DF]" type="button" onClick={onBack}>Return to packages</button></div></div>;

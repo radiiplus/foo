@@ -42,9 +42,17 @@ display "Nice to meet you, " plus name.
 
 ## 2. Networking (The `net` Module)
 
-FOO was built with the modern web in mind. The `net` module abstracts away the complex world of sockets and TCP/IP, giving you clean, high-performance networking.
+FOO was built with the modern web in mind. The `net` module abstracts away
+(hides the lower-level details of) sockets (operating-system network
+connections) and TCP/IP, giving you clean, high-performance networking.
 
-**The Benefit:** FOO automatically detects your operating system (Windows, Mac, or Linux) and uses the fastest possible event system (`iocp`, `kqueue`, or `epoll`) under the hood. You write the code once; it runs at maximum speed everywhere.
+**The benefit:** the target selects IOCP (Windows completion events) on Windows,
+kqueue (Apple and BSD readiness events) on Apple and BSD systems, epoll (Linux
+readiness events) on Linux, or a threaded fallback elsewhere. These services avoid
+one blocked thread per asynchronous socket operation (network work that can
+wait without stopping other work) where the platform backend supports event
+polling (asking the operating system which operations are ready); no backend is
+claimed to be universally fastest.
 
 ```foo
 use net as network.
@@ -67,7 +75,7 @@ Sometimes you need to run an external command, like a database tool or a system 
 ```foo
 use process.
 
-constant exitCode is process.run("ping example.com") try.
+constant status is process.run("ping example.com") try.
 
 when process.count() greater than 0 {
   constant first is process.argument(0) try.
@@ -87,12 +95,12 @@ FOO doesn't make you rewrite it. FOO has built-in **Interoperability** (the abil
 You can declare a C function right inside your FOO code. FOO will link against the C library and call it directly.
 
 ```foo
--- Declare a C ABI function. Use generated bindings for pointer conversion.
+-- Declare a C ABI (binary calling rules) function. Use generated bindings for pointer conversion.
 extern "C" function puts(value pointer to byte) giving integer.
 ```
 
 ### The `foo bind` Tool
-If you have a massive C header file (`.h`), you don't have to type out all the declarations manually. FOO comes with a `bind` tool that reads the C file and automatically generates the FOO bindings for you.
+If you have a massive C header file (`.h`), you don't have to type out all the declarations manually. FOO comes with a `bind` tool that reads the C file and automatically generates the FOO bindings (declarations that connect FOO names to C code) for you.
 
 ```sh
 foo bind my_library.h
@@ -107,14 +115,16 @@ When you need absolute, raw control over the hardware—like writing a device dr
 ### Native C Blocks
 You can write raw C code directly inside a FOO function.
 ```foo
-native c function addIntegers(a integer, b integer) giving integer {
+native c function add(a integer, b integer) giving integer {
   // This is raw C code
   return a + b;
 }
 ```
 
 ### Inline Assembly
-For the truly brave, FOO supports inline assembly (`asm`). This is used for extremely specific hardware instructions.
+For the truly brave, FOO supports inline assembly (`asm`, low-level processor
+instructions written directly in the source). This is used for extremely
+specific hardware instructions.
 ```foo
 asm {
   // Raw assembly instructions go here

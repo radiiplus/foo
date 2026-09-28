@@ -25,7 +25,7 @@ proc lowerType(node: ast.`Type`; aliases: Table[string, `Type`]): `Type` =
     let sequence = ast.Sequence(node)
     `Type`(kind: TypeKind.Slice, elem: lowerType(sequence.elem, aliases), constant: node.tag == "sequence" and sequence.constant)
   of "optional": `Type`(kind: TypeKind.Optional, elem: lowerType(ast.Optional(node).elem, aliases))
-  of "error": `Type`(kind: TypeKind.Fallible, elem: lowerType(ast.Error(node).elem, aliases))
+  of "error": `Type`(kind: TypeKind.Failable, elem: lowerType(ast.Error(node).elem, aliases))
   of "vector": `Type`(kind: TypeKind.Vector, width: parseInt(ast.Vector(node).length), elem: lowerType(ast.Vector(node).elem, aliases))
   of "function-type":
     let functionType = ast.FunctionType(node)
@@ -81,7 +81,7 @@ proc semanticTypeImpl(value: semantic.Type; aliases: Table[string, `Type`];
     elem: semanticTypeImpl(value.elem, aliases, seen), constant: value.constant)
   of "optional": return `Type`(kind: TypeKind.Optional,
     elem: semanticTypeImpl(value.elem, aliases, seen))
-  of "error": return `Type`(kind: TypeKind.Fallible,
+  of "error": return `Type`(kind: TypeKind.Failable,
     elem: semanticTypeImpl(value.elem, aliases, seen))
   of "vector": return `Type`(kind: TypeKind.Vector, width: value.length,
     elem: semanticTypeImpl(value.elem, aliases, seen))
@@ -121,7 +121,8 @@ proc semanticType(value: semantic.Type; aliases: Table[string, `Type`]): `Type` 
 proc literalValue(node: ast.Expression; typ: `Type`): Value =
   case node.tag
   of "true", "false": Value(kind: ValueKind.Const, name: node.tag, `type`: typ)
-  of "nothing": Value(kind: ValueKind.Const, name: if typ != nil and typ.kind == TypeKind.Optional: "null" else: "{}", `type`: typ)
+  of "nothing": Value(kind: ValueKind.Const, name: "{}", `type`: typ)
+  of "null": Value(kind: ValueKind.Const, name: "null", `type`: typ)
   of "text", "newline":
     let text = if node.tag == "newline": "\n" else: ast.Text(node).value
     var data = newSeq[byte](text.len)
@@ -153,6 +154,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
     params.add(Value(kind: ValueKind.Reg, name: parameter.name.text, `type`: signature.params[index]))
   var environment = initTable[string, Value]()
   var slots = initTable[string, Value]()
+  var closures = initTable[string, ast.Closure]()
   for parameter in params: environment[parameter.name] = parameter
   for item in storage:
     if not environment.hasKey(item.name):
@@ -175,7 +177,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       return
     let widen = value.type.kind in numeric and expected.kind in numeric and
       (value.type.kind != expected.kind or value.type.width != expected.width)
-    let wrap = expected.kind in {TypeKind.Optional, TypeKind.Fallible} and
+    let wrap = expected.kind in {TypeKind.Optional, TypeKind.Failable} and
       value.type.kind != expected.kind
     let view = expected.kind == TypeKind.Slice and value.type.kind == TypeKind.Slice and
       expected.constant != value.type.constant
@@ -236,7 +238,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
   proc expression(node: ast.Expression; expected: `Type` = nil): Value =
     if node == nil: return Value(kind: ValueKind.Const, name: "null", `type`: expected)
     case node.tag
-    of "integer", "decimal", "text", "character", "true", "false", "nothing", "newline":
+    of "integer", "decimal", "text", "character", "true", "false", "nothing", "null", "newline":
       let inferred =
         if node.tag == "integer": `Type`(kind: TypeKind.Int, width: 64)
         elif node.tag == "decimal": `Type`(kind: TypeKind.Float, width: 64)
@@ -246,10 +248,13 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         else: `Type`(kind: TypeKind.Void)
       let target =
         if node.tag == "nothing":
-          if expected != nil and expected.kind == TypeKind.Fallible: expected.elem
+          if expected != nil and expected.kind == TypeKind.Failable: expected.elem
           elif expected != nil: expected
           else: inferred
-        elif expected != nil and expected.kind in {TypeKind.Optional, TypeKind.Fallible}:
+        elif node.tag == "null":
+          if expected != nil and expected.kind == TypeKind.Optional: expected
+          else: inferred
+        elif expected != nil and expected.kind in {TypeKind.Optional, TypeKind.Failable}:
           expected.elem
         elif expected != nil: expected
         else: inferred
@@ -287,12 +292,28 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         return value
       for alias in aliases.values:
         if alias.kind == TypeKind.TaggedUnion and alias.variants.hasKey(ast.Name(node).text):
-          let dest = fresh(alias)
+          let checked = typed.getOrDefault(cast[pointer](node))
+          let target = if checked != nil and checked.kind == "choice":
+            semanticType(checked, aliases) else: alias
+          let dest = fresh(target)
           emit(Instruction(kind: InstrKind.Construct, dest: dest,
             field: ast.Name(node).text, args: @[]))
           return dest
       return Value(kind: ValueKind.Global, name: ast.Name(node).text, `type`: signatures.getOrDefault(ast.Name(node).text, `Type`(kind: TypeKind.Void)))
     of "group": return expression(ast.Group(node).expr, expected)
+    of "sequence-value":
+      let sequence = ast.Values(node)
+      let checked = typed.getOrDefault(cast[pointer](node))
+      let target = if expected != nil: expected
+        elif checked != nil: semanticType(checked, aliases)
+        else: `Type`(kind: TypeKind.Slice, constant: true,
+          elem: `Type`(kind: TypeKind.Void))
+      var items: seq[Value]
+      for item in sequence.items: items.add(expression(item, target.elem))
+      let dest = fresh(target)
+      emit(Instruction(kind: InstrKind.Construct, op: "sequence",
+        dest: dest, args: items))
+      return dest
     of "index", "field":
       if node.tag == "field":
         let field = ast.Field(node)
@@ -356,8 +377,8 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         return dest
       if binary.op == "catch":
         let left = expression(binary.left)
-        if left.type == nil or left.type.kind != TypeKind.Fallible:
-          raise newException(ValueError, "fallback needs a fallible value")
+        if left.type == nil or left.type.kind != TypeKind.Failable:
+          raise newException(ValueError, "fallback needs a failable value")
         inc serial
         let errorLabel = "catch_" & $serial
         let success = "success_" & $serial
@@ -380,7 +401,13 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         emit(Instruction(kind: InstrKind.Phi, dest: dest,
           blocks: @[(label: predecessor, value: fallback), (label: success, value: value)]))
         return dest
-      let left = expression(binary.left, expected); let right = expression(binary.right, left.type)
+      let hint = if typed.hasKey(cast[pointer](binary.left)):
+        semanticType(typed[cast[pointer](binary.left)], aliases)
+        elif expected != nil and expected.kind in {TypeKind.Failable, TypeKind.Optional}:
+          expected.elem
+        else: expected
+      let left = expression(binary.left, hint)
+      let right = expression(binary.right, left.type)
       let comparison = binary.op in ["equals", "does not equal", "is greater than", "is less than", "is at least", "is at most"]
       let resultType = if comparison and left.type.kind == TypeKind.Vector: `Type`(kind: TypeKind.Vector, width: left.type.width, elem: `Type`(kind: TypeKind.Bool)) elif comparison: `Type`(kind: TypeKind.Bool) else: left.type
       let dest = fresh(resultType)
@@ -389,8 +416,8 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
     of "unary":
       let unary = ast.Unary(node); let operand = expression(unary.operand)
       if unary.op == "try":
-        if operand.type == nil or operand.type.kind != TypeKind.Fallible:
-          raise newException(ValueError, "try needs a fallible value")
+        if operand.type == nil or operand.type.kind != TypeKind.Failable:
+          raise newException(ValueError, "try needs a failable value")
         if hasCleanups(): return propagate(operand)
         let dest = fresh(operand.type.elem)
         emit(Instruction(kind: InstrKind.Try, dest: dest, expr: operand))
@@ -401,8 +428,38 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       let call = ast.Call(node)
       if call.callee.tag == "name":
         let name = ast.Name(call.callee).text
+        if closures.hasKey(name):
+          let closure = closures[name]
+          if call.args.len != closure.params.len:
+            raise newException(ValueError, "Closure argument count was not normalized")
+          var arguments: seq[Value]
+          for index, argument in call.args:
+            let parameterType = if typed.hasKey(cast[pointer](closure.params[index])):
+              semanticType(typed[cast[pointer](closure.params[index])], aliases)
+            else: lowerType(closure.params[index].type, aliases)
+            arguments.add(expression(argument, parameterType))
+          let savedEnvironment = snapshot(environment)
+          let savedSlots = snapshot(slots)
+          for index, parameter in closure.params:
+            environment[parameter.name.text] = arguments[index]
+            slots.del(parameter.name.text)
+          var body = closure.body.stmts
+          var returned: ast.Expression
+          if body.len > 0 and body[^1].tag == "give":
+            returned = ast.Give(body[^1]).value
+            body.setLen(body.len - 1)
+          statements(body)
+          if term != nil:
+            raise newException(ValueError,
+              "A scoped closure must reach its final give statement")
+          let value = if returned != nil: expression(returned, expected)
+            else: Value(kind: ValueKind.Const, name: "void",
+              `type`: `Type`(kind: TypeKind.Void))
+          environment = savedEnvironment
+          slots = savedSlots
+          return value
         if name == "fail" and not signatures.hasKey(name):
-          let target = if expected != nil and expected.kind == TypeKind.Fallible: expected else: `Type`(kind: TypeKind.Fallible, elem: `Type`(kind: TypeKind.Void))
+          let target = if expected != nil and expected.kind == TypeKind.Failable: expected else: `Type`(kind: TypeKind.Failable, elem: `Type`(kind: TypeKind.Void))
           let dest = fresh(target)
           emit(Instruction(kind: InstrKind.Construct, op: "error", dest: dest,
             args: @[expression(call.args[0], `Type`(kind: TypeKind.Error))]))
@@ -420,12 +477,16 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
           let dest = fresh(target)
           emit(Instruction(kind: InstrKind.Construct, dest: dest, args: args))
           return dest
+        let checked = typed.getOrDefault(cast[pointer](node))
         for alias in aliases.values:
           if alias.kind == TypeKind.TaggedUnion and alias.variants.hasKey(name):
-            let dest = fresh(alias)
+            let target = if checked != nil and checked.kind == "choice":
+              semanticType(checked, aliases) else: alias
+            let dest = fresh(target)
             var args: seq[Value]
-            if alias.variants[name] != nil:
-              for argument in call.args: args.add(expression(argument, alias.variants[name]))
+            if target.variants[name] != nil:
+              for argument in call.args:
+                args.add(expression(argument, target.variants[name]))
             emit(Instruction(kind: InstrKind.Construct, dest: dest, field: name, args: args))
             return dest
         if name in ["splat", "shuffle", "select", "reduce"]:
@@ -454,10 +515,10 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
           return dest
         var sig: `Type`
         var indirect = Value()
-        if signatures.hasKey(name): sig = signatures[name]
-        elif environment.hasKey(name) and environment[name].type.kind == TypeKind.Function:
+        if environment.hasKey(name) and environment[name].type.kind == TypeKind.Function:
           indirect = environment[name]
           sig = indirect.type
+        elif signatures.hasKey(name): sig = signatures[name]
         if sig != nil:
           var typeArgs: seq[`Type`]
           if sig.attributes.len > 0:
@@ -512,7 +573,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       return if callee.type.ret.kind == TypeKind.Void: Value(kind: ValueKind.Const, name: "{}", `type`: callee.type.ret) else: dest
     of "allocation":
       let allocation = ast.Allocation(node); let size = expression(allocation.size)
-      let dest = fresh(if expected != nil: expected else: `Type`(kind: TypeKind.Fallible, elem: `Type`(kind: TypeKind.Slice, elem: `Type`(kind: TypeKind.Uint, width: 8))))
+      let dest = fresh(if expected != nil: expected else: `Type`(kind: TypeKind.Failable, elem: `Type`(kind: TypeKind.Slice, elem: `Type`(kind: TypeKind.Uint, width: 8))))
       let owner = if allocation.owner != nil: expression(allocation.owner) else: Value()
       emit(Instruction(kind: InstrKind.Allocate, dest: dest, val: size,
         target: owner, region: "scope", effects: @["allocate", "write"])); return dest
@@ -721,12 +782,32 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         break
       of "constant":
         let declaration = ast.Constant(statement)
+        if declaration.value.tag == "closure":
+          closures[declaration.name.text] = ast.Closure(declaration.value)
+          environment.del(declaration.name.text)
+          slots.del(declaration.name.text)
+          continue
         let expected =
           if typed.hasKey(cast[pointer](statement)): semanticType(typed[cast[pointer](statement)], aliases)
           elif declaration.`type` != nil: lowerType(declaration.`type`, aliases)
           else: nil
         environment[declaration.name.text] = expression(declaration.value, expected)
         slots.del(declaration.name.text)
+      of "destructure":
+        let declaration = ast.Destructure(statement)
+        let expected =
+          if typed.hasKey(cast[pointer](statement)):
+            semanticType(typed[cast[pointer](statement)], aliases)
+          else: lowerType(declaration.recordType, aliases)
+        let source = expression(declaration.value, expected)
+        for index, field in declaration.fields:
+          if index >= declaration.bindings.len or
+              not expected.fields.hasKey(field.text): continue
+          let extracted = fresh(expected.fields[field.text])
+          emit(Instruction(kind: InstrKind.Extract, dest: extracted,
+            val: source, field: field.text))
+          environment[declaration.bindings[index].text] = extracted
+          slots.del(declaration.bindings[index].text)
       of "mutable":
         let declaration = ast.Mutable(statement)
         let expected =
@@ -758,7 +839,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         for scope in scopes:
           for entry in scope:
             if entry.statement.error: hasErrorCleanup = true
-        if value.type != nil and value.type.kind == TypeKind.Fallible and hasErrorCleanup:
+        if value.type != nil and value.type.kind == TypeKind.Failable and hasErrorCleanup:
           let failed = fresh(`Type`(kind: TypeKind.Bool))
           emit(Instruction(kind: InstrKind.Extract, dest: failed, val: value, field: "failed"))
           cleanup(0, failed, 0)
@@ -825,8 +906,8 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
     slots = activeSlots
     cleaning = previousCleaning
   proc propagate(value: Value): Value =
-    if value.type == nil or value.type.kind != TypeKind.Fallible:
-      raise newException(ValueError, "try needs a fallible value")
+    if value.type == nil or value.type.kind != TypeKind.Failable:
+      raise newException(ValueError, "try needs a failable value")
     inc serial
     let errorLabel = "error_" & $serial
     let success = "value_" & $serial
@@ -842,6 +923,17 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
     let dest = fresh(value.type.elem)
     emit(Instruction(kind: InstrKind.Extract, dest: dest, val: value, field: "value"))
     dest
+  if functionNode.guard != nil:
+    inc serial
+    let accepted = "guard_" & $serial
+    let rejected = "guard_failed_" & $serial
+    let condition = expression(functionNode.guard)
+    finish(Instruction(kind: InstrKind.Cjump, cond: condition,
+      trueLabel: accepted, falseLabel: rejected))
+    begin(rejected)
+    finish(Instruction(kind: InstrKind.Panic,
+      msg: "FunctionGuard: " & functionNode.dispatch))
+    begin(accepted)
   statements(functionNode.body.stmts)
   if term == nil: term = Instruction(kind: InstrKind.Return)
   finish(term)
@@ -918,9 +1010,8 @@ proc lower*(program: ast.Program; typed: Table[pointer, semantic.Type] = initTab
         elif evaluated.tag in ["text", "newline"]: `Type`(kind: TypeKind.Slice, constant: true, elem: `Type`(kind: TypeKind.Uint, width: 8))
         else: `Type`(kind: TypeKind.Bool)
       var value: Value
-      if evaluated.tag in ["integer", "decimal", "text", "character", "true", "false", "nothing", "newline"]:
+      if evaluated.tag in ["integer", "decimal", "text", "character", "true", "false", "nothing", "null", "newline"]:
         value = literalValue(evaluated, typ)
-        if evaluated.tag == "nothing": value.name = "null"
       else:
         raise newException(ValueError, "File value '" & declaration.name.text & "' needs a scalar compile-time initializer")
       storage.add(Storage(name: declaration.name.text, public: declaration.public, value: value))

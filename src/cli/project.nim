@@ -16,13 +16,16 @@ proc create*(name: string): string =
     raise newException(ValueError, "Path already exists: " & root)
   if not validName(projectName): raise newException(ValueError, "Choose a project name beginning with a letter, using letters, digits or hyphens.")
   if current:
-    for file in ["project.json", "src/main.iv", ".gitignore"]:
+    for file in ["project.json", "src/main.iv", "test/main.iv",
+        "benchmark/main.iv", ".gitignore"]:
       if fileExists(root / file):
         raise newException(ValueError, "Cannot initialize the current directory because " & file & " already exists.")
   else:
     createDir(root)
-  write(root / "project.json", "{\n  \"schema\": 1,\n  \"name\": " & escapeJson(projectName) & ",\n  \"language\": \"1\",\n  \"version\": \"0.1.0\",\n  \"source\": \"src\",\n  \"requires\": \"base\",\n  \"dependencies\": {}\n}\n")
+  write(root / "project.json", "{\n  \"schema\": 1,\n  \"name\": " & escapeJson(projectName) & ",\n  \"language\": \"1\",\n  \"version\": \"0.1.0\",\n  \"source\": \"src\",\n  \"entry\": \"src/main.iv\",\n  \"entries\": {},\n  \"requires\": \"base\",\n  \"dependencies\": {}\n}\n")
   write(root / "src" / "main.iv", "display \"Hello, world!\".\n")
+  write(root / "test" / "main.iv", "use testing as check.\n\ntest \"project starts\" {\n  check.expect(true).\n}\n")
+  write(root / "benchmark" / "main.iv", "-- Replace this loop with work you want to measure.\ndynamic counter is 0.\nwhile counter less than 10000 {\n  set counter to counter plus 1.\n}\n")
   write(root / ".gitignore", ".artifacts/\n.foo/\n")
   root
 
@@ -35,7 +38,8 @@ proc createPackage*(name: string): string =
   if not validName(packageName) or packageName != packageName.toLowerAscii():
     raise newException(ValueError, "Choose a lowercase package name beginning with a letter, using letters, digits or hyphens.")
   if current:
-    for file in ["project.json", "src/main.iv", "README.md", ".gitignore"]:
+    for file in ["project.json", "src/main.iv", "test/main.iv",
+        "benchmark/main.iv", "README.md", ".gitignore"]:
       if fileExists(root / file):
         raise newException(ValueError, "Cannot initialize the current directory because " & file & " already exists.")
   else:
@@ -57,6 +61,8 @@ proc createPackage*(name: string): string =
     "  \"dependencies\": {}\n" &
     "}\n")
   write(root / "src" / "main.iv", "public constant version is \"0.1.0\".\n")
+  write(root / "test" / "main.iv", "use testing as check.\n\ntest \"package loads\" {\n  check.expect(true).\n}\n")
+  write(root / "benchmark" / "main.iv", "-- Replace this loop with package work you want to measure.\ndynamic counter is 0.\nwhile counter less than 10000 {\n  set counter to counter plus 1.\n}\n")
   write(root / "README.md", "# " & packageName & "\n\n" &
     "Describe what this package does.\n\n" &
     "## Installation\n\n```text\nfoo add " & packageName & "\nfoo install\n```\n\n" &
@@ -73,7 +79,7 @@ proc removeTree(path: string) =
   removeDir(path)
 
 proc clean*(root = getCurrentDir()) =
-  for name in ["build", "test", "bindings", "cache"]:
+  for name in ["build", "test", "benchmark", "bindings", "cache"]:
     let target = confined(root, ".artifacts/" & name)
     if dirExists(target): removeTree(target)
     elif fileExists(target): removeFile(target)

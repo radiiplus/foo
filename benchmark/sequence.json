@@ -1,0 +1,34 @@
+{
+  "schema": "foo.sequence-benchmark/v1",
+  "measuredAt": "2026-09-28",
+  "mode": "release",
+  "compilationExcluded": true,
+  "processStartupIncluded": true,
+  "machine": "Intel Core i5-1145G7, Windows",
+  "workloads": {
+    "growth": {
+      "iterations": 5,
+      "c": { "medianMs": 35.9407, "samplesMs": [40.549, 21.8259, 46.0379, 28.0094, 35.9407] },
+      "zig": { "medianMs": 23.0074, "samplesMs": [23.9255, 23.0074, 19.5281, 17.8626, 56.0342] },
+      "metrics": { "allocations": 13, "allocatedBytes": 327616, "bytesCopied": 171008, "growthOperations": 10001, "slowPathHits": 13, "branchOperations": 1, "branchBytesCopied": 40000, "peakBytes": 327616, "olderVersionBytes": 131008 }
+    },
+    "branch": {
+      "iterations": 3,
+      "c": { "medianMs": 367.3642, "samplesMs": [289.0949, 367.3642, 533.7139] },
+      "zig": { "medianMs": 377.3291, "samplesMs": [405.0171, 377.3291, 264.6852] },
+      "metrics": { "allocations": 1012, "allocatedBytes": 65798080, "bytesCopied": 40131008, "growthOperations": 11000, "slowPathHits": 1012, "branchOperations": 1000, "branchBytesCopied": 40000000, "peakBytes": 327616, "olderVersionBytes": 131008 }
+    },
+    "lookup": {
+      "iterations": 3,
+      "c": { "medianMs": 148.8132, "samplesMs": [90.6577, 239.1804, 148.8132] },
+      "zig": { "medianMs": 45.2938, "samplesMs": [449.5288, 45.2938, 35.5116] },
+      "metrics": { "allocations": 1, "allocatedBytes": 80000, "bytesCopied": 0, "peakBytes": 80000 }
+    },
+    "iteration": {
+      "iterations": 3,
+      "c": { "medianMs": 48.4097, "samplesMs": [57.6178, 48.4097, 42.3495] },
+      "zig": { "medianMs": 44.7064, "samplesMs": [105.872, 40.2037, 44.7064] },
+      "metrics": { "allocations": 1, "allocatedBytes": 8000000, "bytesCopied": 0, "peakBytes": 8000000 }
+    }
+  }
+}

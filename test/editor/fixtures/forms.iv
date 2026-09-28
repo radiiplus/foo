@@ -22,7 +22,7 @@ module sample {
   type Bits is packed record { count of type unsigned 3. }.
   type Data is c union { number of type integer. }.
   type Handle is opaque.
-  public use "crypto" function hash(value of type text) of type fallible text.
+  public use "crypto" function hash(value of type text) of type failable text.
   use c "header.h".
   use sample as other.
   #[start]

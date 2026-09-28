@@ -28,9 +28,11 @@ type
     target*: string
     cpu*: string
     coverage*: string
+    profile*: string
     sanitize*: string
     runtime*: string
     docs*: bool
+    benchmark*: bool
     threads*: bool
     jobs*: int
     debug*: bool

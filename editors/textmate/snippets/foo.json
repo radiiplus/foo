@@ -1,8 +1,13 @@
 {
   "function": {
     "prefix": "function",
-    "body": ["function ${1:name}(${2:value integer}) giving ${3:integer} {", "  $0", "}"],
-    "description": "FOO function"
+    "body": ["function ${1:name} ${2:value} ${3:integer} giving ${4:integer} {", "  $0", "}"],
+    "description": "FOO sentence-style function"
+  },
+  "start": {
+    "prefix": "start",
+    "body": ["start() {", "  $0", "}"],
+    "description": "FOO explicit entry point"
   },
   "test": {
     "prefix": "test",
@@ -19,6 +24,16 @@
     "body": ["for each ${1:item} in ${2:items} {", "  $0", "}"],
     "description": "FOO for each loop"
   },
+  "while": {
+    "prefix": "while",
+    "body": ["while ${1:condition} {", "  $0", "}"],
+    "description": "FOO while loop"
+  },
+  "match": {
+    "prefix": "match",
+    "body": ["match ${1:value} {", "  case ${2:pattern} {", "    $0", "  }", "}"],
+    "description": "FOO pattern match"
+  },
   "constant": {
     "prefix": "constant",
     "body": ["constant ${1:name} is ${0:value}."],
@@ -34,9 +49,34 @@
     "body": ["define ${1:Name} as ${0:integer}."],
     "description": "FOO named type"
   },
-  "native": {
-    "prefix": "native",
-    "body": ["native ${1:c} {", "  $0", "}"],
-    "description": "FOO native block"
+  "increase": {
+    "prefix": "increase",
+    "body": ["increase ${1:value} by ${0:1}."],
+    "description": "Increase a dynamic value"
+  },
+  "decrease": {
+    "prefix": "decrease",
+    "body": ["decrease ${1:value} by ${0:1}."],
+    "description": "Decrease a dynamic value"
+  },
+  "try": {
+    "prefix": "try",
+    "body": ["${1:operation} try."],
+    "description": "Propagate a failable operation"
+  },
+  "fallback": {
+    "prefix": "fallback",
+    "body": ["${1:operation} fallback ${0:value}."],
+    "description": "Recover from a failable operation"
+  },
+  "native c": {
+    "prefix": "native c",
+    "body": ["native c {", "  $0", "}"],
+    "description": "FOO native C block"
+  },
+  "native zig": {
+    "prefix": "native zig",
+    "body": ["native zig {", "  $0", "}"],
+    "description": "FOO native Zig block"
   }
 }

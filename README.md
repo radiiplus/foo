@@ -12,13 +12,14 @@ For too long, programmers have been forced to make a choice: Do you want a langu
 
 **FOO ends that compromise.**
 
-FOO is a "sentence-like" systems language. It uses a brilliant parser to understand natural English phrases, eliminating the "symbol soup" of semicolons and brackets. But underneath the hood, it translates your code into hyper-optimized native machine code via C and Zig backends.
+FOO is a sentence-like systems language. Its C and Zig backends produce native
+programs while the type, ownership, and failure rules remain visible in source.
 
 ---
 
 ## 🚀 Hello, World
 
-Most programs can execute statements directly. Put `try` after a fallible
+Most programs can execute statements directly. Put `try` after a failable
 operation to propagate its error, or use `fallback` to recover locally.
 ```foo
 display "Hello, world!".
@@ -45,7 +46,10 @@ Your code becomes self-documenting.
 FOO acts as a master translator. It can generate standard **C11** code (for universal compatibility) or modern **Zig** code (for cutting-edge speed). You write FOO once, and it runs on Windows, Mac, Linux, ARM, and even WebAssembly.
 
 ### ⚡ Hardware Optimization (`opt`)
-FOO’s `opt` engine knows exactly what CPU you are targeting. It automatically tunes your math and memory operations to use **AVX** vector instructions on Intel/AMD chips or **NEON** instructions on ARM chips. You write the code once; FOO shifts gears to match your hardware.
+FOO's target profile controls compatible runtime paths. Current release builds
+can select AVX2 medium-copy handling on x86-64, block copying on AArch64, native
+event services, and portable fallbacks. `foo build --explain` reports the path
+and selection reason. See [Optimization Under the Hood](docs/tuning.md).
 
 ### 🛡️ Bulletproof Safety (Sealing)
 Memory bugs are the hardest to find. FOO uses a process called **Sealing** to mathematically track the lifecycle of your memory operations. The compiler guarantees that data is read and written in the exact, perfect chronological order, eliminating entire categories of invisible bugs before your app even runs.
@@ -105,11 +109,12 @@ PATH changes. It does not remove FOO projects or per-user data under `~/.foo`.
 
 ## 💻 Editor Support (VS Code)
 
-Write FOO in your favorite editor with first-class support! The official **FOO extension for Visual Studio Code** provides beautiful syntax highlighting, real-time error checking (via the Language Server Protocol), auto-completion, and one-click code formatting.
+Write FOO in your favorite editor with first-class support. The official **FOO extension for Visual Studio Code** provides syntax highlighting, live compiler diagnostics, checked hover information, go-to-definition, snippets, and project watch commands.
 
 👉 **[Install the FOO VS Code Extension](https://marketplace.visualstudio.com/items?itemName=radiiplus.foo-iv)**
 
-Get red squiggly lines for type mismatches, hover tooltips for function signatures, and instant formatting just by saving your file.
+The extension starts `foo lsp` automatically for editor feedback. Run
+**FOO: Watch Project** separately when you also want continuous terminal builds.
 
 ---
 

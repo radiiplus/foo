@@ -12,6 +12,9 @@ The application version and configuration schema version are separate fields.
   "version": "1.0.0",
   "license": "MIT OR Apache-2.0",
   "language": "1",
+  "source": "src",
+  "entry": "src/main.iv",
+  "entries": { "worker": "src/worker.iv" },
   "requires": "base",
   "dependencies": { "http": "^1.2.0" }
 }
@@ -38,7 +41,20 @@ Other schema or language versions require a matching specification.
 | platformDependencies | Object from platform selectors to dependency objects |
 | source | Optional project-relative source directory; defaults to src if that directory exists, otherwise the project directory |
 | entry | Optional project-relative .iv entry file; must belong to the discovered source files |
+| entries | Optional object from single-word run names to project-relative `.iv` entry files |
 | build | Optional object defined below |
+
+The scaffold always writes `entry`, so `foo run` has one unambiguous default.
+Existing projects without it retain the conventional `src/main.iv` discovery
+rule. `foo run NAME` selects `entries.NAME`; a path can still be supplied for a
+one-off run. Entry aliases do not create packages or modules and do not change
+visibility.
+
+```sh
+foo run
+foo run worker
+foo run src/maintenance.iv
+```
 
 A dependency string is one of the following disjoint forms:
 
@@ -77,6 +93,8 @@ All build properties are optional; unknown properties are errors.
 | --- | --- |
 | target | Preset name or versioned advanced target object; default host preset |
 | optimize | `"dev"` or `"release"`; default dev; both preserve defined semantics |
+| coverage | Project-relative path for versioned per-function execution counts; default empty |
+| profile | Project-relative path to a version 1 function coverage file consumed by release optimization; default empty |
 | products | Object from single-word product names to product records |
 | resources | Array of project-relative glob strings; default empty |
 | native | Object from project-relative .iv paths to native-interface dependency names; default empty |
@@ -133,6 +151,11 @@ portable C implementations; the default auto selection can use target-specific
 implementations when the project capability permits them. Changing these
 options invalidates the affected cached IR or emission.
 
+`build.coverage` instruments functions and writes a version 1 JSON profile at
+normal process completion. A later release build may set `build.profile` to
+that file. Profile contents participate in artifact identity, and malformed,
+missing, or incompatible profiles are build errors rather than silent fallbacks.
+
 An optional `tests` object maps test fixture filenames, without `.iv`, to native
 fixture options. `tests.NAME.sources` is a list of project-relative C source
 paths linked only for that fixture. Common C include paths and sources still
@@ -157,7 +180,9 @@ with an explicit required-level diagnostic; it never silently upgrades the
 project. Installation is described in [toolchain](toolchain.md).
 
 Generated binaries, generated bindings, resource bundles, dependency material
-and caches reside under `.artifacts/`. Sources, locks and reviewed configuration
-are permanent project files. Watch observes source/configuration/dependency
+and caches reside under `.artifacts/`. Application sources live under `src/`,
+tests under `test/`, and executable benchmark scenarios under `benchmark/` by
+convention. Sources, locks and reviewed configuration are permanent project
+files. Watch observes source/configuration/dependency
 changes, keeps reporting diagnostics after errors, and reuses results only when
 their semantic inputs and contracts are unchanged.

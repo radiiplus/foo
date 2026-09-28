@@ -47,10 +47,15 @@ proc build*(module: Module; mode: string; outDir: string;
       native: substrate.NativeSelection(substrate: options.native.substrate,
         clobbers: options.native.clobbers))
     let escaped = escape(module, selection)
+    if progress != nil:
+      for decision in escaped.decisions:
+        progress("strategy", decision.operation,
+          decision.stage & " / " & decision.implementation & " | " & decision.reason,
+          false)
     let generated = emit(escaped.module, mode, Options(target: options.target,
       cpu: options.cpu, level: options.level, substrate: options.substrate,
       source: sourceFile, runtime: options.runtime, coverage: options.coverage,
-      library: options.kind in ["static", "shared"]))
+      library: options.kind in ["static", "shared"], benchmark: options.benchmark))
     let mainPath = outDir / "main.c"
     writeFile(mainPath, generated.code)
     var inputs = @[mainPath]

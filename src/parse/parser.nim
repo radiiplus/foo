@@ -141,7 +141,7 @@ proc parseType(parser: Parser): `Type` =
     return FunctionType(tag: "function-type", span: token.span, params: params, ret: ret, abi: abi)
   of Kind.Ident:
     discard parser.advance
-    if token.text == "fallible": return Error(tag: "error", span: token.span, elem: parser.parseType)
+    if token.text == "failable": return Error(tag: "error", span: token.span, elem: parser.parseType)
     let typeName = Name(tag: "name", span: token.span, text: token.text)
     while parser.check(Kind.Dot) and parser.peek(1).kind == Kind.Ident and
         parser.peek.span.`end` == parser.peek(1).span.start:
@@ -164,6 +164,34 @@ proc parseType(parser: Parser): `Type` =
     return Broken(tag: "broken", span: token.span)
 
 proc expression(parser: Parser; minPrec = 0): Expression
+proc blockNode(parser: Parser): Block
+
+proc beginsExpression(parser: Parser; offset = 0): bool =
+  parser.peek(offset).kind in [Kind.Ident, Kind.String, Kind.Int, Kind.Float,
+    Kind.Char, Kind.True, Kind.False, Kind.Nothing, Kind.Null, Kind.Paren, Kind.Reflect,
+    Kind.Embed, Kind.Uninitialized, Kind.Unreachable, Kind.Newline]
+
+proc parameter(parser: Parser; allowExtended = true): Parameter =
+  var variadic = false
+  if allowExtended and parser.check(Kind.Each):
+    discard parser.advance
+    variadic = true
+  let parameterName = parser.name
+  if allowExtended and parser.match(Kind.Are): variadic = true
+  discard parser.match(Kind.Of)
+  discard parser.match(Kind.Type)
+  var parameterType = parser.parseType
+  if variadic and parameterType != nil and parameterType.tag == "sequence":
+    parameterType = node.Sequence(parameterType).elem
+  var defaultValue: Expression
+  if allowExtended:
+    if parser.match(Kind.Is):
+      defaultValue = parser.expression()
+    elif parser.check(Kind.Ident) and parser.peek.text == "default":
+      discard parser.advance
+      defaultValue = parser.expression()
+  Parameter(tag: "parameter", span: parameterName.span, name: parameterName,
+    `type`: parameterType, default: defaultValue, variadic: variadic)
 
 proc machineStart(parser: Parser): bool =
   let word = parser.peek.text
@@ -212,6 +240,30 @@ proc primary(parser: Parser): Expression =
   if parser.machineStart: return parser.machine
   let token = parser.advance
   case token.kind
+  of Kind.Function:
+    var params: seq[Parameter]
+    if parser.match(Kind.Paren):
+      parser.lines()
+      while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+        params.add(parser.parameter())
+        parser.lines()
+        if not parser.match(Kind.Comma): break
+        parser.lines()
+      discard parser.expect(Kind.Close, "expected ')'")
+    var returnType: `Type`
+    if parser.check(Kind.Ident) and parser.peek.text == "giving":
+      discard parser.advance
+      returnType = parser.parseType
+    var captures: seq[Name]
+    if parser.check(Kind.Ident) and parser.peek.text == "using":
+      discard parser.advance
+      discard parser.expect(Kind.Paren, "expected '('")
+      while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+        captures.add(parser.name)
+        if not parser.match(Kind.Comma): break
+      discard parser.expect(Kind.Close, "expected ')'")
+    Closure(tag: "closure", span: token.span, params: params,
+      returnType: returnType, captures: captures, body: parser.blockNode)
   of Kind.Int:
     if parser.check(Kind.Ident) and parser.peek.text in ["bytes", "bits", "kilobytes", "megabytes", "gigabytes", "terabytes", "seconds", "milliseconds", "microseconds", "nanoseconds"]:
       let unit = parser.advance
@@ -223,6 +275,7 @@ proc primary(parser: Parser): Expression =
   of Kind.True: `True`(tag: "true", span: token.span)
   of Kind.False: `False`(tag: "false", span: token.span)
   of Kind.Nothing: Nothing(tag: "nothing", span: token.span)
+  of Kind.Null: Null(tag: "null", span: token.span)
   of Kind.Uninitialized: Uninitialized(tag: "uninitialized", span: token.span)
   of Kind.Unreachable: Unreachable(tag: "unreachable", span: token.span)
   of Kind.Ident, Kind.Text, Kind.Sequence: Name(tag: "name", span: token.span, text: token.text)
@@ -271,10 +324,12 @@ proc sentence(parser: Parser; callee: Expression): Expression =
     Kind.True, Kind.False, Kind.Paren, Kind.Try]
   if parser.peek.kind in [Kind.Dot, Kind.Comma, Kind.Close, Kind.Bracket, Kind.Open,
       Kind.Shut, Kind.NewlineToken, Kind.Eof, Kind.Catch]: return callee
+  if next in ["into", "with", "to", "in", "from", "remainder"]: return callee
 
   proc value(): Expression = parser.expression(2)
   var name = word
   var args: seq[Expression]
+  var names: seq[string]
   var recognized = true
   if word == "current" and next == "time":
     parser.takeWord("time")
@@ -351,6 +406,14 @@ proc sentence(parser: Parser; callee: Expression): Expression =
         callee: Name(tag: "name", span: callee.span, text: "__bare_log." & name), args: args)
   elif word in ["display", "clear", "trim", "sort", "release", "unlock"] and argument:
     args = @[value()]
+  elif parser.beginsExpression:
+    while parser.beginsExpression:
+      var label = ""
+      if parser.check(Kind.Ident) and parser.peek(1).kind != Kind.Paren and
+          parser.beginsExpression(1):
+        label = parser.advance.text
+      args.add(parser.expression(5))
+      names.add(label)
   else:
     recognized = false
   if not recognized: return callee
@@ -361,22 +424,38 @@ proc sentence(parser: Parser; callee: Expression): Expression =
     args[^1] = Unary(args[^1]).operand
     let call = Call(tag: "call", span: callSpan, callee: renamed(callee, name), args: args)
     return Unary(tag: "unary", span: callSpan, op: "try", operand: call)
-  Call(tag: "call", span: callSpan, callee: renamed(callee, name), args: args)
+  Call(tag: "call", span: callSpan, callee: renamed(callee, name), args: args,
+    names: names)
 
 proc postfix(parser: Parser): Expression =
   result = parser.primary
   while true:
     if parser.match(Kind.Paren):
       var args: seq[Expression]
+      var names: seq[string]
+      var sawNamed = false
       while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+        var argumentName = ""
+        if parser.check(Kind.Ident) and parser.peek(1).kind != Kind.Paren and
+            parser.beginsExpression(1):
+          argumentName = parser.advance.text
+          sawNamed = true
+        elif sawNamed:
+          parser.diagnostics.emit(Code.Syntax, parser.peek.span,
+            "positional arguments must come before named arguments")
         args.add(parser.expression())
+        names.add(argumentName)
         if not parser.match(Kind.Comma): break
       let closing = parser.expect(Kind.Close, "expected ')'")
-      result = Call(tag: "call", span: Span(start: result.span.start, `end`: closing.span.`end`, line: result.span.line, col: result.span.col), callee: result, args: args)
+      result = Call(tag: "call", span: Span(start: result.span.start,
+        `end`: closing.span.`end`, line: result.span.line, col: result.span.col,
+        file: result.span.file), callee: result, args: args, names: names)
     elif parser.check(Kind.Dot) and parser.peek(1).kind == Kind.Ident and parser.peek.span.`end` == parser.peek(1).span.start:
       discard parser.advance
       let field = parser.name
-      result = Field(tag: "field", span: Span(start: result.span.start, `end`: field.span.`end`, line: result.span.line, col: result.span.col), `object`: result, field: field)
+      result = Field(tag: "field", span: Span(start: result.span.start,
+        `end`: field.span.`end`, line: result.span.line, col: result.span.col,
+        file: result.span.file), `object`: result, field: field)
     elif parser.match(Kind.Square):
       var closingPosition = parser.pos
       var depth = 1
@@ -396,11 +475,15 @@ proc postfix(parser: Parser): Expression =
           args.add(parser.expression)
           if not parser.match(Kind.Comma): break
         let closing = parser.expect(Kind.Close, "expected ')'")
-        result = Call(tag: "call", span: Span(start: result.span.start, `end`: closing.span.`end`, line: result.span.line, col: result.span.col), callee: result, args: args, types: types)
+        result = Call(tag: "call", span: Span(start: result.span.start,
+          `end`: closing.span.`end`, line: result.span.line, col: result.span.col,
+          file: result.span.file), callee: result, args: args, types: types)
       else:
         let index = parser.expression()
         let closing = parser.expect(Kind.Bracket, "expected ']'")
-        result = Index(tag: "index", span: Span(start: result.span.start, `end`: closing.span.`end`, line: result.span.line, col: result.span.col), `object`: result, index: index)
+        result = Index(tag: "index", span: Span(start: result.span.start,
+          `end`: closing.span.`end`, line: result.span.line, col: result.span.col,
+          file: result.span.file), `object`: result, index: index)
     elif parser.match(Kind.At):
       let index = parser.primary
       result = Index(tag: "index", span: result.span, `object`: result, index: index)
@@ -526,7 +609,6 @@ proc expression(parser: Parser; minPrec = 0): Expression =
     if operation == "context": result = ErrorChain(tag: "error-chain", span: result.span, expr: result, context: right)
     else: result = Binary(tag: "binary", span: result.span, op: operation, left: result, right: right)
 
-proc blockNode(parser: Parser): Block
 proc parse*(parser: Parser): Program
 
 proc member(parser: Parser): Member =
@@ -590,6 +672,9 @@ proc pattern(parser: Parser): Pattern =
   of Kind.Nothing:
     discard parser.advance
     Nothing(tag: "nothing", span: token.span)
+  of Kind.Null:
+    discard parser.advance
+    Null(tag: "null", span: token.span)
   of Kind.Int:
     discard parser.advance
     Integer(tag: "integer", span: token.span, value: token.text)
@@ -600,7 +685,15 @@ proc pattern(parser: Parser): Pattern =
     discard parser.advance
     `False`(tag: "false", span: token.span)
   of Kind.Ident:
-    let patternName = parser.name
+    var patternName = parser.name
+    while parser.check(Kind.Dot) and parser.peek(1).kind == Kind.Ident and
+        parser.peek.span.`end` == parser.peek(1).span.start:
+      discard parser.advance
+      let part = parser.name
+      patternName = Name(tag: "name", text: patternName.text & "." & part.text,
+        span: Span(start: patternName.span.start, `end`: part.span.`end`,
+          line: patternName.span.line, col: patternName.span.col,
+          file: patternName.span.file))
     if parser.match(Kind.Paren):
       var binding: Name
       if not parser.check(Kind.Close): binding = parser.name
@@ -638,20 +731,33 @@ proc action(parser: Parser): Action =
     discard parser.expect(Kind.Dot, "expected '.'")
     return Action(tag: "action", span: parser.span, name: actionName, args: @[], value: value)
   elif parser.match(Kind.Paren):
+    var names: seq[string]
     while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+      var label = ""
+      if parser.check(Kind.Ident) and parser.peek(1).kind != Kind.Paren and
+          parser.beginsExpression(1):
+        label = parser.advance.text
       args.add(parser.expression)
+      names.add(label)
       if not parser.match(Kind.Comma): break
     discard parser.expect(Kind.Close, "expected ')'")
     if parser.match(Kind.Try):
-      let call = Call(tag: "call", span: parser.span, callee: actionName, args: args)
+      let call = Call(tag: "call", span: parser.span, callee: actionName,
+        args: args, names: names)
       let value = Unary(tag: "unary", span: call.span, op: "try", operand: call)
       discard parser.expect(Kind.Dot, "expected '.'")
       return Action(tag: "action", span: parser.span, name: actionName, args: @[], value: value)
     if parser.match(Kind.Catch):
-      let call = Call(tag: "call", span: parser.span, callee: actionName, args: args)
+      let call = Call(tag: "call", span: parser.span, callee: actionName,
+        args: args, names: names)
       let value = Binary(tag: "binary", span: parser.span, op: "catch", left: call, right: parser.expression)
       discard parser.expect(Kind.Dot, "expected '.'")
       return Action(tag: "action", span: parser.span, name: actionName, args: @[], value: value)
+    let value = Call(tag: "call", span: parser.span, callee: actionName,
+      args: args, names: names)
+    discard parser.expect(Kind.Dot, "expected '.'")
+    return Action(tag: "action", span: parser.span, name: actionName,
+      args: @[], value: value)
   else:
     var value = parser.sentence(actionName)
     if value.tag in ["call", "unary"]:
@@ -681,10 +787,7 @@ proc statement(parser: Parser): Statement =
     var params: seq[Parameter]
     parser.lines()
     while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
-      let parameterName = parser.name
-      discard parser.match(Kind.Of)
-      discard parser.match(Kind.Type)
-      params.add(Parameter(tag: "parameter", span: parameterName.span, name: parameterName, `type`: parser.parseType))
+      params.add(parser.parameter(false))
       parser.lines()
       if not parser.match(Kind.Comma): break
       parser.lines()
@@ -705,25 +808,61 @@ proc statement(parser: Parser): Statement =
     let operation = parser.machine
     discard parser.expect(Kind.Dot, "expected '.'")
     return operation
+  if token.kind == Kind.Ident and token.text in ["increase", "decrease"]:
+    let operation = parser.advance
+    let target = parser.name
+    parser.takeWord("by")
+    let amount = parser.expression
+    discard parser.expect(Kind.Dot, "expected '.'")
+    return Assignment(tag: "assignment", span: parser.span, target: target,
+      value: Binary(tag: "binary", span: operation.span,
+        op: if operation.text == "increase": "plus" else: "minus",
+        left: Name(tag: "name", span: target.span, text: target.text),
+        right: amount))
   case token.kind
   of Kind.Constant:
     discard parser.advance
     let declarationName = parser.name
+    if parser.match(Kind.Paren):
+      if public:
+        parser.diagnostics.emit(Code.Syntax, token.span,
+          "record destructuring cannot be public")
+      var fields, bindings: seq[Name]
+      parser.lines()
+      while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+        let field = parser.name
+        fields.add(Name(tag: "name", span: field.span, text: field.text))
+        bindings.add(field)
+        parser.lines()
+        if not parser.match(Kind.Comma): break
+        parser.lines()
+      discard parser.expect(Kind.Close, "expected ')'")
+      discard parser.expect(Kind.Is, "expected 'is'")
+      let value = parser.expression
+      discard parser.match(Kind.Dot)
+      return Destructure(tag: "destructure", span: parser.span,
+        recordType: Named(tag: "named", span: declarationName.span,
+          name: declarationName), fields: fields, bindings: bindings,
+        value: value)
     var valueType: `Type`
     if parser.match(Kind.Of): discard parser.match(Kind.Type); valueType = parser.parseType
-    discard parser.expect(Kind.Is, "expected 'is'")
+    let plural = parser.match(Kind.Are)
+    if not plural: discard parser.expect(Kind.Is, "expected 'is' or 'are'")
     let value = parser.expression
     discard parser.match(Kind.Dot)
-    Constant(tag: "constant", span: parser.span, public: public, name: declarationName, `type`: valueType, value: value)
+    Constant(tag: "constant", span: parser.span, public: public, plural: plural,
+      name: declarationName, `type`: valueType, value: value)
   of Kind.Mutable:
     discard parser.advance
     let declarationName = parser.name
     var valueType: `Type`
     if parser.match(Kind.Of): discard parser.match(Kind.Type); valueType = parser.parseType
-    discard parser.expect(Kind.Is, "expected 'is'")
+    let plural = parser.match(Kind.Are)
+    if not plural: discard parser.expect(Kind.Is, "expected 'is' or 'are'")
     let value = parser.expression
     discard parser.match(Kind.Dot)
-    Mutable(tag: "mutable", span: parser.span, public: public, name: declarationName, `type`: valueType, value: value)
+    Mutable(tag: "mutable", span: parser.span, public: public, plural: plural,
+      name: declarationName, `type`: valueType, value: value)
   of Kind.Give:
     discard parser.advance
     var value: Expression
@@ -734,18 +873,26 @@ proc statement(parser: Parser): Statement =
     discard parser.advance
     let functionName = parser.name
     let typeParams = parser.generics()
-    discard parser.expect(Kind.Paren, "expected '('")
     var params: seq[Parameter]
-    parser.lines()
-    while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
-      let parameterName = parser.name
-      discard parser.match(Kind.Of); discard parser.match(Kind.Type)
-      params.add(Parameter(tag: "parameter", span: parameterName.span, name: parameterName, `type`: parser.parseType))
+    if parser.match(Kind.Paren):
       parser.lines()
-      if not parser.match(Kind.Comma): break
+      while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+        params.add(parser.parameter())
+        parser.lines()
+        if not parser.match(Kind.Comma): break
+        parser.lines()
+      discard parser.expect(Kind.Close, "expected ')'")
+    else:
       parser.lines()
-    discard parser.expect(Kind.Close, "expected ')'")
+      while parser.check(Kind.Ident) and parser.peek.text != "giving":
+        params.add(parser.parameter())
+        discard parser.match(Kind.Comma)
+        parser.lines()
     parser.lines()
+    var guard: Expression
+    if parser.match(Kind.When):
+      guard = parser.expression
+      parser.lines()
     var returnType: `Type`
     if parser.match(Kind.Of): discard parser.match(Kind.Type); returnType = parser.parseType
     elif parser.check(Kind.Ident) and parser.peek.text == "giving":
@@ -760,7 +907,8 @@ proc statement(parser: Parser): Statement =
     let body = parser.blockNode
     Function(tag: "function", span: parser.span, public: public, name: functionName, typeParams: typeParams,
       params: params, returnType: returnType, abi: abi, constraints: constraints,
-      constraint: if constraints.len > 0: constraints[0] else: nil, attributes: attributes, body: body)
+      constraint: if constraints.len > 0: constraints[0] else: nil,
+      attributes: attributes, guard: guard, body: body)
   of Kind.Start:
     discard parser.advance
     discard parser.expect(Kind.Paren, "expected '('"); discard parser.expect(Kind.Close, "expected ')'")
@@ -786,9 +934,7 @@ proc statement(parser: Parser): Statement =
       var params: seq[Parameter]
       parser.lines()
       while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
-        let parameterName = parser.name
-        discard parser.match(Kind.Of); discard parser.match(Kind.Type)
-        params.add(Parameter(tag: "parameter", span: parameterName.span, name: parameterName, `type`: parser.parseType))
+        params.add(parser.parameter(false))
         parser.lines()
         if not parser.match(Kind.Comma): break
         parser.lines()
@@ -970,7 +1116,9 @@ proc blockNode(parser: Parser): Block =
     if parser.check(Kind.NewlineToken): discard parser.advance; continue
     statements.add(parser.statement)
   discard parser.expect(Kind.Shut, "expected '}'")
-  Block(tag: "block", span: Span(start: opening.span.start, `end`: parser.peek(-1).span.`end`, line: opening.span.line, col: opening.span.col), stmts: statements)
+  Block(tag: "block", span: Span(start: opening.span.start,
+    `end`: parser.peek(-1).span.`end`, line: opening.span.line,
+    col: opening.span.col, file: opening.span.file), stmts: statements)
 
 proc parse*(parser: Parser): Program =
   parser.mark()

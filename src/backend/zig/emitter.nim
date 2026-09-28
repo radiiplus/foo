@@ -11,6 +11,7 @@ type
     coverage*: string
     runtime*: string
     target*: string
+    benchmark*: bool
 
 proc quote(value: string): string = $(%value)
 
@@ -27,7 +28,7 @@ proc typeStr*(value: `Type`): string =
   of TypeKind.Ptr: "*" & (if value.volatile: "volatile " else: "") & typeStr(value.elem)
   of TypeKind.Slice: "[]" & (if value.constant: "const " else: "") & typeStr(value.elem)
   of TypeKind.Optional: "?" & typeStr(value.elem)
-  of TypeKind.Fallible: "anyerror!" & typeStr(value.elem)
+  of TypeKind.Failable: "anyerror!" & typeStr(value.elem)
   of TypeKind.Array: "[" & $value.width & "]" & typeStr(value.elem)
   of TypeKind.Struct: (if value.name.len > 0: value.name else: "struct")
   of TypeKind.Void: "void"
@@ -173,8 +174,13 @@ proc emitInstr(instruction: Instruction; used: HashSet[string]): string =
       "[@intCast(" & valueStr(instruction.val2) & ")];")
   of InstrKind.Construct:
     let target = instruction.dest.type
-    if target.kind == TypeKind.Fallible and instruction.op == "error":
+    if target.kind == TypeKind.Failable and instruction.op == "error":
       return finish(destination & "@as(" & typeStr(target) & ", " & valueStr(instruction.args[0]) & ");")
+    if target.kind == TypeKind.Slice and instruction.op == "sequence":
+      var items: seq[string]
+      for item in instruction.args: items.add(valueStr(item))
+      return finish(destination & "&[_]" & typeStr(target.elem) &
+        "{ " & items.join(", ") & " };")
     var fields: seq[string]
     if target.kind == TypeKind.TaggedUnion:
       fields.add("." & instruction.field & " = " &
@@ -186,7 +192,7 @@ proc emitInstr(instruction: Instruction; used: HashSet[string]): string =
         inc index
     finish(destination & typeStr(target) & "{ " & fields.join(", ") & " };")
   of InstrKind.Extract:
-    if instruction.val.type.kind == TypeKind.Fallible:
+    if instruction.val.type.kind == TypeKind.Failable:
       if instruction.field == "failed": return finish(destination & "if (" & valueStr(instruction.val) & ") |_| false else |_| true;")
       if instruction.field == "value": return finish(destination & valueStr(instruction.val) & " catch unreachable;")
     if instruction.val.type.kind == TypeKind.TaggedUnion and instruction.field == "tag":
@@ -211,7 +217,11 @@ proc emitInstr(instruction: Instruction; used: HashSet[string]): string =
       let value = valueStr(argument)
       arguments.add(if instruction.abi.startsWith("runtime.") and argument.type != nil:
         "@as(" & typeStr(argument.type) & ", " & value & ")" else: value)
-    if instruction.callee.type == nil and instruction.abi.startsWith("runtime."):
+    if instruction.callee.type == nil and instruction.abi == "runtime":
+      finish(destination & "shim.taskCall(" &
+        quote(if instruction.symbol.len > 0: instruction.symbol else: instruction.func) & ", " &
+        (if hasDest: typeStr(instruction.dest.type) else: "void") & ", .{" & arguments.join(", ") & "});")
+    elif instruction.callee.type == nil and instruction.abi.startsWith("runtime."):
       let provider = instruction.abi[8 .. ^1]
       if provider.anyIt(not it.isLowerAscii): raise newException(ValueError, "Invalid runtime module")
       finish(destination & "shim.library.call(" & quote(provider) & ", " &
@@ -368,8 +378,9 @@ proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
     if function.name == "main" and hosted(module, includeIo = false): params.add("process: @import(\"std\").process.Init")
     else:
       for parameter in function.params: params.add(valueStr(parameter) & ": " & typeStr(parameter.type))
-    let qualifier = if function.abi == "c" or (options.library and function.public) or
+    var qualifier = if function.abi == "c" or (options.library and function.public) or
         "start" in function.attributes or "interrupt" in function.attributes: "export" else: "pub"
+    if "noinline" in function.attributes: qualifier.add(" noinline")
     let convention = functionConvention(function, options.target)
     let callconv = if convention.len > 0: " callconv(" & convention & ")" else: ""
     let functionName = if "start" in function.attributes: "_start" else: function.name
@@ -389,6 +400,7 @@ proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
     if function.name == "main" and options.runtime != "none":
       addLine(0, "  shim.init(" & $(mode == "dev") & ");")
       addLine(0, "  defer shim.deinit();")
+      if options.benchmark: addLine(0, "  defer shim.benchmark();")
       if hosted(module, includeIo = false):
         addLine(0, "  try @import(\"service.zig\").init(process.minimal.args);")
         addLine(0, "  defer @import(\"service.zig\").deinit();")
@@ -404,6 +416,12 @@ proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
         if instruction.kind == InstrKind.Region and instruction.region notin arenas:
           arenas.incl(instruction.region)
           addLine(0, "  var " & region(instruction.region) & ": @import(\"std\").heap.ArenaAllocator = undefined;")
+        if instruction.kind == InstrKind.Allocate and
+            instruction.target.type == nil and instruction.region notin arenas:
+          arenas.incl(instruction.region)
+          addLine(0, "  var " & region(instruction.region) &
+            " = @import(\"std\").heap.ArenaAllocator.init(@import(\"std\").heap.page_allocator);")
+          addLine(0, "  defer " & region(instruction.region) & ".deinit();")
     if function.blocks.len > 1:
       for line in control(function, used): addLine(0, line)
     else:

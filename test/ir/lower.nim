@@ -194,9 +194,9 @@ let specialized = monomorphize(loweredGeneric)
 let genericErrors = validate(specialized)
 doAssert genericErrors.len == 0, genericErrors.mapIt(it.msg).join("\n")
 
-let fallibleText = ast.Error(tag: "error", elem: ast.Primitive(tag: "primitive", name: "text"))
+let failableText = ast.Error(tag: "error", elem: ast.Primitive(tag: "primitive", name: "text"))
 let fetch = ast.ExternFunction(tag: "extern-function", span: position, name: name("fetch"),
-  abi: "c", params: @[], returnType: fallibleText)
+  abi: "c", params: @[], returnType: failableText)
 let recover = ast.Function(tag: "function", span: position, name: name("recover"),
   returnType: ast.Primitive(tag: "primitive", name: "text"),
   body: ast.Block(tag: "block", stmts: @[
@@ -219,7 +219,7 @@ let absent = ast.Function(tag: "function", span: position, name: name("absent"),
   returnType: ast.Optional(tag: "optional",
     elem: ast.Primitive(tag: "primitive", name: "unsigned", width: "64")),
   body: ast.Block(tag: "block", stmts: @[
-    ast.Statement(ast.Give(tag: "give", value: ast.Nothing(tag: "nothing")))
+    ast.Statement(ast.Give(tag: "give", value: ast.Null(tag: "null")))
   ]))
 program.units[0].body.stmts = @[ast.Statement(absent)]
 let loweredAbsent = lower(program)

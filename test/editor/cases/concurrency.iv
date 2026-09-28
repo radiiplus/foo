@@ -1,9 +1,34 @@
 -- Exercises concurrency syntax.
-use task.
-function worker(value of type integer 64) for c { give. }
-start() {
-  constant group is scope().
-  launch(group, worker, 1).
-  join(group).
-  give.
+use thread as threads.
+
+function worker() {
+  display "Work finished".
 }
+
+constant handle is threads.spawn(worker) try.
+after { threads.close[threads.Thread](handle) fallback nothing. }
+
+display "Waiting for worker".
+threads.wait(handle) try.
+
+use thread as threads.
+
+function protect(mutex pointer to threads.Mutex)
+  giving failable nothing {
+  threads.lock(mutex) try.
+  after { threads.unlock(mutex) fallback nothing. }
+}
+
+use task.
+
+constant executor is task.executor() try.
+constant channel is task.channel() try.
+constant scope is task.scope() try.
+constant pool is task.pool() try.
+
+use atomic.
+
+constant counter is atomic.create(0) try.
+after { atomic.release(counter). }
+constant previous is atomic.add(counter, 1, "sequential") try.
+constant current is atomic.load(counter, "sequential") try.

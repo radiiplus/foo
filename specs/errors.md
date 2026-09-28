@@ -2,7 +2,7 @@
 
 Version: 1.
 
-`fallible T` has two states: a successful T, or one Error with a trace.
+`failable T` has two states: a successful T, or one Error with a trace.
 Error is a single open nominal type. There are no error sets and no per-function
 lists of possible errors.
 
@@ -17,18 +17,18 @@ The Error constructor requires a constant identity belonging to the declaring
 package. The standard Error identities include Allocation, Size, Bounds,
 Closed, Invalid, Unsupported and Cancelled. Equality compares identity, not
 human-readable descriptions or trace addresses. New identities do not change
-a fallible function's signature.
+a failable function's signature.
 
 `fail(error)` constructs a failure; it is a polymorphic operation whose success
 type is bottom. Ordinary Error values never implicitly become failures, so
-`fallible Error` can carry a successful Error without ambiguity.
+`failable Error` can carry a successful Error without ambiguity.
 
 ```iv
-function unavailable() giving fallible text {
+function unavailable() giving failable text {
   give fail(Error.Unsupported).
 }
 
-function read() giving fallible text {
+function read() giving failable text {
   give unavailable() try.
 }
 
@@ -38,13 +38,13 @@ start() {
 }
 ```
 
-Try unwraps success and propagates failure to the enclosing fallible function.
-Applying try in an explicitly infallible function is an error.
+Try unwraps success and propagates failure to the enclosing failable function.
+Applying try in an explicitly non-failable function is an error.
 Fallback evaluates its alternative once, only on failure. Both success and alternative
-must have a common result type; a fallible fallback may preserve failure.
+must have a common result type; a failable fallback may preserve failure.
 Fallback is an expression, not an exception-handler block.
 
-Every discarded fallible result must be handled. `start()` permits propagation:
+Every discarded failable result must be handled. `start()` permits propagation:
 a propagated failure reports the error and exits unsuccessfully.
 A successful `give nothing.` exits successfully. Neither path guesses an error
 category from a numeric return code.
@@ -58,7 +58,7 @@ site. Local recovery consumes that failure; a new failure has its own origin.
 Trace storage must survive the scopes exited during propagation.
 
 ```iv
-function sample() giving fallible nothing {
+function sample() giving failable nothing {
   constant handle is open() try.
   after { close(handle) fallback nothing. }
   after error { report("operation failed"). }

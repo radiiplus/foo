@@ -10,6 +10,8 @@
   </description>
   <url type="homepage">https://github.com/radiiplus/foo</url>
   <url type="bugtracker">https://github.com/radiiplus/foo/issues</url>
+  <icon type="stock">io.github.radiiplus.foo</icon>
+  <launchable type="desktop-id">io.github.radiiplus.foo.desktop</launchable>
   <provides>
     <binary>foo</binary>
   </provides>

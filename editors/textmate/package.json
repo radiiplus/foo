@@ -1,9 +1,9 @@
 {
   "name": "foo-iv",
   "displayName": "foo.iv",
-  "description": "FOO .iv syntax highlighting with Ultraviolet / Acid accents for any theme.",
+  "description": "FOO language support with live diagnostics and Ultraviolet / Acid syntax accents.",
   "icon": "images/icon.png",
-  "version": "2.1.0",
+  "version": "2.4.0",
   "publisher": "radiiplus",
   "repository": {
     "type": "git",
@@ -18,6 +18,15 @@
   "engines": {
     "vscode": "^1.85.0"
   },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:foo",
+    "onCommand:foo.restartLanguageServer",
+    "onCommand:foo.startWatch"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
   "categories": [
     "Programming Languages"
   ],
@@ -33,6 +42,32 @@
     "theme": "dark"
   },
   "contributes": {
+    "commands": [
+      {
+        "command": "foo.restartLanguageServer",
+        "title": "FOO: Restart Language Server"
+      },
+      {
+        "command": "foo.startWatch",
+        "title": "FOO: Watch Project"
+      }
+    ],
+    "configuration": {
+      "title": "FOO",
+      "properties": {
+        "foo.server.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start the FOO language server for live diagnostics, hover information, and navigation."
+        },
+        "foo.server.path": {
+          "type": "string",
+          "default": "foo",
+          "scope": "machine-overridable",
+          "description": "Path to the FOO executable used to start the language server."
+        }
+      }
+    },
     "languages": [
       {
         "id": "foo",
@@ -43,7 +78,7 @@
         "extensions": [
           ".iv"
         ],
-        "configuration": "./language-configuration.json",
+        "configuration": "./language.json",
         "icon": {
           "light": "./icons/light.svg",
           "dark": "./icons/dark.svg"

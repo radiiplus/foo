@@ -90,6 +90,16 @@ test "JSON all value kinds, exact numbers, duplicate rejection and incremental s
     try expect(ends == 1);
 }
 
+test "typed codec generates direct serialization and parsing" {
+    defer lib.deinit();
+    const Point = struct { x: i32, y: i32, active: bool };
+    const encoded = try lib.call("codec", "encode", anyerror![]const u8,
+        .{Point{ .x = 4, .y = -2, .active = true }});
+    try equal("{\"x\":4,\"y\":-2,\"active\":true}", encoded);
+    const decoded = try lib.call("codec", "decode", anyerror!Point, .{encoded});
+    try expect(decoded.x == 4 and decoded.y == -2 and decoded.active);
+}
+
 test "host properties" {
     defer lib.deinit();
     try expect(try lib.system.cores() >= 1);
@@ -154,12 +164,12 @@ fn serve(server: *lib.http.Server) void {
 test "HTTP client and server reuse one TCP connection for two requests" {
     defer lib.deinit();
     const server = try lib.http.listen("127.0.0.1", 0);
-    defer lib.http.closeServer(server);
+    defer lib.http.stop(server);
     const worker = try std.Thread.spawn(.{}, serve, .{server});
     defer worker.join();
     const client = try lib.http.client();
     defer lib.http.close(client);
-    try lib.http.addHeader(client, "X-Test", "44");
+    try lib.http.attach(client, "X-Test", "44");
     try lib.http.redirects(client, 2);
     lib.http.reuse(client, true);
     var buffer: [100]u8 = undefined;

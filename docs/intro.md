@@ -6,7 +6,13 @@ Usually, you can't have both. If you choose the easy language, your program migh
 
 **FOO was built to end that compromise.** 
 
-FOO is a "sentence-like" systems language. It reads beautifully, almost like plain English, but underneath the hood, it compiles directly down to raw, hyper-optimized machine code. Let’s look at why FOO is about to become your new favorite tool.
+FOO is a sentence-like systems language (a language for low-level,
+high-performance programs). It reads close to English and compiles through C
+or Zig to native code (instructions built to run directly on the chosen
+machine). Its optimizer (the compiler stage that removes needless work)
+removes proven unnecessary work and selects compatible runtime paths (internal
+implementations used while the program runs) without changing the source
+contract (the behavior the language promises).
 
 ---
 
@@ -29,7 +35,10 @@ parentheses around every condition. Top-level statements run in source order;
 functions use words such as `give` and `plus` when a value must be returned or
 combined.
 
-But don't let the friendly syntax fool you. When you build this, FOO doesn't use a slow interpreter. It translates your English sentences directly into **Native Code** (the actual 1s and 0s your computer's processor understands), making it run at maximum speed.
+FOO does not interpret this program line by line. It checks and lowers (turns
+into a simpler compiler form) the source, then a C or Zig backend (code
+generator) produces a native executable (a program built to run directly on
+the chosen operating system and processor).
 
 ---
 
@@ -41,11 +50,16 @@ When you tell FOO to build your app, it doesn't just do it one way. FOO acts as 
 *   **The Zig Backend:** FOO can also translate your code into Zig, taking advantage of modern memory safety features and lightning-fast compilation times.
 
 ### Smart Optimization (`opt`)
-FOO doesn’t just blindly translate your code; it tunes it. FOO’s `opt` (optimization) engine knows exactly what kind of CPU you are targeting. 
-*   If you are building for a modern Intel/AMD chip, it will automatically use **AVX** (Advanced Vector Extensions) to copy memory and do math in massive, ultra-fast chunks. 
-*   If you are building for an Apple M1/M2 chip, it seamlessly switches to ARM-specific instructions. 
-
-You write the code once; FOO automatically shifts gears to match the exact physical hardware it's running on.
+FOO's optimizer uses the declared target and CPU profile. On a compatible
+x86-64 release target, medium byte transfers can use AVX2 (processor
+instructions that handle several bytes at once). AArch64 (the common 64-bit
+ARM processor architecture) and Zig have
+their own overlap-safe block paths, while other sizes and targets keep portable
+fallbacks. Generic specialization (creating code for an exact type),
+collection allocation strategy (how memory is reserved), task event services,
+and cache identity (the inputs that decide whether saved build work is still
+valid) use the same target-aware contract. Read
+[Optimization Under the Hood](tuning.md) for the exact thresholds and limits.
 
 ---
 

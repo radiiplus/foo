@@ -14,7 +14,8 @@ changing how the rest of your workspace looks.
 
 **foo.iv brings FOO into focus.**
 
-Open any `.iv` file for expressive syntax highlighting, distinct file icons,
+Open any `.iv` file for expressive syntax highlighting, live compiler
+diagnostics, checked hover information, go-to-definition, distinct file icons,
 smart brackets and indentation, comment shortcuts, and ready-made snippets.
 
 ---
@@ -28,12 +29,12 @@ constants, strings, numbers, comments, properties, attributes, native blocks,
 and invalid syntax. Its FOO-specific accents work alongside your selected VS
 Code theme.
 
-```iv
-function greet(name text) {
-  display "Hello, " plus name.
+```foo
+function greet name text punctuation text default "!" giving text {
+  give "Hello, " plus name plus punctuation.
 }
 
-greet("world").
+display greet "world".
 ```
 
 ---
@@ -67,8 +68,13 @@ Start typing a prefix and select the FOO suggestion:
 | `test` | Test block |
 | `when` | Conditional block |
 | `for each` | Collection loop |
+| `while` | Conditional loop |
 | `constant` | Constant declaration |
-| `native` | Native block |
+| `increase` | Intentional mutation |
+| `try` | Failure propagation |
+| `fallback` | Failure recovery |
+| `native c` | Native C block |
+| `native zig` | Native Zig block |
 
 Use `--` for line comments and `--- ... ---` for block comments.
 
@@ -78,11 +84,20 @@ Use `--` for line comments and `--- ... ---` for block comments.
 
 1. Open **Extensions** in Visual Studio Code.
 2. Search for **foo.iv** and choose the extension published by **radiiplus**.
-3. Select **Install**, then open any `.iv` file.
+3. Select **Install**, make sure the `foo` command is installed, then open any
+   `.iv` file.
 
-FOO appears as the active language in the status bar. To install a downloaded
+FOO appears as the active language in the status bar. The extension starts
+`foo lsp` automatically and refreshes diagnostics as you type; it does not need
+`foo watch` for editor feedback. Use **FOO: Watch Project** from the Command
+Palette when you also want a terminal build after each saved change.
+
+If `foo` is not on PATH, set **FOO: Server Path** to the compiler executable.
+Use **FOO: Restart Language Server** after changing toolchains.
+
+To install a downloaded
 package instead, choose **Install from VSIX** in the Extensions view and select
-`foo.iv-2.1.0.vsix`.
+`foo.iv-2.4.0.vsix`.
 
 ---
 

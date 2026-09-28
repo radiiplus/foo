@@ -1,0 +1,12 @@
+function first(left decimal, right decimal) giving decimal {
+  give left plus right.
+}
+
+function second(left decimal, right decimal) giving decimal {
+  give left plus right.
+}
+
+start() {
+  constant answer is second(20.0, 22.0).
+  when answer does not equal 42.0 { unreachable. }
+}

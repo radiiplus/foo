@@ -62,11 +62,11 @@ proc parseType(parser: TextParser): `Type` =
   if value.startsWith("int"): return `Type`(kind: TypeKind.Int, width: parseInt(value[3 .. ^1]))
   if value.startsWith("uint"): return `Type`(kind: TypeKind.Uint, width: parseInt(value[4 .. ^1]))
   if value.startsWith("float"): return `Type`(kind: TypeKind.Float, width: parseInt(value[5 .. ^1]))
-  if value in ["slice", "text", "optional", "fallible"]:
+  if value in ["slice", "text", "optional", "failable"]:
     discard parser.take("<")
     let elem = parser.parseType
     discard parser.take(">")
-    return `Type`(kind: (if value == "optional": TypeKind.Optional elif value == "fallible": TypeKind.Fallible else: TypeKind.Slice), elem: elem, constant: value == "text")
+    return `Type`(kind: (if value == "optional": TypeKind.Optional elif value == "failable": TypeKind.Failable else: TypeKind.Slice), elem: elem, constant: value == "text")
   if value == "ptr":
     discard parser.take("<")
     let elem = parser.parseType
@@ -243,7 +243,7 @@ proc typeFromJson(node: JsonNode; types: Table[string, `Type`]): `Type` =
     of "function": TypeKind.Function
     of "sequence": TypeKind.Slice
     of "optional": TypeKind.Optional
-    of "fallible": TypeKind.Fallible
+    of "failable": TypeKind.Failable
     of "memory": TypeKind.Memory
     of "region": TypeKind.Region
     of "trace": TypeKind.Trace

@@ -203,7 +203,8 @@ proc runSingleTest*(suite: TestSuite; backend = "zig"; executor: TestExecutor = 
       raise newException(ValueError, renderAll(diagnostics.messages(),
         RenderOptions(style: "short", color: false)))
     let module = monomorphize(lower(program, checker.types))
-    let outDir = projectRoot / ".artifacts" / "test" /
+    let outDir = projectRoot / ".artifacts" / "test" / backend /
+      $getCurrentProcessId() /
       (splitFile(suite.file).name & "_" & suite.name).replace(' ', '_')
     createDir(outDir)
     let cCompiler = if getEnv("CC").len > 0: getEnv("CC") elif findExe("clang").len > 0: findExe("clang") else: "cc"

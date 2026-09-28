@@ -100,4 +100,70 @@ doAssert packageResolution.units.len == 2
 doAssert packageResolution.resolutions.hasKey(cast[pointer](packageField))
 doAssert packageResolution.resolutions[cast[pointer](packageField)].qualified.endsWith("::answer")
 
+let exportedField = ast.Field(tag: "field", span: position,
+  `object`: name("facade"), field: name("answer"))
+let reexporting = ast.Program(tag: "program", span: position, units: @[
+  ast.Unit(tag: "unit", span: position, name: name("main"),
+    body: ast.Block(tag: "block", span: position, stmts: @[
+      ast.Statement(ast.Use(tag: "use", span: position, name: name("facade"))),
+      ast.Statement(ast.Give(tag: "give", span: position, value: exportedField))
+    ]))
+])
+proc readReexport(path: string): ReadResult =
+  if path.endsWith("facade.iv") or path.endsWith("lib.iv"): (true, "module")
+  else: (false, "")
+proc parseReexport(path, source: string; diagnostics: Engine): ast.Program =
+  if path.endsWith("facade.iv"):
+    ast.Program(tag: "program", span: position, units: @[
+      ast.Unit(tag: "unit", span: position, name: name("facade"), file: path,
+        body: ast.Block(tag: "block", span: position, stmts: @[
+          ast.Statement(ast.Use(tag: "use", span: position, public: true,
+            name: name("lib")))
+        ]))
+    ])
+  else:
+    parseModule(path, source, diagnostics)
+let reexportDiagnostics = newEngine()
+let reexportResolution = newResolver(reexportDiagnostics, getCurrentDir(),
+  read = readReexport, parse = parseReexport).resolve(reexporting, "main")
+doAssert not reexportDiagnostics.failed
+doAssert reexportResolution.units.len == 3
+doAssert reexportResolution.resolutions.hasKey(cast[pointer](exportedField))
+doAssert reexportResolution.resolutions[cast[pointer](exportedField)].qualified.endsWith("::answer")
+
+let choicePatternName = name("model.item")
+let choiceProgram = ast.Program(tag: "program", span: position, units: @[
+  ast.Unit(tag: "unit", span: position, name: name("main"),
+    body: ast.Block(tag: "block", span: position, stmts: @[
+      ast.Statement(ast.Use(tag: "use", span: position, name: name("choice"),
+        alias: name("model"))),
+      ast.Statement(ast.Match(tag: "match", span: position,
+        scrutinee: name("result"), cases: @[
+          ast.Case(tag: "case", span: position,
+            pattern: ast.VariantPattern(tag: "variant-pattern", span: position,
+              name: choicePatternName, binding: name("found")),
+            body: ast.Block(tag: "block", span: position, stmts: @[]))
+        ]))
+    ]))
+])
+proc readChoice(path: string): ReadResult =
+  if path.endsWith("choice.iv"): (true, "choice") else: (false, "")
+proc parseChoice(path, source: string; diagnostics: Engine): ast.Program =
+  let variant = ast.Variant(tag: "variant", span: position, name: name("item"),
+    payload: ast.Primitive(tag: "primitive", span: position,
+      name: "integer", width: "64"))
+  ast.Program(tag: "program", span: position, units: @[
+    ast.Unit(tag: "unit", span: position, name: name("choice"), file: path,
+      body: ast.Block(tag: "block", span: position, stmts: @[
+        ast.Statement(ast.Alias(tag: "alias", span: position, public: true,
+          name: name("Result"), body: ast.Choice(tag: "choice",
+            span: position, variants: @[variant])))
+      ]))
+  ])
+let choiceDiagnostics = newEngine()
+let choiceResolution = newResolver(choiceDiagnostics, getCurrentDir(),
+  read = readChoice, parse = parseChoice).resolve(choiceProgram, "main")
+doAssert choiceResolution.resolutions.hasKey(cast[pointer](choicePatternName))
+doAssert choiceResolution.resolutions[cast[pointer](choicePatternName)].qualified.endsWith("::item")
+
 echo "semantic resolver parity: ok"

@@ -1,0 +1,10 @@
+-- Mutable open-addressed maps for hot text-keyed lookup paths.
+-- Values are shallow-copied into backend-owned storage.
+public define Table as opaque.
+public use "table" function create[V]() giving failable pointer to Table.
+public use "table" function put[V](collection pointer to Table, key text, value V) giving failable nothing.
+public use "table" function get[V](collection pointer to Table, key text) giving failable V.
+public use "table" function contains[V](collection pointer to Table, key text) giving failable boolean.
+public use "table" function remove[V](collection pointer to Table, key text) giving failable boolean.
+public use "table" function length[V](collection pointer to Table) giving failable unsigned 64.
+public use "table" function close[V](collection pointer to Table) giving failable nothing.

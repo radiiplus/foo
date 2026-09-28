@@ -21,6 +21,9 @@ type
     borrows*: seq[int]
     generics*: seq[string]
     constraints*: seq[tuple[subject: string, trait: string]]
+    labels*: seq[string]
+    defaults*: seq[bool]
+    variadic*: bool
 
 proc typeToString*(value: Type): string =
   if value == nil: return "unknown"
@@ -29,7 +32,7 @@ proc typeToString*(value: Type): string =
   of "array": return "array of " & typeToString(value.elem)
   of "sequence": return "sequence of " & (if value.constant: "constant " else: "") & typeToString(value.elem)
   of "optional": return "optional " & typeToString(value.elem)
-  of "error": return "fallible " & typeToString(value.elem)
+  of "error": return "failable " & typeToString(value.elem)
   of "pointer": return "pointer to " & typeToString(value.elem)
   of "named", "record", "choice", "union", "opaque": return value.name
   of "vector": return "vector[" & $value.length & ", " & typeToString(value.elem) & "]"

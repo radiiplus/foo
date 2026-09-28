@@ -26,9 +26,19 @@ typedef struct {
 typedef struct FOOAllocation {
   void *pointer;
   size_t size;
+  size_t used;
+  size_t capacity;
+  size_t element;
+  size_t references;
+  bool sequence;
+  bool retired;
+  struct FOOAllocation *sequence_next;
   struct FOOAllocation *next;
 } FOOAllocation;
 static FOOAllocation *foo_allocations;
+static FOOAllocation **foo_sequence_slots;
+static size_t foo_sequence_slots_count;
+static size_t foo_sequence_count;
 static atomic_flag foo_lock = ATOMIC_FLAG_INIT;
 static void foo_enter(void) {
   while (atomic_flag_test_and_set_explicit(&foo_lock, memory_order_acquire)) {
@@ -37,23 +47,205 @@ static void foo_enter(void) {
 static void foo_leave(void) {
   atomic_flag_clear_explicit(&foo_lock, memory_order_release);
 }
-static void *foo_owned(size_t size) {
-  void *pointer = malloc(size ? size : 1);
-  FOOAllocation *item = malloc(sizeof(*item));
-  if (!pointer || !item) {
-    free(pointer);
-    free(item);
-    return NULL;
+static size_t foo_sequence_bucket(const void *pointer, size_t count) {
+  uintptr_t value = (uintptr_t)pointer;
+  value ^= value >> 17;
+  value *= (uintptr_t)UINT64_C(0xed5ad4bb);
+  value ^= value >> 11;
+  return (size_t)value & (count - 1);
+}
+static bool foo_sequence_grow(void) {
+  size_t count = foo_sequence_slots_count ? foo_sequence_slots_count * 2 : 16;
+  if (count < foo_sequence_slots_count || count > SIZE_MAX / sizeof(*foo_sequence_slots))
+    return false;
+  FOOAllocation **slots = calloc(count, sizeof(*slots));
+  if (!slots) return false;
+  for (FOOAllocation *item = foo_allocations; item; item = item->next) {
+    if (!item->sequence) continue;
+    size_t bucket = foo_sequence_bucket(item->pointer, count);
+    item->sequence_next = slots[bucket];
+    slots[bucket] = item;
   }
+  free(foo_sequence_slots);
+  foo_sequence_slots = slots;
+  foo_sequence_slots_count = count;
+  return true;
+}
+static FOOAllocation *foo_sequence_find(const void *pointer) {
+  if (!foo_sequence_slots_count) return NULL;
+  size_t bucket = foo_sequence_bucket(pointer, foo_sequence_slots_count);
+  for (FOOAllocation *item = foo_sequence_slots[bucket]; item;
+       item = item->sequence_next)
+    if (item->pointer == pointer) return item;
+  return NULL;
+}
+static void foo_sequence_unlink(FOOAllocation *item) {
+  size_t bucket = foo_sequence_bucket(item->pointer, foo_sequence_slots_count);
+  FOOAllocation **cursor = &foo_sequence_slots[bucket];
+  while (*cursor && *cursor != item) cursor = &(*cursor)->sequence_next;
+  if (*cursor) {
+    *cursor = item->sequence_next;
+    foo_sequence_count--;
+  }
+}
+static bool foo_track(void *pointer, size_t size, size_t used,
+                      size_t capacity, size_t element, bool sequence) {
+  if (!pointer)
+    return false;
+  FOOAllocation *item = malloc(sizeof(*item));
+  if (!item)
+    return false;
   item->pointer = pointer;
   item->size = size;
+  item->used = used;
+  item->capacity = capacity;
+  item->element = element;
+  item->references = sequence ? 1 : 0;
+  item->sequence = sequence;
+  item->retired = false;
+  item->sequence_next = NULL;
   foo_enter();
+  if (sequence && (!foo_sequence_slots_count || foo_sequence_count + 1 >
+      foo_sequence_slots_count - foo_sequence_slots_count / 4)) {
+    if (!foo_sequence_grow()) {
+      foo_leave();
+      free(item);
+      return false;
+    }
+  }
+  if (sequence) {
+    size_t bucket = foo_sequence_bucket(pointer, foo_sequence_slots_count);
+    item->sequence_next = foo_sequence_slots[bucket];
+    foo_sequence_slots[bucket] = item;
+    foo_sequence_count++;
+  }
   item->next = foo_allocations;
   foo_allocations = item;
   foo_leave();
+  foo_metric_allocate(size);
+  return true;
+}
+static bool foo_adopt(void *pointer, size_t size) {
+  return foo_track(pointer, size, 0, 0, 0, false);
+}
+static void foo_benchmark_report(void) {
+  double average = foo_metric_capacity_samples ?
+      (double)foo_metric_capacity_total / (double)foo_metric_capacity_samples : 0.0;
+  double factor = foo_metric_requested_total ?
+      (double)foo_metric_capacity_total / (double)foo_metric_requested_total : 0.0;
+  fprintf(stderr,
+      "FOO_METRICS {\"allocations\":%llu,\"allocatedBytes\":%llu,"
+      "\"reallocations\":%llu,\"bytesCopied\":%llu,"
+      "\"growthOperations\":%llu,\"growthBytesCopied\":%llu,"
+      "\"averageCapacity\":%.3f,\"maximumCapacity\":%llu,"
+      "\"growthFactor\":%.3f,\"liveBytes\":%llu,"
+      "\"peakBytes\":%llu,\"olderVersionBytes\":%llu,"
+      "\"slowPathHits\":%llu,\"branchOperations\":%llu,"
+      "\"branchBytesCopied\":%llu}\n",
+      (unsigned long long)foo_metric_allocations,
+      (unsigned long long)foo_metric_allocated_bytes,
+      (unsigned long long)foo_metric_reallocations,
+      (unsigned long long)foo_metric_copied_bytes,
+      (unsigned long long)foo_metric_growths,
+      (unsigned long long)foo_metric_growth_bytes, average,
+      (unsigned long long)foo_metric_capacity_max, factor,
+      (unsigned long long)foo_metric_live_bytes,
+      (unsigned long long)foo_metric_peak_bytes,
+      (unsigned long long)foo_metric_retained_bytes,
+      (unsigned long long)foo_metric_slow_paths,
+      (unsigned long long)foo_metric_branches,
+      (unsigned long long)foo_metric_branch_bytes);
+}
+static void *foo_owned(size_t size) {
+  void *pointer = malloc(size ? size : 1);
+  if (!pointer || !foo_adopt(pointer, size)) {
+    free(pointer);
+    return NULL;
+  }
   return pointer;
 }
 static FOOResult foo_error(const char *error);
+static void *foo_sequence_owned(size_t element, size_t capacity, size_t used) {
+  if (!element || used > capacity || capacity > SIZE_MAX / element)
+    return NULL;
+  size_t size = capacity * element;
+  void *pointer = malloc(size ? size : 1);
+  if (!pointer || !foo_track(pointer, size, used, capacity, element, true)) {
+    free(pointer);
+    return NULL;
+  }
+  return pointer;
+}
+static size_t foo_sequence_capacity(size_t count) {
+  size_t capacity = 8;
+  while (capacity < count) {
+    if (capacity > SIZE_MAX / 2)
+      return count;
+    capacity *= 2;
+  }
+  return capacity;
+}
+static FOOResult foo_sequence_append(const void *source, size_t length,
+                                     size_t element, const void *value) {
+  if (!element || length == SIZE_MAX || length + 1 > SIZE_MAX / element)
+    return foo_error("Overflow");
+  size_t count = length + 1, capacity = foo_sequence_capacity(count);
+  bool branch = false;
+  const void *retire = NULL;
+  foo_metric_add(&foo_metric_growths, 1);
+  foo_metric_add(&foo_metric_requested_total, count);
+  foo_enter();
+  FOOAllocation *allocation = foo_sequence_find(source);
+  if (allocation && allocation->sequence && allocation->element == element) {
+    if (length > allocation->used) {
+      foo_leave();
+      return foo_error("InvalidBuffer");
+    }
+    if (length == allocation->used && allocation->used < allocation->capacity) {
+      if (allocation->references == SIZE_MAX) {
+        foo_leave();
+        return foo_error("Overflow");
+      }
+      uint8_t *items = allocation->pointer;
+      memcpy(items + length * element, value, element);
+      allocation->used = count;
+      allocation->references++;
+      capacity = allocation->capacity;
+      foo_leave();
+      foo_metric_capacity(capacity);
+      return (FOOResult){.text = {(const uint8_t *)items, count}};
+    }
+    branch = length < allocation->used;
+    if (!branch && allocation->capacity <= SIZE_MAX / 2)
+      capacity = allocation->capacity * 2;
+    if (!branch && !allocation->retired) retire = allocation->pointer;
+  }
+  foo_leave();
+  if (capacity < count || capacity > SIZE_MAX / element)
+    return foo_error("Overflow");
+  uint8_t *items = foo_sequence_owned(element, capacity, count);
+  if (!items) return foo_error("OutOfMemory");
+  if (retire) {
+    foo_enter();
+    FOOAllocation *previous = foo_sequence_find(retire);
+    if (previous && !previous->retired) {
+      previous->retired = true;
+      foo_metric_add(&foo_metric_retained_bytes, previous->size);
+    }
+    foo_leave();
+  }
+  size_t copied = length * element;
+  if (copied) foo_transfer(items, source, copied);
+  memcpy(items + copied, value, element);
+  foo_metric_add(&foo_metric_slow_paths, 1);
+  foo_metric_add(&foo_metric_growth_bytes, copied);
+  if (branch) {
+    foo_metric_add(&foo_metric_branches, 1);
+    foo_metric_add(&foo_metric_branch_bytes, copied);
+  }
+  foo_metric_capacity(capacity);
+  return (FOOResult){.text = {items, count}};
+}
 typedef struct {
   uint64_t hash;
   uint8_t state;
@@ -230,6 +422,9 @@ static void foo_shutdown(void) {
     free(item->pointer);
     free(item);
   }
+  free(foo_sequence_slots);
+  foo_sequence_slots = NULL;
+  foo_sequence_slots_count = foo_sequence_count = 0;
   foo_leave();
 }
 static FOOResult foo_error(const char *error) {
@@ -299,6 +494,37 @@ static FOOResult foo_free(const void *pointer, size_t size) {
     return foo_error("InvalidBuffer");
   }
   *cursor = item->next;
+  if (item->sequence) foo_sequence_unlink(item);
+  foo_metric_release(item->size, item->retired);
+  foo_leave();
+  free(item->pointer);
+  free(item);
+  return (FOOResult){0};
+}
+static FOOResult foo_sequence_free(const void *pointer, size_t length,
+                                   size_t element) {
+  if (!length) return (FOOResult){0};
+  foo_enter();
+  FOOAllocation **cursor = &foo_allocations;
+  while (*cursor && (*cursor)->pointer != pointer)
+    cursor = &(*cursor)->next;
+  if (!*cursor) {
+    foo_leave();
+    return foo_error("UnknownBuffer");
+  }
+  FOOAllocation *item = *cursor;
+  if (!item->sequence || item->element != element || length > item->used) {
+    foo_leave();
+    return foo_error("InvalidBuffer");
+  }
+  if (item->references > 1) {
+    item->references--;
+    foo_leave();
+    return (FOOResult){0};
+  }
+  *cursor = item->next;
+  foo_sequence_unlink(item);
+  foo_metric_release(item->size, item->retired);
   foo_leave();
   free(item->pointer);
   free(item);

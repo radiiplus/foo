@@ -1,10 +1,10 @@
 import std/tables
-import std/algorithm
 import std/strutils
 import ../ir/node
 import ../ir/kind
 import ../ir/monomorph
 import ../opt/arch
+import ../opt/engine as specialization
 
 type
   NativeSelection* = object
@@ -24,6 +24,7 @@ type
     operation*: string
     stage*: string
     implementation*: string
+    reason*: string
 
 const levels* = ["base", "system", "machine", "hardware"]
 
@@ -37,33 +38,78 @@ proc select*(operation: string; options: Selection): Decision =
   let cpu = profile(options.target, options.cpu)
   let backend = if options.backend.len > 0: options.backend else: "c"
   let machine = levelIndex(if options.level.len > 0: options.level else: "base") >= levelIndex("machine")
+  let context = specialization.Context(backend: backend,
+    target: options.target, cpu: cpu.cpu, mode: options.mode,
+    capability: options.level, portable: options.substrate == "c")
+  proc decide(contract: string;
+      candidates: openArray[specialization.Candidate]): Decision =
+    let selected = specialization.choose(operation, contract, context,
+      candidates)
+    Decision(operation: operation, stage: selected.stage,
+      implementation: selected.implementation, reason: selected.reason)
   if operation == "copy":
     if backend == "zig":
-      if options.mode == "release" and arch == "x86_64" and "avx2" in cpu.features:
-        return Decision(operation: operation, stage: "@zig", implementation: "block-32")
-      if options.mode == "release" and arch == "aarch64":
-        return Decision(operation: operation, stage: "@zig", implementation: "block-16")
-      return Decision(operation: operation, stage: "@zig", implementation: "word")
-    if options.substrate != "c" and options.mode == "release" and arch == "x86_64" and "avx2" in cpu.features:
-      return Decision(operation: operation, stage: "@c", implementation: "avx")
-    if options.substrate != "c" and options.mode == "release" and machine and arch == "x86_64":
-      return Decision(operation: operation, stage: "@asm", implementation: "rep")
-    if options.substrate != "c" and options.mode == "release" and arch == "aarch64":
-      return Decision(operation: operation, stage: "@c", implementation: "intrinsic")
-    return Decision(operation: operation, stage: "@c", implementation: "portable")
-  if operation == "atomic": return Decision(operation: operation, stage: "@c", implementation: "c11")
-  if operation == "hashmap":
-    return Decision(operation: operation, stage: "@runtime", implementation: "open-addressing")
+      return decide("overlap-safe byte transfer", [
+        specialization.candidate("word", "@zig", "overlap-safe byte transfer",
+          "word-sized overlap-safe blocks for the portable fallback", 0,
+          fallback = true),
+        specialization.candidate("block-16", "@zig", "overlap-safe byte transfer",
+          "16-byte overlap-safe blocks for the selected AArch64 release target", 20,
+          compatible = options.mode == "release" and arch == "aarch64"),
+        specialization.candidate("block-32", "@zig", "overlap-safe byte transfer",
+          "32-byte overlap-safe blocks for the selected AVX2 release target", 30,
+          compatible = options.mode == "release" and arch == "x86_64" and
+            "avx2" in cpu.features)
+      ])
+    return decide("overlap-safe byte transfer", [
+      specialization.candidate("portable", "@c", "overlap-safe byte transfer",
+        "portable memmove preserves exact overlap semantics", 0,
+        fallback = true),
+      specialization.candidate("intrinsic", "@c", "overlap-safe byte transfer",
+        "compiler memmove intrinsic for the selected AArch64 release target", 10,
+        compatible = options.substrate != "c" and options.mode == "release" and
+          arch == "aarch64"),
+      specialization.candidate("rep", "@asm", "overlap-safe byte transfer",
+        "rep movsb for non-overlapping bulk copies, with memmove for overlap and other sizes", 20,
+        compatible = options.substrate != "c" and options.mode == "release" and
+          machine and arch == "x86_64"),
+      specialization.candidate("avx", "@c", "overlap-safe byte transfer",
+        "AVX2 head and tail vectors for medium copies, with memmove outside the measured range", 30,
+        compatible = options.substrate != "c" and options.mode == "release" and
+          arch == "x86_64" and "avx2" in cpu.features)
+    ])
+  if operation == "atomic": return decide("ordered atomic operation", [
+    specialization.candidate("c11", "@c", "ordered atomic operation",
+      "C11 atomics preserve the requested memory ordering", 0,
+      fallback = true)])
+  if operation == "table":
+    return decide("text-keyed mutable table", [
+      specialization.candidate("open-addressing", "@runtime",
+        "text-keyed mutable table",
+        "open addressing keeps text-key lookup contiguous and avoids one allocation per entry", 0,
+        fallback = true)])
   if operation == "sequence-transform":
-    return Decision(operation: operation, stage: "@runtime", implementation: "single-allocation")
+    return decide("ordered sequence transformation", [
+      specialization.candidate("single-allocation", "@runtime",
+        "ordered sequence transformation",
+        "the result reserves once and is compacted once after the transform", 0,
+        fallback = true)])
   if operation == "task":
-    let target = options.target.toLowerAscii()
-    let implementation =
-      if "windows" in target or "win32" in target: "iocp"
-      elif "macos" in target or "darwin" in target or "bsd" in target: "kqueue"
-      elif "linux" in target: "epoll"
-      else: "threaded"
-    return Decision(operation: operation, stage: "@runtime", implementation: implementation)
+    return decide("scoped task execution", [
+      specialization.candidate("threaded", "@runtime", "scoped task execution",
+        "native threads provide the evidenced portable scoped fallback", 0,
+        fallback = true),
+      specialization.candidate("epoll", "@runtime", "scoped task execution",
+        "Linux event-backed task execution", 20,
+        backends = @["c"], targets = @["linux"]),
+      specialization.candidate("kqueue", "@runtime", "scoped task execution",
+        "Apple and BSD event-backed task execution", 20,
+        targets = @["macos", "darwin", "bsd"],
+        evidenced = false),
+      specialization.candidate("iocp", "@runtime", "scoped task execution",
+        "Windows event-backed task execution", 20,
+        backends = @["c"], targets = @["windows", "win32"])
+    ])
   raise newException(ValueError, "No substrate for operation '" & operation & "'")
 
 proc `bind`*(input: Module; options: Selection): tuple[module: Module, decisions: seq[Decision]] =
@@ -88,7 +134,7 @@ proc `bind`*(input: Module; options: Selection): tuple[module: Module, decisions
           let declaration = foreign[instruction.`func`]
           if declaration.abi == "runtime.atomic": operation = "atomic"
           elif declaration.abi in ["runtime", "runtime.task"]: operation = "task"
-          elif declaration.abi == "runtime.hashmap": operation = "hashmap"
+          elif declaration.abi == "runtime.table": operation = "table"
           elif declaration.abi == "runtime.sequence" and declaration.symbol in ["sized", "compact"]: operation = "sequence-transform"
           elif declaration.abi == "runtime.memory" and (declaration.symbol == "copy" or declaration.symbol == "transfer"): operation = "copy"
         if operation.len > 0:
@@ -101,7 +147,8 @@ proc `bind`*(input: Module; options: Selection): tuple[module: Module, decisions
     let required = if stage == "asm" or contract.abi.startsWith("machine:"): "machine" else: "system"
     if levelIndex(level) < levelIndex(required): raise newException(ValueError, "Native block requires \"" & required & "\" capability. Install with: foo toolchain install " & required)
     contract.stage = if stage == "asm": "@asm" else: "@c"
-    result.decisions.add(Decision(operation: contract.id, stage: contract.stage, implementation: stage))
+    result.decisions.add(Decision(operation: contract.id, stage: contract.stage,
+      implementation: stage, reason: "the native contract explicitly selected this substrate"))
 
 proc native*(contract: NativeContract; options: Selection; global = false): string =
   if contract.stage == "@c": return if global: contract.code else: "{\n" & contract.code & "\n}"

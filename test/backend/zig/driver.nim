@@ -5,9 +5,11 @@ import ../../../src/ir/node
 import ../../../src/build/options
 
 let module = Module(name: "demo", funcs: @[], externs: @[])
-let result = build(module, "dev", ".artifacts/test-zig-driver", options = Native(name: "demo"))
+let output = ".artifacts" / ("test-zig-driver-" & getEnv("FOOTESTID", "local"))
+let result = build(module, "dev", output, options = Native(name: "demo"))
 doAssert result.success
 when defined(windows): doAssert result.artifact.endsWith("demo.exe")
 else: doAssert result.artifact.endsWith("demo")
-doAssert fileExists(".artifacts/test-zig-driver/main.zig")
+doAssert fileExists(output / "main.zig")
+doAssert readFile(output / "library.zig").contains("const instrumented = false;")
 echo "Zig driver parity: ok"

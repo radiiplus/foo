@@ -32,9 +32,16 @@ Type errors show separate expected and found types using their canonical FOO spe
 ## Presentation
 Locations use one-based lines and Unicode scalar columns. CRLF counts as one line ending. Tabs count as one scalar in coordinates but expand to tab stops of four cells in displayed excerpts; caret placement follows the displayed cells. Machine spans use zero-based UTF-8 byte offsets with an exclusive end.
 
-Show at most five primary diagnostics by default, followed by a compact total and a hint when more exist. Consequential errors caused by the same missing declaration or malformed construct should not obscure independent errors. Order diagnostics by normalized file path, start offset, severity and code.
+Human output groups equivalent diagnostics by code, explanation, context,
+suggestion, notes and fix. It renders the first source excerpt once, then lists
+the sorted affected lines, grouped by file when necessary. Diagnostics with
+related spans remain separate so the relationship is not hidden. Machine and
+LSP output retain one record per source span. Consequential errors caused by
+the same missing declaration or malformed construct should not obscure
+independent errors. Order diagnostics by normalized file path, start offset,
+severity and code.
 
-`foo check --verbose` includes codes, related locations and technical context. `foo check --json` emits only the machine envelope, with no ANSI sequences or human progress output. Color is optional and never the only indicator of severity. Missing source text still permits a location and explanation.
+`foo check --verbose` includes codes, related locations and technical context. `foo check --json` emits only the machine envelope, with no ANSI sequences or human progress output. Human errors use the shared FOO terminal palette unless `NO_COLOR` is set or `TERM` is `dumb`; color is never the only indicator of severity. Missing source text still permits a location and explanation.
 
 ## Machine format
 The envelope is UTF-8 JSON with `format: "foo.diagnostics"`, `version: 1` and a `diagnostics` array. Each diagnostic has:
