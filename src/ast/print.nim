@@ -68,7 +68,7 @@ proc print*(value: Node; depth: int = 0): string =
     result = statements.join("\n")
   of "test": result = indent(depth) & "test " & text(TestBlock(value).name.value) & " " & printBlock(TestBlock(value).body, depth)
   of "eval": result = indent(depth) & "eval " & printBlock(EvalBlock(value).body, depth)
-  of "reflect": result = "reflect[" & print(Reflect(value).`type`) & "]()"
+  of "reflect": result = "reflect[" & print(Reflect(value).`type`) & "]"
   of "embed":
     let item = Embed(value)
     result = "embed" & (if item.`type` != nil: "[" & print(item.`type`) & "]" else: "") & "(\"" & escapeText(item.path) & "\")"
@@ -94,7 +94,7 @@ proc print*(value: Node; depth: int = 0): string =
     for param in item.params: params.add(print(param))
     let name = if item.name.text == "start": "start" else: "function " & item.name.text
     result = indent(depth) & printAttributes(item.attributes) & (if item.public: "public " else: "") & name &
-      printTypeParams(item.typeParams) & "(" & params.join(", ") & ")" &
+      printTypeParams(item.typeParams) & (if params.len > 0: "(" & params.join(", ") & ")" else: "") &
       (if item.guard != nil: " when " & print(item.guard) else: "") &
       (if item.returnType != nil: " giving " & print(item.returnType) else: "") &
       (if item.abi.len > 0: " for " & item.abi else: "") & constraints(item.typeParams, item.constraints) & " " & printBlock(item.body, depth)
@@ -119,10 +119,10 @@ proc print*(value: Node; depth: int = 0): string =
     let prefix = indent(depth) & (if item.public: "public " else: "")
     if item.native.code.len > 0:
       result = prefix & "native" & (if item.native.substrate == "foo": "" else: " " & item.native.substrate) & " function " & item.name.text &
-        "(" & params.join(", ") & ") giving " & print(item.returnType) & " {" & item.native.code & "}"
+        (if params.len > 0: "(" & params.join(", ") & ")" else: "") & " giving " & print(item.returnType) & " {" & item.native.code & "}"
     else:
       result = prefix & "use \"" & escapeText(provider(item.abi)) & "\" function " & item.name.text & printTypeParams(item.typeParams) &
-        "(" & params.join(", ") & ") giving " & print(item.returnType) & "."
+        (if params.len > 0: "(" & params.join(", ") & ")" else: "") & " giving " & print(item.returnType) & "."
   of "c-import": result = indent(depth) & "use c \"" & escapeText(CImport(value).header) & "\"."
   of "native":
     let item = Native(value)
@@ -152,7 +152,7 @@ proc print*(value: Node; depth: int = 0): string =
     else:
       var args: seq[string]
       for arg in item.args: args.add(print(arg))
-      result = indent(depth) & item.name.text & "(" & args.join(", ") & ")."
+      result = indent(depth) & item.name.text & (if args.len > 0: "(" & args.join(", ") & ")" else: "") & "."
   of "unreachable-statement": result = indent(depth) & "unreachable."
   of "integer": result = Integer(value).value
   of "decimal": result = Decimal(value).value
@@ -173,7 +173,8 @@ proc print*(value: Node; depth: int = 0): string =
       let label = if index < item.names.len: item.names[index] else: ""
       args.add((if label.len > 0: label & " " else: "") & print(arg))
     for kind in item.types: types.add(print(kind))
-    result = print(item.callee) & (if types.len > 0: "[" & types.join(", ") & "]" else: "") & "(" & args.join(", ") & ")"
+    result = print(item.callee) & (if types.len > 0: "[" & types.join(", ") & "]" else: "") &
+      (if args.len > 0: "(" & args.join(", ") & ")" else: "")
   of "sequence-value":
     var items: seq[string]
     for item in Values(value).items: items.add(print(item))
@@ -226,7 +227,8 @@ proc print*(value: Node; depth: int = 0): string =
   of "function-type":
     var params: seq[string]
     for param in FunctionType(value).params: params.add(print(param))
-    result = "function taking (" & params.join(", ") & ") giving " & print(FunctionType(value).ret) &
+    result = "function" & (if params.len > 0: " taking (" & params.join(", ") & ")" else: "") &
+      " giving " & print(FunctionType(value).ret) &
       (if FunctionType(value).abi.len > 0: " for " & FunctionType(value).abi else: "")
   of "parameter":
     let item = Parameter(value)

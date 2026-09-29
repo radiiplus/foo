@@ -6,8 +6,8 @@
     give value plus 7.
   }
 
-  start() {
-    constant callback is get_c_callback().
+  start {
+    constant callback is get_c_callback.
     constant from_c of type integer 32 is callback(5).
     verify_callbacks(foo_callback, from_c).
     give nothing.

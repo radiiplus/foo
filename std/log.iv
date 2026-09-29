@@ -1,16 +1,16 @@
 -- Writes application messages and errors to the diagnostic stream.
 use io as output.
 public function message(content text) giving failable nothing {
-  output.write(output.report(), "INFO  " plus content plus newline) try.
+  output.write(output.report, "INFO  " plus content plus newline) try.
   give nothing.
 }
 public function error(content text) giving failable nothing {
-  output.write(output.report(), "ERROR " plus content plus newline) try.
+  output.write(output.report, "ERROR " plus content plus newline) try.
   give nothing.
 }
 public function note(content text) giving nothing {
-  output.write(output.report(), "INFO  " plus content plus newline) fallback nothing.
+  output.write(output.report, "INFO  " plus content plus newline) fallback nothing.
 }
 public function alert(content text) giving nothing {
-  output.write(output.report(), "ERROR " plus content plus newline) fallback nothing.
+  output.write(output.report, "ERROR " plus content plus newline) fallback nothing.
 }

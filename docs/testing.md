@@ -20,7 +20,7 @@ test "addition returns the total" {
 }
 ```
 
-You do not need a `start()` function in a test file. Each `test "name" { ... }`
+You do not need a `start` function in a test file. Each `test "name" { ... }`
 block is discovered and run separately, so one failure can be reported without
 turning the file into an application.
 

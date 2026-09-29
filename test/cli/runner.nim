@@ -5,7 +5,7 @@ let root = getTempDir() / "foo-cli-runner-test"
 if dirExists(root): removeDir(root)
 createDir(root)
 let file = root / "main.iv"
-writeFile(file, "-- comment\nstart(){ give nothing. }\n")
+writeFile(file, "-- comment\nstart{ give nothing. }\n")
 doAssert check(file, root)
 let formatted = fmt(file)
 doAssert formatted.contains("-- comment")

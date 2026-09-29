@@ -6,13 +6,13 @@ function bounds(collection pointer to List) giving failable text {
   constant item is get(collection, 10) try.
   give "unexpected".
 }
-start() {
-  constant allocator is heap.system().
+start {
+  constant allocator is heap.system.
   constant first is heap.allocate(allocator, 4) try.
   constant second is heap.allocate(allocator, 4) try.
   heap.copy(allocator, first, "FOO!") try.
   heap.copy(allocator, second, "list") try.
-  constant collection is create() try.
+  constant collection is create try.
   number(length(collection) try, 0).
   push(collection, first) try.
   push(collection, second) try.

@@ -26,13 +26,19 @@ after { text.release(clean) fallback nothing. }
 display clean.
 ```
 
+`starts`, `ends`, and `contains` answer common byte-oriented questions without
+allocating temporary text. Use `unicode` when an operation must work in Unicode
+scalar values rather than UTF-8 bytes.
+
 ---
 
-## 2. Files and paths (`file`, `path`)
+## 2. Files and paths (`file`)
 
-The `file` module reads, writes, opens, and joins ordinary text paths. The
-lower-level `path` module works with native pointer-oriented paths at foreign
-boundaries; application code normally starts with `file`.
+The `file` module reads, writes, opens, and joins ordinary text paths. Use
+`read` and `write` for expected UTF-8 text. Use `readbytes` and `writebytes` for
+arbitrary binary data; the returned `sequence of byte` is length-aware and must
+be released with `releasebytes`. Native path pointers belong behind explicit
+foreign declarations rather than a second standard path API.
 
 ```foo
 use file.
@@ -41,6 +47,23 @@ constant path is file.join("data", "config.json") try.
 constant content is file.read(path) try.
 file.write(path, content) try.
 ```
+
+Use `exists` when absence is ordinary control flow and `kind` when code needs
+to distinguish a file, directory, or other filesystem object. `copy` copies a
+whole file without promising durable publication. `working` returns the current
+working directory as owned text.
+
+For durable publication, write a temporary stream with `io.write`, call
+`file.sync`, close it, then call `file.replace` with a destination on the same
+filesystem. `file.flush` only empties process buffers. `file.remove` deletes a
+file. Explicit streams currently use length-aware `text` for
+bounded transfers; whole-file binary code should prefer `readbytes`.
+
+The `process` module separates direct execution from shell interpretation.
+`process.execute(program, arguments)` passes every item in its
+`sequence of text` as one argument. `process.run(command)` intentionally
+interprets one command through the host shell and should only receive
+deliberately constructed shell syntax.
 
 ---
 
@@ -51,7 +74,7 @@ FOO makes web requests incredibly simple. The `http` module handles all the comp
 ```foo
 use http as web.
 
-constant client is web.client() try.
+constant client is web.client try.
 after { web.close(client). }
 constant response is web.request(client, "https://example.com", "GET", "", 1048576) try.
 after { web.release(response). }
@@ -117,9 +140,9 @@ values in application code:
 use time as clock.
 
 constant delay is clock.millis(50).
-constant first is clock.now() try.
+constant first is clock.now try.
 clock.wait(delay) try.
-constant last is clock.now() try.
+constant last is clock.now try.
 when clock.elapsed(first, last).nanoseconds greater than 0 {
   display "The clock advanced".
 }
@@ -171,7 +194,7 @@ through backend-neutral runtime contracts (rules that do not depend on one code
 generator). C and Zig provide their own implementations without changing
 application source.
 
-Advanced users can stay inside those portable contracts while controlling more of the underlying service. `http` exposes persistent request headers, redirect limits, and connection reuse. `net` exposes partial sends, half-close, TCP_NODELAY, and keepalive. `file` exposes flush, byte seeking, position, and size. These are explicit operations on the same handles used by the simpler APIs; no backend object leaks into FOO code.
+Advanced users can stay inside those portable contracts while controlling more of the underlying service. `http` exposes persistent request headers, redirect limits, and connection reuse. `net` exposes partial sends, half-close, TCP_NODELAY, and keepalive. `file` exposes process-buffer flushing, stable-storage sync, atomic same-filesystem replacement, removal, byte seeking, position, and size. These are explicit operations on the same handles used by the simpler APIs; no backend object leaks into FOO code.
 
 The transfer contract is used throughout the runtime, including sequences,
 text, JSON, HTTP buffers, and allocator growth (expanding reserved memory).
@@ -208,7 +231,7 @@ typed values:
 ```foo
 use table.
 
-constant cache is table.create[integer]() try.
+constant cache is table.create[integer] try.
 after { table.close[integer](cache) fallback nothing. }
 table.put[integer](cache, "answer", 42) try.
 constant answer is table.get[integer](cache, "answer") try.

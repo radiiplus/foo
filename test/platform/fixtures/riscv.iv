@@ -6,12 +6,12 @@ define Device as record {
 
 #[start]
 #[naked]
-function boot() {
+function boot {
   native asm { "li t0, 0x10000000; li t1, 65; sb t1, 0(t0); 1: wfi; j 1b" }
   give nothing.
 }
 
 #[interrupt]
-function irq() {
+function irq {
   give nothing.
 }

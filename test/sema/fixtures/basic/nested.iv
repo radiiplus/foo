@@ -2,7 +2,7 @@
 
   use "./sub/module".
   
-  start() {
+  start {
     constant result is nestedadd(1, 2).
     give nothing.
   }

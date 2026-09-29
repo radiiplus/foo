@@ -21,7 +21,7 @@
   
   use file.
   
-  start() {
+  start {
     when true {
       constant z is 1.
     } otherwise {

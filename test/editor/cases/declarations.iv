@@ -5,6 +5,9 @@ function add(left integer, right integer) giving integer {
 
 constant total is add(20, 22).
 
+function ready giving boolean { give true. }
+constant available is ready.
+
 function connect(
     host text,
     port integer default 443,
@@ -65,7 +68,7 @@ function double(value integer) giving integer {
   give value multiply 2.
 }
 
-function twice() giving integer {
+function twice giving integer {
   dynamic count is 0.
 
   constant next is function giving integer {
@@ -73,8 +76,8 @@ function twice() giving integer {
     give count.
   }.
 
-  constant first is next().
-  give next().
+  constant first is next.
+  give next.
 }
 
 function identify(value integer) giving text {

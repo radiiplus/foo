@@ -3,11 +3,11 @@ native c {
   #include <stdio.h>
   int number(void) { return 44; }
 }
-extern "C" function number() giving integer 32.
+extern "C" function number giving integer 32.
 native c function increment(value integer 32) giving integer 32 {
   return value + 1;
 }
-native c function step() giving integer 32 {
+native c function step giving integer 32 {
   static int counter = 0;
   return ++counter;
 }
@@ -19,7 +19,7 @@ native asm function mirror(value unsigned) giving unsigned {
   y of type integer 32.
 }.
 native c function sum(point Point) giving integer 32 { return point.x + point.y; }
-start() {
+start {
   check.expect(number() is 44).
   check.expect(increment(43) is 44).
   check.expect(step() is 1).

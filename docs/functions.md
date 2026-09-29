@@ -13,8 +13,17 @@ function add(left integer, right integer) giving integer {
 constant total is add(20, 22).
 ```
 
-Arguments are evaluated from left to right. Parentheses delimit the argument
-list, including an empty list for a zero-argument call.
+Arguments are evaluated from left to right. Parentheses delimit a non-empty
+argument list. Omit them when a function has no parameters or arguments:
+
+```foo
+function ready giving boolean { give true. }
+constant available is ready.
+```
+
+Bare zero-argument names invoke by default. When the expected type is a
+function, the same name is preserved as a function value, so callbacks remain
+composable. Empty `()` is not accepted.
 
 ## Default and named arguments
 
@@ -37,7 +46,9 @@ constant explicit is connect(host "example.com", timeout 10000).
 
 A label is the parameter name followed directly by its value. FOO does not
 require a colon or equals sign. Positional arguments must come first. Each
-label may appear once, and an unknown label is a compile error.
+label may appear once, and an unknown label is a compile error. An ordinary
+expression may begin with a parameter named `value`; for example,
+`digit(value remainder 16)` is one positional argument, not a named argument.
 
 ## Variadic parameters (one parameter accepting several arguments)
 
@@ -164,7 +175,7 @@ code) automatically. Captured `constant`
 values are read-only; captured `dynamic` values share the original storage.
 
 ```foo
-function twice() giving integer {
+function twice giving integer {
   dynamic count is 0.
 
   constant next is function giving integer {
@@ -172,8 +183,8 @@ function twice() giving integer {
     give count.
   }.
 
-  constant first is next().
-  give next().
+  constant first is next.
+  give next.
 }
 ```
 

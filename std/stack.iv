@@ -3,8 +3,8 @@ use sequence as items.
 public define Stack[T] as record {
   values of type sequence of T.
 }.
-public function create[T]() giving Stack[T] {
-  give Stack[T](items.create[T]()).
+public function create[T] giving Stack[T] {
+  give Stack[T](items.create[T]).
 }
 public function length[T](collection Stack[T]) giving unsigned {
   give items.length[T](collection.values).

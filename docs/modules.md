@@ -50,6 +50,34 @@ public function add(price decimal, amount decimal) giving decimal {
 Declarations without `public` remain private to their file. An ordinary import
 does not automatically re-export anything.
 
+Public records may contain concrete generic types imported from another
+module. That specialization is part of the record's public layout and is
+supported by both native backends:
+
+<!-- snippet: project genericfield src/core.iv -->
+```foo
+public define Reference as record {
+  number of type integer.
+}.
+```
+
+<!-- snippet: project genericfield src/store.iv -->
+```foo
+use map as maps.
+use core.
+
+public define Store as record {
+  values of type maps.Map[text, core.Reference].
+}.
+```
+
+<!-- snippet: project genericfield src/main.iv -->
+```foo
+use store.
+
+start {}
+```
+
 ## Build a facade module (one public entry point over internal modules)
 
 Use `public use` for a transparent facade (a module presenting a simpler public

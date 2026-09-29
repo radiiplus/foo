@@ -12,7 +12,7 @@ space in a shared backing buffer.
 ```foo
 use sequence as sequences.
 
-constant empty is sequences.create[integer]().
+constant empty is sequences.create[integer].
 constant one is sequences.append[integer](empty, 4) try.
 constant values is sequences.append[integer](one, 9) try.
 
@@ -61,7 +61,7 @@ values must remain valid.
 ```foo
 use sequence as sequences.
 
-constant empty is sequences.create[integer]().
+constant empty is sequences.create[integer].
 constant values is sequences.append[integer](empty, 4) try.
 after { sequences.release[integer](values) fallback nothing. }
 constant count is sequences.length[integer](values).
@@ -76,7 +76,7 @@ error rather than an unchecked memory read.
 ```foo
 use sequence as sequences.
 
-constant empty is sequences.create[integer]().
+constant empty is sequences.create[integer].
 constant values is sequences.append[integer](empty, 4) try.
 after { sequences.release[integer](values) fallback nothing. }
 for each value in values {
@@ -99,7 +99,7 @@ function positive(value integer) giving boolean {
   give value greater than 0.
 }
 
-constant values is sequences.create[integer]().
+constant values is sequences.create[integer].
 
 constant doubled is sequences.map[integer, integer](values, double) try.
 constant kept is sequences.filter[integer](doubled, positive) try.
@@ -112,8 +112,10 @@ after {
 }
 ```
 
-`map`, `filter`, `sort`, `copy`, and `deduplicate` return new storage. Releasing
-one result does not release the others.
+`map`, `filter`, `sort`, `copy`, `reverse`, `take`, `drop`, and `deduplicate`
+return new storage. `any` and `all` stop when their answer is known; `fold`
+combines items in order without allocating a result sequence. Releasing one
+stored result does not release the others.
 
 ## Persistent maps
 
@@ -123,7 +125,7 @@ new map.
 ```foo
 use map as maps.
 
-constant empty is maps.create[text, integer]().
+constant empty is maps.create[text, integer].
 constant first is maps.put[text, integer](empty, "answer", 41) try.
 constant updated is maps.put[text, integer](first, "answer", 42) try.
 constant answer is maps.get[text, integer](updated, "answer") try.
@@ -135,7 +137,8 @@ after {
 ```
 
 `get` is failable because a key may be absent. `contains` checks before a read
-when absence is part of ordinary control flow.
+when absence is part of ordinary control flow. `keys` and `values` return new
+sequences in insertion order; release those sequences independently.
 
 ## Mutable hash maps (key-based collections using fingerprints for lookup)
 
@@ -145,7 +148,7 @@ appropriate than persistent values.
 ```foo
 use table as lookup.
 
-constant table is lookup.create[integer]() try.
+constant table is lookup.create[integer] try.
 after { lookup.close[integer](table) fallback nothing. }
 
 lookup.put[integer](table, "answer", 42) try.

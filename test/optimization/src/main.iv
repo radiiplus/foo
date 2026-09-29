@@ -6,7 +6,7 @@ function second(left decimal, right decimal) giving decimal {
   give left plus right.
 }
 
-start() {
+start {
   constant answer is second(20.0, 22.0).
   when answer is not 42.0 { unreachable. }
 }

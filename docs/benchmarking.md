@@ -9,7 +9,7 @@ benchmarks belong in `benchmark/`.
 
 Every project created by `foo new` includes `benchmark/main.iv`. Replace its
 starter loop with the work you want to measure. A benchmark is an ordinary FOO
-program, so top-level statements work and `start()` remains optional.
+program, so top-level statements work and `start` remains optional.
 
 ```foo
 dynamic counter is 0.

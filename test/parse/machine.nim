@@ -5,7 +5,7 @@ import ../../src/parse/parser
 
 let source = """extern "C" function puts(value text) giving integer 32.
 extern "C" function callback(value integer 32) giving integer 32 { give value. }
-start() {
+start {
   atomic add counter by 1.
   bits set flags at position 4.
   bits clear flags at position 4.

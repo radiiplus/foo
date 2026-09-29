@@ -29,7 +29,7 @@ values:
 use sequence as sequences.
 
 constant current is "Ada".
-constant active is sequences.create[text]().
+constant active is sequences.create[text].
 constant user is current.
 constant users are active.
 ```
@@ -83,16 +83,17 @@ Parentheses remain available for nesting and zero-argument calls:
 ```foo
 function tax(value integer) giving integer { give value. }
 function add(left integer, right integer) giving integer { give left plus right. }
-function clock() giving integer { give 0. }
+function clock giving integer { give 0. }
 
 constant price is 20.
 constant shipping is 5.
 constant total is add(tax(price), shipping).
-constant now is clock().
+constant now is clock.
 ```
 
 Labels have no colon or equals sign. Unknown, repeated, and ambiguous labels
-are compile errors.
+are compile errors. A binary operator after an identifier keeps the expression
+positional, so `digit(value remainder 16)` does not label its argument.
 
 ## Defaults, remaining arguments, and overloads
 
@@ -161,7 +162,7 @@ instead.
 ## Scoped closures
 
 ```foo
-function twice() giving integer {
+function twice giving integer {
   dynamic count is 0.
 
   constant next is function giving integer {
@@ -169,8 +170,8 @@ function twice() giving integer {
     give count.
   }.
 
-  constant first is next().
-  give next().
+  constant first is next.
+  give next.
 }
 ```
 

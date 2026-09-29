@@ -1,6 +1,6 @@
 -- Exercises types fixtures errors behavior.
 
-  start() {
+  start {
     constant x of type integer 32 is "hello".
     give nothing.
   }

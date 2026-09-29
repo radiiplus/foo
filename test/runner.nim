@@ -5,7 +5,7 @@ let root = getTempDir() / "foo-test-discovery"
 if dirExists(root): removeDir(root)
 createDir(root / "nested")
 writeFile(root / "nested" / "suite.iv", "test \"addition\" { give. }\n")
-writeFile(root / "main.iv", "start() { give nothing. }\n")
+writeFile(root / "main.iv", "start { give nothing. }\n")
 let suites = discoverTests(root)
 doAssert suites.len == 1
 doAssert suites[0].name == "addition"
@@ -30,10 +30,10 @@ createDir(project / "src")
 createDir(project / "test")
 writeFile(project / "project.json", """{"source":"src"}""")
 writeFile(project / "src" / "values.iv",
-  "public function answer() giving integer { give 42. }\n")
+  "public function answer giving integer { give 42. }\n")
 writeFile(project / "test" / "contract.iv", """use values.
 use testing as check.
-test "source import and generic equality" { check.same(values.answer(), 42). }
+test "source import and generic equality" { check.same(values.answer, 42). }
 """)
 createDir(project / "benchmark")
 writeFile(project / "benchmark" / "broken.iv", "constant broken is .\n")

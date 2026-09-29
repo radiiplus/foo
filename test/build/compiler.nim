@@ -7,7 +7,7 @@ if dirExists(root): removeDir(root)
 createDir(root)
 writeFile(root / "project.json", "{\"name\":\"compiler-test\",\"requires\":\"system\"}")
 let file = root / "main.iv"
-writeFile(file, "start() { give nothing. }")
+writeFile(file, "start { give nothing. }")
 let c = newCompiler(root)
 doAssert not c.check(file).cached
 doAssert c.check(file).cached
@@ -17,7 +17,7 @@ doAssert validate(lowered).len == 0
 doAssert lowered.unitPackage == "compiler-test"
 doAssert lowered.unitPath == "main.iv"
 doAssert lowered.requires == "system"
-writeFile(file, "start() { give. }")
+writeFile(file, "start { give. }")
 doAssert not c.check(file).cached
 writeFile(file, """
 use time as clock.

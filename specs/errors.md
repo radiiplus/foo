@@ -24,16 +24,16 @@ type is bottom. Ordinary Error values never implicitly become failures, so
 `failable Error` can carry a successful Error without ambiguity.
 
 ```iv
-function unavailable() giving failable text {
+function unavailable giving failable text {
   give fail(Error.Unsupported).
 }
 
-function read() giving failable text {
-  give unavailable() try.
+function read giving failable text {
+  give unavailable try.
 }
 
-start() {
-  constant value is read() fallback "default".
+start {
+  constant value is read fallback "default".
   give nothing.
 }
 ```
@@ -44,7 +44,7 @@ Fallback evaluates its alternative once, only on failure. Both success and alter
 must have a common result type; a failable fallback may preserve failure.
 Fallback is an expression, not an exception-handler block.
 
-Every discarded failable result must be handled. `start()` permits propagation:
+Every discarded failable result must be handled. `start` permits propagation:
 a propagated failure reports the error and exits unsuccessfully.
 A successful `give nothing.` exits successfully. Neither path guesses an error
 category from a numeric return code.
@@ -58,8 +58,8 @@ site. Local recovery consumes that failure; a new failure has its own origin.
 Trace storage must survive the scopes exited during propagation.
 
 ```iv
-function sample() giving failable nothing {
-  constant handle is open() try.
+function sample giving failable nothing {
+  constant handle is open try.
   after { close(handle) fallback nothing. }
   after error { report("operation failed"). }
   consume(handle) try.

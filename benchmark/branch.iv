@@ -2,8 +2,8 @@
 use sequence as items.
 use testing as check.
 
-dynamic values is items.create[unsigned]().
-dynamic older is items.create[unsigned]().
+dynamic values is items.create[unsigned].
+dynamic older is items.create[unsigned].
 dynamic index of type unsigned is 0.
 while index less than 10_000 {
   set values to items.append[unsigned](values, index) try.

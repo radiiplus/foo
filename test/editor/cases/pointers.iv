@@ -1,25 +1,14 @@
--- Defines double-ended collections.
---- Double-ended queue ---
---- Efficient insertion/removal at both ends ---
-public define Deque as record {
-  data of type pointer to byte.
-  length of type integer.
-}.
-public function create() {
-  constant result of type Deque is uninitialized.
-  give result.
-}
-public function front(collection Deque, value pointer to byte) {
-  give nothing.
-}
-public function back(collection Deque, value pointer to byte) {
-  give nothing.
-}
-public function shift(collection Deque) {
-  constant result of type pointer to byte is uninitialized.
-  give result.
-}
-public function pop(collection Deque) {
-  constant result of type pointer to byte is uninitialized.
-  give result.
-}
+-- Declares owned allocations and grouped arena lifetimes.
+public define Allocator as opaque.
+public use "memory" function system giving pointer to Allocator.
+public use "memory" function arena giving failable pointer to Allocator.
+public use "memory" function allocate(allocator pointer to Allocator, size unsigned) giving failable pointer to byte.
+public use "memory" function release(allocator pointer to Allocator, buffer pointer to byte) giving failable nothing.
+public use "memory" function expand(allocator pointer to Allocator, buffer pointer to byte, size unsigned) giving failable pointer to byte.
+public use "memory" function copy(allocator pointer to Allocator, buffer pointer to byte, content text) giving failable nothing.
+public use "memory" function view(allocator pointer to Allocator, buffer pointer to byte, size unsigned) giving failable text.
+public use "memory" function close(allocator pointer to Allocator) giving failable nothing.
+public use "memory" function transfer(source sequence of constant byte, destination sequence of byte) giving failable nothing.
+public use "memory" function clear(buffer sequence of byte) giving nothing.
+public use "memory" function compare(left sequence of constant byte, right sequence of constant byte) giving integer.
+public use "memory" function identical[T](left pointer to T, right pointer to T) giving boolean.

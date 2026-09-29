@@ -5,7 +5,7 @@
     y of type decimal.
   }.
   
-  start() {
+  start {
     constant p of type Point is uninit.
     constant z is p.z.
     give nothing.

@@ -35,9 +35,9 @@ In Chapter 4, we learned about **Regions** (bulk cleanup). But sometimes, you ne
 FOO allows you to create custom **Allocators** (objects that reserve and release memory).
 
 ```foo
-use memory.
+use memory as memory.
 
-constant arena is memory.arena() try.
+constant arena is memory.arena try.
 after { memory.close(arena) fallback nothing. }
 constant buffer is memory.allocate(arena, 1024) try.
 ```
@@ -64,9 +64,9 @@ cleared. Redirect limits are explicit, and connection reuse can be disabled for
 isolation-sensitive workloads (work that must not share a connection or state).
 
 ```foo
-use http.
+use http as http.
 
-constant client is http.client() try.
+constant client is http.client try.
 after { http.close(client). }
 http.attach(client, "Accept", "application/json") try.
 http.attach(client, "X-Request-ID", "build-44") try.
@@ -122,12 +122,18 @@ file.seek(stream, (0 subtract 16), "end") try.
 constant offset is file.position(stream) try.
 ```
 
-Positions and sizes are byte counts. Seek origins are `start`, `current`, and `end`. `flush` explicitly commits buffered output without closing the stream.
+Positions and sizes are byte counts. Seek origins are `start`, `current`, and
+`end`. `flush` empties process buffers without closing the stream; it does not
+make a power-loss durability promise. `sync` also asks the operating system to
+commit the file to stable storage. Durable publication writes and syncs a
+temporary stream, closes it, then uses `replace` on the same filesystem.
+Whole-file binary reads use `readbytes`; release their `sequence of byte` with
+`releasebytes`.
 
 Streaming JSON, explicit allocators, atomics (shared operations completed as
-one step), dynamic libraries (compiled code loaded while a program runs), task
-handles, and the target-specific `os.unix` and `os.windows` modules provide the
-other advanced standard-library surfaces.
+one step), task handles, and typed foreign declarations provide the other
+advanced systems surfaces. Platform bindings belong in packages and remain
+behind an explicit native contract.
 
 ---
 

@@ -227,7 +227,7 @@ Use it to do something to every item in a collection:
 ```foo
 use sequence as items.
 
-constant basket is items.append[text](items.create[text](), "apple") try.
+constant basket is items.append[text](items.create[text], "apple") try.
 after { items.release[text](basket) fallback nothing. }
 
 for each fruit in basket {
@@ -264,7 +264,7 @@ unordered alternative for text-keyed lookup.
 ```foo
 use sequence as sequences.
 
-constant empty is sequences.create[integer]().
+constant empty is sequences.create[integer].
 constant first is sequences.append[integer](empty, 4) try.
 constant values is sequences.append[integer](first, 9) try.
 after {
@@ -297,7 +297,7 @@ If you don't want to handle the error right now, put `try` after the operation.
 If the operation fails, your *entire* function stops and passes the error up to whoever called it.
 ```foo
 use file as files.
-function load() giving failable text {
+function load giving failable text {
   give files.read("config.json") try.
 }
 ```
@@ -324,7 +324,7 @@ display config.
 
 Top-level statements form the program entry automatically. A function that
 gives `nothing` also completes when it reaches the closing brace, so neither an
-empty `start()` wrapper nor `give nothing.` is routine boilerplate.
+empty `start` wrapper nor `give nothing.` is routine boilerplate.
 
 When a failable result must be captured, the declaration and propagation remain
 two explicit operations:
@@ -351,7 +351,7 @@ exit. The `after` block covers normal returns, propagated failures, `stop`, and
 use file as files.
 use io as streams.
 
-function process() giving failable nothing {
+function process giving failable nothing {
   constant stream is files.open("data.txt", "read") try.
   
   -- This runs for success and propagated failure.
@@ -373,7 +373,7 @@ the project contains `network/server.iv`:
 
 <!-- snippet: project network src/network/server.iv -->
 ```foo
-public function ready() giving boolean { give true. }
+public function ready giving boolean { give true. }
 ```
 
 <!-- snippet: project network src/main.iv -->
@@ -381,7 +381,7 @@ public function ready() giving boolean { give true. }
 use "network/server.iv" as server.
 use http as web.
 
-when server.ready() { display "Server ready". }
+when server.ready { display "Server ready". }
 ```
 
 `public use "network/server.iv".` re-exports that module's public declarations
@@ -406,7 +406,7 @@ use time as clock.
 constant duration is clock.seconds(2).
 clock.wait(duration) try.
 
-constant allocator is memory.system().
+constant allocator is memory.system.
 constant size of type unsigned is 5 multiply 1024 multiply 1024.
 constant buffer is memory.allocate(allocator, size) try.
 after { memory.release(allocator, buffer) fallback nothing. }

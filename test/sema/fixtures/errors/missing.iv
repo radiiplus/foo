@@ -1,6 +1,6 @@
 -- Exercises sema fixtures errors behavior.
 
-  start() {
+  start {
     constant result is missingname.
     give nothing.
   }

@@ -24,7 +24,7 @@ dynamic y of type decimal is 3.14.
 
     extern "C" function puts(s pointer to byte) giving integer 32.
 
-    start() {
+    start {
         when true {
             constant z is 1.
         } otherwise {

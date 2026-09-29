@@ -2,7 +2,7 @@
 
   use math.
   
-  start() {
+  start {
     constant result is add(1, 2).
     give nothing.
   }

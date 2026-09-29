@@ -3,7 +3,41 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
-## Unreleased
+## 0.6.0 - 2026-09-29
+
+### Language And Compiler
+
+- Remove empty parentheses from zero-argument declarations, calls, function
+  types, entry points, and generic specializations while preserving function
+  values through contextual typing.
+- Invoke functions whose parameters all have defaults without an empty
+  argument list and carry their normalized defaults through lowering.
+- Preserve concrete imported generic record fields through IR lowering so C
+  and Zig emit the same public layouts across module boundaries.
+- Parse identifier-led remainder expressions as positional call arguments
+  without requiring redundant parentheses.
+
+### Standard Library
+
+- Remove twelve advertised placeholder modules that had no working contract;
+  their overlapping responsibilities remain with `file`, `process`, `thread`,
+  `table`, and `crypto`.
+- Add shell-free `process.execute`, filesystem inspection/copying/current
+  directory operations, byte-oriented text predicates, persistent sequence
+  transforms, and ordered map key/value extraction.
+- Add typed whole-file `readbytes`, `writebytes`, and `releasebytes`
+  operations for arbitrary binary data.
+- Add stable-storage `sync`, atomic same-filesystem `replace`, and physical
+  file `remove` operations, with durable publication semantics on Windows and
+  POSIX hosts.
+
+### Documentation And Testing
+
+- Check every shipped standard module independently before native tests and
+  exercise the expanded APIs on both C and Zig backends.
+- Document binary ownership, process-buffer flushing, durable publication,
+  imported generic fields, and named-argument expression boundaries in the
+  guide, specification, catalog, LSP regression, and generated `llm.txt`.
 
 ## 0.5.0 - 2026-09-28
 
@@ -353,15 +387,15 @@ changes are recorded here.
 ### Language
 
 - Allow executable top-level statements, including `display`, without requiring
-  an explicit `start()` function.
+  an explicit `start` function.
 - Infer completion for functions that give `nothing`, removing routine
   `give nothing` boilerplate.
 - Add concise parameter and result annotations while preserving explicit
   `of type` syntax where useful.
 - Introduce the preferred vocabulary `define ... as`, `dynamic`, `stop`,
   `skip`, `fallback`, `multiply`, `subtract`, and `divide`.
-- Move `try` after the operation it propagates, so `read() try` replaces the
-  older `try read()` spelling in canonical source and formatted output.
+- Move `try` after the operation it propagates, so `read try` replaces the
+  older `try read` spelling in canonical source and formatted output.
 - Add direct `greater than or equal to` and `less than or equal to`
   comparisons so positive conditions do not require `not` wrappers.
 - Keep `failable` for functions that may fail.

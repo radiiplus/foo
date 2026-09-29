@@ -47,10 +47,10 @@ function tokenize(source) {
   });
 }
 let assertions = 0;
-const pointer = tokenize(readFileSync(resolve(root, '../../test/editor/cases/pointers.iv'), 'utf8')).find(row => row.line.includes('data of type pointer to byte.'));
+const pointer = tokenize(readFileSync(resolve(root, '../../test/editor/cases/pointers.iv'), 'utf8')).find(row => row.line.includes('buffer pointer to byte'));
 assert(pointer, 'Missing real pointer declaration fixture');
-for (const [text, scope] of [['of', 'keyword.other.operator.of.foo'], ['type', 'storage.type.annotation.foo'], ['pointer', 'storage.modifier.type.foo'], ['to', 'keyword.other.operator.to.foo'], ['byte', 'support.type.primitive.foo']]) {
-  const start = pointer.line.indexOf(text);
+for (const [text, scope] of [['pointer', 'storage.modifier.type.foo'], ['to', 'keyword.other.operator.to.foo'], ['byte', 'support.type.primitive.foo']]) {
+  const start = pointer.line.lastIndexOf(text);
   const tokens = pointer.tokens.filter(token => token.startIndex < start + text.length && token.endIndex > start);
   assert(tokens.length && tokens.every(token => token.scopes.includes(scope)), `${text} must use ${scope}`);
   assertions++;
@@ -58,8 +58,8 @@ for (const [text, scope] of [['of', 'keyword.other.operator.of.foo'], ['type', '
 const configuration = JSON.parse(readFileSync(join(root, 'language.json'), 'utf8'));
 const increase = new RegExp(configuration.indentationRules.increaseIndentPattern);
 const decrease = new RegExp(configuration.indentationRules.decreaseIndentPattern);
-for (const line of ['function visit() {', 'start() {', 'when true {', '  } otherwise {']) assert(increase.test(line), `Block must indent: ${line}`);
-for (const line of ['-- comment {', '--- comment {', 'constant brace is "{".', 'function empty() {}']) assert(!increase.test(line), `Unexpected indentation: ${line}`);
+for (const line of ['function visit {', 'start {', 'when true {', '  } otherwise {']) assert(increase.test(line), `Block must indent: ${line}`);
+for (const line of ['-- comment {', '--- comment {', 'constant brace is "{".', 'function empty {}']) assert(!increase.test(line), `Unexpected indentation: ${line}`);
 assert(decrease.test('  } otherwise {'));
 assert.equal('data.value'.match(new RegExp(configuration.wordPattern, 'g')).join(','), 'data,value');
 assert.deepEqual(configuration.comments, { lineComment: '--', blockComment: ['---', '---'] });

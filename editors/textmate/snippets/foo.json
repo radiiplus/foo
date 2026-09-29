@@ -1,12 +1,12 @@
 {
   "function": {
     "prefix": "function",
-    "body": ["function ${1:name} ${2:value} ${3:integer} giving ${4:integer} {", "  $0", "}"],
-    "description": "FOO sentence-style function"
+    "body": ["function ${1:name}(${2:value} ${3:integer}) giving ${4:integer} {", "  $0", "}"],
+    "description": "FOO function"
   },
   "start": {
     "prefix": "start",
-    "body": ["start() {", "  $0", "}"],
+    "body": ["start {", "  $0", "}"],
     "description": "FOO explicit entry point"
   },
   "test": {

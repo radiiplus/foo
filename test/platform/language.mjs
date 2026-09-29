@@ -19,7 +19,7 @@ const tool = detect('0.16.0'); assert(tool);
 const results = [];
 for (const name of ['escape', 'machine', 'system', 'library']) {
   const input = name === 'library' ? readFileSync('test/interop/library.iv', 'utf8') : name === 'system'
-    ? '-- Checks a direct Linux system call.\nuse testing as check. start() { constant pid is call system call 39. check.expect(pid greater than 0). }\n'
+    ? '-- Checks a direct Linux system call.\nuse testing as check. start { constant pid is call system call 39. check.expect(pid greater than 0). }\n'
     : readFileSync(`test/native/${name}.iv`, 'utf8');
   const source = join(root, name + '.iv'); writeFileSync(source, input);
   const module = new Compiler(root, "zig", [], "release").ir(source);
@@ -36,7 +36,7 @@ assert(!imported.diagnostics.some(item => item.code === 'C_UNBINDABLE'));
 assert.equal(bind('/usr/include/sodium/crypto_verify_16.h', { cacheDir: join(root, 'bindings') }).cached, true);
 assert.match(imported.source, /crypto_verify_16_BYTES/);
 const atomic = join(root, 'atomic.iv');
-writeFileSync(atomic, '-- Checks cross-target atomic and bit lowering.\ndynamic counter of type unsigned is 0. function increment() { atomic add counter by 1. } start() { increment(). }\n');
+writeFileSync(atomic, '-- Checks cross-target atomic and bit lowering.\ndynamic counter of type unsigned is 0. function increment { atomic add counter by 1. } start { increment. }\n');
 const module = new Compiler(root).ir(atomic);
 for (const target of ['x86_64-linux-gnu', 'aarch64-linux-gnu']) {
   const output = join(root, target); mkdirSync(output);

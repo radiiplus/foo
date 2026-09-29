@@ -8,7 +8,7 @@ FOO makes possible failure visible in a function's type. A function giving
 ```foo
 use file as files.
 
-function settings() giving failable text {
+function settings giving failable text {
   give files.read("settings.json") try.
 }
 ```
@@ -25,7 +25,7 @@ should use):
 ```foo
 use file as files.
 
-function copy() giving failable text {
+function copy giving failable text {
   constant content is files.read("notes.txt") try.
   files.write("copy.txt", content) try.
   give content.
@@ -78,7 +78,7 @@ Register cleanup immediately after acquiring a resource.
 use file as files.
 use io as streams.
 
-function chunk() giving failable text {
+function chunk giving failable text {
   constant stream is files.open("data.txt", "read") try.
   after { streams.close(stream) fallback nothing. }
   give streams.read(stream, 4096) try.
@@ -99,7 +99,7 @@ scope exits through failure but not after a successful return.
 ```foo
 use memory.
 
-constant allocator is memory.system().
+constant allocator is memory.system.
 constant buffer is memory.allocate(allocator, 4096) try.
 after error { memory.release(allocator, buffer) fallback nothing. }
 ```

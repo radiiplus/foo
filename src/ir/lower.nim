@@ -6,6 +6,7 @@ import ./[kind, node, valid, eval]
 type Type = node.Type
 
 proc lowerType(node: ast.`Type`; aliases: Table[string, `Type`]): `Type`
+proc semanticType(value: semantic.Type; aliases: Table[string, `Type`]): `Type`
 
 proc lowerType(node: ast.`Type`; aliases: Table[string, `Type`]): `Type` =
   if node == nil: return `Type`(kind: TypeKind.Void)
@@ -36,7 +37,8 @@ proc lowerType(node: ast.`Type`; aliases: Table[string, `Type`]): `Type` =
   of "generic-inst": aliases.getOrDefault(ast.GenericInst(node).name.text, `Type`(kind: TypeKind.Struct, name: ast.GenericInst(node).name.text))
   else: `Type`(kind: TypeKind.Void)
 
-proc lowerAlias(alias: ast.Alias; aliases: Table[string, `Type`]): `Type` =
+proc lowerAlias(alias: ast.Alias; aliases: Table[string, `Type`];
+    typed: Table[pointer, semantic.Type]): `Type` =
   if alias.body == nil: return `Type`(kind: TypeKind.Opaque, name: alias.name.text)
   case alias.body.tag
   of "record":
@@ -44,7 +46,9 @@ proc lowerAlias(alias: ast.Alias; aliases: Table[string, `Type`]): `Type` =
     var fields = initOrderedTable[string, `Type`]()
     var fieldAttrs = initTable[string, seq[string]]()
     for field in record.fields:
-      fields[field.name.text] = lowerType(field.type, aliases)
+      fields[field.name.text] = if typed.hasKey(cast[pointer](field.type)):
+        semanticType(typed[cast[pointer](field.type)], aliases)
+      else: lowerType(field.type, aliases)
       if field.attributes.len > 0:
         fieldAttrs[field.name.text] = field.attributes
         if "volatile" in field.attributes: fields[field.name.text].volatile = true
@@ -54,14 +58,20 @@ proc lowerAlias(alias: ast.Alias; aliases: Table[string, `Type`]): `Type` =
     var fields = initOrderedTable[string, `Type`]()
     var fieldAttrs = initTable[string, seq[string]]()
     for field in ast.Union(alias.body).fields:
-      fields[field.name.text] = lowerType(field.type, aliases)
+      fields[field.name.text] = if typed.hasKey(cast[pointer](field.type)):
+        semanticType(typed[cast[pointer](field.type)], aliases)
+      else: lowerType(field.type, aliases)
       if field.attributes.len > 0:
         fieldAttrs[field.name.text] = field.attributes
         if "volatile" in field.attributes: fields[field.name.text].volatile = true
     `Type`(kind: TypeKind.ExternUnion, name: alias.name.text, fields: fields, fieldAttrs: fieldAttrs)
   of "choice":
     var variants = initOrderedTable[string, `Type`]()
-    for variant in ast.Choice(alias.body).variants: variants[variant.name.text] = if variant.payload == nil: nil else: lowerType(variant.payload, aliases)
+    for variant in ast.Choice(alias.body).variants:
+      variants[variant.name.text] = if variant.payload == nil: nil
+        elif typed.hasKey(cast[pointer](variant.payload)):
+          semanticType(typed[cast[pointer](variant.payload)], aliases)
+        else: lowerType(variant.payload, aliases)
     `Type`(kind: TypeKind.TaggedUnion, name: alias.name.text, variants: variants)
   of "opaque": `Type`(kind: TypeKind.Opaque, name: alias.name.text)
   else: lowerType(alias.body, aliases)
@@ -92,7 +102,8 @@ proc semanticTypeImpl(value: semantic.Type; aliases: Table[string, `Type`];
     return `Type`(kind: TypeKind.Function, params: params,
       ret: semanticTypeImpl(value.ret, aliases, seen), abi: value.abi)
   of "record", "choice":
-    if aliases.hasKey(value.name): return aliases[value.name]
+    if aliases.hasKey(value.name) and value.arguments.len == 0:
+      return aliases[value.name]
     let base = value.name.split('[')[0]
     let kind = if value.kind == "choice": TypeKind.TaggedUnion
       elif aliases.hasKey(base): aliases[base].kind else: TypeKind.Struct
@@ -237,6 +248,24 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
     raise newException(ValueError, "Assignment requires a dynamic place")
   proc expression(node: ast.Expression; expected: `Type` = nil): Value =
     if node == nil: return Value(kind: ValueKind.Const, name: "null", `type`: expected)
+    proc invokeZero(callee: Value; name = "";
+        arguments: seq[ast.Expression] = @[]): Value =
+      let signature = if name.len > 0: signatures.getOrDefault(name) else: callee.type
+      if signature == nil or signature.kind != TypeKind.Function:
+        raise newException(ValueError, "A zero-argument call needs a function value")
+      let dest = if signature.ret.kind == TypeKind.Void: Value() else: fresh(signature.ret)
+      var args: seq[Value]
+      for index, argument in arguments:
+        args.add(expression(argument,
+          if index < signature.params.len: signature.params[index] else: nil))
+      emit(Instruction(kind: InstrKind.Call, dest: dest,
+        `func`: name, callee: if name.len == 0: callee else: Value(),
+        abi: signature.abi, symbol: if name.len > 0: symbols.getOrDefault(name) else: "",
+        args: args))
+      if signature.ret.kind == TypeKind.Void:
+        Value(kind: ValueKind.Const, name: "{}", `type`: signature.ret)
+      else:
+        adapt(dest, expected)
     case node.tag
     of "integer", "decimal", "text", "character", "true", "false", "nothing", "null", "newline":
       let inferred =
@@ -261,13 +290,22 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       return literalValue(node, target)
     of "uninitialized": return Value(kind: ValueKind.Const, name: "undefined", `type`: if expected != nil: expected else: `Type`(kind: TypeKind.Void))
     of "name":
+      if ast.Name(node).invoke and closures.hasKey(ast.Name(node).text):
+        return expression(ast.Call(tag: "call", span: node.span,
+          callee: ast.Name(tag: "name", span: node.span,
+            text: ast.Name(node).text), args: @[]), expected)
       if slots.hasKey(ast.Name(node).text):
         let pointer = slots[ast.Name(node).text]
         let dest = fresh(pointer.type.elem)
         emit(Instruction(kind: InstrKind.Load, dest: dest, `ptr`: pointer))
+        if ast.Name(node).invoke:
+          return invokeZero(dest, arguments = ast.Name(node).invokeArgs)
         return adapt(dest, expected)
       if environment.hasKey(ast.Name(node).text):
-        return adapt(environment[ast.Name(node).text], expected)
+        let value = environment[ast.Name(node).text]
+        if ast.Name(node).invoke:
+          return invokeZero(value, arguments = ast.Name(node).invokeArgs)
+        return adapt(value, expected)
       if constants.hasKey(ast.Name(node).text):
         let name = ast.Name(node).text
         if name in pending: raise newException(ValueError, "Circular constant initializer '" & name & "'")
@@ -276,6 +314,8 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         let value = expression(eval.evaluate(declaration.value, bindings),
           if declaration.type != nil: lowerType(declaration.type, aliases) else: expected)
         pending.excl(name)
+        if ast.Name(node).invoke:
+          return invokeZero(value, arguments = ast.Name(node).invokeArgs)
         return value
       for alias in aliases.values:
         if alias.kind == TypeKind.TaggedUnion and alias.variants.hasKey(ast.Name(node).text):
@@ -286,7 +326,12 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
           emit(Instruction(kind: InstrKind.Construct, dest: dest,
             field: ast.Name(node).text, args: @[]))
           return dest
-      return Value(kind: ValueKind.Global, name: ast.Name(node).text, `type`: signatures.getOrDefault(ast.Name(node).text, `Type`(kind: TypeKind.Void)))
+      if ast.Name(node).invoke:
+        return invokeZero(Value(), ast.Name(node).text,
+          ast.Name(node).invokeArgs)
+      return Value(kind: ValueKind.Global, name: ast.Name(node).text,
+        `type`: signatures.getOrDefault(ast.Name(node).text,
+          `Type`(kind: TypeKind.Void)))
     of "group": return expression(ast.Group(node).expr, expected)
     of "sequence-value":
       let sequence = ast.Values(node)
@@ -321,6 +366,8 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       else:
         emit(Instruction(kind: InstrKind.Extract, dest: dest, val: source,
           field: ast.Field(node).field.text))
+      if node.tag == "field" and ast.Field(node).invoke:
+        return invokeZero(dest)
       return dest
     of "embed":
       let embedded = ast.Embed(node)
@@ -912,7 +959,7 @@ proc lower*(program: ast.Program; typed: Table[pointer, semantic.Type] = initTab
     for statement in unit.body.stmts:
       if statement.tag == "alias":
         let alias = ast.Alias(statement)
-        let value = lowerAlias(alias, aliases)
+        let value = lowerAlias(alias, aliases, typed)
         value.name = alias.name.text
         let placeholder = aliases[alias.name.text]
         placeholder[] = value[]

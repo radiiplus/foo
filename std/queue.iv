@@ -3,8 +3,8 @@ use sequence as items.
 public define Queue[T] as record {
   values of type sequence of T.
 }.
-public function create[T]() giving Queue[T] {
-  give Queue[T](items.create[T]()).
+public function create[T] giving Queue[T] {
+  give Queue[T](items.create[T]).
 }
 public function length[T](collection Queue[T]) giving unsigned {
   give items.length[T](collection.values).

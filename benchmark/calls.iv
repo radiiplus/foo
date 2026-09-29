@@ -10,7 +10,7 @@ function next(value unsigned) giving unsigned {
 dynamic index of type unsigned is 0.
 dynamic checksum of type unsigned is 0.
 dynamic limit of type unsigned is 10_000_000.
-when machine.cores() try greater than 0 { increase limit by 1. }
+when machine.cores try greater than 0 { increase limit by 1. }
 
 while index less than limit {
   set checksum to checksum plus next(index).

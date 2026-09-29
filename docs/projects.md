@@ -141,7 +141,7 @@ foo test test/orders.iv --filter total
 
 Selecting one file avoids compiling and running unrelated long suites.
 If the selected project, file, or filter contains no `test` block and no
-explicitly selected `start()` fixture, the command exits unsuccessfully.
+explicitly selected `start` fixture, the command exits unsuccessfully.
 
 ## Benchmarks
 

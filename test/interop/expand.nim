@@ -8,7 +8,7 @@ let root = getTempDir() / "foo-interop-expand-test"
 if dirExists(root): removeDir(root)
 createDir(root)
 writeFile(root / "foreign.h", "int increment(int value);\n")
-let source = "use c \"foreign.h\".\nstart() { give nothing. }"
+let source = "use c \"foreign.h\".\nstart { give nothing. }"
 let diag = newEngine()
 diag.setSource(source, root / "main.iv")
 let program = newParser(newLexer(source, diag).lex(), diag).parse()

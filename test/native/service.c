@@ -44,6 +44,14 @@ void verify(void) {
   assert(foo_net_listen(host, 65536).error);
   FooText invalid = {(const uint8_t *)"A\0B", 3};
   assert(foo_process_environment(invalid).error);
+  FooText process_arguments[] = {
+      {(const uint8_t *)"-e", 2},
+      {(const uint8_t *)"process.exit(9)", 15},
+  };
+  FooResult executed = foo_process_execute(
+      (FooText){(const uint8_t *)"node", 4},
+      (FooText){(const uint8_t *)process_arguments, 2});
+  assert(!executed.error && executed.number == 9);
 
   const char *path = "foo-service-read.tmp";
   FILE *file = fopen(path, "wb");
@@ -57,6 +65,48 @@ void verify(void) {
     assert(content.text.data[index] == (uint8_t)('a' + index % 26));
   assert(!foo_text_release(content.text).error);
   assert(!remove(path));
+
+  const char *draft = "foo-service-draft.tmp";
+  const char *live = "foo-service-live.tmp";
+  FooText bytes = {(const uint8_t *)"A\0B\xff", 4};
+  FooResult output = foo_fs_open(
+      (FooText){(const uint8_t *)draft, strlen(draft)},
+      (FooText){(const uint8_t *)"write", 5});
+  assert(!output.error);
+  assert(!foo_io_write(output.pointer, bytes).error);
+  assert(!foo_fs_sync(output.pointer).error);
+  assert(!foo_io_close(output.pointer).error);
+  assert(!foo_fs_replace(
+      (FooText){(const uint8_t *)draft, strlen(draft)},
+      (FooText){(const uint8_t *)live, strlen(live)}).error);
+  FooResult exists = foo_fs_exists(
+      (FooText){(const uint8_t *)live, strlen(live)});
+  assert(!exists.error && exists.number == 1);
+  FooResult kind = foo_fs_kind(
+      (FooText){(const uint8_t *)live, strlen(live)});
+  assert(!kind.error && kind.text.len == 4 &&
+         !memcmp(kind.text.data, "file", 4));
+  assert(!foo_text_release(kind.text).error);
+  FooResult working = foo_fs_working();
+  assert(!working.error && working.text.len > 0);
+  assert(!foo_text_release(working.text).error);
+  const char *copy = "foo-service-copy.tmp";
+  assert(!foo_fs_copy(
+      (FooText){(const uint8_t *)live, strlen(live)},
+      (FooText){(const uint8_t *)copy, strlen(copy)}).error);
+  assert(!foo_fs_remove(
+      (FooText){(const uint8_t *)copy, strlen(copy)}).error);
+  content = foo_fs_readbytes(
+      (FooText){(const uint8_t *)live, strlen(live)});
+  assert(!content.error && content.text.len == bytes.len);
+  assert(!memcmp(content.text.data, bytes.data, bytes.len));
+  assert(!foo_fs_releasebytes(content.text).error);
+  assert(!foo_fs_remove(
+      (FooText){(const uint8_t *)live, strlen(live)}).error);
+  exists = foo_fs_exists((FooText){(const uint8_t *)live, strlen(live)});
+  assert(!exists.error && exists.number == 0);
+  assert(foo_fs_read(
+      (FooText){(const uint8_t *)live, strlen(live)}).error);
 
   FooText haystack = {(const uint8_t *)"short searchable text", 21};
   FooText needle = {(const uint8_t *)"search", 6};

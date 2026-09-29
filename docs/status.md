@@ -28,7 +28,7 @@ This page answers a practical question: **Which familiar language features exist
 
 ### ✅ What is in FOO v1
 *   **Collections:** Typed modules for sequences, maps, sets, queues, stacks, and mutable text-keyed tables. *(Note: No collection literal syntax).*
-*   **Transformations:** `map`, `filter`, `sort`, `find`, `dedup`, iteration, and checked `at` indexing. *(Note: No operator overloading).*
+*   **Transformations:** `map`, `filter`, `sort`, `find`, `dedup`, `reverse`, `take`, `drop`, `any`, `all`, `fold`, iteration, and checked `at` indexing. *(Note: No operator overloading).*
 *   **Reusable patterns:** `Codec[T]`, `Machine[S, E]`, `Cursor[T, S]`, `Participant`, typed monotonic and calendar time, dimensional quantities, application contracts, generated property checks, and explicit pointer identity are standard-library APIs rather than new syntax.
 *   **Ownership:** Scope arenas (groups of temporary memory released together), explicit `Allocator` values, tracked borrowed views, move/retention checks, and `after` cleanup blocks.
 *   **References:** Non-null `pointer to T`. Nullability is handled via `optional pointer to T`. Raw address manipulation requires unsafe/native access.
@@ -48,7 +48,7 @@ This page answers a practical question: **Which familiar language features exist
 *   **Recoverable Errors:** Handled via `failable T`, `fail(error)`, postfix `try`, and expression-level `fallback`.
 *   **Cleanup:** `after` runs on ordinary exits; `after error` runs while a failure is propagating.
 *   **Pattern Matching:** Supports choice payloads, constants, literals, guards, `anything`, unreachable-arm checks, and strict exhaustiveness checks (proof that every case is covered).
-*   **Compile-Time:** `eval`, immutable `reflect[T]()`, and `embed("path")` run or inspect work while the program is being built.
+*   **Compile-Time:** `eval`, immutable `reflect[T]`, and `embed("path")` run or inspect work while the program is being built.
 
 ### ❌ What is NOT in FOO v1 (Do not assume these exist)
 *   Exception-based error handling.
@@ -63,7 +63,7 @@ This page answers a practical question: **Which familiar language features exist
 *   **Concurrency:** Library-based overlapping work through scoped tasks, pools, channels, OS threads, mutexes (single-worker locks), condition variables, and atomics (shared operations completed as one step).
 *   **C ABI:** The binary rules used to call C: `extern "C"`, C-layout records, callbacks, generated header bindings, dynamic libraries, and verified native contracts.
 *   **Other Languages:** Rust and other libraries are accessed via the stable C ABI.
-*   **Low-Level Access:** Typed surfaces for advanced HTTP, sockets, files, JSON, allocators, atomics, OS, native C, and assembly.
+*   **Low-Level Access:** Typed surfaces for advanced HTTP, sockets, binary-safe files, durable file publication, JSON, allocators, atomics, OS, native C, and assembly.
 
 ### ❌ What is NOT in FOO v1 (Do not assume these exist)
 *   `async` or `await` keywords.

@@ -1,7 +1,7 @@
 -- Checks machine-gated atomic, bit and register operations.
 use testing as check.
 dynamic counter of type unsigned is 43.
-start() {
+start {
   atomic add counter by 1.
   check.expect(counter is 44).
   dynamic flag of type unsigned is 0.

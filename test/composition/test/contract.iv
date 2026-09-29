@@ -2,7 +2,7 @@ use values.
 use testing as check.
 
 test "language services compose" {
-  check.same(values.answer(), 42).
+  check.same(values.answer, 42).
   display "output".
   report "diagnostic".
 }

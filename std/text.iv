@@ -7,6 +7,37 @@ public use "text" function length(content text) giving unsigned.
 public use "text" function slice(content text, first unsigned, last unsigned) giving failable text.
 public use "text" function find(content text, value text) giving optional unsigned.
 public use "text" function release(content text) giving failable nothing.
+public function starts(content text, prefix text) giving boolean {
+  when length(prefix) greater than length(content) {
+    give false.
+  }
+  dynamic index of type unsigned is 0.
+  while index less than length(prefix) {
+    when content at index is not prefix at index {
+      give false.
+    }
+    increase index by 1.
+  }
+  give true.
+}
+public function ends(content text, suffix text) giving boolean {
+  constant contentLength is length(content).
+  constant suffixLength is length(suffix).
+  when suffixLength greater than contentLength {
+    give false.
+  }
+  dynamic index of type unsigned is 0.
+  while index less than suffixLength {
+    when content at (contentLength subtract suffixLength plus index) is not suffix at index {
+      give false.
+    }
+    increase index by 1.
+  }
+  give true.
+}
+public function contains(content text, value text) giving boolean {
+  give find(content, value) is not null.
+}
 public function split(content text, separator text) giving failable sequence of text {
   constant separatorLength is length(separator).
   constant contentLength is length(content).

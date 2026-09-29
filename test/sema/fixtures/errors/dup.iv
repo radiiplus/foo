@@ -3,6 +3,6 @@
   use math.
   use math.
   
-  start() {
+  start {
     give nothing.
   }

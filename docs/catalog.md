@@ -9,13 +9,11 @@ signature reference for the installed compiler version.
 | Module | Purpose | Common operations |
 | --- | --- | --- |
 | `io` | Standard and file streams | bare console `display`/`report`; stream `input`/`output`/`report`, `read`, `line`, `write`, `close` |
-| `file` | Files, directories, and stream position | `open`, `read`, `write`, `directory`, `join`, `flush`, `seek`, `position`, `size` |
-| `path` | Low-level path inspection | `merge`, `parent`, `name`, `suffix`, `absolute` |
-| `text` | Owned text operations | `concatenate`, `trim`, `length`, `slice`, `find`, `split`, `release` |
+| `file` | Text and binary files, inspection, copying, durable publication, directories, and stream position | `open`, `read`, `write`, `readbytes`, `writebytes`, `releasebytes`, `exists`, `kind`, `copy`, `working`, `remove`, `replace`, `sync`, `seek`, `position`, `size` |
+| `text` | Owned text operations and byte-oriented predicates | `concatenate`, `trim`, `length`, `slice`, `find`, `starts`, `ends`, `contains`, `split`, `release` |
 | `json` | JSON documents and streaming | `parse`, `write`, `field`, `item`, `kind`, `size`, `set`, `append`, `stream`, `feed`, `next`, `data`, `close` |
 | `time` | Raw and typed monotonic time (measured by a clock that does not move backward) | `current`, `sleep`, `measure`, `nanos`, `millis`, `seconds`, `now`, `elapsed`, `wait` |
-| `random` | Random data | `default`, `bytes`, `number` |
-| `process` | Process and argument access | `run`, `count`, `argument`, `environment` |
+| `process` | Direct execution, shell commands, arguments, and environment | `execute`, `run`, `count`, `argument`, `environment` |
 | `system` | Host information | `cores`, `host`, `page` |
 | `log` | Application messages | `note`, `alert` |
 
@@ -25,17 +23,13 @@ The filesystem module is `file`.
 
 | Module | Storage model | Main operations |
 | --- | --- | --- |
-| `sequence` | Persistent (updates return a new value) typed sequence | `create`, `append`, `remove`, `copy`, `length`, `find`, `sort`, `filter`, `map`, `deduplicate`, `release` |
-| `map` | Persistent ordered generic key/value map | `create`, `get`, `contains`, `put`, `remove`, `length`, `release` |
+| `sequence` | Persistent (updates return a new value) typed sequence | `create`, `append`, `remove`, `copy`, `length`, `find`, `sort`, `filter`, `map`, `reverse`, `any`, `all`, `fold`, `take`, `drop`, `deduplicate`, `release` |
+| `map` | Persistent ordered generic key/value map | `create`, `get`, `contains`, `put`, `remove`, `keys`, `values`, `length`, `release` |
 | `table` | Mutable native text-keyed map | `create`, `get`, `contains`, `put`, `remove`, `length`, `close` |
 | `set` | Persistent unique values | `create`, `insert`, `contains`, `remove`, `length`, `release` |
 | `queue` | Persistent first-in/first-out values | `create`, `append`, `first`, `remove`, `length`, `release` |
 | `stack` | Persistent last-in/first-out values | `create`, `push`, `top`, `remove`, `length`, `release` |
-| `list` | Linked values | Creation, traversal, insertion, removal, and release. |
-| `deque` | Low-level double-ended queue | `create`, `front`, `back`, `shift`, `pop` |
-| `heap` | Low-level priority storage | `create`, `insert`, `extract`, `peek` |
-| `index` | Low-level text lookup | `create`, `register`, `lookup`, `known` |
-| `bits` | Mutable bit collection | `create`, `enable`, `disable`, `enabled` |
+| `list` | Mutable list of borrowed byte pointers | `create`, `push`, `get`, `length`, `close` |
 
 Prefer the persistent generic collections (collections that work with several
 types and return new values when updated) for ordinary application data. Use
@@ -55,7 +49,7 @@ The simple HTTP path chooses conservative defaults:
 ```foo
 use http as web.
 
-constant client is web.client() try.
+constant client is web.client try.
 after { web.close(client). }
 constant response is web.request(client, "https://example.com", "GET", "", 1048576) try.
 after { web.release(response). }
@@ -67,7 +61,7 @@ Advanced users can configure the same client before requesting:
 ```foo
 use http as web.
 
-constant client is web.client() try.
+constant client is web.client try.
 after { web.close(client). }
 web.attach(client, "Accept", "application/json") try.
 web.redirects(client, 2) try.
@@ -84,7 +78,6 @@ This layered API keeps common code short without hiding protocol controls.
 | `compress` | Compression with explicit format and output limits | `pack`, `unpack` |
 | `unicode` | Unicode validation and conversion | `scan`, `next`, `valid`, `points`, `wide`, `narrow`, `release` |
 | `buffer` | Release converted buffers | `free`, `words`, `points` |
-| `format` | Low-level formatted data | `format`, `parse` |
 | `codec` | Typed text conversion and generated JSON | `Codec[T]`, `encode[T]`, `decode[T]` |
 
 Cryptographic calls can fail and must use postfix `try` or a deliberate
@@ -98,8 +91,6 @@ values; use the module's key and random facilities.
 | `memory` | Allocators (objects that reserve and release memory) and owned memory | `system`, `arena`, `allocate`, `expand`, `release`, `copy`, `view`, `close`, `transfer`, `clear`, `compare`, `identical` |
 | `atomic` | Shared atomic unsigned values | `create`, `load`, `store`, `add`, `swap`, `replace`, `release` |
 | `arch` | Processor utilities | `count`, `pause`, `ticks` |
-| `dl` | Dynamic libraries | `open`, `symbol`, `unload` |
-| `env` | Low-level environment access | `variable` |
 | `stream` | Pointer-oriented byte streams | `input`, `output`, `report`, `read`, `write`, `print`, `close` |
 
 These modules are advanced surfaces. Their pointer, lifetime (how long data
@@ -112,21 +103,10 @@ platform requirements belong in the calling API's documentation.
 | --- | --- | --- |
 | `task` | Runtime-selected work and asynchronous networking (work continues while networking waits) | Executors, channels, scopes, pools, affinity, and socket operations. |
 | `thread` | Operating-system threads | `spawn`, `wait`, mutex (single-worker lock), condition, signal, pause, and close operations. |
-| `sync` | Low-level synchronization (worker coordination) records | Mutex creation, lock, and unlock; additional record types are reserved for the growing surface. |
 | `atomic` | Lock-free shared counters | Explicitly ordered atomic operations (shared changes completed as one step). |
 
 Start with tasks for independent application work. Use threads and atomics when
 an operating-system thread or shared-memory protocol is specifically required.
-
-## Platform-specific modules
-
-| Module | Platform | Examples |
-| --- | --- | --- |
-| `os.unix` | Unix-like systems | Pipes, signals, memory mapping. |
-| `os.windows` | Windows | Handles, process access, Registry, WinRT. |
-
-Importing a platform module makes the platform dependency explicit. Portable
-packages should keep that code behind a small module boundary.
 
 ## Development support
 

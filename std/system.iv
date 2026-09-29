@@ -1,4 +1,4 @@
 -- Declares host system information.
-public use "system" function cores() giving failable unsigned 32.
-public use "system" function host() giving failable text.
-public use "system" function page() giving unsigned.
+public use "system" function cores giving failable unsigned 32.
+public use "system" function host giving failable text.
+public use "system" function page giving unsigned.

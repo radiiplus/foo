@@ -124,17 +124,19 @@ proc parseType(parser: Parser): `Type` =
     discard parser.advance
     if parser.check(Kind.Ident) and parser.peek.text == "taking":
       discard parser.advance
-    else:
-      discard parser.expect(Kind.Ident, "expected 'taking'")
-    discard parser.expect(Kind.Paren, "expected '('")
     var params: seq[`Type`]
-    parser.lines()
-    while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
-      params.add(parser.parseType)
+    if parser.peek(-1).text == "taking":
+      discard parser.expect(Kind.Paren, "expected '('")
       parser.lines()
-      if not parser.match(Kind.Comma): break
-      parser.lines()
-    discard parser.expect(Kind.Close, "expected ')'")
+      if parser.check(Kind.Close):
+        parser.diagnostics.emit(Code.Syntax, token.span,
+          "Write 'function giving' for a function type with no parameters")
+      while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+        params.add(parser.parseType)
+        parser.lines()
+        if not parser.match(Kind.Comma): break
+        parser.lines()
+      discard parser.expect(Kind.Close, "expected ')'")
     if parser.check(Kind.Ident) and parser.peek.text == "giving":
       discard parser.advance
     else:
@@ -174,6 +176,10 @@ proc beginsExpression(parser: Parser; offset = 0): bool =
   parser.peek(offset).kind in [Kind.Ident, Kind.String, Kind.Int, Kind.Float,
     Kind.Char, Kind.True, Kind.False, Kind.Nothing, Kind.Null, Kind.Paren, Kind.Reflect,
     Kind.Embed, Kind.Uninitialized, Kind.Unreachable, Kind.Newline]
+
+proc beginsNamedArgument(parser: Parser): bool =
+  parser.check(Kind.Ident) and parser.peek(1).kind != Kind.Paren and
+    parser.beginsExpression(1) and parser.peek(1).text != "remainder"
 
 proc parameter(parser: Parser; allowExtended = true): Parameter =
   var variadic = false
@@ -244,6 +250,9 @@ proc primary(parser: Parser): Expression =
     var params: seq[Parameter]
     if parser.match(Kind.Paren):
       parser.lines()
+      if parser.check(Kind.Close):
+        parser.diagnostics.emit(Code.Syntax, token.span,
+          "Remove empty parentheses from a function with no parameters")
       while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
         params.add(parser.parameter())
         parser.lines()
@@ -285,8 +294,10 @@ proc primary(parser: Parser): Expression =
     discard parser.expect(Kind.Square, "expected '['")
     let valueType = parser.parseType
     discard parser.expect(Kind.Bracket, "expected ']'")
-    discard parser.expect(Kind.Paren, "expected '('")
-    discard parser.expect(Kind.Close, "expected ')'")
+    if parser.match(Kind.Paren):
+      parser.diagnostics.emit(Code.Syntax, token.span,
+        "Remove empty parentheses from a call with no arguments")
+      discard parser.expect(Kind.Close, "expected ')'")
     Reflect(tag: "reflect", span: token.span, `type`: valueType)
   of Kind.Embed:
     var valueType: `Type`
@@ -406,8 +417,7 @@ proc sentence(parser: Parser; callee: Expression): Expression =
   elif parser.beginsExpression:
     while parser.beginsExpression:
       var label = ""
-      if parser.check(Kind.Ident) and parser.peek(1).kind != Kind.Paren and
-          parser.beginsExpression(1):
+      if parser.beginsNamedArgument:
         label = parser.advance.text
       args.add(parser.expression(5))
       names.add(label)
@@ -428,13 +438,15 @@ proc postfix(parser: Parser): Expression =
   result = parser.primary
   while true:
     if parser.match(Kind.Paren):
+      if parser.check(Kind.Close):
+        parser.diagnostics.emit(Code.Syntax, result.span,
+          "Remove empty parentheses from a call with no arguments")
       var args: seq[Expression]
       var names: seq[string]
       var sawNamed = false
       while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
         var argumentName = ""
-        if parser.check(Kind.Ident) and parser.peek(1).kind != Kind.Paren and
-            parser.beginsExpression(1):
+        if parser.beginsNamedArgument:
           argumentName = parser.advance.text
           sawNamed = true
         elif sawNamed:
@@ -460,20 +472,24 @@ proc postfix(parser: Parser): Expression =
         if parser.tokens[closingPosition].kind == Kind.Square: inc depth
         elif parser.tokens[closingPosition].kind == Kind.Bracket: dec depth
         inc closingPosition
-      if depth == 0 and closingPosition < parser.tokens.len and parser.tokens[closingPosition].kind == Kind.Paren:
+      if depth == 0:
         var types: seq[`Type`]
         while not parser.check(Kind.Bracket) and not parser.check(Kind.Eof):
           types.add(parser.parseType)
           if not parser.match(Kind.Comma): break
         discard parser.expect(Kind.Bracket, "expected ']'")
-        discard parser.expect(Kind.Paren, "expected '('")
         var args: seq[Expression]
-        while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
-          args.add(parser.expression)
-          if not parser.match(Kind.Comma): break
-        let closing = parser.expect(Kind.Close, "expected ')'")
+        var ending = parser.peek(-1).span.`end`
+        if parser.match(Kind.Paren):
+          if parser.check(Kind.Close):
+            parser.diagnostics.emit(Code.Syntax, result.span,
+              "Remove empty parentheses from a call with no arguments")
+          while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+            args.add(parser.expression)
+            if not parser.match(Kind.Comma): break
+          ending = parser.expect(Kind.Close, "expected ')'").span.`end`
         result = Call(tag: "call", span: Span(start: result.span.start,
-          `end`: closing.span.`end`, line: result.span.line, col: result.span.col,
+          `end`: ending, line: result.span.line, col: result.span.col,
           file: result.span.file), callee: result, args: args, types: types)
       else:
         parser.diagnostics.emit(Code.Syntax, parser.peek.span,
@@ -706,11 +722,14 @@ proc action(parser: Parser): Action =
       types.add(parser.parseType)
       if not parser.match(Kind.Comma): break
     discard parser.expect(Kind.Bracket, "expected ']'")
-    discard parser.expect(Kind.Paren, "expected '('")
-    while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
-      args.add(parser.expression)
-      if not parser.match(Kind.Comma): break
-    discard parser.expect(Kind.Close, "expected ')'")
+    if parser.match(Kind.Paren):
+      if parser.check(Kind.Close):
+        parser.diagnostics.emit(Code.Syntax, actionName.span,
+          "Remove empty parentheses from a call with no arguments")
+      while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+        args.add(parser.expression)
+        if not parser.match(Kind.Comma): break
+      discard parser.expect(Kind.Close, "expected ')'")
     var value: Expression = Call(tag: "call", span: parser.span, callee: actionName, args: args, types: types)
     if parser.match(Kind.Try):
       value = Unary(tag: "unary", span: value.span, op: "try", operand: value)
@@ -720,10 +739,12 @@ proc action(parser: Parser): Action =
     return Action(tag: "action", span: parser.span, name: actionName, args: @[], value: value)
   elif parser.match(Kind.Paren):
     var names: seq[string]
+    if parser.check(Kind.Close):
+      parser.diagnostics.emit(Code.Syntax, actionName.span,
+        "Remove empty parentheses from a call with no arguments")
     while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
       var label = ""
-      if parser.check(Kind.Ident) and parser.peek(1).kind != Kind.Paren and
-          parser.beginsExpression(1):
+      if parser.beginsNamedArgument:
         label = parser.advance.text
       args.add(parser.expression)
       names.add(label)
@@ -748,6 +769,9 @@ proc action(parser: Parser): Action =
       args: @[], value: value)
   else:
     var value = parser.sentence(actionName)
+    if value.tag == "name" and (parser.check(Kind.Try) or
+        parser.check(Kind.Catch)):
+      value = Call(tag: "call", span: value.span, callee: value, args: @[])
     if value.tag in ["call", "unary"]:
       if parser.match(Kind.Try):
         value = Unary(tag: "unary", span: value.span, op: "try", operand: value)
@@ -771,15 +795,18 @@ proc statement(parser: Parser): Statement =
     if abiToken.text != "C": parser.diagnostics.emit(Code.Invalid, abiToken.span, "expected extern \"C\"")
     discard parser.expect(Kind.Function, "expected 'function'")
     let functionName = parser.name
-    discard parser.expect(Kind.Paren, "expected '('")
     var params: seq[Parameter]
-    parser.lines()
-    while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
-      params.add(parser.parameter(false))
+    if parser.match(Kind.Paren):
       parser.lines()
-      if not parser.match(Kind.Comma): break
-      parser.lines()
-    discard parser.expect(Kind.Close, "expected ')'")
+      if parser.check(Kind.Close):
+        parser.diagnostics.emit(Code.Syntax, functionName.span,
+          "Remove empty parentheses from a function with no parameters")
+      while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+        params.add(parser.parameter(false))
+        parser.lines()
+        if not parser.match(Kind.Comma): break
+        parser.lines()
+      discard parser.expect(Kind.Close, "expected ')'")
     parser.lines()
     if parser.peek.text == "giving": discard parser.advance
     else: discard parser.expect(Kind.Ident, "expected 'giving'")
@@ -862,18 +889,15 @@ proc statement(parser: Parser): Statement =
     var params: seq[Parameter]
     if parser.match(Kind.Paren):
       parser.lines()
+      if parser.check(Kind.Close):
+        parser.diagnostics.emit(Code.Syntax, functionName.span,
+          "Remove empty parentheses from a function with no parameters")
       while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
         params.add(parser.parameter())
         parser.lines()
         if not parser.match(Kind.Comma): break
         parser.lines()
       discard parser.expect(Kind.Close, "expected ')'")
-    else:
-      parser.lines()
-      while parser.check(Kind.Ident) and parser.peek.text != "giving":
-        params.add(parser.parameter())
-        discard parser.match(Kind.Comma)
-        parser.lines()
     parser.lines()
     var guard: Expression
     if parser.match(Kind.When):
@@ -896,7 +920,10 @@ proc statement(parser: Parser): Statement =
       attributes: attributes, guard: guard, body: body)
   of Kind.Start:
     discard parser.advance
-    discard parser.expect(Kind.Paren, "expected '('"); discard parser.expect(Kind.Close, "expected ')'")
+    if parser.match(Kind.Paren):
+      parser.diagnostics.emit(Code.Syntax, token.span,
+        "Remove empty parentheses from start")
+      discard parser.expect(Kind.Close, "expected ')'")
     Function(tag: "function", span: parser.span, public: public, name: Name(tag: "name", span: token.span, text: "start"), params: @[], attributes: attributes, body: parser.blockNode)
   of Kind.Test:
     discard parser.advance
@@ -915,15 +942,18 @@ proc statement(parser: Parser): Statement =
       discard parser.advance
       let functionName = parser.name
       let typeParams = parser.generics()
-      discard parser.expect(Kind.Paren, "expected '('")
       var params: seq[Parameter]
-      parser.lines()
-      while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
-        params.add(parser.parameter(false))
+      if parser.match(Kind.Paren):
         parser.lines()
-        if not parser.match(Kind.Comma): break
-        parser.lines()
-      discard parser.expect(Kind.Close, "expected ')'")
+        if parser.check(Kind.Close):
+          parser.diagnostics.emit(Code.Syntax, functionName.span,
+            "Remove empty parentheses from a function with no parameters")
+        while not parser.check(Kind.Close) and not parser.check(Kind.Eof):
+          params.add(parser.parameter(false))
+          parser.lines()
+          if not parser.match(Kind.Comma): break
+          parser.lines()
+        discard parser.expect(Kind.Close, "expected ')'")
       parser.lines()
       var returnType: `Type`
       if parser.check(Kind.Ident) and parser.peek.text == "giving":

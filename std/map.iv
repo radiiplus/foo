@@ -7,8 +7,8 @@ public define Entry[K, V] as record {
 public define Map[K, V] as record {
   entries of type sequence of Entry[K, V].
 }.
-public function create[K, V]() giving Map[K, V] {
-  give Map[K, V](items.create[Entry[K, V]]()).
+public function create[K, V] giving Map[K, V] {
+  give Map[K, V](items.create[Entry[K, V]]).
 }
 public function length[K, V](collection Map[K, V]) giving unsigned {
   give items.length[Entry[K, V]](collection.entries).
@@ -50,6 +50,26 @@ public function remove[K, V](collection Map[K, V], key K) giving failable Map[K,
     set index to index plus 1.
   }
   give Map[K, V](items.copy[Entry[K, V]](collection.entries) try).
+}
+public function keys[K, V](collection Map[K, V]) giving failable sequence of K {
+  dynamic result is items.sized[K](length[K, V](collection)) try.
+  after error { items.release[K](result) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  for each entry in collection.entries {
+    set result at index to entry.key.
+    increase index by 1.
+  }
+  give result.
+}
+public function values[K, V](collection Map[K, V]) giving failable sequence of V {
+  dynamic result is items.sized[V](length[K, V](collection)) try.
+  after error { items.release[V](result) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  for each entry in collection.entries {
+    set result at index to entry.value.
+    increase index by 1.
+  }
+  give result.
 }
 public function release[K, V](collection Map[K, V]) giving failable nothing {
   items.release[Entry[K, V]](collection.entries) try.

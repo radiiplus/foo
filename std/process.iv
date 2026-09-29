@@ -1,5 +1,7 @@
--- Runs shell commands and reads process arguments and environment values.
+-- Executes programs, runs shell commands, and reads arguments and environment values.
 public use "process" function run(command text) giving failable unsigned.
-public use "process" function count() giving unsigned.
+-- Executes a program directly. Each sequence item is passed as one argument.
+public use "process" function execute(program text, arguments sequence of text) giving failable unsigned.
+public use "process" function count giving unsigned.
 public use "process" function argument(index unsigned) giving failable text.
 public use "process" function environment(name text) giving failable text.

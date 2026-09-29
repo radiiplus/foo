@@ -16,13 +16,13 @@ Hello, world!
 ```
 
 `display` writes text to standard output. The final dot ends the statement. FOO
-does not require a `start()` function for ordinary top-level code.
+does not require a `start` function for ordinary top-level code.
 
-Read one line from standard input with the high-level `input()` operation. It
+Read one line from standard input with the high-level `input` operation. It
 is failable because an input stream can fail:
 
 ```foo
-constant name is input() fallback "friend".
+constant name is input fallback "friend".
 display "Hello, " plus name.
 ```
 
@@ -35,9 +35,9 @@ Use `report` for diagnostic text sent to standard error:
 report "Configuration is missing".
 ```
 
-The complete high-level console surface is `input()`, `display`, and `report`.
+The complete high-level console surface is `input`, `display`, and `report`.
 They map to standard input, standard output, and standard error respectively.
-Explicit stream code uses `io.input()`, `io.output()`, `io.report()`,
+Explicit stream code uses `io.input`, `io.output`, `io.report`,
 `io.read`, `io.line`, `io.write`, and `io.close`.
 
 ## Statements and blocks
@@ -65,15 +65,15 @@ display "Preparing report".
 display "Report ready".
 ```
 
-Use `start()` when an application benefits from an explicit entry function:
+Use `start` when an application benefits from an explicit entry function:
 
 ```foo
-start() {
+start {
   display "Service started".
 }
 ```
 
-Both forms are valid. Reaching the end of `start()` completes automatically;
+Both forms are valid. Reaching the end of `start` completes automatically;
 `give nothing.` is unnecessary.
 
 ## Comments

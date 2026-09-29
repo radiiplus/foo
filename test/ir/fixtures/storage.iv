@@ -1,6 +1,6 @@
 -- Declares shared static storage with checked updates.
 dynamic total of type unsigned is 40 plus 4.
-function next() giving unsigned {
+function next giving unsigned {
   set total to total plus 1.
   give total.
 }

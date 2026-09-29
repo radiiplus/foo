@@ -1,5 +1,5 @@
 -- Builds typed sequences and applies ordering, searching, and transformations.
-public use "sequence" function create[T]() giving sequence of T.
+public use "sequence" function create[T] giving sequence of T.
 public use "sequence" function append[T](items sequence of T, value T) giving failable sequence of T.
 public use "sequence" function remove[T](items sequence of T, index unsigned) giving failable sequence of T.
 public use "sequence" function copy[T](items sequence of T) giving failable sequence of T.
@@ -59,6 +59,59 @@ public function map[T, U](items sequence of T, transform function taking (T) giv
   for each item in items {
     set result at index to transform(item).
     set index to index plus 1.
+  }
+  give result.
+}
+public function reverse[T](items sequence of T) giving failable sequence of T {
+  constant count is length[T](items).
+  dynamic result is sized[T](count) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than count {
+    set result at index to items at (count subtract index subtract 1).
+    increase index by 1.
+  }
+  give result.
+}
+public function any[T](items sequence of T, predicate function taking (T) giving boolean) giving boolean {
+  for each item in items {
+    when predicate(item) { give true. }
+  }
+  give false.
+}
+public function all[T](items sequence of T, predicate function taking (T) giving boolean) giving boolean {
+  for each item in items {
+    when not predicate(item) { give false. }
+  }
+  give true.
+}
+public function fold[T, U](items sequence of T, initial U, combine function taking (U, T) giving U) giving U {
+  dynamic result is initial.
+  for each item in items {
+    set result to combine(result, item).
+  }
+  give result.
+}
+public function take[T](items sequence of T, count unsigned) giving failable sequence of T {
+  when count greater than length[T](items) { give fail(Error.Bounds). }
+  dynamic result is sized[T](count) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than count {
+    set result at index to items at index.
+    increase index by 1.
+  }
+  give result.
+}
+public function drop[T](items sequence of T, count unsigned) giving failable sequence of T {
+  when count greater than length[T](items) { give fail(Error.Bounds). }
+  constant remaining is length[T](items) subtract count.
+  dynamic result is sized[T](remaining) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than remaining {
+    set result at index to items at (count plus index).
+    increase index by 1.
   }
   give result.
 }

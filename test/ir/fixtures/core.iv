@@ -26,11 +26,11 @@ function finish(flag boolean) giving integer {
   }
   give value.
 }
-function local() giving failable nothing {
+function local giving failable nothing {
   constant bytes is allocate 44 try.
   give nothing.
 }
-function escape() {
+function escape {
   native { operation(); }
   give nothing.
 }

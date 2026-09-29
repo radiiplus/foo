@@ -4,8 +4,8 @@ import ../../src/build/files
 let root = getTempDir() / "foo-build-files-test"
 if dirExists(root): removeDir(root)
 createDir(root / "src" / "nested")
-write(root / "src" / "main.iv", "start() {}")
-write(root / "src" / "nested" / "helper.iv", "function helper() {}")
+write(root / "src" / "main.iv", "start {}")
+write(root / "src" / "nested" / "helper.iv", "function helper {}")
 write(root / "src" / "skip.txt", "ignored")
 createDir(root / ".artifacts")
 write(root / ".artifacts" / "generated.iv", "ignored")

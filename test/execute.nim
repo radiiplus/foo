@@ -5,8 +5,8 @@ let root = getTempDir() / "foo-test-execute"
 if dirExists(root): removeDir(root)
 createDir(root)
 createDir(root / "test")
-writeFile(root / "test" / "suite.iv", "extern \"C\" function verify() giving nothing.\n" &
-  "test \"addition\" { verify(). }\n")
+writeFile(root / "test" / "suite.iv", "extern \"C\" function verify giving nothing.\n" &
+  "test \"addition\" { verify. }\n")
 writeFile(root / "working-directory.marker", "project root\n")
 writeFile(root / "verify.c", """
 #include <stdio.h>

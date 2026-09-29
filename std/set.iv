@@ -3,8 +3,8 @@ use sequence as items.
 public define Set[T] as record {
   values of type sequence of T.
 }.
-public function create[T]() giving Set[T] {
-  give Set[T](items.create[T]()).
+public function create[T] giving Set[T] {
+  give Set[T](items.create[T]).
 }
 public function length[T](collection Set[T]) giving unsigned {
   give items.length[T](collection.values).

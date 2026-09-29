@@ -24,16 +24,16 @@ function sample(index unsigned) giving unsigned {
 function positive(value unsigned) giving boolean {
   give value is greater than 0.
 }
-function prepare() giving failable nothing {
+function prepare giving failable nothing {
   give nothing.
 }
-function commit() giving failable nothing {
+function commit giving failable nothing {
   give nothing.
 }
-function rollback() giving nothing {
+function rollback giving nothing {
   give nothing.
 }
-function work() giving failable nothing {
+function work giving failable nothing {
   give nothing.
 }
 define Step as choice {
@@ -54,7 +54,7 @@ function next(index unsigned) giving Step {
   }
   give done.
 }
-function finish() giving Outcome[unsigned] {
+function finish giving Outcome[unsigned] {
   give ended.
 }
 function proceed(index unsigned) giving failable cursors.Step[unsigned, unsigned] {
@@ -73,7 +73,7 @@ test "library abstractions compose" {
       check.expect(false).
     }
   }
-  match finish() {
+  match finish {
     case picked(value) {
       check.expect(false).
     }

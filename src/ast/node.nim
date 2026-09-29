@@ -36,6 +36,8 @@ type
   NewlineExpr* = ref object of Node
   Name* = ref object of Node
     text*: string
+    invoke*: bool
+    invokeArgs*: seq[Expression]
   Call* = ref object of Node
     callee*: Expression
     args*: seq[Expression]
@@ -73,6 +75,7 @@ type
   Field* = ref object of Node
     `object`*: Expression
     field*: Name
+    invoke*: bool
   Index* = ref object of Node
     `object`*: Expression
     index*: Expression

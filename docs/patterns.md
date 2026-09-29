@@ -79,9 +79,9 @@ duration.
 use time as clock.
 
 constant delay is clock.millis(250).
-constant first is clock.now() try.
+constant first is clock.now try.
 clock.wait(delay) try.
-constant last is clock.now() try.
+constant last is clock.now try.
 constant elapsed is clock.elapsed(first, last).
 
 when elapsed.nanoseconds greater than 0 { display "The clock advanced". }
@@ -212,15 +212,15 @@ operations it is allowed to call.
 
 ```foo
 define Clock as record {
-  current of type function taking () giving unsigned.
+  current of type function giving unsigned.
 }.
 
-function fixed() giving unsigned {
+function fixed giving unsigned {
   give 42.
 }
 
 function stamp(clock Clock) giving unsigned {
-  give clock.current().
+  give clock.current.
 }
 
 constant clock is Clock(fixed).
@@ -240,22 +240,22 @@ before performing the work.
 
 ```foo
 define Transaction as record {
-  prepare of type function taking () giving failable nothing.
-  commit of type function taking () giving failable nothing.
-  rollback of type function taking () giving nothing.
+  prepare of type function giving failable nothing.
+  commit of type function giving failable nothing.
+  rollback of type function giving nothing.
 }.
 
 function execute(
     participant Transaction,
-    work function taking () giving failable nothing
+    work function giving failable nothing
 ) giving failable nothing {
-  constant prepare is participant.prepare.
-  constant commit is participant.commit.
-  constant rollback is participant.rollback.
-  prepare() try.
-  after error { rollback(). }
-  work() try.
-  commit() try.
+  constant prepare of type function giving failable nothing is participant.prepare.
+  constant commit of type function giving failable nothing is participant.commit.
+  constant rollback of type function giving nothing is participant.rollback.
+  prepare try.
+  after error { rollback. }
+  work try.
+  commit try.
 }
 ```
 
@@ -310,7 +310,7 @@ question explicit:
 ```foo
 use memory as memory.
 
-constant allocator is memory.system().
+constant allocator is memory.system.
 constant buffer is memory.allocate(allocator, 16) try.
 after { memory.release(allocator, buffer) fallback nothing. }
 

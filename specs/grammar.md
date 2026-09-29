@@ -33,7 +33,7 @@ breaks.
 A decimal literal consumes its fractional dot before punctuation is considered.
 Otherwise a dot immediately followed by an identifier with no intervening
 whitespace is a MEMBER token. Every other dot is a STOP token. Thus
-`account.name` selects a member and `give account. next().` has two statements.
+`account.name` selects a member and `give account. next.` has two statements.
 A dot followed by a reserved word is not a member selector.
 
 The names `text` and `sequence` are contextual library identifiers outside type positions. Sentence calls are contextual as well: their linking words do not introduce additional reserved identifiers. Parenthesized arguments and bracketed type arguments retain their existing meaning.
@@ -43,9 +43,9 @@ The names `text` and `sequence` are contextual library identifiers outside type 
 | copy source into destination | transfer(source, destination) |
 | compare left with right | compare(left, right) |
 | clear buffer; display content; trim content; sort items | the named function with one argument |
-| length of content; current time | length(content); current() |
+| length of content; current time | length(content); current |
 | read line from stream | line(stream) |
-| read line | line(input()) |
+| read line | line(input) |
 | read file path; open file path | read(path); open(path, "read") |
 | write file path with content | write(path, content) |
 | create directory path | directory(path) |
@@ -84,11 +84,11 @@ Top          = [ "public" ], ( Import | Definition )
              | Entry | Test | Eval | Native | Statement ;
 Definition   = Function | Constant | Dynamic | Alias | Foreign | NativeFunction ;
 Import       = "use", ( IDENT | TEXT ), [ "as", IDENT ], STOP | "use", "c", TEXT, STOP ;
-Entry        = "start", "(", ")", Block ;
+Entry        = "start", Block ;
 Test         = "test", TEXT, Block ;
 Eval         = "eval", "{", { Constant | Alias }, "}" ;
 
-Function     = "function", IDENT, [ Parameters ], "(", [ Formals ], ")",
+Function     = "function", IDENT, [ Parameters ], [ "(", Formals, ")" ],
                [ FunctionResult ], [ Bounds ], Block ;
 Parameters   = "[", IDENT, { ",", IDENT }, "]" ;
 Formals      = Formal, { ",", Formal } ;
@@ -97,11 +97,11 @@ FunctionResult = "giving", Type ;
 Annotation   = "of", "type", Type ;
 Bounds       = "where", Bound, { ",", Bound } ;
 Bound        = IDENT, "is", Name ;
-Foreign      = "extern", TEXT, "function", IDENT, "(", [ Formals ], ")",
+Foreign      = "extern", TEXT, "function", IDENT, [ "(", Formals, ")" ],
                FunctionResult, ( STOP | Block ) ;
 Native       = "native", [ "c" | "asm" ], NATIVE ;
 NativeFunction = "native", [ "c" | "asm" ], "function", IDENT,
-                 "(", [ Formals ], ")", [ FunctionResult ], NATIVE ;
+                 [ "(", Formals, ")" ], [ FunctionResult ], NATIVE ;
 Constant     = "constant", IDENT, [ Annotation ], "is", Expr, STOP ;
 Destructure  = "constant", Name, "(", IDENT, { ",", IDENT }, ")",
                "is", Expr, STOP ;
@@ -120,7 +120,7 @@ Type         = Primitive | Name, [ ArgumentsType ]
              | "pointer", "to", Type
              | "sequence", "of", Type
              | "failable", Type | "optional", Type
-             | "function", "taking", "(", [ Types ], ")", "giving", Type
+             | "function", [ "taking", "(", Types, ")" ], "giving", Type
              | "vector", "[", INT, ",", Type, "]" ;
 Primitive    = "integer", [ INT ] | "unsigned", [ INT ]
              | "decimal", [ INT ] | "text" | "boolean"
@@ -163,18 +163,18 @@ Sum          = Product, { ( "plus" | "subtract" ), Product } ;
 Product      = Prefix, { ( "multiply" | "divide" | "remainder" ), Prefix } ;
 Prefix       = "allocate", Atom, [ "using", Atom ], { "try" } | Postfix ;
 Postfix      = Atom, { Call | MEMBER, IDENT, [ ArgumentsType ] | "at", Atom }, { "try" } ;
-Call         = "(", [ Values ], ")" ;
+Call         = "(", Values, ")" ;
 Values       = Expr, { ",", Expr } ;
 Atom         = IDENT, [ ArgumentsType ] | Literal | "(", Expr, ")"
              | "newline" | "uninitialized" | "unreachable" | System
-             | "reflect", "[", Type, "]", "(", ")"
+             | "reflect", "[", Type, "]"
              | "embed", "(", TEXT, ")" ;
 Literal      = INT | DECIMAL | TEXT | CHAR | "true" | "false" | "nothing"
              | "null" ;
 ```
 
-A file contains at most one `start()`. Executable top-level statements are
-collected into an implicit entry when `start()` is absent. A project selects
+A file contains at most one `start`. Executable top-level statements are
+collected into an implicit entry when `start` is absent. A project selects
 `src/main.iv` by default unless its manifest or product chooses another entry.
 The entry result is `failable nothing`.
 Test bodies have the same result type. Reaching the end of a unit-returning
@@ -211,13 +211,16 @@ Comparisons do not chain: `a less than b less than c` is invalid.
 initializer expression, so `constant ready is not busy.` is unambiguous.
 
 Operands and arguments evaluate left to right. `and` and `or` short-circuit;
-fallback evaluates its alternative only on failure. Use `read() try` to
-propagate read's error, or `read() fallback value` to recover locally.
+fallback evaluates its alternative only on failure. Use `read try` to
+propagate read's error, or `read fallback value` to recover locally.
 Try applied to a non-failable value and fallback applied to a non-failable value are
 type errors, not alternate interpretations.
 
-Calls always use parentheses, including zero-argument calls. A name followed by
-type arguments denotes a specialization: `sort[integer](items)`.
+Calls with arguments use parentheses. A bare name whose type is a
+zero-parameter function invokes it unless the surrounding expected type is a
+function. Empty parentheses are invalid. A name followed by type arguments
+denotes a specialization: `sort[integer](items)` or the zero-argument
+`create[integer]`.
 Type names used as calls construct records positionally in field order; choice
 payload constructors use qualified variant names.
 
@@ -244,8 +247,8 @@ pattern uses its name alone, without empty parentheses.
 | `rows at i at j` | `(rows at i) at j` |
 | `rows at i.name` | `(rows at i).name` |
 | `a fallback b fallback c` | `a fallback (b fallback c)` |
-| `read() try` | Propagate failure from `read()` |
-| `allocate (size()) using owner` | One allocation with an explicit owner |
+| `read try` | Propagate failure from `read` |
+| `allocate (size) using owner` | One allocation with an explicit owner |
 
 ## Declaration scope
 
@@ -287,7 +290,7 @@ function sort[T](items sequence of T)
   give nothing.
 }
 
-start() {
+start {
   dynamic count is 0.
   while count less than 4 {
     set count to count plus 1.

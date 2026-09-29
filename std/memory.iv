@@ -1,7 +1,7 @@
 -- Declares owned allocations and grouped arena lifetimes.
 public define Allocator as opaque.
-public use "memory" function system() giving pointer to Allocator.
-public use "memory" function arena() giving failable pointer to Allocator.
+public use "memory" function system giving pointer to Allocator.
+public use "memory" function arena giving failable pointer to Allocator.
 public use "memory" function allocate(allocator pointer to Allocator, size unsigned) giving failable pointer to byte.
 public use "memory" function release(allocator pointer to Allocator, buffer pointer to byte) giving failable nothing.
 public use "memory" function expand(allocator pointer to Allocator, buffer pointer to byte, size unsigned) giving failable pointer to byte.

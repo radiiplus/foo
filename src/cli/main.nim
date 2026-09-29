@@ -397,7 +397,7 @@ proc main*(input: seq[string]): int =
         activeOperation = nil
         if empty:
           raise newException(ValueError,
-            "No tests found. Add a test \"description\" { ... } block or select a fixture with start().")
+            "No tests found. Add a test \"description\" { ... } block or select a fixture with start.")
         if failed > 0:
           raise newException(ValueError, "One or more tests failed")
       if watching: watch(root, executeTests) else: executeTests()

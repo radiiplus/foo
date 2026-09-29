@@ -117,7 +117,7 @@ runtime representation, and package behavior would duplicate those values.
 ```foo
 use sequence.
 
-constant items is sequence.append[text](sequence.create[text](), "value") try.
+constant items is sequence.append[text](sequence.create[text], "value") try.
 after { sequence.release[text](items) fallback nothing. }
 
 for each item in items {
@@ -143,7 +143,7 @@ uses another project module:
 
 <!-- snippet: project account src/account.iv -->
 ```foo
-public function active() giving boolean { give true. }
+public function active giving boolean { give true. }
 ```
 
 <!-- snippet: project account src/main.iv -->
@@ -151,7 +151,7 @@ public function active() giving boolean { give true. }
 use http as web.
 use "account.iv" as account.
 
-when account.active() { display "Active". }
+when account.active { display "Active". }
 ```
 
 Circular imports, unresolved modules, and colliding imported names are compile
@@ -210,13 +210,13 @@ define Outcome[T] as choice {
   ended.
 }.
 
-function finish() giving Outcome[unsigned] {
+function finish giving Outcome[unsigned] {
   give ended.
 }
 ```
 
 Without an expected type, supply the type argument and call the zero-argument
-constructor: `constant result is ended[unsigned]().`
+constructor: `constant result is ended[unsigned].`
 
 When a choice comes from an aliased module, use the alias consistently in both
 construction and matching: `model.picked(value)` and `case model.picked(value)`.
@@ -287,7 +287,8 @@ garbage-collected references.
 `unsafe` isolates operations the checker cannot prove safe. Target-specific
 code belongs behind a verified native contract, while external functions state
 their ABI.
-Shared-library loading lives in `dl`; operating-system APIs live in `os`.
+Shared-library and operating-system bindings are packages built on explicit
+foreign declarations; the standard library does not expose placeholder handles.
 
 ```foo
 extern "C" function add(left integer, right integer) giving integer.
@@ -338,11 +339,11 @@ deterministic.
 `fallback` chains can express ordered recovery:
 
 ```foo
-function primary() giving failable text { give "primary". }
-function secondary() giving failable text { give "secondary". }
+function primary giving failable text { give "primary". }
+function secondary giving failable text { give "secondary". }
 
 constant offline is "offline".
-constant connection is primary() fallback secondary() fallback offline.
+constant connection is primary fallback secondary fallback offline.
 ```
 
 The `transaction` module defines a `Participant` containing prepare, commit,
@@ -421,7 +422,7 @@ time` is not accepted syntax.
 
 ### Documentation and reflection (Current boundary)
 
-Source comments feed the published API index and editor tooling. `reflect[T]()`
+Source comments feed the published API index and editor tooling. `reflect[T]`
 provides immutable type information and `eval` performs supported compile-time
 work. Checked build tasks may generate ordinary FOO source before compilation.
 FOO does not provide syntax macros, compiler plugins, or a `describe` block;

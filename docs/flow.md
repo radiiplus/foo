@@ -101,7 +101,7 @@ use sequence as items.
 
 function process(item integer) {}
 
-constant values is items.create[integer]().
+constant values is items.create[integer].
 after { items.release[integer](values) fallback nothing. }
 
 for each item in values {

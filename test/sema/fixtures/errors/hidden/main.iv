@@ -2,7 +2,7 @@
 
   use secret.
   
-  start() {
+  start {
     constant x is hiddenvalue.
     give nothing.
   }

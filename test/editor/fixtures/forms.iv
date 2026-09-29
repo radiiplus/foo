@@ -1,12 +1,12 @@
 -- Ordinary comment containing "quotes" and declarations
 --- Regular block
-function ignored() {}
+function ignored {}
 ---
 --! Documentation for a declaration.
 ---! Documentation across lines.
 constant ignored is 10.
 ---
-start() {
+start {
   function identity[T](value T) giving T where T is Equatable {
     give value.
   }
@@ -23,7 +23,7 @@ start() {
   define Data as union { number of type integer. }.
   define Handle as opaque.
   public use "crypto" function hash(value text) giving failable text.
-  extern "C" function header() giving nothing.
+  extern "C" function header giving nothing.
   use sample as other.
   #[start]
   #[interrupt]

@@ -18,7 +18,7 @@ native c {
   #include <stdio.h>
   int answer(void) { return 44; }
 }
-extern "C" function answer() giving integer 32.
+extern "C" function answer giving integer 32.
 ```
 
 A named native function binds only its declared parameters and result:

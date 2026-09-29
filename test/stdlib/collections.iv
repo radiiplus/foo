@@ -16,14 +16,17 @@ function positive(value integer) giving boolean {
 function negative(value integer) giving boolean {
   give value is less than 0.
 }
+function add(left integer, right integer) giving integer {
+  give left plus right.
+}
 define Person as record {
   name of type text.
   age of type integer.
 } derives Equatable, Ord.
-start() {
+start {
   constant missing of type optional integer is null.
   check.expect(missing is null).
-  constant empty is sequence.create[integer]().
+  constant empty is sequence.create[integer].
   constant first is sequence.append[integer](empty, 4) try.
   constant second is sequence.append[integer](first, 2) try.
   constant repeated is sequence.append[integer](second, 4) try.
@@ -40,7 +43,21 @@ start() {
   check.expect(second at 0 is 4).
   check.expect(sequence.find[integer](sorted, 4) is not null).
   check.expect(sequence.length[integer](deduplicated) is 2).
-  dynamic growing is sequence.create[integer]().
+  constant reversed is sequence.reverse[integer](second) try.
+  constant taken is sequence.take[integer](second, 1) try.
+  constant dropped is sequence.drop[integer](second, 1) try.
+  after {
+    sequence.release[integer](reversed) fallback nothing.
+    sequence.release[integer](taken) fallback nothing.
+    sequence.release[integer](dropped) fallback nothing.
+  }
+  check.expect(reversed at 0 is 2).
+  check.expect(taken at 0 is 4).
+  check.expect(dropped at 0 is 2).
+  check.expect(sequence.any[integer](second, positive)).
+  check.expect(sequence.all[integer](second, positive)).
+  check.expect(sequence.fold[integer, integer](second, 0, add) is 6).
+  dynamic growing is sequence.create[integer].
   dynamic number is 0.
   while number is less than 12 {
     set growing to sequence.append[integer](growing, number) try.
@@ -69,7 +86,7 @@ start() {
   }
   check.expect(filtered at 1 is 8).
   check.expect(sequence.length[integer](rejected) is 0).
-  constant table is mapping.create[text, integer]().
+  constant table is mapping.create[text, integer].
   constant entry is mapping.put[text, integer](table, "answer", 44) try.
   constant replaced is mapping.put[text, integer](entry, "answer", 42) try.
   after {
@@ -79,7 +96,15 @@ start() {
   check.expect((mapping.get[text, integer](entry, "answer") try) is 44).
   check.expect((mapping.get[text, integer](replaced, "answer") try) is 42).
   check.expect(mapping.length[text, integer](replaced) is 1).
-  constant cache is fast.create[integer]() try.
+  constant keys is mapping.keys[text, integer](replaced) try.
+  constant values is mapping.values[text, integer](replaced) try.
+  after {
+    sequence.release[text](keys) fallback nothing.
+    sequence.release[integer](values) fallback nothing.
+  }
+  check.same(keys at 0, "answer").
+  check.expect(values at 0 is 42).
+  constant cache is fast.create[integer] try.
   after {
     fast.close[integer](cache) fallback nothing.
   }
@@ -90,7 +115,7 @@ start() {
   check.expect(fast.contains[integer](cache, "answer") try).
   check.expect(fast.remove[integer](cache, "answer") try).
   check.expect((fast.length[integer](cache) try) is 0).
-  constant set is unique.create[integer]().
+  constant set is unique.create[integer].
   constant member is unique.insert[integer](set, 44) try.
   constant duplicate is unique.insert[integer](member, 44) try.
   after {
@@ -98,19 +123,19 @@ start() {
     unique.release[integer](duplicate) fallback nothing.
   }
   check.expect(unique.length[integer](duplicate) is 1).
-  constant line is queue.create[integer]().
+  constant line is queue.create[integer].
   constant front is queue.append[integer](line, 44) try.
   after {
     queue.release[integer](front) fallback nothing.
   }
   check.expect((queue.first[integer](front) try) is 44).
-  constant pile is stack.create[text]().
+  constant pile is stack.create[text].
   constant top is stack.push[text](pile, "FOO") try.
   after {
     stack.release[text](top) fallback nothing.
   }
   check.same(stack.top[text](top) try, "FOO").
-  constant people is unique.create[Person]().
+  constant people is unique.create[Person].
   constant person is unique.insert[Person](people, Person("Ada", 44)) try.
   after {
     unique.release[Person](person) fallback nothing.
@@ -142,7 +167,7 @@ start() {
   }
   check.same(stack.top[text](peak) try, "IV").
   check.same(stack.top[text](lower) try, "FOO").
-  constant records is sequence.create[Person]().
+  constant records is sequence.create[Person].
   constant older is sequence.append(records, Person("Ada", 44)) try.
   constant younger is sequence.append(older, Person("Ada", 43)) try.
   constant ordered is sequence.sort(younger) try.

@@ -25,6 +25,6 @@ The full rules are in [grammar](grammar.md), [types](types.md), and
 [native interfaces](native.md).
 
 Import aliases preserve a meaningful distinction: an aliased import exposes
-only qualified member access. `display value.`, `input()`, and `report value.`
+only qualified member access. `display value.`, `input`, and `report value.`
 are intentional high-level I/O forms; ordinary function calls use
 parentheses.

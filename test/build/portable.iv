@@ -10,25 +10,25 @@ use buffer as memory.
 function twice(value unsigned) giving unsigned {
   give value multiply 2.
 }
-function line() giving text {
+function line giving text {
   give newline.
 }
 function greeting(value text) giving text {
   give value plus newline plus "World".
 }
-function recover() giving text {
+function recover giving text {
   give zip.unpack("bad", "gzip", 8) fallback "recovered".
 }
-function digest() giving failable text {
+function digest giving failable text {
   give secret.hash("abc").
 }
-function fail() giving text {
+function fail giving text {
   check.expect(false).
   give "bad".
 }
-start() {
+start {
   check.same(newline, newline).
-  check.same(line(), newline).
+  check.same(line, newline).
   check.same("Hello" plus newline plus "World", ("Hello" plus newline plus "World")).
   check.same(greeting("Hello"), ("Hello" plus newline plus "World")).
   check.same("" plus newline plus newline plus "λ\0", (newline plus newline plus "λ\0")).
@@ -37,8 +37,8 @@ start() {
   constant right of type vector[4, decimal] is splat(3.0).
   constant result is reduce(left multiply right, "add").
   check.real(result, 24.0).
-  check.same(digest() try, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad").
-  check.same(secret.hash("abc") fallback fail(), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad").
+  check.same(digest try, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad").
+  check.same(secret.hash("abc") fallback fail, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad").
   constant key is "01234567890123456789012345678901".
   constant nonce is "012345678901234567890123".
   constant encrypted is secret.seal("hello", key, nonce, "context") try.
@@ -58,7 +58,7 @@ start() {
   check.same(zip.unpack(encoded, "gzip", 3) fallback "limited", "limited").
   constant zlib is zip.pack("zlib", "zlib") try.
   check.same(zip.unpack(zlib, "zlib", 4) try, "zlib").
-  check.same(recover(), "recovered").
+  check.same(recover, "recovered").
   check.expect(letters.valid("aé😀")).
   constant units is letters.wide("aé😀") try.
   check.same(letters.narrow(units) try, "aé😀").
@@ -90,7 +90,7 @@ start() {
   check.same(data.item(items, 0) try, "123456789012345678901234567890").
   check.same(data.write(items) try, "[123456789012345678901234567890]").
   check.same(data.item(items, 9) fallback "missing", "missing").
-  constant stream is data.stream() try.
+  constant stream is data.stream try.
   after {
     data.close(stream).
   }
@@ -114,8 +114,8 @@ start() {
   check.number(atom.load(counter, "acquire") try, 9).
   check.expect(atom.replace(counter, 9, 42, "both") try).
   check.number(atom.swap(counter, 0, "sequential") try, 42).
-  check.positive(machine.page()).
-  constant hostname is machine.host() try.
+  check.positive(machine.page).
+  constant hostname is machine.host try.
   check.expect(letters.valid(hostname)).
   give nothing.
 }

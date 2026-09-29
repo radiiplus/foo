@@ -3,7 +3,7 @@ public define Client as opaque.
 public define Response as opaque.
 public define Server as opaque.
 public define Peer as opaque.
-public use "http" function client() giving failable pointer to Client.
+public use "http" function client giving failable pointer to Client.
 public use "http" function trust(value pointer to Client, certificate text) giving failable nothing.
 -- Advanced client controls. Attached headers persist until clear is called.
 public use "http" function attach(value pointer to Client, name text, content text) giving failable nothing.

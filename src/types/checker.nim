@@ -49,7 +49,7 @@ proc newChecker*(diag: Engine): Checker =
 
 proc annotation(checker: Checker; node: ast.`Type`): semantic.Type
 proc infer(checker: Checker; node: ast.Expression; environment: Environment;
-    expected: semantic.Type = nil): semantic.Type
+    expected: semantic.Type = nil; preserveFunction = false): semantic.Type
 proc statement(checker: Checker; node: ast.Statement; environment: Environment)
 
 proc remember(checker: Checker; node: ast.Node; value: semantic.Type): semantic.Type =
@@ -352,7 +352,8 @@ proc clone(node: ast.Expression;
   of "name":
     let value = ast.Name(node)
     if replacements.hasKey(value.text): return replacements[value.text]
-    ast.Name(tag: "name", span: node.span, text: value.text)
+    ast.Name(tag: "name", span: node.span, text: value.text,
+      invoke: value.invoke, invokeArgs: value.invokeArgs)
   of "integer": ast.Integer(tag: "integer", span: node.span, value: ast.Integer(node).value)
   of "decimal": ast.Decimal(tag: "decimal", span: node.span, value: ast.Decimal(node).value)
   of "text": ast.Text(tag: "text", span: node.span, value: ast.Text(node).value)
@@ -547,7 +548,8 @@ proc select(checker: Checker; call: ast.Call; environment: Environment):
   let name = ast.Name(call.callee).text
   if not checker.functions.hasKey(name): return nil
   var actual: seq[semantic.Type]
-  for argument in call.args: actual.add(checker.infer(argument, environment))
+  for argument in call.args:
+    actual.add(checker.infer(argument, environment, preserveFunction = true))
   var rank = low(int)
   var best: seq[ast.Function]
   for declaration in checker.functions[name]:
@@ -742,7 +744,7 @@ proc vector(checker: Checker; name: string; args: seq[ast.Expression];
   input.elem
 
 proc infer(checker: Checker; node: ast.Expression; environment: Environment;
-    expected: semantic.Type = nil): semantic.Type =
+    expected: semantic.Type = nil; preserveFunction = false): semantic.Type =
   if node == nil: return unknown()
   case node.tag
   of "integer":
@@ -764,7 +766,10 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
   of "newline": result = primitive("text")
   of "broken": result = unknown()
   of "name":
-    let name = ast.Name(node).text
+    let item = ast.Name(node)
+    let name = item.text
+    item.invoke = false
+    item.invokeArgs = @[]
     result = environment.lookup(name)
     if result == nil:
       checker.diag.emit(Code.Missing, node.span, "undefined symbol '" & name & "'")
@@ -784,6 +789,30 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
           replacements[argument.name] = expected.arguments[index]
       if result.generics.allIt(replacements.hasKey(it)):
         result = substitute(result.ret, replacements)
+        item.invoke = true
+    elif result.kind == "function" and
+        (result.params.len == 0 or
+          (result.defaults.len == result.params.len and
+            result.defaults.allIt(it)) or result.variadic) and
+        not preserveFunction and (expected == nil or expected.kind != "function"):
+      if result.generics.len > 0:
+        checker.diag.emit(Code.TypeMismatch, node.span,
+          "Cannot infer generic type arguments for '" & name & "'")
+        checker.diag.suggestion("Supply type arguments after the name, for example '" & name & "[Type]'")
+        result = unknown()
+      else:
+        if checker.functions.hasKey(name):
+          let implicit = ast.Call(tag: "call", span: node.span,
+            callee: ast.Name(tag: "name", span: node.span, text: name),
+            args: @[])
+          let selected = checker.select(implicit, environment)
+          if selected != nil:
+            checker.normalize(implicit, selected)
+            item.text = selected.name.text
+            item.invokeArgs = implicit.args
+            result = checker.signature(selected)
+        result = result.ret
+        item.invoke = true
   of "call":
     let call = ast.Call(node)
     for argument in call.args:
@@ -821,7 +850,8 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
       for index, argument in call.args:
         discard checker.infer(argument, environment, if index < fields.len: fields[index] else: nil)
     else:
-      var callee = checker.infer(call.callee, environment)
+      var callee = checker.infer(call.callee, environment,
+        preserveFunction = true)
       if callee.kind != "function":
         checker.diag.emit(Code.Invalid, call.callee.span, "cannot call non-function type")
         checker.diag.note(call.callee.span, "found type: " & typeToString(callee))
@@ -854,7 +884,9 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
                 if index < actual.params.len: bindGeneric(parameter, actual.params[index])
               bindGeneric(pattern.ret, actual.ret)
           for index, argument in call.args:
-            if index < callee.params.len: bindGeneric(callee.params[index], checker.infer(argument, environment))
+            if index < callee.params.len:
+              bindGeneric(callee.params[index], checker.infer(argument,
+                environment, preserveFunction = true))
           for name in callee.generics:
             if not replacements.hasKey(name):
               checker.diag.emit(Code.TypeMismatch, node.span, "Cannot infer '" & name & "'; supply its type argument")
@@ -977,6 +1009,7 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
   of "group": result = checker.infer(ast.Group(node).expr, environment, expected)
   of "field":
     let field = ast.Field(node)
+    field.invoke = false
     if field.object.tag == "name" and ast.Name(field.object).text == "Error" and
         checker.typeDefs.hasKey("Error") and environment.lookup("Error") == nil:
       result = checker.typeDefs["Error"]
@@ -994,7 +1027,13 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
         discard checker.remember(node, result)
         return result
     let owner = checker.infer(field.object, environment)
-    if owner.kind == "record" and owner.fields.hasKey(field.field.text): result = owner.fields[field.field.text]
+    if owner.kind == "record" and owner.fields.hasKey(field.field.text):
+      result = owner.fields[field.field.text]
+      if result.kind == "function" and result.params.len == 0 and
+          not preserveFunction and
+          (expected == nil or expected.kind != "function"):
+        result = result.ret
+        field.invoke = true
     else:
       checker.diag.emit(Code.Missing, field.field.span, "record has no field '" & field.field.text & "'")
       result = unknown()
@@ -1032,7 +1071,7 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
         if canCoerce(owner, allocator).ok: valid = true
       if not valid:
         checker.diag.emit(Code.TypeMismatch, allocation.owner.span,
-          "Allocation needs an Allocator value or an allocator obtained from memory.system() or memory.arena()")
+          "Allocation needs an Allocator value or an allocator obtained from memory.system or memory.arena")
     result = semantic.Type(kind: "error", elem: semantic.Type(kind: "sequence", elem: primitive("byte")))
   of "machine": result = checker.machine(ast.Machine(node), environment)
   else: result = unknown()
@@ -1189,12 +1228,13 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
       checker.diag.emit(Code.Invalid, node.span,
         "A cleanup block cannot return from its function")
     let value = ast.Give(node).value
-    if value != nil and (value.tag == "closure" or
-        (value.tag == "name" and ast.Name(value).text in checker.closures)):
+    let found = if value == nil: primitive("nothing") else: checker.infer(value, environment, if checker.resultType.kind == "unknown": nil else: checker.resultType)
+    if value != nil and found.kind == "function" and
+        (value.tag == "closure" or
+          (value.tag == "name" and ast.Name(value).text in checker.closures)):
       checker.diag.emit(Code.ScopeEscape, value.span,
         "a scoped closure cannot leave its defining function")
       checker.diag.suggestion("Call the closure within the scope that owns its captured values")
-    let found = if value == nil: primitive("nothing") else: checker.infer(value, environment, if checker.resultType.kind == "unknown": nil else: checker.resultType)
     if value == nil and checker.resultType.kind != "unknown" and
         not canCoerce(found, checker.resultType).ok:
       checker.diag.emit(Code.TypeMismatch, node.span,

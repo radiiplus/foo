@@ -6,7 +6,7 @@ define Device as record {
 
 #[start]
 #[naked]
-function boot() {
+function boot {
   native asm { "mov x0, #0x09000000; mov w1, #65; strb w1, [x0]; 1: wfe; b 1b" }
   give nothing.
 }

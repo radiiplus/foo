@@ -4,11 +4,11 @@ use io as io.
 use text as words.
 use testing as check.
 dynamic rejected is false.
-function caught() giving nothing {
+function caught giving nothing {
   set rejected to true.
   give nothing.
 }
-start() {
+start {
   constant destination is allocate 4 try.
   transfer("FOO!", destination) try.
   check.expect(destination at 0 is 70).
@@ -16,7 +16,7 @@ start() {
   transfer(destination, destination) try.
   check.expect(destination at 3 is 33).
   constant smaller is allocate 2 try.
-  transfer("too long", smaller) fallback caught().
+  transfer("too long", smaller) fallback caught.
   check.expect(rejected).
   check.expect(smaller at 0 is 0).
   clear(destination).

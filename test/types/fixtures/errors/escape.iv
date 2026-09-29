@@ -8,7 +8,7 @@
     give nothing.
   }
 
-  start() {
+  start {
     constant localdata of type Data is uninitialized.
     
     -- This should trigger the escape error

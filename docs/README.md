@@ -35,8 +35,8 @@ cd hello
 foo run
 ```
 
-FOO also supports an explicit `start()` function when an application benefits
-from one. It does not require `start()` or `give nothing.` for a one-line
+FOO also supports an explicit `start` function when an application benefits
+from one. It does not require `start` or `give nothing.` for a one-line
 program.
 
 ## Learn

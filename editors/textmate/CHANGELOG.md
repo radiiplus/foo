@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0 - 2026-09-29
+
+- Complete zero-argument functions and calls without empty parentheses.
+- Keep parentheses in snippets only when parameters or arguments are present.
+- Refresh compiler-backed diagnostics and syntax snapshots for FOO 0.6.0.
+
 ## 2.5.0 - 2026-09-28
 
 - Remove highlighting and snippets for deprecated language spellings and

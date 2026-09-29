@@ -14,6 +14,8 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <direct.h>
+#include <io.h>
+#include <process.h>
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -24,6 +26,7 @@ typedef SOCKET Socket;
 #define FOO_SHUT_WRITE SD_SEND
 #define FOO_SHUT_BOTH SD_BOTH
 #else
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -330,6 +333,18 @@ FooResult foo_fs_flush(void *pointer) {
                                   : fflush(stream->file) ? failure(IO)
                                                         : (FooResult){0};
 }
+FooResult foo_fs_sync(void *pointer) {
+  File *stream = file(pointer);
+  if (!stream || !stream->file)
+    return failure(CLOSED);
+  if (fflush(stream->file))
+    return failure(IO);
+#ifdef _WIN32
+  return _commit(_fileno(stream->file)) ? failure(IO) : (FooResult){0};
+#else
+  return fsync(fileno(stream->file)) ? failure(IO) : (FooResult){0};
+#endif
+}
 static int file_seek(FILE *stream, int64_t offset, int origin) {
 #ifdef _WIN32
   return _fseeki64(stream, offset, origin);
@@ -434,6 +449,66 @@ FooResult foo_fs_write(FooText path, FooText value) {
             closed = foo_io_close(opened.pointer);
   return result.error ? result : closed;
 }
+FooResult foo_fs_readbytes(FooText path) { return foo_fs_read(path); }
+FooResult foo_fs_writebytes(FooText path, FooText value) {
+  return foo_fs_write(path, value);
+}
+FooResult foo_fs_releasebytes(FooText value) {
+  return foo_text_release(value);
+}
+#ifndef _WIN32
+static int syncparent(const char *path) {
+  char *copy = strdup(path);
+  if (!copy)
+    return -1;
+  char *separator = strrchr(copy, '/');
+  const char *parent = ".";
+  if (separator) {
+    if (separator == copy)
+      separator[1] = 0;
+    else
+      *separator = 0;
+    parent = copy;
+  }
+  int flags = O_RDONLY;
+#ifdef O_DIRECTORY
+  flags |= O_DIRECTORY;
+#endif
+  int descriptor = open(parent, flags);
+  int result = descriptor < 0 || fsync(descriptor);
+  if (descriptor >= 0 && close(descriptor))
+    result = 1;
+  free(copy);
+  return result;
+}
+#endif
+FooResult foo_fs_replace(FooText source, FooText destination) {
+  char *from = string(source), *to = string(destination);
+  if (!from || !to) {
+    free(from);
+    free(to);
+    return failure(ARGUMENT);
+  }
+#ifdef _WIN32
+  int result = !MoveFileExA(from, to,
+      MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+#else
+  int result = rename(from, to);
+  if (!result)
+    result = syncparent(to);
+#endif
+  free(from);
+  free(to);
+  return result ? failure(IO) : (FooResult){0};
+}
+FooResult foo_fs_remove(FooText path) {
+  char *name = string(path);
+  if (!name)
+    return failure(ARGUMENT);
+  int result = remove(name);
+  free(name);
+  return result ? failure(IO) : (FooResult){0};
+}
 FooResult foo_fs_directory(FooText path) {
   char *name = string(path);
   if (!name)
@@ -474,6 +549,69 @@ FooResult foo_fs_join(FooText left, FooText right) {
     result[left.len] = '/';
   memcpy(result + left.len + separator, right.data, right.len);
   return (FooResult){.text = {result, length}};
+}
+FooResult foo_fs_exists(FooText path) {
+  char *name = string(path);
+  if (!name)
+    return failure(ARGUMENT);
+  struct stat status;
+  int result = stat(name, &status);
+  int problem = errno;
+  free(name);
+  if (!result)
+    return (FooResult){.number = 1};
+  return problem == ENOENT ? (FooResult){0} : failure(IO);
+}
+FooResult foo_fs_kind(FooText path) {
+  char *name = string(path);
+  if (!name)
+    return failure(ARGUMENT);
+  struct stat status;
+  int result = stat(name, &status);
+  int problem = errno;
+  free(name);
+  if (result)
+    return problem == ENOENT ? failure(MISSING) : failure(IO);
+#ifdef _WIN32
+  const char *value = (status.st_mode & _S_IFMT) == _S_IFREG ? "file" :
+                      (status.st_mode & _S_IFMT) == _S_IFDIR ? "directory" :
+                                                               "other";
+#else
+  const char *value = S_ISREG(status.st_mode) ? "file" :
+                      S_ISDIR(status.st_mode) ? "directory" : "other";
+#endif
+  return text(value, strlen(value));
+}
+FooResult foo_fs_copy(FooText source, FooText destination) {
+  FooResult content = foo_fs_readbytes(source);
+  if (content.error)
+    return content;
+  FooResult written = foo_fs_writebytes(destination, content.text);
+  FooResult released = foo_fs_releasebytes(content.text);
+  return written.error ? written : released;
+}
+FooResult foo_fs_working(void) {
+  size_t capacity = 256;
+  for (;;) {
+    char *buffer = malloc(capacity);
+    if (!buffer)
+      return failure(MEMORY);
+#ifdef _WIN32
+    char *result = _getcwd(buffer, (int)capacity);
+#else
+    char *result = getcwd(buffer, capacity);
+#endif
+    if (result) {
+      FooResult value = text(buffer, strlen(buffer));
+      free(buffer);
+      return value;
+    }
+    int problem = errno;
+    free(buffer);
+    if (problem != ERANGE || capacity > SIZE_MAX / 2)
+      return failure(problem == ERANGE ? BOUNDS : IO);
+    capacity *= 2;
+  }
 }
 
 typedef struct {
@@ -692,6 +830,79 @@ FooResult foo_process_run(FooText command) {
                                  : status;
 #endif
   return (FooResult){.number = (uint64_t)status};
+}
+FooResult foo_process_execute(FooText program, FooText items) {
+  if (items.len > (SIZE_MAX / sizeof(char *)) - 2)
+    return failure(BOUNDS);
+  char *name = string(program);
+  if (!name)
+    return failure(ARGUMENT);
+  const FooText *values = (const FooText *)items.data;
+  char **vector = calloc(items.len + 2, sizeof(*vector));
+  if (!vector) {
+    free(name);
+    return failure(MEMORY);
+  }
+  vector[0] = name;
+  size_t index = 0;
+  for (; index < items.len; index++) {
+    vector[index + 1] = string(values[index]);
+    if (!vector[index + 1])
+      break;
+  }
+  if (index != items.len) {
+    for (size_t item = 0; item <= index; item++)
+      free(vector[item]);
+    free(vector);
+    return failure(ARGUMENT);
+  }
+#ifdef _WIN32
+  intptr_t spawned = _spawnvp(_P_WAIT, name, (const char *const *)vector);
+  int status = (int)spawned;
+  int problem = spawned < 0 ? errno : 0;
+#else
+  int channel[2];
+  if (pipe(channel) || fcntl(channel[1], F_SETFD, FD_CLOEXEC)) {
+    int problem = errno;
+    for (size_t item = 0; item <= items.len; item++)
+      free(vector[item]);
+    free(vector);
+    errno = problem;
+    return failure(IO);
+  }
+  pid_t child = fork();
+  if (!child) {
+    close(channel[0]);
+    execvp(name, vector);
+    int problem = errno;
+    (void)write(channel[1], &problem, sizeof(problem));
+    _exit(127);
+  }
+  close(channel[1]);
+  int problem = 0;
+  ssize_t reported;
+  do {
+    reported = read(channel[0], &problem, sizeof(problem));
+  } while (reported < 0 && errno == EINTR);
+  close(channel[0]);
+  int state = 0;
+  while (child > 0 && waitpid(child, &state, 0) < 0) {
+    if (errno != EINTR) {
+      child = -1;
+      break;
+    }
+  }
+  int status = child < 0 ? -1 : WIFEXITED(state) ? WEXITSTATUS(state) :
+               WIFSIGNALED(state) ? 128 + WTERMSIG(state) : -1;
+  if (reported < 0)
+    status = -1;
+#endif
+  for (size_t item = 0; item <= items.len; item++)
+    free(vector[item]);
+  free(vector);
+  return problem ? failure(problem == ENOENT ? MISSING : IO) :
+         status < 0 ? failure(IO) :
+                      (FooResult){.number = (uint64_t)status};
 }
 FooResult foo_process_count(void) {
   return (FooResult){.number = (uint64_t)count};

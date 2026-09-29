@@ -16,7 +16,7 @@ creation and waiting must be handled.
 ```foo
 use thread as threads.
 
-function worker() {
+function worker {
   display "Work finished".
 }
 
@@ -54,12 +54,12 @@ yet attached to these event queues. Operations use explicit handles and
 callbacks:
 
 ```foo
-use task.
+use task as tasks.
 
-constant executor is task.executor() try.
-constant channel is task.channel() try.
-constant scope is task.scope() try.
-constant pool is task.pool() try.
+constant executor is tasks.executor try.
+constant channel is tasks.channel try.
+constant scope is tasks.scope try.
+constant pool is tasks.pool try.
 ```
 
 Use `task.launch(scope, callback, argument)` for scoped work and call

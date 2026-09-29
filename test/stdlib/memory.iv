@@ -5,8 +5,8 @@ function drop(allocator pointer to Allocator, buffer pointer to byte) giving fai
   release(allocator, buffer) try.
   give "released".
 }
-start() {
-  constant allocator is system().
+start {
+  constant allocator is system.
   constant buffer is allocate(allocator, 4) try.
   expect(identical[byte](buffer, buffer)).
   same(view(allocator, buffer, 4) try, "\0\0\0\0").
@@ -18,7 +18,7 @@ start() {
   same(view(allocator, smaller, 3) fallback "bounds", "bounds").
   constant unchanged is expand(allocator, smaller, 18446744073709551615) fallback smaller.
   same(view(allocator, unchanged, 2) try, "FO").
-  constant group is arena() try.
+  constant group is arena try.
   same(view(group, smaller, 2) fallback "owner", "owner").
   same(drop(group, smaller) fallback "owner", "owner").
   same(view(allocator, smaller, 2) try, "FO").

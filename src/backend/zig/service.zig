@@ -5,6 +5,12 @@ const c = @cImport({
 const allocator = std.heap.page_allocator;
 var arena: std.heap.ArenaAllocator = .init(allocator);
 
+fn view(value: c.FooText) []u8 {
+    const data: [*]u8 = if (value.len == 0) @ptrFromInt(1) else
+        @ptrCast(@constCast(value.data));
+    return data[0..value.len];
+}
+
 pub fn init(args: std.process.Args) !void {
     const values = try args.toSlice(arena.allocator());
     const raw = try arena.allocator().alloc(?[*:0]const u8, values.len);
@@ -32,15 +38,16 @@ fn result(comptime T: type, value: c.FooResult) T {
     if (value.@"error" != 0) @panic("SystemFailure");
     return switch (@typeInfo(T)) {
         .void => {},
+        .bool => value.number != 0,
         .int => @intCast(value.number),
         .optional => |info| if (value.pointer == null) null else
             @as(info.child, @intCast(value.number)),
-        .pointer => |info| if (info.size == .slice) if (value.text.len == 0) &.{} else @as([*]const u8, @ptrCast(value.text.data))[0..value.text.len] else @ptrCast(@alignCast(value.pointer.?)),
+        .pointer => |info| if (info.size == .slice) view(value.text) else @ptrCast(@alignCast(value.pointer.?)),
         else => @compileError("Unsupported service result"),
     };
 }
 fn argument(comptime T: type, value: anytype) T {
-    if (T == c.FooText) return .{ .data = value.ptr, .len = value.len };
+    if (T == c.FooText) return .{ .data = @ptrCast(value.ptr), .len = value.len };
     return switch (@typeInfo(T)) {
         .bool => value,
         .int => @intCast(value),

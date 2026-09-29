@@ -65,7 +65,7 @@ JSON and LSP output retain every individual source span.
 | `dynamic` | Creates a variable that **can** be changed. |
 | `function` | Defines a reusable block of code. |
 | `define ... as ...` | Introduces a named type. |
-| `start()` | Optionally groups an explicit entry point; top-level statements run without it. |
+| `start` | Optionally groups an explicit entry point; top-level statements run without it. |
 | `give` | Returns a value from a function (like `return`). |
 | `use` | Imports another file or module. |
 | `public` | Makes a declaration visible to other files. |

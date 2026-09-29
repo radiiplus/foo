@@ -52,7 +52,7 @@ Use `is` for one value and `are` when a name represents a sequence of values:
 use sequence as sequences.
 
 constant current is "Ada".
-constant active is sequences.create[text]().
+constant active is sequences.create[text].
 constant user is current.
 constant users are active.
 ```

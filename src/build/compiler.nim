@@ -89,6 +89,11 @@ proc prepareEntry*(program: Program) =
   proc inspect(expression: Expression) =
     if expression == nil: return
     case expression.tag
+    of "name":
+      let name = Name(expression).text
+      if name == "input" and name notin localNames:
+        needsIo = true
+        foundRuntime = true
     of "call":
       foundRuntime = true
       let call = Call(expression)
@@ -107,7 +112,9 @@ proc prepareEntry*(program: Program) =
       inspect(Unary(expression).operand)
     of "binary": inspect(Binary(expression).left); inspect(Binary(expression).right)
     of "group": inspect(Group(expression).expr)
-    of "field": inspect(Field(expression).object)
+    of "field":
+      foundRuntime = true
+      inspect(Field(expression).object)
     of "index": inspect(Index(expression).object); inspect(Index(expression).index)
     of "allocation":
       foundRuntime = true
@@ -158,12 +165,23 @@ proc prepareEntry*(program: Program) =
   if needsIo and ioQualifier.len == 0: ioQualifier = "__prelude_io"
   if needsLog and logQualifier.len == 0: logQualifier = "__prelude_log"
 
-  proc rewrite(expression: Expression)
+  proc rewrite(expression: Expression): Expression
   proc rewriteBlock(body: Block)
   proc rewriteStatement(statement: Statement)
-  proc rewrite(expression: Expression) =
-    if expression == nil: return
+  proc rewrite(expression: Expression): Expression =
+    if expression == nil: return nil
+    result = expression
     case expression.tag
+    of "name":
+      let name = Name(expression)
+      if name.text == "input" and name.text notin localNames:
+        result = Call(tag: "call", span: expression.span,
+          callee: Name(tag: "name", span: expression.span,
+            text: ioQualifier & ".line"),
+          args: @[Expression(Call(tag: "call", span: expression.span,
+            callee: Name(tag: "name", span: expression.span,
+              text: ioQualifier & ".input"), args: @[], names: @[]))],
+          names: @[""])
     of "call":
       let call = Call(expression)
       if call.callee.tag == "name":
@@ -180,49 +198,69 @@ proc prepareEntry*(program: Program) =
           call.names.add("")
         elif name.text == "__bare_log.message": name.text = logQualifier & ".note"
         elif name.text == "__bare_log.error": name.text = logQualifier & ".alert"
-      rewrite(call.callee)
-      for argument in call.args: rewrite(argument)
+      call.callee = rewrite(call.callee)
+      for index in 0 ..< call.args.len:
+        call.args[index] = rewrite(call.args[index])
     of "sequence-value":
-      for item in Values(expression).items: rewrite(item)
+      for index in 0 ..< Values(expression).items.len:
+        Values(expression).items[index] = rewrite(Values(expression).items[index])
     of "closure": rewriteBlock(Closure(expression).body)
-    of "unary": rewrite(Unary(expression).operand)
-    of "binary": rewrite(Binary(expression).left); rewrite(Binary(expression).right)
-    of "group": rewrite(Group(expression).expr)
-    of "field": rewrite(Field(expression).object)
-    of "index": rewrite(Index(expression).object); rewrite(Index(expression).index)
-    of "allocation": rewrite(Allocation(expression).size); rewrite(Allocation(expression).owner)
+    of "unary": Unary(expression).operand = rewrite(Unary(expression).operand)
+    of "binary":
+      Binary(expression).left = rewrite(Binary(expression).left)
+      Binary(expression).right = rewrite(Binary(expression).right)
+    of "group": Group(expression).expr = rewrite(Group(expression).expr)
+    of "field": Field(expression).object = rewrite(Field(expression).object)
+    of "index":
+      Index(expression).object = rewrite(Index(expression).object)
+      Index(expression).index = rewrite(Index(expression).index)
+    of "allocation":
+      Allocation(expression).size = rewrite(Allocation(expression).size)
+      Allocation(expression).owner = rewrite(Allocation(expression).owner)
     else: discard
   proc rewriteStatement(statement: Statement) =
     if statement == nil: return
     case statement.tag
-    of "constant": rewrite(Constant(statement).value)
-    of "mutable": rewrite(Mutable(statement).value)
-    of "destructure": rewrite(Destructure(statement).value)
-    of "function": rewrite(Function(statement).guard); rewriteBlock(Function(statement).body)
-    of "give": rewrite(Give(statement).value)
-    of "assignment": rewrite(Assignment(statement).target); rewrite(Assignment(statement).value)
+    of "constant": Constant(statement).value = rewrite(Constant(statement).value)
+    of "mutable": Mutable(statement).value = rewrite(Mutable(statement).value)
+    of "destructure": Destructure(statement).value = rewrite(Destructure(statement).value)
+    of "function":
+      Function(statement).guard = rewrite(Function(statement).guard)
+      rewriteBlock(Function(statement).body)
+    of "give": Give(statement).value = rewrite(Give(statement).value)
+    of "assignment":
+      Assignment(statement).target = rewrite(Assignment(statement).target)
+      Assignment(statement).value = rewrite(Assignment(statement).value)
     of "when":
-      rewrite(`When`(statement).cond); rewriteBlock(`When`(statement).then)
+      `When`(statement).cond = rewrite(`When`(statement).cond)
+      rewriteBlock(`When`(statement).then)
       if `When`(statement).else != nil:
         if `When`(statement).else.tag == "block": rewriteBlock(Block(`When`(statement).else))
         else: rewriteStatement(Statement(`When`(statement).else))
-    of "while": rewrite(`While`(statement).cond); rewriteBlock(`While`(statement).body)
-    of "for": rewrite(`For`(statement).iter); rewriteBlock(`For`(statement).body)
+    of "while":
+      `While`(statement).cond = rewrite(`While`(statement).cond)
+      rewriteBlock(`While`(statement).body)
+    of "for":
+      `For`(statement).iter = rewrite(`For`(statement).iter)
+      rewriteBlock(`For`(statement).body)
     of "match":
-      rewrite(Match(statement).scrutinee)
-      for branch in Match(statement).cases: rewrite(branch.guard); rewriteBlock(branch.body)
+      Match(statement).scrutinee = rewrite(Match(statement).scrutinee)
+      for branch in Match(statement).cases:
+        branch.guard = rewrite(branch.guard)
+        rewriteBlock(branch.body)
     of "defer":
       if `Defer`(statement).body.tag == "block": rewriteBlock(Block(`Defer`(statement).body))
-      else: rewrite(Expression(`Defer`(statement).body))
+      else: `Defer`(statement).body = rewrite(Expression(`Defer`(statement).body))
     of "unsafe": rewriteBlock(Unsafe(statement).body)
     of "action":
       let action = Action(statement)
-      if action.value != nil: rewrite(action.value)
+      if action.value != nil: action.value = rewrite(action.value)
       elif action.name.text in ["display", "report"] and
           action.name.text notin localNames:
         action.name.text = ioQualifier & "." &
           (if action.name.text == "report": "diagnose" else: "display")
-      for argument in action.args: rewrite(argument)
+      for index in 0 ..< action.args.len:
+        action.args[index] = rewrite(action.args[index])
     else: discard
   proc rewriteBlock(body: Block) =
     if body != nil:

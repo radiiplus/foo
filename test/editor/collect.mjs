@@ -12,9 +12,9 @@ const sources = {
   interop: 'specs/native.md',
   concurrency: 'docs/concurrency.md',
   control: 'test/lex/fixtures/sample.iv',
-  pointers: 'std/deque.iv',
+  pointers: 'std/memory.iv',
   errors: 'std/crypto.iv',
-  platforms: 'std/os/windows.iv',
+  platforms: 'std/system.iv',
   library: ['std/sequence.iv', 'std/text.iv', 'test/stdlib/collections.iv', 'test/stdlib/services.iv'],
 };
 const selected = process.argv.slice(2);

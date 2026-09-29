@@ -1,2 +1,2 @@
 -- Measures generated-program startup and shutdown without standard-library work.
-start() {}
+start {}

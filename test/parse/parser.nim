@@ -4,7 +4,7 @@ import ../../src/parse/parser
 import ../../src/diag/engine
 import ../../src/ast/node
 
-let source = "constant answer is 42.\nstart() {\n  give answer.\n}"
+let source = "constant answer is 42.\nstart {\n  give answer.\n}"
 let diagnostics = newEngine()
 diagnostics.setSource(source, "main.iv")
 let tokens = newLexer(source, diagnostics).lex()
@@ -14,16 +14,16 @@ doAssert program.units[0].body.stmts[0].tag == "constant"
 doAssert program.units[0].body.stmts[1].tag == "function"
 doAssert not diagnostics.failed
 
-let allocation = "start() {\n  constant buffer is allocate 4 using owner try.\n}"
+let allocation = "start {\n  constant buffer is allocate 4 using owner try.\n}"
 let issues = newEngine()
 issues.setSource(allocation, "allocation.iv")
 discard newParser(newLexer(allocation, issues).lex(), issues).parse()
 doAssert not issues.failed
 
 let natural = """
-function connect() giving failable integer { give 1. }
-function load() giving failable integer {
-  constant socket is connect() try.
+function connect giving failable integer { give 1. }
+function load giving failable integer {
+  constant socket is connect try.
   when socket greater than or equal to 10 { give socket. }
   when socket less than or equal to 0 { give 0. }
   display "connected" try.
@@ -42,15 +42,15 @@ doAssert Binary(`When`(body.stmts[2]).cond).op == "is at most"
 doAssert Action(body.stmts[3]).value.tag == "unary"
 
 let sample = """
-function connect host text port integer default 443 giving integer {
+function connect(host text, port integer default 443) giving integer {
   give port.
 }
-function total values are sequence of integer giving integer {
+function total(values are sequence of integer) giving integer {
   dynamic result is 0.
   for each value in values { increase result by value. }
   give result.
 }
-function positive value integer when value greater than 0 giving integer {
+function positive(value integer) when value greater than 0 giving integer {
   give value.
 }
 constant users are 2.
@@ -101,6 +101,8 @@ for removedFunction in [
     "function old(value integer) of type integer { give value. }",
     "constant old of type function(integer) of type integer is uninitialized.",
     "function old(value integer is 1) giving integer { give value. }",
+    "function old value integer giving integer { give value. }",
+    "function old() giving integer { give 1. }",
     "use \"c\" function old() giving integer."]:
   let functionDiagnostics = newEngine()
   functionDiagnostics.setSource(removedFunction, "function.iv")

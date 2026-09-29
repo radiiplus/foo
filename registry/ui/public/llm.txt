@@ -44,8 +44,8 @@ cd hello
 foo run
 ```
 
-FOO also supports an explicit `start()` function when an application benefits
-from one. It does not require `start()` or `give nothing.` for a one-line
+FOO also supports an explicit `start` function when an application benefits
+from one. It does not require `start` or `give nothing.` for a one-line
 program.
 
 ## Learn
@@ -384,13 +384,13 @@ Hello, world!
 ```
 
 `display` writes text to standard output. The final dot ends the statement. FOO
-does not require a `start()` function for ordinary top-level code.
+does not require a `start` function for ordinary top-level code.
 
-Read one line from standard input with the high-level `input()` operation. It
+Read one line from standard input with the high-level `input` operation. It
 is failable because an input stream can fail:
 
 ```foo
-constant name is input() fallback "friend".
+constant name is input fallback "friend".
 display "Hello, " plus name.
 ```
 
@@ -403,9 +403,9 @@ Use `report` for diagnostic text sent to standard error:
 report "Configuration is missing".
 ```
 
-The complete high-level console surface is `input()`, `display`, and `report`.
+The complete high-level console surface is `input`, `display`, and `report`.
 They map to standard input, standard output, and standard error respectively.
-Explicit stream code uses `io.input()`, `io.output()`, `io.report()`,
+Explicit stream code uses `io.input`, `io.output`, `io.report`,
 `io.read`, `io.line`, `io.write`, and `io.close`.
 
 ## Statements and blocks
@@ -433,15 +433,15 @@ display "Preparing report".
 display "Report ready".
 ```
 
-Use `start()` when an application benefits from an explicit entry function:
+Use `start` when an application benefits from an explicit entry function:
 
 ```foo
-start() {
+start {
   display "Service started".
 }
 ```
 
-Both forms are valid. Reaching the end of `start()` completes automatically;
+Both forms are valid. Reaching the end of `start` completes automatically;
 `give nothing.` is unnecessary.
 
 ## Comments
@@ -878,7 +878,7 @@ use sequence as items.
 
 function process(item integer) {}
 
-constant values is items.create[integer]().
+constant values is items.create[integer].
 after { items.release[integer](values) fallback nothing. }
 
 for each item in values {
@@ -960,8 +960,17 @@ function add(left integer, right integer) giving integer {
 constant total is add(20, 22).
 ```
 
-Arguments are evaluated from left to right. Parentheses delimit the argument
-list, including an empty list for a zero-argument call.
+Arguments are evaluated from left to right. Parentheses delimit a non-empty
+argument list. Omit them when a function has no parameters or arguments:
+
+```foo
+function ready giving boolean { give true. }
+constant available is ready.
+```
+
+Bare zero-argument names invoke by default. When the expected type is a
+function, the same name is preserved as a function value, so callbacks remain
+composable. Empty `()` is not accepted.
 
 ## Default and named arguments
 
@@ -984,7 +993,9 @@ constant explicit is connect(host "example.com", timeout 10000).
 
 A label is the parameter name followed directly by its value. FOO does not
 require a colon or equals sign. Positional arguments must come first. Each
-label may appear once, and an unknown label is a compile error.
+label may appear once, and an unknown label is a compile error. An ordinary
+expression may begin with a parameter named `value`; for example,
+`digit(value remainder 16)` is one positional argument, not a named argument.
 
 ## Variadic parameters (one parameter accepting several arguments)
 
@@ -1111,7 +1122,7 @@ code) automatically. Captured `constant`
 values are read-only; captured `dynamic` values share the original storage.
 
 ```foo
-function twice() giving integer {
+function twice giving integer {
   dynamic count is 0.
 
   constant next is function giving integer {
@@ -1119,8 +1130,8 @@ function twice() giving integer {
     give count.
   }.
 
-  constant first is next().
-  give next().
+  constant first is next.
+  give next.
 }
 ```
 
@@ -1212,7 +1223,7 @@ FOO makes possible failure visible in a function's type. A function giving
 ```foo
 use file as files.
 
-function settings() giving failable text {
+function settings giving failable text {
   give files.read("settings.json") try.
 }
 ```
@@ -1229,7 +1240,7 @@ should use):
 ```foo
 use file as files.
 
-function copy() giving failable text {
+function copy giving failable text {
   constant content is files.read("notes.txt") try.
   files.write("copy.txt", content) try.
   give content.
@@ -1282,7 +1293,7 @@ Register cleanup immediately after acquiring a resource.
 use file as files.
 use io as streams.
 
-function chunk() giving failable text {
+function chunk giving failable text {
   constant stream is files.open("data.txt", "read") try.
   after { streams.close(stream) fallback nothing. }
   give streams.read(stream, 4096) try.
@@ -1303,7 +1314,7 @@ scope exits through failure but not after a successful return.
 ```foo
 use memory.
 
-constant allocator is memory.system().
+constant allocator is memory.system.
 constant buffer is memory.allocate(allocator, 4096) try.
 after error { memory.release(allocator, buffer) fallback nothing. }
 ```
@@ -1385,6 +1396,34 @@ public function add(price decimal, amount decimal) giving decimal {
 
 Declarations without `public` remain private to their file. An ordinary import
 does not automatically re-export anything.
+
+Public records may contain concrete generic types imported from another
+module. That specialization is part of the record's public layout and is
+supported by both native backends:
+
+<!-- snippet: project genericfield src/core.iv -->
+```foo
+public define Reference as record {
+  number of type integer.
+}.
+```
+
+<!-- snippet: project genericfield src/store.iv -->
+```foo
+use map as maps.
+use core.
+
+public define Store as record {
+  values of type maps.Map[text, core.Reference].
+}.
+```
+
+<!-- snippet: project genericfield src/main.iv -->
+```foo
+use store.
+
+start {}
+```
 
 ## Build a facade module (one public entry point over internal modules)
 
@@ -1679,7 +1718,7 @@ foo test test/orders.iv --filter total
 
 Selecting one file avoids compiling and running unrelated long suites.
 If the selected project, file, or filter contains no `test` block and no
-explicitly selected `start()` fixture, the command exits unsuccessfully.
+explicitly selected `start` fixture, the command exits unsuccessfully.
 
 ## Benchmarks
 
@@ -1769,7 +1808,7 @@ space in a shared backing buffer.
 ```foo
 use sequence as sequences.
 
-constant empty is sequences.create[integer]().
+constant empty is sequences.create[integer].
 constant one is sequences.append[integer](empty, 4) try.
 constant values is sequences.append[integer](one, 9) try.
 
@@ -1818,7 +1857,7 @@ values must remain valid.
 ```foo
 use sequence as sequences.
 
-constant empty is sequences.create[integer]().
+constant empty is sequences.create[integer].
 constant values is sequences.append[integer](empty, 4) try.
 after { sequences.release[integer](values) fallback nothing. }
 constant count is sequences.length[integer](values).
@@ -1833,7 +1872,7 @@ error rather than an unchecked memory read.
 ```foo
 use sequence as sequences.
 
-constant empty is sequences.create[integer]().
+constant empty is sequences.create[integer].
 constant values is sequences.append[integer](empty, 4) try.
 after { sequences.release[integer](values) fallback nothing. }
 for each value in values {
@@ -1856,7 +1895,7 @@ function positive(value integer) giving boolean {
   give value greater than 0.
 }
 
-constant values is sequences.create[integer]().
+constant values is sequences.create[integer].
 
 constant doubled is sequences.map[integer, integer](values, double) try.
 constant kept is sequences.filter[integer](doubled, positive) try.
@@ -1869,8 +1908,10 @@ after {
 }
 ```
 
-`map`, `filter`, `sort`, `copy`, and `deduplicate` return new storage. Releasing
-one result does not release the others.
+`map`, `filter`, `sort`, `copy`, `reverse`, `take`, `drop`, and `deduplicate`
+return new storage. `any` and `all` stop when their answer is known; `fold`
+combines items in order without allocating a result sequence. Releasing one
+stored result does not release the others.
 
 ## Persistent maps
 
@@ -1880,7 +1921,7 @@ new map.
 ```foo
 use map as maps.
 
-constant empty is maps.create[text, integer]().
+constant empty is maps.create[text, integer].
 constant first is maps.put[text, integer](empty, "answer", 41) try.
 constant updated is maps.put[text, integer](first, "answer", 42) try.
 constant answer is maps.get[text, integer](updated, "answer") try.
@@ -1892,7 +1933,8 @@ after {
 ```
 
 `get` is failable because a key may be absent. `contains` checks before a read
-when absence is part of ordinary control flow.
+when absence is part of ordinary control flow. `keys` and `values` return new
+sequences in insertion order; release those sequences independently.
 
 ## Mutable hash maps (key-based collections using fingerprints for lookup)
 
@@ -1902,7 +1944,7 @@ appropriate than persistent values.
 ```foo
 use table as lookup.
 
-constant table is lookup.create[integer]() try.
+constant table is lookup.create[integer] try.
 after { lookup.close[integer](table) fallback nothing. }
 
 lookup.put[integer](table, "answer", 42) try.
@@ -2007,9 +2049,9 @@ FOO encourages **Region-Based Memory Management** (also known as Arenas). Think 
 ```foo
 use memory.
 
-function process() giving failable nothing {
+function process giving failable nothing {
   -- 1. Create a temporary workspace (Region)
-  constant arena is memory.arena() try.
+  constant arena is memory.arena try.
 
   -- 2. Guarantee cleanup! This runs even if the function fails.
   after { memory.close(arena) fallback nothing. }
@@ -2155,13 +2197,19 @@ after { text.release(clean) fallback nothing. }
 display clean.
 ```
 
+`starts`, `ends`, and `contains` answer common byte-oriented questions without
+allocating temporary text. Use `unicode` when an operation must work in Unicode
+scalar values rather than UTF-8 bytes.
+
 ---
 
-## 2. Files and paths (`file`, `path`)
+## 2. Files and paths (`file`)
 
-The `file` module reads, writes, opens, and joins ordinary text paths. The
-lower-level `path` module works with native pointer-oriented paths at foreign
-boundaries; application code normally starts with `file`.
+The `file` module reads, writes, opens, and joins ordinary text paths. Use
+`read` and `write` for expected UTF-8 text. Use `readbytes` and `writebytes` for
+arbitrary binary data; the returned `sequence of byte` is length-aware and must
+be released with `releasebytes`. Native path pointers belong behind explicit
+foreign declarations rather than a second standard path API.
 
 ```foo
 use file.
@@ -2170,6 +2218,23 @@ constant path is file.join("data", "config.json") try.
 constant content is file.read(path) try.
 file.write(path, content) try.
 ```
+
+Use `exists` when absence is ordinary control flow and `kind` when code needs
+to distinguish a file, directory, or other filesystem object. `copy` copies a
+whole file without promising durable publication. `working` returns the current
+working directory as owned text.
+
+For durable publication, write a temporary stream with `io.write`, call
+`file.sync`, close it, then call `file.replace` with a destination on the same
+filesystem. `file.flush` only empties process buffers. `file.remove` deletes a
+file. Explicit streams currently use length-aware `text` for
+bounded transfers; whole-file binary code should prefer `readbytes`.
+
+The `process` module separates direct execution from shell interpretation.
+`process.execute(program, arguments)` passes every item in its
+`sequence of text` as one argument. `process.run(command)` intentionally
+interprets one command through the host shell and should only receive
+deliberately constructed shell syntax.
 
 ---
 
@@ -2180,7 +2245,7 @@ FOO makes web requests incredibly simple. The `http` module handles all the comp
 ```foo
 use http as web.
 
-constant client is web.client() try.
+constant client is web.client try.
 after { web.close(client). }
 constant response is web.request(client, "https://example.com", "GET", "", 1048576) try.
 after { web.release(response). }
@@ -2246,9 +2311,9 @@ values in application code:
 use time as clock.
 
 constant delay is clock.millis(50).
-constant first is clock.now() try.
+constant first is clock.now try.
 clock.wait(delay) try.
-constant last is clock.now() try.
+constant last is clock.now try.
 when clock.elapsed(first, last).nanoseconds greater than 0 {
   display "The clock advanced".
 }
@@ -2300,7 +2365,7 @@ through backend-neutral runtime contracts (rules that do not depend on one code
 generator). C and Zig provide their own implementations without changing
 application source.
 
-Advanced users can stay inside those portable contracts while controlling more of the underlying service. `http` exposes persistent request headers, redirect limits, and connection reuse. `net` exposes partial sends, half-close, TCP_NODELAY, and keepalive. `file` exposes flush, byte seeking, position, and size. These are explicit operations on the same handles used by the simpler APIs; no backend object leaks into FOO code.
+Advanced users can stay inside those portable contracts while controlling more of the underlying service. `http` exposes persistent request headers, redirect limits, and connection reuse. `net` exposes partial sends, half-close, TCP_NODELAY, and keepalive. `file` exposes process-buffer flushing, stable-storage sync, atomic same-filesystem replacement, removal, byte seeking, position, and size. These are explicit operations on the same handles used by the simpler APIs; no backend object leaks into FOO code.
 
 The transfer contract is used throughout the runtime, including sequences,
 text, JSON, HTTP buffers, and allocator growth (expanding reserved memory).
@@ -2337,7 +2402,7 @@ typed values:
 ```foo
 use table.
 
-constant cache is table.create[integer]() try.
+constant cache is table.create[integer] try.
 after { table.close[integer](cache) fallback nothing. }
 table.put[integer](cache, "answer", 42) try.
 constant answer is table.get[integer](cache, "answer") try.
@@ -2375,13 +2440,11 @@ signature reference for the installed compiler version.
 | Module | Purpose | Common operations |
 | --- | --- | --- |
 | `io` | Standard and file streams | bare console `display`/`report`; stream `input`/`output`/`report`, `read`, `line`, `write`, `close` |
-| `file` | Files, directories, and stream position | `open`, `read`, `write`, `directory`, `join`, `flush`, `seek`, `position`, `size` |
-| `path` | Low-level path inspection | `merge`, `parent`, `name`, `suffix`, `absolute` |
-| `text` | Owned text operations | `concatenate`, `trim`, `length`, `slice`, `find`, `split`, `release` |
+| `file` | Text and binary files, inspection, copying, durable publication, directories, and stream position | `open`, `read`, `write`, `readbytes`, `writebytes`, `releasebytes`, `exists`, `kind`, `copy`, `working`, `remove`, `replace`, `sync`, `seek`, `position`, `size` |
+| `text` | Owned text operations and byte-oriented predicates | `concatenate`, `trim`, `length`, `slice`, `find`, `starts`, `ends`, `contains`, `split`, `release` |
 | `json` | JSON documents and streaming | `parse`, `write`, `field`, `item`, `kind`, `size`, `set`, `append`, `stream`, `feed`, `next`, `data`, `close` |
 | `time` | Raw and typed monotonic time (measured by a clock that does not move backward) | `current`, `sleep`, `measure`, `nanos`, `millis`, `seconds`, `now`, `elapsed`, `wait` |
-| `random` | Random data | `default`, `bytes`, `number` |
-| `process` | Process and argument access | `run`, `count`, `argument`, `environment` |
+| `process` | Direct execution, shell commands, arguments, and environment | `execute`, `run`, `count`, `argument`, `environment` |
 | `system` | Host information | `cores`, `host`, `page` |
 | `log` | Application messages | `note`, `alert` |
 
@@ -2391,17 +2454,13 @@ The filesystem module is `file`.
 
 | Module | Storage model | Main operations |
 | --- | --- | --- |
-| `sequence` | Persistent (updates return a new value) typed sequence | `create`, `append`, `remove`, `copy`, `length`, `find`, `sort`, `filter`, `map`, `deduplicate`, `release` |
-| `map` | Persistent ordered generic key/value map | `create`, `get`, `contains`, `put`, `remove`, `length`, `release` |
+| `sequence` | Persistent (updates return a new value) typed sequence | `create`, `append`, `remove`, `copy`, `length`, `find`, `sort`, `filter`, `map`, `reverse`, `any`, `all`, `fold`, `take`, `drop`, `deduplicate`, `release` |
+| `map` | Persistent ordered generic key/value map | `create`, `get`, `contains`, `put`, `remove`, `keys`, `values`, `length`, `release` |
 | `table` | Mutable native text-keyed map | `create`, `get`, `contains`, `put`, `remove`, `length`, `close` |
 | `set` | Persistent unique values | `create`, `insert`, `contains`, `remove`, `length`, `release` |
 | `queue` | Persistent first-in/first-out values | `create`, `append`, `first`, `remove`, `length`, `release` |
 | `stack` | Persistent last-in/first-out values | `create`, `push`, `top`, `remove`, `length`, `release` |
-| `list` | Linked values | Creation, traversal, insertion, removal, and release. |
-| `deque` | Low-level double-ended queue | `create`, `front`, `back`, `shift`, `pop` |
-| `heap` | Low-level priority storage | `create`, `insert`, `extract`, `peek` |
-| `index` | Low-level text lookup | `create`, `register`, `lookup`, `known` |
-| `bits` | Mutable bit collection | `create`, `enable`, `disable`, `enabled` |
+| `list` | Mutable list of borrowed byte pointers | `create`, `push`, `get`, `length`, `close` |
 
 Prefer the persistent generic collections (collections that work with several
 types and return new values when updated) for ordinary application data. Use
@@ -2421,7 +2480,7 @@ The simple HTTP path chooses conservative defaults:
 ```foo
 use http as web.
 
-constant client is web.client() try.
+constant client is web.client try.
 after { web.close(client). }
 constant response is web.request(client, "https://example.com", "GET", "", 1048576) try.
 after { web.release(response). }
@@ -2433,7 +2492,7 @@ Advanced users can configure the same client before requesting:
 ```foo
 use http as web.
 
-constant client is web.client() try.
+constant client is web.client try.
 after { web.close(client). }
 web.attach(client, "Accept", "application/json") try.
 web.redirects(client, 2) try.
@@ -2450,7 +2509,6 @@ This layered API keeps common code short without hiding protocol controls.
 | `compress` | Compression with explicit format and output limits | `pack`, `unpack` |
 | `unicode` | Unicode validation and conversion | `scan`, `next`, `valid`, `points`, `wide`, `narrow`, `release` |
 | `buffer` | Release converted buffers | `free`, `words`, `points` |
-| `format` | Low-level formatted data | `format`, `parse` |
 | `codec` | Typed text conversion and generated JSON | `Codec[T]`, `encode[T]`, `decode[T]` |
 
 Cryptographic calls can fail and must use postfix `try` or a deliberate
@@ -2464,8 +2522,6 @@ values; use the module's key and random facilities.
 | `memory` | Allocators (objects that reserve and release memory) and owned memory | `system`, `arena`, `allocate`, `expand`, `release`, `copy`, `view`, `close`, `transfer`, `clear`, `compare`, `identical` |
 | `atomic` | Shared atomic unsigned values | `create`, `load`, `store`, `add`, `swap`, `replace`, `release` |
 | `arch` | Processor utilities | `count`, `pause`, `ticks` |
-| `dl` | Dynamic libraries | `open`, `symbol`, `unload` |
-| `env` | Low-level environment access | `variable` |
 | `stream` | Pointer-oriented byte streams | `input`, `output`, `report`, `read`, `write`, `print`, `close` |
 
 These modules are advanced surfaces. Their pointer, lifetime (how long data
@@ -2478,21 +2534,10 @@ platform requirements belong in the calling API's documentation.
 | --- | --- | --- |
 | `task` | Runtime-selected work and asynchronous networking (work continues while networking waits) | Executors, channels, scopes, pools, affinity, and socket operations. |
 | `thread` | Operating-system threads | `spawn`, `wait`, mutex (single-worker lock), condition, signal, pause, and close operations. |
-| `sync` | Low-level synchronization (worker coordination) records | Mutex creation, lock, and unlock; additional record types are reserved for the growing surface. |
 | `atomic` | Lock-free shared counters | Explicitly ordered atomic operations (shared changes completed as one step). |
 
 Start with tasks for independent application work. Use threads and atomics when
 an operating-system thread or shared-memory protocol is specifically required.
-
-## Platform-specific modules
-
-| Module | Platform | Examples |
-| --- | --- | --- |
-| `os.unix` | Unix-like systems | Pipes, signals, memory mapping. |
-| `os.windows` | Windows | Handles, process access, Registry, WinRT. |
-
-Importing a platform module makes the platform dependency explicit. Portable
-packages should keep that code behind a small module boundary.
 
 ## Development support
 
@@ -2685,7 +2730,7 @@ test "addition returns the total" {
 }
 ```
 
-You do not need a `start()` function in a test file. Each `test "name" { ... }`
+You do not need a `start` function in a test file. Each `test "name" { ... }`
 block is discovered and run separately, so one failure can be reported without
 turning the file into an application.
 
@@ -2824,7 +2869,7 @@ benchmarks belong in `benchmark/`.
 
 Every project created by `foo new` includes `benchmark/main.iv`. Replace its
 starter loop with the work you want to measure. A benchmark is an ordinary FOO
-program, so top-level statements work and `start()` remains optional.
+program, so top-level statements work and `start` remains optional.
 
 ```foo
 dynamic counter is 0.
@@ -3187,7 +3232,7 @@ excerpt shows the problem, followed by every affected line:
 ```text
 src/main.iv:4:3
 
-  display load().
+  display load.
   ^^^^^^^^^^^^^^^
 
   This call can fail. Use try or fallback to handle its error
@@ -3415,7 +3460,7 @@ This page answers a practical question: **Which familiar language features exist
 
 ### ✅ What is in FOO v1
 *   **Collections:** Typed modules for sequences, maps, sets, queues, stacks, and mutable text-keyed tables. *(Note: No collection literal syntax).*
-*   **Transformations:** `map`, `filter`, `sort`, `find`, `dedup`, iteration, and checked `at` indexing. *(Note: No operator overloading).*
+*   **Transformations:** `map`, `filter`, `sort`, `find`, `dedup`, `reverse`, `take`, `drop`, `any`, `all`, `fold`, iteration, and checked `at` indexing. *(Note: No operator overloading).*
 *   **Reusable patterns:** `Codec[T]`, `Machine[S, E]`, `Cursor[T, S]`, `Participant`, typed monotonic and calendar time, dimensional quantities, application contracts, generated property checks, and explicit pointer identity are standard-library APIs rather than new syntax.
 *   **Ownership:** Scope arenas (groups of temporary memory released together), explicit `Allocator` values, tracked borrowed views, move/retention checks, and `after` cleanup blocks.
 *   **References:** Non-null `pointer to T`. Nullability is handled via `optional pointer to T`. Raw address manipulation requires unsafe/native access.
@@ -3435,7 +3480,7 @@ This page answers a practical question: **Which familiar language features exist
 *   **Recoverable Errors:** Handled via `failable T`, `fail(error)`, postfix `try`, and expression-level `fallback`.
 *   **Cleanup:** `after` runs on ordinary exits; `after error` runs while a failure is propagating.
 *   **Pattern Matching:** Supports choice payloads, constants, literals, guards, `anything`, unreachable-arm checks, and strict exhaustiveness checks (proof that every case is covered).
-*   **Compile-Time:** `eval`, immutable `reflect[T]()`, and `embed("path")` run or inspect work while the program is being built.
+*   **Compile-Time:** `eval`, immutable `reflect[T]`, and `embed("path")` run or inspect work while the program is being built.
 
 ### ❌ What is NOT in FOO v1 (Do not assume these exist)
 *   Exception-based error handling.
@@ -3450,7 +3495,7 @@ This page answers a practical question: **Which familiar language features exist
 *   **Concurrency:** Library-based overlapping work through scoped tasks, pools, channels, OS threads, mutexes (single-worker locks), condition variables, and atomics (shared operations completed as one step).
 *   **C ABI:** The binary rules used to call C: `extern "C"`, C-layout records, callbacks, generated header bindings, dynamic libraries, and verified native contracts.
 *   **Other Languages:** Rust and other libraries are accessed via the stable C ABI.
-*   **Low-Level Access:** Typed surfaces for advanced HTTP, sockets, files, JSON, allocators, atomics, OS, native C, and assembly.
+*   **Low-Level Access:** Typed surfaces for advanced HTTP, sockets, binary-safe files, durable file publication, JSON, allocators, atomics, OS, native C, and assembly.
 
 ### ❌ What is NOT in FOO v1 (Do not assume these exist)
 *   `async` or `await` keywords.
@@ -3505,7 +3550,7 @@ The normative grammar lives at `specs/grammar.md` in the repository.
 | --- | --- | --- |
 | `constant` | Binds a value that cannot be reassigned. | `constant limit is 100.` |
 | `dynamic` | Binds a value that can be changed with `set`. | `dynamic count is 0.` |
-| `function` | Declares a reusable operation. | `function ready() giving boolean { give true. }` |
+| `function` | Declares a reusable operation. | `function ready giving boolean { give true. }` |
 | `public` | Makes a declaration visible to importing modules. | `public constant limit is 100.` |
 | `use` | Imports a module or file. | `use file.` |
 | `define ... as ...` | Introduces a named type. | `define Identity as unsigned.` |
@@ -3646,9 +3691,11 @@ function add(left integer, right integer) giving integer {
 constant total is add(20, 22).
 ```
 
-Parenthesized calls are canonical. Parameters use `name Type`; `giving Type`
-states the result. A function with no useful result may omit `giving` and reach
-its closing brace. Use `give nothing.` only when it must return early.
+Use parentheses only when a declaration has parameters or a call has
+arguments. Write `function ready giving boolean` and invoke it as `ready`;
+empty `()` is invalid. Parameters use `name Type`; `giving Type` states the
+result. A function with no useful result may omit `giving` and reach its
+closing brace. Use `give nothing.` only when it must return early.
 
 Generic parameters use square brackets on declarations and calls. A `where`
 clause may use only the compiler-recognized capabilities `Equatable`, `Hash`,
@@ -3668,16 +3715,19 @@ constant secure is connect("example.com").
 constant local is connect(host "localhost", port 8080).
 ```
 
+A binary operator after an identifier belongs to that expression. For example,
+`digit(value remainder 16)` is a positional call.
+
 ## Failure and cleanup
 
 ```foo
 use file as files.
 
-function settings() giving failable text {
+function settings giving failable text {
   give files.read("settings.json") try.
 }
 
-constant content is settings() fallback "{}".
+constant content is settings fallback "{}".
 ```
 
 Postfix `try` propagates a failure from the current failable function.
@@ -3690,11 +3740,11 @@ The console operations are intentionally available without an import:
 
 | Operation | Meaning | Result |
 | --- | --- | --- |
-| `input()` | Read one line from standard input | `failable text` |
+| `input` | Read one line from standard input | `failable text` |
 | `display value.` | Write text to standard output | `nothing` |
 | `report value.` | Write diagnostic text to standard error | `nothing` |
 
-Use `io.input()`, `io.output()`, and `io.report()` only when code needs the
+Use `io.input`, `io.output`, and `io.report` only when code needs the
 stream itself. Use `io.read`, `io.line`, `io.write`, and `io.close` for explicit
 stream ownership and failure handling. The bare operations are compiler-provided
 console conveniences; they are not declarations that a package must import.
@@ -3717,17 +3767,17 @@ for them, or assume they are standard-library values.
 | `unreachable` | Compiler assertion that execution cannot continue at that point. |
 | `fail(error)` | Built-in constructor for a failed `failable T`; no import provides it. |
 | `allocate count [using owner]` | Built-in checked allocation expression; `memory.allocate` is the explicit allocator API. |
-| `start()` | Optional application entry declaration selected by the project entry. |
+| `start` | Optional application entry declaration selected by the project entry. |
 | `test "name" { ... }` | Test-runner declaration, discovered only by `foo test`. |
 | `eval { ... }` | Compile-time declaration evaluated by the compiler. |
-| `reflect[T]()` and `embed("path")` | Compile-time compiler operations, not module functions. |
-| `input()`, `display`, `report` | Automatically mapped console operations described above. |
+| `reflect[T]` and `embed("path")` | Compile-time compiler operations, not module functions. |
+| `input`, `display`, `report` | Automatically mapped console operations described above. |
 | `log message` and `log error` | Automatically mapped logging statements; use the `log` module for explicit control. |
 | `splat`, `shuffle`, `select`, `reduce` | Compiler intrinsics valid only with the documented vector argument shapes. |
 | `public use "provider" function ...` | Standard-library binding declaration only. Provider names such as `fs` and `runtime.*` are compiler/runtime identifiers, not importable modules. |
 | `#[repr(C)]` | Native-interface record or union layout marker. It is not a user-defined annotation. |
 | `#[noinline]` | Optimizer instruction for a function whose call boundary must remain measurable or externally observable. |
-| `#[start]`, `#[interrupt]`, `#[naked]`, `#[target_feature("...")]` | Hardware-target function attributes. They require the matching target and capability; ordinary applications use `start()`. |
+| `#[start]`, `#[interrupt]`, `#[naked]`, `#[target_feature("...")]` | Hardware-target function attributes. They require the matching target and capability; ordinary applications use `start`. |
 | `#[volatile]` | Hardware-only pointer-field access marker; it is not a general variable modifier. |
 
 Names beginning with `__`, generated symbols beginning with `foo_`, IR labels
@@ -3737,12 +3787,12 @@ does not make them callable from an `.iv` file. Source uses `is`, `multiply`,
 and `fallback` respectively.
 
 ```foo
-constant name is input() fallback "friend".
+constant name is input fallback "friend".
 display "Hello, " plus name.
 report "The greeting was written".
 ```
 
-`input()` reads one line from standard input, `display` writes to standard
+`input` reads one line from standard input, `display` writes to standard
 output, and `report` writes to standard error. Import `io` when code must pick
 a stream, read a bounded amount, handle a write failure, or close an owned
 stream.

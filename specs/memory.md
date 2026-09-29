@@ -13,7 +13,7 @@ Every function and lexical block has a scope arena. The current scope owns
 allocations made without an explicit allocator:
 
 ```iv
-function sample() giving failable nothing {
+function sample giving failable nothing {
   constant data is allocate 1024 try.
   after { inspect(data). }
   give nothing.

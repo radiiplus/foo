@@ -11,7 +11,7 @@ public use "json" function size(value pointer to Value) giving failable unsigned
 public use "json" function set(value pointer to Value, name text, source text) giving failable nothing.
 public use "json" function append(value pointer to Value, source text) giving failable nothing.
 public use "json" function release(value pointer to Value) giving nothing.
-public use "json" function stream() giving failable pointer to Stream.
+public use "json" function stream giving failable pointer to Stream.
 public use "json" function feed(value pointer to Stream, chunk text, final boolean) giving failable nothing.
 public use "json" function next(value pointer to Stream) giving failable text.
 public use "json" function data(value pointer to Stream) giving failable text.

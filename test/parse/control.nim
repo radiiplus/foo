@@ -21,7 +21,7 @@ let tags = ast.Function(start).body.stmts.mapIt(it.tag)
 for expected in ["when", "while", "for", "match", "defer", "unsafe", "give"]:
   doAssert expected in tags, "missing " & expected
 
-let qualifiedSource = """start() {
+let qualifiedSource = """start {
   match value {
     case model.item(found) { give found. }
     case anything { give 0. }

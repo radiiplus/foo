@@ -2,9 +2,9 @@
 use c "/usr/include/sodium/crypto_verify_16.h".
 use memory as heap.
 use testing as check.
-start() {
-  check.expect(crypto_verify_16_bytes() is crypto_verify_16_BYTES).
-  constant owner is heap.system().
+start {
+  check.expect(crypto_verify_16_bytes is crypto_verify_16_BYTES).
+  constant owner is heap.system.
   constant left is heap.allocate(owner, 16) try.
   constant right is heap.allocate(owner, 16) try.
   after {

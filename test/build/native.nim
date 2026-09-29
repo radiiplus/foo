@@ -4,7 +4,7 @@ import ../../src/build/project
 let root = getTempDir() / "foo-build-project-c-test"
 if dirExists(root): removeDir(root)
 createDir(root)
-writeFile(root / "main.iv", "start() { give nothing. }")
+writeFile(root / "main.iv", "start { give nothing. }")
 writeFile(root / "project.json", "{\"name\":\"actualc\",\"language\":\"1\",\"version\":\"0.1.0\",\"build\":{\"backend\":\"c\",\"compiler\":\"clang\"}}")
 var reused = false
 var buildPath = ""

@@ -7,17 +7,17 @@ public define Scope as opaque.
 public define Pool as opaque.
 public define Net as opaque.
 public define Socket as opaque.
-public use "task" function backend() giving integer 8.
-public use "task" function which() giving pointer to byte.
-public use "task" function executor() giving failable pointer to Executor.
-public use "task" function block(callback function taking () giving nothing for c) giving nothing.
-public use "task" function channel() giving failable pointer to Channel.
+public use "task" function backend giving integer 8.
+public use "task" function which giving pointer to byte.
+public use "task" function executor giving failable pointer to Executor.
+public use "task" function block(callback function giving nothing for c) giving nothing.
+public use "task" function channel giving failable pointer to Channel.
 public use "task" function send(channel pointer to Channel, value integer) giving boolean.
 public use "task" function receive(channel pointer to Channel, output pointer to integer) giving boolean.
-public use "task" function scope() giving failable pointer to Scope.
+public use "task" function scope giving failable pointer to Scope.
 public use "task" function launch(scope pointer to Scope, callback function taking (integer) giving nothing for c, argument integer) giving boolean.
 public use "task" function join(scope pointer to Scope) giving nothing.
-public use "task" function pool() giving failable pointer to Pool.
+public use "task" function pool giving failable pointer to Pool.
 public use "task" function submit(pool pointer to Pool, callback function taking (integer) giving nothing for c, argument integer) giving boolean.
 public use "task" function wait(pool pointer to Pool) giving nothing.
 public use "task" function affinity(cpu integer) giving boolean.

@@ -1,24 +1,4 @@
--- Declares Windows platform operations.
---- Windows-only handles with portable FOO names. ---
-public define Handle as opaque.
-public define Registry as opaque.
-public define Winrt as opaque.
-public function handle() {
-  constant result of type pointer to Handle is uninitialized.
-  give result.
-}
-public function process(command pointer to byte) {
-  constant result of type pointer to Handle is uninitialized.
-  give result.
-}
-public function registry(path pointer to byte) {
-  constant result of type pointer to Registry is uninitialized.
-  give result.
-}
-public function winrt(class pointer to byte) {
-  constant result of type pointer to Winrt is uninitialized.
-  give result.
-}
-public function release(handle pointer to Handle) {
-  give nothing.
-}
+-- Declares host system information.
+public use "system" function cores giving failable unsigned 32.
+public use "system" function host giving failable text.
+public use "system" function page giving unsigned.

@@ -12,7 +12,7 @@ excerpt shows the problem, followed by every affected line:
 ```text
 src/main.iv:4:3
 
-  display load().
+  display load.
   ^^^^^^^^^^^^^^^
 
   This call can fail. Use try or fallback to handle its error

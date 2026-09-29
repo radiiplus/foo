@@ -1,8 +1,8 @@
 {
   "declarations": {
     "source": "docs/functions.md",
-    "sourceSha256": "0bcefe7007dddb136cd0b78312f6fedd8db37ed294965586858d15ee9bbd7700",
-    "fixtureSha256": "94b08141ed70e6af20d2402f0b2a6aa79d271e69ee958bcdae6679e7e7c59f87"
+    "sourceSha256": "aa92589490caea0e84210241ccb76090b7f6eee36ebb80f6e49a4d7baebe441a",
+    "fixtureSha256": "6d359c92f348f0dd65a5628b29f87e532fd5de002306f3c45dec4fa561ea47d2"
   },
   "types": {
     "source": "specs/types.md",
@@ -11,23 +11,23 @@
   },
   "interop": {
     "source": "specs/native.md",
-    "sourceSha256": "8331b85f071b4cb7342fbf78f094a0972a9ad5d08452cf198ecb75d12a3d5928",
-    "fixtureSha256": "6f99893485f45b3810bc2a2ac0498a4bd15321c59d6f54b0c716695b0195c57d"
+    "sourceSha256": "295de436ce99c0a64ea029ec770fb6f033f806eabd828d1c4e0d876a9ac45c69",
+    "fixtureSha256": "c34f52d08649070e91844c20f7547e8500baab9b33922288eff3171c43e411f2"
   },
   "concurrency": {
     "source": "docs/concurrency.md",
-    "sourceSha256": "e14e1fae652402998d974a71ed82cda26b417eff65d5bb075381be1cc3b53f9b",
-    "fixtureSha256": "bab539ead412aaf34d2c1fc9a98430eb0be0f055190db958d402faba9782096b"
+    "sourceSha256": "0becbba98e03acc0d241ebcf4e57d65715254b0886bf182449f112b92e0ac3fa",
+    "fixtureSha256": "e4d1222f64525766218c4fcef21dd4611a51a92740cfabeae4e858e81dda2e5b"
   },
   "control": {
     "source": "test/lex/fixtures/sample.iv",
-    "sourceSha256": "8a17646413c1f9fb57a84a457d977565ad7d52074bcfcc0ac15935597a61a5a7",
-    "fixtureSha256": "70f90e65eb96e72657f061bc5dc3aa7e49f966eb25891e692f5822fba50829f8"
+    "sourceSha256": "fa0710fd936577f080cafa6a096e564fc3159c01a357daab0679ae567201c567",
+    "fixtureSha256": "180fe5fbc1e9bcefd237e7a37c895bf1d45a8b8f22fbad9b41b687be85f150aa"
   },
   "pointers": {
-    "source": "std/deque.iv",
-    "sourceSha256": "70820a4d69a8fbb462989d860c865b2059a76a4b321d1557890d9aa0320ee58c",
-    "fixtureSha256": "70820a4d69a8fbb462989d860c865b2059a76a4b321d1557890d9aa0320ee58c"
+    "source": "std/memory.iv",
+    "sourceSha256": "9506f2dafb4994f01a357fc6317e3891fc330ac2309991b3945b2be95e5b4971",
+    "fixtureSha256": "9506f2dafb4994f01a357fc6317e3891fc330ac2309991b3945b2be95e5b4971"
   },
   "errors": {
     "source": "std/crypto.iv",
@@ -35,29 +35,29 @@
     "fixtureSha256": "197be6204b15f595b28362321bace9670b73f611b6cfae5a2958699e49731975"
   },
   "platforms": {
-    "source": "std/os/windows.iv",
-    "sourceSha256": "9357538929ef26d3aec588be3d1295db854bf41c94d67bf89aa6473fac661581",
-    "fixtureSha256": "9357538929ef26d3aec588be3d1295db854bf41c94d67bf89aa6473fac661581"
+    "source": "std/system.iv",
+    "sourceSha256": "fad809a7d4ceafee69b644d247b6958dc78b4e88fcd33e905410ce0b1e54b383",
+    "fixtureSha256": "fad809a7d4ceafee69b644d247b6958dc78b4e88fcd33e905410ce0b1e54b383"
   },
   "library": {
     "sources": [
       {
         "source": "std/sequence.iv",
-        "sourceSha256": "b747aecfda8de79c9011467d1fefb4758089e62b2ba0c61394d45c70dafbfb89"
+        "sourceSha256": "a4d07d838c7371934ed1f7bfe708e73919499cf0f66bd291bdae1994830ee1f8"
       },
       {
         "source": "std/text.iv",
-        "sourceSha256": "9b2d50df3f84f844a0b9d45dec5762a84c6a37de6b9712346693d0df4d878160"
+        "sourceSha256": "ae72e0ed3eb9ef2766e84ee7b28c9de40401ab77275dddaec2c8070d08e41224"
       },
       {
         "source": "test/stdlib/collections.iv",
-        "sourceSha256": "8cfd75f22fa90b71932fc2481834d7ae57978e10d5b6de7537dfbfa742a3680e"
+        "sourceSha256": "2d749390e7cc58841257d1c4dd4554178e37021313fb95268f5b350cc6fdc3d1"
       },
       {
         "source": "test/stdlib/services.iv",
-        "sourceSha256": "b075f8da39af962bf522704e84adec4ad763a46434e70c5bf7bec46bb0c65967"
+        "sourceSha256": "6992995303ada45d47662c83c21fa7a54bde55d1fe083d099110db7ad3fd93d9"
       }
     ],
-    "fixtureSha256": "f39c44cefcbffb63e9ccc8ee99f4a17387bc992ca9ca819e43395f9e98e330a2"
+    "fixtureSha256": "9d8215f871551eba31eb5d97a86ad7065692a16c12a996addcb70734d0fb2acf"
   }
 }

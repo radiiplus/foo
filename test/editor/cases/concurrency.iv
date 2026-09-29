@@ -1,7 +1,7 @@
 -- Exercises concurrency syntax.
 use thread as threads.
 
-function worker() {
+function worker {
   display "Work finished".
 }
 
@@ -19,12 +19,12 @@ function protect(mutex pointer to threads.Mutex)
   after { threads.unlock(mutex) fallback nothing. }
 }
 
-use task.
+use task as tasks.
 
-constant executor is task.executor() try.
-constant channel is task.channel() try.
-constant scope is task.scope() try.
-constant pool is task.pool() try.
+constant executor is tasks.executor try.
+constant channel is tasks.channel try.
+constant scope is tasks.scope try.
+constant pool is tasks.pool try.
 
 use atomic.
 

@@ -10,7 +10,7 @@ The normative grammar lives at `specs/grammar.md` in the repository.
 | --- | --- | --- |
 | `constant` | Binds a value that cannot be reassigned. | `constant limit is 100.` |
 | `dynamic` | Binds a value that can be changed with `set`. | `dynamic count is 0.` |
-| `function` | Declares a reusable operation. | `function ready() giving boolean { give true. }` |
+| `function` | Declares a reusable operation. | `function ready giving boolean { give true. }` |
 | `public` | Makes a declaration visible to importing modules. | `public constant limit is 100.` |
 | `use` | Imports a module or file. | `use file.` |
 | `define ... as ...` | Introduces a named type. | `define Identity as unsigned.` |
@@ -151,9 +151,11 @@ function add(left integer, right integer) giving integer {
 constant total is add(20, 22).
 ```
 
-Parenthesized calls are canonical. Parameters use `name Type`; `giving Type`
-states the result. A function with no useful result may omit `giving` and reach
-its closing brace. Use `give nothing.` only when it must return early.
+Use parentheses only when a declaration has parameters or a call has
+arguments. Write `function ready giving boolean` and invoke it as `ready`;
+empty `()` is invalid. Parameters use `name Type`; `giving Type` states the
+result. A function with no useful result may omit `giving` and reach its
+closing brace. Use `give nothing.` only when it must return early.
 
 Generic parameters use square brackets on declarations and calls. A `where`
 clause may use only the compiler-recognized capabilities `Equatable`, `Hash`,
@@ -173,16 +175,19 @@ constant secure is connect("example.com").
 constant local is connect(host "localhost", port 8080).
 ```
 
+A binary operator after an identifier belongs to that expression. For example,
+`digit(value remainder 16)` is a positional call.
+
 ## Failure and cleanup
 
 ```foo
 use file as files.
 
-function settings() giving failable text {
+function settings giving failable text {
   give files.read("settings.json") try.
 }
 
-constant content is settings() fallback "{}".
+constant content is settings fallback "{}".
 ```
 
 Postfix `try` propagates a failure from the current failable function.
@@ -195,11 +200,11 @@ The console operations are intentionally available without an import:
 
 | Operation | Meaning | Result |
 | --- | --- | --- |
-| `input()` | Read one line from standard input | `failable text` |
+| `input` | Read one line from standard input | `failable text` |
 | `display value.` | Write text to standard output | `nothing` |
 | `report value.` | Write diagnostic text to standard error | `nothing` |
 
-Use `io.input()`, `io.output()`, and `io.report()` only when code needs the
+Use `io.input`, `io.output`, and `io.report` only when code needs the
 stream itself. Use `io.read`, `io.line`, `io.write`, and `io.close` for explicit
 stream ownership and failure handling. The bare operations are compiler-provided
 console conveniences; they are not declarations that a package must import.
@@ -222,17 +227,17 @@ for them, or assume they are standard-library values.
 | `unreachable` | Compiler assertion that execution cannot continue at that point. |
 | `fail(error)` | Built-in constructor for a failed `failable T`; no import provides it. |
 | `allocate count [using owner]` | Built-in checked allocation expression; `memory.allocate` is the explicit allocator API. |
-| `start()` | Optional application entry declaration selected by the project entry. |
+| `start` | Optional application entry declaration selected by the project entry. |
 | `test "name" { ... }` | Test-runner declaration, discovered only by `foo test`. |
 | `eval { ... }` | Compile-time declaration evaluated by the compiler. |
-| `reflect[T]()` and `embed("path")` | Compile-time compiler operations, not module functions. |
-| `input()`, `display`, `report` | Automatically mapped console operations described above. |
+| `reflect[T]` and `embed("path")` | Compile-time compiler operations, not module functions. |
+| `input`, `display`, `report` | Automatically mapped console operations described above. |
 | `log message` and `log error` | Automatically mapped logging statements; use the `log` module for explicit control. |
 | `splat`, `shuffle`, `select`, `reduce` | Compiler intrinsics valid only with the documented vector argument shapes. |
 | `public use "provider" function ...` | Standard-library binding declaration only. Provider names such as `fs` and `runtime.*` are compiler/runtime identifiers, not importable modules. |
 | `#[repr(C)]` | Native-interface record or union layout marker. It is not a user-defined annotation. |
 | `#[noinline]` | Optimizer instruction for a function whose call boundary must remain measurable or externally observable. |
-| `#[start]`, `#[interrupt]`, `#[naked]`, `#[target_feature("...")]` | Hardware-target function attributes. They require the matching target and capability; ordinary applications use `start()`. |
+| `#[start]`, `#[interrupt]`, `#[naked]`, `#[target_feature("...")]` | Hardware-target function attributes. They require the matching target and capability; ordinary applications use `start`. |
 | `#[volatile]` | Hardware-only pointer-field access marker; it is not a general variable modifier. |
 
 Names beginning with `__`, generated symbols beginning with `foo_`, IR labels
@@ -242,12 +247,12 @@ does not make them callable from an `.iv` file. Source uses `is`, `multiply`,
 and `fallback` respectively.
 
 ```foo
-constant name is input() fallback "friend".
+constant name is input fallback "friend".
 display "Hello, " plus name.
 report "The greeting was written".
 ```
 
-`input()` reads one line from standard input, `display` writes to standard
+`input` reads one line from standard input, `display` writes to standard
 output, and `report` writes to standard error. Import `io` when code must pick
 a stream, read a bounded amount, handle a write failure, or close an owned
 stream.

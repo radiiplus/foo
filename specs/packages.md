@@ -31,7 +31,7 @@ A caller imports that file and qualifies its members:
 -- Application entry.
 use "./arithmetic.iv" as arithmetic.
 
-start() {
+start {
   constant total is arithmetic.add(20, 24).
   give nothing.
 }
@@ -43,7 +43,8 @@ an aliased import of a public `Step` choice exposes its constructors as
 patterns use the same qualifier, such as `case alias.item(value)`. Generic
 payload variants accept the choice's type arguments. A payload-free generic
 variant is inferred from an expected choice type, or called with explicit type
-arguments and empty parentheses when no expected type is available.
+arguments and no parentheses when no expected type is available, such as
+`alias.done[Item]`.
 
 ## Import resolution
 `use name.` binds namespace name and its public declarations. An explicit alias

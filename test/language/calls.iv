@@ -1,16 +1,16 @@
-function greet name text punctuation text default "!" giving text {
+function greet(name text, punctuation text default "!") giving text {
   give name plus punctuation.
 }
 
-function identify value integer giving integer {
+function identify(value integer) giving integer {
   give value plus 1.
 }
 
-function identify value text giving text {
+function identify(value text) giving text {
   give value plus "!".
 }
 
-function total values are sequence of integer giving integer {
+function total(values are sequence of integer) giving integer {
   dynamic result of type integer is 0.
   for each value in values {
     increase result by value.
@@ -18,23 +18,23 @@ function total values are sequence of integer giving integer {
   give result.
 }
 
-function twice() giving integer {
+function twice giving integer {
   dynamic count of type integer is 0.
   constant next is function giving integer {
     increase count by 1.
     give count.
   }.
-  constant first is next().
-  give next().
+  constant first is next.
+  give next.
 }
 
-function positive value integer
+function positive(value integer)
     when value greater than 0
     giving integer {
   give value.
 }
 
-function increment value integer giving failable integer {
+function increment(value integer) giving failable integer {
   give value plus 1.
 }
 
@@ -46,7 +46,7 @@ display identify "text".
 when total 1 2 3 4 is 10 {
   display "variadic".
 }
-when twice() is 2 {
+when twice is 2 {
   display "closure".
 }
 when positive 7 is 7 {

@@ -13,7 +13,9 @@ process input, output, and error streams. Operations that can fail return a
 failable value and therefore need postfix `try` or a deliberate `fallback`.
 
 ### Reading a File
-`file.read` reads an entire text file and returns its content on success.
+`file.read` reads an entire file into `text`. Use it when the file is expected
+to contain UTF-8. For arbitrary binary data, `readbytes` returns a length-aware
+`sequence of byte`; release that owned result with `releasebytes`.
 ```foo
 use file.
 
@@ -23,23 +25,62 @@ display content.
 ```
 
 ### Writing to a File
-`file.write` performs the complete write and closes its internal handle before
-returning. A write failure is propagated by `try`.
+`file.write` preserves every byte, performs the complete write, and closes its
+internal handle before returning. A write failure is propagated by `try`.
 ```foo
 use file.
 
 file.write("output.txt", "Hello, hard drive!") try.
 ```
 
+Binary files use the same high-level shape without hex encoding:
+
+```foo
+use file.
+
+constant content is file.readbytes("input.bin") try.
+after { file.releasebytes(content) fallback nothing. }
+file.writebytes("copy.bin", content) try.
+display "Copied bytes".
+```
+
 ### Reading User Input
 You can also read directly from the keyboard.
 ```foo
-use io.
-
 display "What is your name?".
-constant name is io.line(io.input()) try.
+constant name is input try.
 display "Nice to meet you, " plus name.
 ```
+
+Use `io.input` and `io.line(...)` only when code needs to retain and control
+the standard-input stream itself.
+
+### Publishing a file durably
+
+`flush` moves buffered bytes out of the process but does not promise stable
+storage. Use `sync` before closing a temporary file, then `replace` it into
+place. `replace` is atomic only when both paths are on the same filesystem; it
+also requests a durable parent-directory update before returning.
+
+```foo
+use file.
+use io as streams.
+
+function publish giving failable nothing {
+  constant stream is file.open("state.tmp", "write") try.
+  streams.write(stream, "ready") try.
+  file.sync(stream) try.
+  streams.close(stream) try.
+  file.replace("state.tmp", "state.dat") try.
+  give nothing.
+}
+```
+
+A successful `sync` is the operating system's stable-storage request. Storage
+hardware and remote filesystems may provide weaker guarantees. `remove`
+physically removes a file; a missing path fails. If `replace` fails, inspect the
+destination before retrying: the atomic rename may have completed before the
+directory durability request failed.
 
 ---
 
@@ -73,18 +114,27 @@ display response.
 
 ## 3. Running Programs (The `process` Module)
 
-Sometimes you need to run an external command, like a database tool or a system utility. The `process` module lets you do this safely.
+Sometimes you need to run an external command, like a database tool or a system
+utility. Prefer direct execution so arguments never become shell syntax.
 
 ```foo
 use process.
+use sequence as sequences.
+use text.
 
-constant status is process.run("ping example.com") try.
+constant empty is sequences.create[text].
+constant arguments is sequences.append[text](empty, "example.com") try.
+after { sequences.release[text](arguments) fallback nothing. }
+constant status is process.execute("ping", arguments) try.
 
-when process.count() greater than 0 {
+when process.count greater than 0 {
   constant first is process.argument(0) try.
+  after { text.release(first) fallback nothing. }
   display first.
 }
 ```
+
+Use `process.run` only when shell interpretation is intentional.
 
 ---
 

@@ -1,6 +1,6 @@
 -- Demonstrates functions, typed values and application startup.
-function answer() giving unsigned { give 42. }
-start() {
-  constant value is answer().
+function answer giving unsigned { give 42. }
+start {
+  constant value is answer.
   give nothing.
 }

@@ -1,12 +1,12 @@
 {
   "name": "foo",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "bin": {
     "foo": "bin/foo.mjs"
   },
   "scripts": {
-    "test": "node test/native/run.mjs",
-    "test:stdlib": "node bin/foo.mjs test std --backend c",
+    "test": "node test/stdlib/check.mjs && node test/native/run.mjs",
+    "test:stdlib": "node test/stdlib/check.mjs && node bin/foo.mjs test std --backend c",
     "test:docs": "node test/docs/run.mjs",
     "test:build": "node test/native/run.mjs",
     "foo": "node bin/foo.mjs",

@@ -68,9 +68,9 @@ FOO encourages **Region-Based Memory Management** (also known as Arenas). Think 
 ```foo
 use memory.
 
-function process() giving failable nothing {
+function process giving failable nothing {
   -- 1. Create a temporary workspace (Region)
-  constant arena is memory.arena() try.
+  constant arena is memory.arena try.
   
   -- 2. Guarantee cleanup! This runs even if the function fails.
   after { memory.close(arena) fallback nothing. }
