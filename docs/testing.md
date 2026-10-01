@@ -52,6 +52,28 @@ FOO does not compile or run the other test files. `--watch`
 rediscovers and reruns affected tests after a source or configuration change.
 Each execution has a 60-second timeout.
 
+The selected file is a path from the directory where you run FOO. From the
+project root, include the conventional directory:
+
+```sh
+foo test test/orders.iv
+```
+
+Imports inside that file follow module rules, not the command-line path. Use a
+bare name for a sibling or a file directly under the configured source root:
+
+<!-- snippet: context -->
+```foo
+use helper.  -- test/helper.iv beside test/orders.iv
+use orders.  -- src/orders.iv from the project source root
+```
+
+A quoted import is instead relative to the file containing it. From
+`test/orders.iv`, `use "helper.iv".` finds `test/helper.iv`, while an explicit
+path to the source directory would be `use "../src/orders.iv".`. Prefer the
+bare `use orders.` form for source-root modules. Imported declarations must be
+`public`.
+
 The `testing` module currently provides focused assertions:
 
 | Function | Check |

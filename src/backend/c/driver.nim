@@ -88,7 +88,8 @@ proc build*(module: Module; mode: string; outDir: string;
       let compiler = compilerPath(options)
       var common = @["-std=c11", "-D_POSIX_C_SOURCE=200809L",
         (if mode == "release": "-O2" else: "-O0"), "-g"]
-      if options.kind == "shared": common.add("-fPIC")
+      if options.kind == "shared" and not options.target.contains("windows"):
+        common.add("-fPIC")
       if options.target.len > 0 and options.compiler.len == 0 and
           not local(options.target):
         common.add(@["-target", options.target])

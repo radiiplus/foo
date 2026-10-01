@@ -45,6 +45,7 @@ type
     cpu*: string
     sanitize*: string
     docs*: bool
+    output*: string
     c*: CConfig
     link*: LinkConfig
   PublishConfig* = object
@@ -76,5 +77,6 @@ proc defaultManifest*(): Manifest =
 
 proc hasBuild*(manifest: Manifest): bool =
   manifest.build.backend.len > 0 or manifest.build.compiler.len > 0 or
+    manifest.build.output.len > 0 or
     manifest.build.products.len > 0 or manifest.build.resources.len > 0 or
     manifest.build.tasks != nil or manifest.build.hooks != nil

@@ -3,7 +3,7 @@
   "displayName": "foo.iv",
   "description": "FOO language support with live diagnostics and Ultraviolet / Acid syntax accents.",
   "icon": "images/icon.png",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "publisher": "radiiplus",
   "repository": {
     "type": "git",
@@ -127,6 +127,42 @@
             ],
             "settings": {
               "foreground": "#F15BB5"
+            }
+          },
+          {
+            "name": "Failure propagation",
+            "scope": [
+              "source.foo keyword.control.try.foo"
+            ],
+            "settings": {
+              "foreground": "#F15BB5"
+            }
+          },
+          {
+            "name": "Failure fallback",
+            "scope": [
+              "source.foo keyword.control.fallback.foo"
+            ],
+            "settings": {
+              "foreground": "#FF79C6"
+            }
+          },
+          {
+            "name": "Pattern matching",
+            "scope": [
+              "source.foo keyword.control.match.foo"
+            ],
+            "settings": {
+              "foreground": "#C792EA"
+            }
+          },
+          {
+            "name": "Deferred cleanup",
+            "scope": [
+              "source.foo keyword.control.after.foo"
+            ],
+            "settings": {
+              "foreground": "#7DF9FF"
             }
           },
           {

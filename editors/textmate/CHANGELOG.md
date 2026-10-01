@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.6.1 - 2026-10-01
+
+- Highlight statement-leading bare zero-argument calls before postfix `try` as
+  functions while leaving ambiguous bare values neutral elsewhere.
+- Give `try`, `fallback`, `match`/`case`, and `after` dedicated scopes and
+  distinct colors from the existing Ultraviolet / Acid palette.
+- Recognize lowercase qualified names such as `core.reference` as types only in
+  explicit `of type` positions.
+
 ## 2.6.0 - 2026-09-29
 
 - Complete zero-argument functions and calls without empty parentheses.

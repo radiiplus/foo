@@ -28,6 +28,30 @@ proc confined*(root, path: string): string =
         raise newException(ValueError, "Hard links are not allowed in build tasks: " & path)
   target
 
+proc overlap(first, second: string): bool =
+  let relative = relativePath(first, second)
+  relative.len == 0 or relative == "." or
+    (not isAbsolute(relative) and relative != ".." and
+      not relative.startsWith(".." & DirSep))
+
+proc destination*(root, selected: string; protected: seq[string] = @[]): string =
+  ## Resolve a dedicated project output directory without allowing source or
+  ## tool-owned directories to be overwritten by a build or removed by clean.
+  let value = if selected.len > 0: selected else: "target"
+  if isAbsolute(value):
+    raise newException(ValueError, "build.output must be project-relative")
+  let normalized = value.replace('\\', '/')
+  if normalized.split('/').anyIt(it.len == 0 or it == "." or it == ".."):
+    raise newException(ValueError,
+      "build.output must name a dedicated project-relative directory")
+  result = confined(root, normalized)
+  for reserved in @[".git", ".foo", ".artifacts", "node_modules",
+      "project.json", "foo.lock"] & protected:
+    let path = absolutePath(reserved, root)
+    if overlap(result, path) or overlap(path, result):
+      raise newException(ValueError,
+        "build.output must not overlap project data: " & reserved)
+
 proc globMatch(pattern, value: string; pi = 0; vi = 0): bool =
   if pi == pattern.len:
     return vi == value.len
@@ -50,15 +74,19 @@ proc globMatch(pattern, value: string; pi = 0; vi = 0): bool =
   if pattern[pi] == '?' and value[vi] == '/': return false
   globMatch(pattern, value, pi + 1, vi + 1)
 
-proc glob*(root, pattern: string): seq[string] =
+proc glob*(root, pattern: string; excluded: seq[string] = @[]): seq[string] =
   if isAbsolute(pattern) or pattern.contains('\\') or pattern.split('/').anyIt(it == ".."): 
     raise newException(ValueError, "Resource glob must be relative: " & pattern)
   let base = absolutePath(root)
+  var ignored: seq[string]
+  for path in excluded:
+    ignored.add(if isAbsolute(path): absolutePath(path) else: absolutePath(path, base))
   if not dirExists(base): return @[]
   proc visit(dir: string; found: var seq[string]) =
     for kind, path in walkDir(dir):
       let name = splitFile(path).name
-      if name in [".git", "node_modules", ".artifacts"]: continue
+      if name in [".git", "node_modules", ".artifacts"] or
+          absolutePath(path) in ignored: continue
       if kind in {pcLinkToDir, pcLinkToFile}: continue
       if kind == pcDir:
         visit(path, found)
@@ -82,7 +110,9 @@ proc discover*(root: string; source = ""): seq[string] =
   if not dirExists(directory):
     raise newException(IOError, "Source root not found: " & directory)
   var seen = initHashSet[string]()
-  for relative in glob(directory, "**/*.iv"):
+  let excluded = if selected == ".":
+      @[base / "target", base / ".foo"] else: @[]
+  for relative in glob(directory, "**/*.iv", excluded):
     let normalized = relative.replace(DirSep, '/')
     if selected == "." and normalized.split('/')[0].toLowerAscii() in
         ["test", "benchmark"]:

@@ -17,6 +17,7 @@ coverage/
 
 # FOO generated outputs and local toolchains
 .artifacts/
+target/
 release/
 .foo/
 *.exe

@@ -9,6 +9,12 @@ Tests are private and excluded from ordinary executable entry selection. Each te
 `foo test` discovers tests in project source files and excludes generated output and dependency contents. A project's `start` function is not an implicit test. An explicit test failure returns a nonzero command status; unsupported target execution is reported separately from a successful compilation.
 
 `foo test path --filter name` selects descriptions containing the given text.
+The path is resolved from the command's working directory; from a project root,
+an individual conventional test is selected as `foo test test/name.iv`.
+Imports in the selected file retain ordinary module resolution: bare names
+search a sibling and then the configured source root, while quoted paths are
+relative to the importing file. Selecting a test file does not make its
+directory the command's working directory or change import semantics.
 `foo test std` runs the shipped standard-library fixtures. An explicitly selected
 fixture file with a `start` and no test blocks runs that entry point. Where test
 blocks exist, the application entry point is never executed alongside them.

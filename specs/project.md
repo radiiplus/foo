@@ -93,6 +93,7 @@ All build properties are optional; unknown properties are errors.
 | --- | --- |
 | target | Preset name or versioned advanced target object; default host preset |
 | optimize | `"dev"` or `"release"`; default dev; both preserve defined semantics |
+| output | Project-relative dedicated output directory; default `target` |
 | coverage | Project-relative path for versioned per-function execution counts; default empty |
 | profile | Project-relative path to a version 1 function coverage file consumed by release optimization; default empty |
 | products | Object from single-word product names to product records |
@@ -127,6 +128,7 @@ the build, and hook-produced inputs participate in the normal build fingerprint.
   "dependencies": { "platform": "path+../platform" },
   "build": {
     "target": ["linux-x64"],
+    "output": "target",
     "optimize": "dev",
     "products": {
       "core": { "entry": "core.iv", "kind": "static" },
@@ -179,10 +181,17 @@ and dependency interfaces may require. A higher-level dependency is an error
 with an explicit required-level diagnostic; it never silently upgrades the
 project. Installation is described in [toolchain](toolchain.md).
 
-Generated binaries, generated bindings, resource bundles, dependency material
-and caches reside under `.artifacts/`. Application sources live under `src/`,
-tests under `test/`, and executable benchmark scenarios under `benchmark/` by
-convention. Sources, locks and reviewed configuration are permanent project
-files. Watch observes source/configuration/dependency
+Completed executable, static-library and shared-library products reside under
+`build.output`, which defaults to `target`. FOO creates missing output
+directories. The path is confined to the project and must not overlap source,
+test, benchmark, dependency, cache, or compiler-work directories. Generated
+bindings, resource bundles, dependency material, backend intermediates and
+caches reside under `.artifacts/`. Output products do not participate in the
+project build fingerprint or resource globs.
+
+Application sources live under `src/`, tests under `test/`, and executable
+benchmark scenarios under `benchmark/` by convention. Sources, locks and
+reviewed configuration are permanent project files. `foo clean` removes both
+the configured product directory and internal build state. Watch observes source/configuration/dependency
 changes, keeps reporting diagnostics after errors, and reuses results only when
 their semantic inputs and contracts are unchanged.

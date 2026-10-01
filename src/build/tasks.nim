@@ -33,7 +33,8 @@ proc substitute(text: string; values: Table[string, JsonNode]; name: string): st
 proc appendU32(output: var string; value: int) =
   for shift in [0, 8, 16, 24]: output.add(char((value shr shift) and 0xff))
 
-proc tasks*(root: string; definitions: Table[string, Task]; selected: seq[string] = @[]): seq[string] =
+proc tasks*(root: string; definitions: Table[string, Task];
+    selected: seq[string] = @[]; excluded: seq[string] = @[]): seq[string] =
   let generated = root / ".artifacts" / "build" / "generated"
   discard confined(root, ".artifacts/build/generated")
   var done, active, outputs: Table[string, bool]
@@ -63,7 +64,7 @@ proc tasks*(root: string; definitions: Table[string, Task]; selected: seq[string
           raise newException(ValueError, "Task '" & name & "' needs '" & dependency & "' before reading its output")
         inputs.add(relativePath(produced[dependency], root).replace(DirSep, '/'))
       else:
-        let matches = glob(root, pattern)
+        let matches = glob(root, pattern, excluded)
         if matches.len == 0: raise newException(ValueError, "Task '" & name & "' input matched no files: " & pattern)
         inputs.add(matches)
     inputs = inputs.deduplicate()

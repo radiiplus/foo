@@ -32,7 +32,8 @@ Both forms create `src/`, `test/`, and `benchmark/`.
   "entry": "src/main.iv",
   "entries": {},
   "requires": "base",
-  "dependencies": {}
+  "dependencies": {},
+  "build": { "output": "target" }
 }
 ```
 
@@ -47,6 +48,7 @@ Both forms create `src/`, `test/`, and `benchmark/`.
 | `entries` | Named alternative runnable files. |
 | `requires` | Highest toolchain capability (permission level) the project permits. |
 | `dependencies` | Package names and version/source constraints (rules limiting acceptable versions or sources). |
+| `build.output` | Project-relative directory for completed apps and libraries; defaults to `target`. |
 
 Unknown fields are rejected so misspelled configuration does not silently do
 nothing.
@@ -183,6 +185,32 @@ The default output shows meaningful stages, job count, cache reuse, elapsed
 time, and the selected fast or compatibility path. `--explain` adds diagnostic
 detail without dumping every backend command.
 
+Completed products are written to `target/` by default:
+
+```text
+target/
+|-- app.exe          # Windows application
+|-- libcore.a        # Static library on Linux
+`-- libservice.so    # Shared library on Linux
+```
+
+Choose another project-local directory when packaging or deployment expects a
+different layout:
+
+```json
+{
+  "build": {
+    "output": "dist/native"
+  }
+}
+```
+
+FOO creates the directory, including missing parent directories, during the
+build. The path cannot be absolute, leave the project, or overlap source,
+tests, benchmarks, dependencies, or `.artifacts`. All configured products are
+placed directly in the output directory with the filename required by their
+kind and target platform.
+
 For profile-guided optimization (using measurements from earlier runs to guide
 the compiler), first record representative execution
 and then consume the result:
@@ -205,9 +233,12 @@ the cached artifact (saved build output).
 
 ## Generated directories
 
-FOO writes build products, caches, test executables, and benchmark executables
-under `.artifacts/`. Installed package contents live under `.foo/`. Keep source,
-`project.json`, and `foo.lock`; remove generated outputs with:
+FOO writes completed app, static-library, and shared-library products under
+`target/`, or the directory selected by `build.output`. Compiler-generated
+source, object files, cache metadata, test executables, and benchmark
+executables remain under `.artifacts/`. Installed package contents live under
+`.foo/`. Keep source, `project.json`, and `foo.lock`; remove the configured
+output directory and internal build state with:
 
 ```sh
 foo clean

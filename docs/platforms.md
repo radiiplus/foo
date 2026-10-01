@@ -50,7 +50,7 @@ FOO's backend (code generator) will automatically generate standard Windows PE
 foo build --target windows-x64
 
 # FOO outputs:
-# .artifacts/build/app.exe
+# target/app.exe
 ```
 You can now copy that `.exe` file to a compatible Windows machine and run it
 natively. A CPU-specific preset still requires the destination CPU features.

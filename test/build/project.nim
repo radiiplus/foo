@@ -68,5 +68,15 @@ configured["build"] = %*{"optimize": "release", "profile": "profile.json"}
 writeFile(root / "project.json", $configured)
 let profiled = newProject(root)
 doAssert "main" in profiled.compiler().hot
+configured["build"]["output"] = %"dist/native"
+writeFile(root / "project.json", $configured)
+doAssert newProject(root).config().output == "dist/native"
+for invalid in ["src", ".artifacts/output", "../outside"]:
+  configured["build"]["output"] = %invalid
+  writeFile(root / "project.json", $configured)
+  var rejected = false
+  try: discard newProject(root).build()
+  except ValueError: rejected = true
+  doAssert rejected
 removeDir(root)
 echo "build project parity: ok"

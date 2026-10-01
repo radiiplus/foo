@@ -3,6 +3,30 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## 0.6.1 - 2026-10-01
+
+### Build System
+
+- Publish completed applications, static libraries, and shared libraries to a
+  project-local `target/` directory by default, with a safe `build.output`
+  override and automatic directory creation.
+- Keep backend source, objects, optimization reports, and cache metadata in
+  `.artifacts/`, restore missing public products from cache, and exclude output
+  directories from fingerprints and resource discovery.
+- Avoid the Unix-only `-fPIC` flag when the C backend builds a Windows shared
+  library.
+
+### Editor
+
+- Prepare VS Code extension 2.6.1 with statement-leading bare-call highlighting,
+  dedicated failure/matching/cleanup scopes, qualified lowercase type scopes,
+  rendered color assertions, and refreshed real-source snapshots.
+
+### Documentation And Testing
+
+- Explain selected-test paths and sibling/source-root import resolution at the
+  testing workflow, backed by an execution test covering both import forms.
+
 ## 0.6.0 - 2026-09-29
 
 ### Language And Compiler

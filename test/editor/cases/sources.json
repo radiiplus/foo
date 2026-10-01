@@ -21,8 +21,8 @@
   },
   "control": {
     "source": "test/lex/fixtures/sample.iv",
-    "sourceSha256": "fa0710fd936577f080cafa6a096e564fc3159c01a357daab0679ae567201c567",
-    "fixtureSha256": "180fe5fbc1e9bcefd237e7a37c895bf1d45a8b8f22fbad9b41b687be85f150aa"
+    "sourceSha256": "1265a34b616cffd84b3d94dbef9a1e78d62b0334d5fc98149da334504525e4a9",
+    "fixtureSha256": "1793c7eda6b957f0da9691baba820590dfac01a2e40a5eb02130de8193d51cf4"
   },
   "pointers": {
     "source": "std/memory.iv",

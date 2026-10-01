@@ -1609,7 +1609,8 @@ Both forms create `src/`, `test/`, and `benchmark/`.
   "entry": "src/main.iv",
   "entries": {},
   "requires": "base",
-  "dependencies": {}
+  "dependencies": {},
+  "build": { "output": "target" }
 }
 ```
 
@@ -1624,6 +1625,7 @@ Both forms create `src/`, `test/`, and `benchmark/`.
 | `entries` | Named alternative runnable files. |
 | `requires` | Highest toolchain capability (permission level) the project permits. |
 | `dependencies` | Package names and version/source constraints (rules limiting acceptable versions or sources). |
+| `build.output` | Project-relative directory for completed apps and libraries; defaults to `target`. |
 
 Unknown fields are rejected so misspelled configuration does not silently do
 nothing.
@@ -1760,6 +1762,32 @@ The default output shows meaningful stages, job count, cache reuse, elapsed
 time, and the selected fast or compatibility path. `--explain` adds diagnostic
 detail without dumping every backend command.
 
+Completed products are written to `target/` by default:
+
+```text
+target/
+|-- app.exe          # Windows application
+|-- libcore.a        # Static library on Linux
+`-- libservice.so    # Shared library on Linux
+```
+
+Choose another project-local directory when packaging or deployment expects a
+different layout:
+
+```json
+{
+  "build": {
+    "output": "dist/native"
+  }
+}
+```
+
+FOO creates the directory, including missing parent directories, during the
+build. The path cannot be absolute, leave the project, or overlap source,
+tests, benchmarks, dependencies, or `.artifacts`. All configured products are
+placed directly in the output directory with the filename required by their
+kind and target platform.
+
 For profile-guided optimization (using measurements from earlier runs to guide
 the compiler), first record representative execution
 and then consume the result:
@@ -1782,9 +1810,12 @@ the cached artifact (saved build output).
 
 ## Generated directories
 
-FOO writes build products, caches, test executables, and benchmark executables
-under `.artifacts/`. Installed package contents live under `.foo/`. Keep source,
-`project.json`, and `foo.lock`; remove generated outputs with:
+FOO writes completed app, static-library, and shared-library products under
+`target/`, or the directory selected by `build.output`. Compiler-generated
+source, object files, cache metadata, test executables, and benchmark
+executables remain under `.artifacts/`. Installed package contents live under
+`.foo/`. Keep source, `project.json`, and `foo.lock`; remove the configured
+output directory and internal build state with:
 
 ```sh
 foo clean
@@ -2762,6 +2793,28 @@ FOO does not compile or run the other test files. `--watch`
 rediscovers and reruns affected tests after a source or configuration change.
 Each execution has a 60-second timeout.
 
+The selected file is a path from the directory where you run FOO. From the
+project root, include the conventional directory:
+
+```sh
+foo test test/orders.iv
+```
+
+Imports inside that file follow module rules, not the command-line path. Use a
+bare name for a sibling or a file directly under the configured source root:
+
+<!-- snippet: context -->
+```foo
+use helper.  -- test/helper.iv beside test/orders.iv
+use orders.  -- src/orders.iv from the project source root
+```
+
+A quoted import is instead relative to the file containing it. From
+`test/orders.iv`, `use "helper.iv".` finds `test/helper.iv`, while an explicit
+path to the source directory would be `use "../src/orders.iv".`. Prefer the
+bare `use orders.` form for source-root modules. Imported declarations must be
+`public`.
+
 The `testing` module currently provides focused assertions:
 
 | Function | Check |
@@ -3167,6 +3220,11 @@ projects. A changed input invalidates the affected cache identity; FOO does not
 claim source-file incremental linking (rejoining only changed compiled pieces)
 where the backend cannot provide it.
 
+Internal generated files and cache metadata stay in `.artifacts/`. After a
+successful build, FOO publishes only the completed app or library into
+`target/`, or the project-relative directory selected by `build.output`. A
+cache hit recreates a missing published product without recompiling it.
+
 ### Adaptive build paths
 
 FOO uses one operation interface for builds, runs, package changes, publishing,
@@ -3370,7 +3428,7 @@ FOO's backend (code generator) will automatically generate standard Windows PE
 foo build --target windows-x64
 
 # FOO outputs:
-# .artifacts/build/app.exe
+# target/app.exe
 ```
 You can now copy that `.exe` file to a compatible Windows machine and run it
 natively. A CPU-specific preset still requires the destination CPU features.

@@ -12,6 +12,8 @@ doAssert readFile(projectRoot / "src" / "main.iv") == "display \"Hello, world!\"
 let generatedManifest = parseJson(readFile(projectRoot / "project.json"))
 doAssert generatedManifest["entry"].getStr() == "src/main.iv"
 doAssert generatedManifest["entries"].kind == JObject
+doAssert generatedManifest["build"]["output"].getStr() == "target"
+doAssert readFile(projectRoot / ".gitignore").contains("target/")
 dependency("add", "std/testing", "1.0.0", projectRoot)
 var manifest = parseJson(readFile(projectRoot / "project.json"))
 doAssert manifest["dependencies"]["std/testing"].getStr() == "1.0.0"
@@ -36,8 +38,18 @@ manifest = parseJson(readFile(projectRoot / "project.json"))
 doAssert manifest["dependencies"]["acme/git"].getStr().startsWith("git+https://")
 createDir(projectRoot / ".artifacts" / "build")
 writeFile(projectRoot / ".artifacts" / "build" / "artifact", "x")
+createDir(projectRoot / "target")
+writeFile(projectRoot / "target" / "app", "x")
 clean(projectRoot)
 doAssert not dirExists(projectRoot / ".artifacts" / "build")
+doAssert not dirExists(projectRoot / "target")
+manifest = parseJson(readFile(projectRoot / "project.json"))
+manifest["build"] = %*{"output": "dist/native"}
+writeFile(projectRoot / "project.json", $manifest)
+createDir(projectRoot / "dist" / "native")
+writeFile(projectRoot / "dist" / "native" / "app", "x")
+clean(projectRoot)
+doAssert not dirExists(projectRoot / "dist" / "native")
 removeDir(projectRoot)
 
 let currentRoot = root / "current-app"

@@ -112,6 +112,7 @@ proc config*(project: Project): BuildConfig =
     result.profile = field(build, "profile", "").getStr()
     result.cpu = field(build, "cpu", "").getStr()
     result.sanitize = field(build, "sanitize", "").getStr()
+    result.output = field(build, "output", "target").getStr()
     result.semantic = boolean(build, "semantic")
     result.docs = boolean(build, "docs")
     if build.hasKey("target"):
@@ -190,12 +191,23 @@ proc taskDefinitions(config: BuildConfig): Table[string, buildTasks.Task] =
     if result.hasKey("resources"): raise newException(ValueError, "build.resources reserves the task name 'resources'")
     result["resources"] = buildTasks.Task(kind: "embed", output: "resources", inputs: config.resources)
 
+proc destination(project: Project; config: BuildConfig): string =
+  let source = if project.manifest().source.len > 0:
+      project.manifest().source else: "src"
+  var protected = @["src", "test", "benchmark"]
+  if source notin [".", "src"]: protected.add(source)
+  files.destination(project.root, config.output, protected)
+
 proc prepare(project: Project; config: BuildConfig) =
   let definitions = taskDefinitions(config)
-  if definitions.len > 0: discard buildTasks.tasks(project.root, definitions)
+  if definitions.len > 0:
+    discard buildTasks.tasks(project.root, definitions,
+      excluded = @[project.destination(config), project.root / ".foo"])
 
 proc task*(project: Project; selected: seq[string] = @[]): seq[string] =
-  buildTasks.tasks(project.root, taskDefinitions(project.config()), selected)
+  let config = project.config()
+  buildTasks.tasks(project.root, taskDefinitions(config), selected,
+    @[project.destination(config), project.root / ".foo"])
 
 var cachedCompilerIdentity = ""
 
@@ -280,6 +292,8 @@ proc build*(project: Project; entry = ""): Table[string, string] =
   project.check(entry)
   let artifacts = new(Table[string, string])
   artifacts[] = initTable[string, string]()
+  let internals = new(Table[string, string])
+  internals[] = initTable[string, string]()
   var products = project.config().products
   let namedProducts = products.len > 0 and entry.len == 0
   if products.len == 0:
@@ -288,7 +302,9 @@ proc build*(project: Project; entry = ""): Table[string, string] =
         project.config().`type` else: "exe")
   let backend = if project.options.backend.len > 0: project.options.backend else: (if config.backend.len > 0: config.backend else: "zig")
   project.prepare(config)
-  let projectDigest = hashDirectory(project.root)
+  let destination = project.destination(config)
+  let projectDigest = hashDirectory(project.root,
+    @[destination, project.root / "target", project.root / ".foo"])
   let compilerDigest = compilerIdentity()
   let tool = if backend == "zig": install(pin(project.root)).path else: ""
   var active = initTable[string, bool]()
@@ -317,7 +333,7 @@ proc build*(project: Project; entry = ""): Table[string, string] =
       let relative = if source.kind == JString: source.getStr() else: source.getOrDefault("path").getStr()
       if relative.len > 0: sourcePaths.add(if isAbsolute(relative): relative else: project.root / relative)
     var objects: seq[string]
-    for dependency in product.needs: objects.add(artifacts[][dependency])
+    for dependency in product.needs: objects.add(internals[][dependency])
     var includes: seq[string]
     for path in config.c.`include`: includes.add(if isAbsolute(path): path else: project.root / path)
     let profilePath = if config.profile.len == 0: ""
@@ -342,6 +358,7 @@ proc build*(project: Project; entry = ""): Table[string, string] =
       benchmark: project.options.benchmark,
       threads: target.startsWith("wasm32") and target.contains("threads"))
     let artifactPathExpected = output / artifact(nativeOptions)
+    let published = destination / artifact(nativeOptions)
     let mode = project.mode(config)
     let fingerprint = buildIdentity(projectDigest,
       compilerDigest, backend, target, selected, mode, $nativeOptions,
@@ -350,9 +367,16 @@ proc build*(project: Project; entry = ""): Table[string, string] =
     if fileExists(cachePath) and fileExists(artifactPathExpected):
       let cache = parseJson(readFile(cachePath))
       if cache.getOrDefault("fingerprint").getStr() == fingerprint:
-        artifacts[][name] = artifactPathExpected
+        internals[][name] = artifactPathExpected
+        if project.options.benchmark:
+          artifacts[][name] = artifactPathExpected
+        else:
+          createDir(destination)
+          copyFileWithPermissions(artifactPathExpected, published)
+          artifacts[][name] = published
         active.del(name)
-        if project.options.progress != nil: project.options.progress("reuse", name, artifactPathExpected, true)
+        if project.options.progress != nil:
+          project.options.progress("reuse", name, artifacts[][name], true)
         return
     if project.options.progress != nil:
       project.options.progress("build", name, "", false)
@@ -387,9 +411,16 @@ proc build*(project: Project; entry = ""): Table[string, string] =
     if not success:
       if project.options.progress != nil: project.options.progress("failed", name, "", false)
       raise newException(OSError, if buildError.len > 0: buildError else: "Build failed")
-    artifacts[][name] = artifactPath
+    internals[][name] = artifactPath
+    if project.options.benchmark:
+      artifacts[][name] = artifactPath
+    else:
+      createDir(destination)
+      copyFileWithPermissions(artifactPath, published)
+      artifacts[][name] = published
     write(cachePath, $(%*{"fingerprint": fingerprint, "artifact": artifactPath}))
-    if project.options.progress != nil: project.options.progress("done", name, artifactPath, false)
+    if project.options.progress != nil:
+      project.options.progress("done", name, artifacts[][name], false)
     active.del(name)
   for name in products.keys: visit(name)
   project.runHook(config, "postbuild")

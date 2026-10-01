@@ -25,6 +25,9 @@
       "include": "#attributes"
     },
     {
+      "include": "#typereferences"
+    },
+    {
       "include": "#connectives"
     },
     {
@@ -44,6 +47,9 @@
     },
     {
       "include": "#calls"
+    },
+    {
+      "include": "#barecalls"
     },
     {
       "include": "#brackets"
@@ -116,6 +122,45 @@
         {
           "match": "\\bto\\b",
           "name": "keyword.other.operator.to.foo"
+        }
+      ]
+    },
+    "typereferences": {
+      "name": "meta.type.annotation.foo",
+      "begin": "\\b(of)([ \\t]+)(type)(?=[ \\t]+[a-z][A-Za-z0-9_]*)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.other.operator.of.foo"
+        },
+        "3": {
+          "name": "storage.type.annotation.foo"
+        }
+      },
+      "end": "(?=[ \\t]*(?:\\b(?:is|are)\\b|[,)=\\{]|\\.(?![A-Za-z_])|$))",
+      "patterns": [
+        {
+          "include": "#connectives"
+        },
+        {
+          "include": "#types"
+        },
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#generics"
+        },
+        {
+          "match": "\\b[a-z][A-Za-z0-9_]*(?=\\.)",
+          "name": "entity.name.namespace.foo"
+        },
+        {
+          "match": "\\.",
+          "name": "punctuation.accessor.foo"
+        },
+        {
+          "match": "\\b[a-z][A-Za-z0-9_]*\\b",
+          "name": "entity.name.type.foo"
         }
       ]
     },
@@ -477,7 +522,23 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(?:give|when|otherwise|for|each|in|while|match|case|stop|skip|unsafe|native|after|try|fallback|test|eval|reflect|embed|start)\\b",
+          "match": "\\btry\\b",
+          "name": "keyword.control.try.foo"
+        },
+        {
+          "match": "\\bfallback\\b",
+          "name": "keyword.control.fallback.foo"
+        },
+        {
+          "match": "\\b(?:match|case)\\b",
+          "name": "keyword.control.match.foo"
+        },
+        {
+          "match": "\\bafter\\b",
+          "name": "keyword.control.after.foo"
+        },
+        {
+          "match": "\\b(?:give|when|otherwise|for|each|in|while|stop|skip|unsafe|native|test|eval|reflect|embed|start)\\b",
           "name": "keyword.control.foo"
         },
         {
@@ -521,6 +582,14 @@
     "calls": {
       "match": "\\b[A-Za-z_][A-Za-z0-9_]*(?=[ \\t]*\\()",
       "name": "entity.name.function.foo"
+    },
+    "barecalls": {
+      "match": "^([ \\t]*)([a-z][A-Za-z0-9_]*)(?=[ \\t]+try\\b)",
+      "captures": {
+        "2": {
+          "name": "entity.name.function.foo"
+        }
+      }
     },
     "brackets": {
       "name": "meta.brackets.foo",

@@ -19,6 +19,11 @@ for excluded in [".git", "node_modules", ".artifacts"]:
   createDir(directory / excluded)
   writeFile(directory / excluded / "ignored.txt", "ignored")
 doAssert hashDirectory(directory) == withVisibleFile
+createDir(directory / "dist")
+writeFile(directory / "dist" / "generated.bin", "generated")
+doAssert hashDirectory(directory, @[directory / "dist"]) == withVisibleFile
+removeFile(directory / "dist" / "generated.bin")
+removeDir(directory / "dist")
 for excluded in [".git", "node_modules", ".artifacts"]:
   removeFile(directory / excluded / "ignored.txt")
   removeDir(directory / excluded)

@@ -17,6 +17,16 @@ doAssert glob(root / "src", "**/*.iv") == @["main.iv", "nested/helper.iv"]
 expect ValueError:
   discard glob(root, "../*.iv")
 doAssert discover(root).len == 2
+doAssert destination(root, "target", @["src", "test", "benchmark"]) ==
+  absolutePath(root / "target")
+doAssert destination(root, "dist/native", @["src"]) ==
+  absolutePath(root / "dist" / "native")
+for invalid in ["../outside", ".artifacts/output", "src/output", "project.json"]:
+  expect ValueError:
+    discard destination(root, invalid, @["src"])
+createDir(root / "dist")
+write(root / "dist" / "generated.iv", "generated")
+doAssert "dist/generated.iv" notin glob(root, "**/*.iv", @[root / "dist"])
 
 let stable = root / "generated" / "out.txt"
 write(stable, "same")

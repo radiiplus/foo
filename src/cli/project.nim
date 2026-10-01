@@ -22,11 +22,11 @@ proc create*(name: string): string =
         raise newException(ValueError, "Cannot initialize the current directory because " & file & " already exists.")
   else:
     createDir(root)
-  write(root / "project.json", "{\n  \"schema\": 1,\n  \"name\": " & escapeJson(projectName) & ",\n  \"language\": \"1\",\n  \"version\": \"0.1.0\",\n  \"source\": \"src\",\n  \"entry\": \"src/main.iv\",\n  \"entries\": {},\n  \"requires\": \"base\",\n  \"dependencies\": {}\n}\n")
+  write(root / "project.json", "{\n  \"schema\": 1,\n  \"name\": " & escapeJson(projectName) & ",\n  \"language\": \"1\",\n  \"version\": \"0.1.0\",\n  \"source\": \"src\",\n  \"entry\": \"src/main.iv\",\n  \"entries\": {},\n  \"requires\": \"base\",\n  \"dependencies\": {},\n  \"build\": { \"output\": \"target\" }\n}\n")
   write(root / "src" / "main.iv", "display \"Hello, world!\".\n")
   write(root / "test" / "main.iv", "use testing as check.\n\ntest \"project starts\" {\n  check.expect(true).\n}\n")
   write(root / "benchmark" / "main.iv", "-- Replace this loop with work you want to measure.\ndynamic counter is 0.\nwhile counter less than 10000 {\n  set counter to counter plus 1.\n}\n")
-  write(root / ".gitignore", ".artifacts/\n.foo/\n")
+  write(root / ".gitignore", ".artifacts/\n.foo/\ntarget/\n")
   root
 
 proc createPackage*(name: string): string =
@@ -58,7 +58,8 @@ proc createPackage*(name: string): string =
     "  \"repository\": \"https://github.com/owner/" & packageName & "\",\n" &
     "  \"source\": \"src\",\n" &
     "  \"requires\": \"base\",\n" &
-    "  \"dependencies\": {}\n" &
+    "  \"dependencies\": {},\n" &
+    "  \"build\": { \"output\": \"target\" }\n" &
     "}\n")
   write(root / "src" / "main.iv", "public constant version is \"0.1.0\".\n")
   write(root / "test" / "main.iv", "use testing as check.\n\ntest \"package loads\" {\n  check.expect(true).\n}\n")
@@ -68,7 +69,7 @@ proc createPackage*(name: string): string =
     "## Installation\n\n```text\nfoo add " & packageName & "\nfoo install\n```\n\n" &
     "## Usage\n\nDocument the public API and include practical examples here.\n\n" &
     "## Compatibility\n\nDocument supported platforms and system requirements here.\n")
-  write(root / ".gitignore", ".artifacts/\n.foo/\n")
+  write(root / ".gitignore", ".artifacts/\n.foo/\ntarget/\n")
   root
 
 proc removeTree(path: string) =
@@ -83,6 +84,19 @@ proc clean*(root = getCurrentDir()) =
     let target = confined(root, ".artifacts/" & name)
     if dirExists(target): removeTree(target)
     elif fileExists(target): removeFile(target)
+  let manifest = root / "project.json"
+  var output = "target"
+  var source = "src"
+  if fileExists(manifest):
+    let node = parseJson(readFile(manifest))
+    source = node.getOrDefault("source").getStr("src")
+    if node.hasKey("build") and node["build"].kind == JObject:
+      output = node["build"].getOrDefault("output").getStr("target")
+  var protected = @["src", "test", "benchmark"]
+  if source notin [".", "src"]: protected.add(source)
+  let target = destination(root, output, protected)
+  if dirExists(target): removeTree(target)
+  elif fileExists(target): removeFile(target)
 
 proc validDependencyName(name: string): bool =
   if name.len == 0: return false

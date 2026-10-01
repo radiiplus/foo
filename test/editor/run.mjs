@@ -70,6 +70,7 @@ assert.deepEqual(manifest.contributes.commands.map(item => item.command).sort(),
 assert.equal(manifest.contributes.configuration.properties['foo.server.enabled'].default, true);
 assert.equal(manifest.contributes.configuration.properties['foo.server.path'].default, 'foo');
 const client = readFileSync(join(root, 'extension.js'), 'utf8');
+assert(client.includes(`version: '${manifest.version}'`), 'Language client version must match the extension package');
 for (const behavior of ["spawn(command, ['lsp']", 'textDocument/didOpen', 'textDocument/didChange', 'publishDiagnostics']) {
   assert(client.includes(behavior), `Language client is missing ${behavior}`);
 }
@@ -104,6 +105,11 @@ const current = tokenize([
   'increase count by 1.',
   'decrease count by 1.',
   'constant content is file.read("settings.json") try.',
+  'measure try.',
+  'constant item of type core.reference is uninitialized.',
+  'match item {',
+  'case anything {',
+  'after { release item. }',
 ].join('\n'));
 for (const [line, word, scope] of [
   [1, 'greet', 'entity.name.function.foo'],
@@ -112,10 +118,17 @@ for (const [line, word, scope] of [
   [1, 'default', 'keyword.other.foo'],
   [1, 'giving', 'keyword.other.foo'],
   [4, 'are', 'keyword.operator.foo'],
-  [4, 'fallback', 'keyword.control.foo'],
+  [4, 'fallback', 'keyword.control.fallback.foo'],
   [6, 'increase', 'keyword.operator.foo'],
   [7, 'decrease', 'keyword.operator.foo'],
-  [8, 'try', 'keyword.control.foo'],
+  [8, 'try', 'keyword.control.try.foo'],
+  [9, 'measure', 'entity.name.function.foo'],
+  [9, 'try', 'keyword.control.try.foo'],
+  [10, 'core', 'entity.name.namespace.foo'],
+  [10, 'reference', 'entity.name.type.foo'],
+  [11, 'match', 'keyword.control.match.foo'],
+  [12, 'case', 'keyword.control.match.foo'],
+  [13, 'after', 'keyword.control.after.foo'],
 ]) {
   const row = current[line - 1];
   const start = row.line.indexOf(word);

@@ -49,6 +49,9 @@ dynamic y of type decimal is 3.14.
         
         constant maybe of type optional integer 32 is uninitialized.
         constant result is maybe fallback 0.
+        constant item of type core.reference is uninitialized.
+
+        measure try.
         
         after { close file. }
         

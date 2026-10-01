@@ -122,6 +122,11 @@ projects. A changed input invalidates the affected cache identity; FOO does not
 claim source-file incremental linking (rejoining only changed compiled pieces)
 where the backend cannot provide it.
 
+Internal generated files and cache metadata stay in `.artifacts/`. After a
+successful build, FOO publishes only the completed app or library into
+`target/`, or the project-relative directory selected by `build.output`. A
+cache hit recreates a missing published product without recompiling it.
+
 ### Adaptive build paths
 
 FOO uses one operation interface for builds, runs, package changes, publishing,
