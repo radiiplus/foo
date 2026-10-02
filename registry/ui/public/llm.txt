@@ -53,6 +53,8 @@ changes are recorded here.
 - Rewrite the project README around verified language capabilities, installation,
   project structure, everyday commands, packages, releases, editor support, and
   contribution paths.
+- Render the README's FOO examples with the VS Code extension's TextMate grammar
+  and token colors while retaining expandable, copyable source blocks.
 - Add contributor, conduct, and security policies together with structured bug,
   feature, implementation-inconsistency, and pull request templates.
 - Use backticks as the readable separator inside integer and decimal literals,

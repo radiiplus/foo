@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160" role="img" aria-labelledby="title">
+  <title id="title">Greet FOO source example</title>
+  <rect x="0.5" y="0.5" width="639" height="159" rx="6" fill="#1E1E1E" stroke="#343A40"/>
+  <g fill="#D4D4D4" font-family="Cascadia Code, SFMono-Regular, Consolas, Liberation Mono, monospace" font-size="15" xml:space="preserve">
+  <text x="20" y="35"><tspan fill="#FFD23F">function</tspan><tspan fill="#D4D4D4"> </tspan><tspan fill="#FF7043">greet</tspan><tspan fill="#D4D4D4">(name </tspan><tspan fill="#39FF88">text</tspan><tspan fill="#D4D4D4">) </tspan><tspan fill="#FFD23F">giving</tspan><tspan fill="#D4D4D4"> </tspan><tspan fill="#39FF88">text</tspan><tspan fill="#D4D4D4"> {</tspan></text>
+  <text x="20" y="59"><tspan fill="#D4D4D4">  </tspan><tspan fill="#F15BB5">give</tspan><tspan fill="#D4D4D4"> </tspan><tspan fill="#00E5FF">&quot;Hello, &quot;</tspan><tspan fill="#D4D4D4"> </tspan><tspan fill="#FF79C6">plus</tspan><tspan fill="#D4D4D4"> name </tspan><tspan fill="#FF79C6">plus</tspan><tspan fill="#D4D4D4"> </tspan><tspan fill="#00E5FF">&quot;!&quot;</tspan><tspan fill="#D4D4D4">.</tspan></text>
+  <text x="20" y="83"><tspan fill="#D4D4D4">}</tspan></text>
+  <text x="20" y="107"></text>
+  <text x="20" y="131"><tspan fill="#D4D4D4">display </tspan><tspan fill="#FF7043">greet</tspan><tspan fill="#D4D4D4">(</tspan><tspan fill="#00E5FF">&quot;vibes&quot;</tspan><tspan fill="#D4D4D4">).</tspan></text>
+  </g>
+</svg>

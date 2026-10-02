@@ -30,9 +30,17 @@ this repository.
 FOO permits executable statements at the top level, so a small program does
 not need a wrapper function or an I/O import:
 
+<!-- highlight:hello -->
+<img src="assets/readme/hello.svg" alt="FOO source that displays Hello, world!">
+
+<details>
+<summary>Copy the FOO source</summary>
+
 ```foo
 display "Hello, world!".
 ```
+
+</details>
 
 Run it inside a project with:
 
@@ -117,6 +125,12 @@ workspace. Both the entry file and product directory can be changed in
 
 Functions declare parameter and result types without repeating `of type`:
 
+<!-- highlight:greet -->
+<img src="assets/readme/greet.svg" alt="FOO source defining and calling a typed greeting function">
+
+<details>
+<summary>Copy the FOO source</summary>
+
 ```foo
 function greet(name text) giving text {
   give "Hello, " plus name plus "!".
@@ -125,8 +139,16 @@ function greet(name text) giving text {
 display greet("vibes").
 ```
 
+</details>
+
 Failures remain visible in ordinary control flow. Postfix `try` propagates a
 failure to the caller, while `fallback` supplies a local alternative:
+
+<!-- highlight:failure -->
+<img src="assets/readme/failure.svg" alt="FOO source reading a file with a fallback value">
+
+<details>
+<summary>Copy the FOO source</summary>
 
 ```foo
 use file as files.
@@ -134,6 +156,8 @@ use file as files.
 constant settings is files.read("settings.json") fallback "{}".
 display settings.
 ```
+
+</details>
 
 The [language guide](docs/language.md) covers declarations, control flow,
 functions, types, ownership, errors, concurrency, interoperation, and the

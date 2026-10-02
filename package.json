@@ -13,6 +13,7 @@
     "postinstall": "node tools/toolchain.mjs",
     "check": "node tools/native.mjs --check",
     "export": "node tools/export.mjs",
+    "highlight": "node tools/highlight.mjs",
     "test:editor": "node test/editor/run.mjs && node test/editor/snapshots.mjs && node test/editor/theme.mjs && node test/editor/probe.mjs",
     "test:host": "node test/editor/editor.mjs",
     "build": "node tools/build.mjs",

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="136" viewBox="0 0 640 136" role="img" aria-labelledby="title">
+  <title id="title">Failure FOO source example</title>
+  <rect x="0.5" y="0.5" width="639" height="135" rx="6" fill="#1E1E1E" stroke="#343A40"/>
+  <g fill="#D4D4D4" font-family="Cascadia Code, SFMono-Regular, Consolas, Liberation Mono, monospace" font-size="15" xml:space="preserve">
+  <text x="20" y="35"><tspan fill="#FFD23F">use</tspan><tspan fill="#D4D4D4"> file </tspan><tspan fill="#FFD23F">as</tspan><tspan fill="#D4D4D4"> files.</tspan></text>
+  <text x="20" y="59"></text>
+  <text x="20" y="83"><tspan fill="#FFD23F">constant</tspan><tspan fill="#D4D4D4"> </tspan><tspan fill="#D66BFF">settings</tspan><tspan fill="#D4D4D4"> </tspan><tspan fill="#FF79C6">is</tspan><tspan fill="#D4D4D4"> files.</tspan><tspan fill="#FF7043">read</tspan><tspan fill="#D4D4D4">(</tspan><tspan fill="#00E5FF">&quot;settings.json&quot;</tspan><tspan fill="#D4D4D4">) </tspan><tspan fill="#FF79C6">fallback</tspan><tspan fill="#D4D4D4"> </tspan><tspan fill="#00E5FF">&quot;{}&quot;</tspan><tspan fill="#D4D4D4">.</tspan></text>
+  <text x="20" y="107"><tspan fill="#D4D4D4">display settings.</tspan></text>
+  </g>
+</svg>
