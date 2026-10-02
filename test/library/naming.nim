@@ -1,6 +1,6 @@
 import std/[os, strutils]
 
-let library = currentSourcePath.parentDir.parentDir.parentDir / "std"
+let library = currentSourcePath.parentDir.parentDir.parentDir / "lib"
 
 for path in walkDirRec(library):
   if path.endsWith(".iv"):

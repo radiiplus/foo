@@ -1,0 +1,56 @@
+name: Implementation inconsistency
+description: Report disagreement between documentation, standard library declarations, C, or Zig.
+title: "[Inconsistency] "
+body:
+  - type: dropdown
+    id: surfaces
+    attributes:
+      label: Surfaces that disagree
+      multiple: true
+      options:
+        - Language guide
+        - Language specification
+        - Standard library declaration
+        - C backend
+        - Zig backend
+        - VS Code extension or LSP
+        - Installed toolchain and hosted website
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: FOO version
+      description: Paste `foo version` and the documentation URL or commit when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Minimal example
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: observations
+    attributes:
+      label: Observed results
+      description: State each surface and its exact result separately.
+    validations:
+      required: true
+  - type: textarea
+    id: expectation
+    attributes:
+      label: Expected contract
+      description: Cite an existing specification when one clearly decides the behavior; otherwise say that the contract is unclear.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I checked the latest changelog before reporting this inconsistency.
+          required: true
+        - label: I have not hidden a backend failure by changing only the documentation.
+          required: true

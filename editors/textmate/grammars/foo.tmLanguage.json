@@ -25,6 +25,9 @@
       "include": "#attributes"
     },
     {
+      "include": "#machineclauses"
+    },
+    {
       "include": "#typereferences"
     },
     {
@@ -136,7 +139,7 @@
           "name": "storage.type.annotation.foo"
         }
       },
-      "end": "(?=[ \\t]*(?:\\b(?:is|are)\\b|[,)=\\{]|\\.(?![A-Za-z_])|$))",
+      "end": "(?=[ \\t]*(?:\\b(?:is|are)\\b|\\bwith[ \\t]+exact[ \\t]+access\\b|[,)=\\{]|\\.(?![A-Za-z_])|$))",
       "patterns": [
         {
           "include": "#connectives"
@@ -348,6 +351,46 @@
         }
       ]
     },
+    "machineclauses": {
+      "patterns": [
+        {
+          "match": "\\b(for)([ \\t]+)(startup|interrupt)\\b",
+          "captures": {
+            "1": { "name": "keyword.control.foo" },
+            "3": { "name": "keyword.other.foo" }
+          }
+        },
+        {
+          "match": "\\b(without)([ \\t]+)(setup)\\b",
+          "captures": {
+            "1": { "name": "keyword.other.foo" },
+            "3": { "name": "keyword.other.foo" }
+          }
+        },
+        {
+          "match": "\\b(using)([ \\t]+)(feature)\\b",
+          "captures": {
+            "1": { "name": "keyword.other.foo" },
+            "3": { "name": "keyword.other.foo" }
+          }
+        },
+        {
+          "match": "\\b(keeping)([ \\t]+)(call)\\b",
+          "captures": {
+            "1": { "name": "keyword.other.foo" },
+            "3": { "name": "keyword.other.foo" }
+          }
+        },
+        {
+          "match": "\\b(with)([ \\t]+)(exact)([ \\t]+)(access)\\b",
+          "captures": {
+            "1": { "name": "keyword.other.foo" },
+            "3": { "name": "keyword.other.foo" },
+            "5": { "name": "keyword.other.foo" }
+          }
+        }
+      ]
+    },
     "declarations": {
       "patterns": [
         {
@@ -380,6 +423,9 @@
             },
             {
               "include": "#types"
+            },
+            {
+              "include": "#machineclauses"
             },
             {
               "include": "#keywords"
@@ -562,8 +608,16 @@
     "numbers": {
       "patterns": [
         {
-          "match": "(?<![A-Za-z0-9_])[0-9][0-9_]*(?:\\.[0-9][0-9_]*)?",
+          "match": "(?<![A-Za-z0-9_`])(?![0-9]+(?:`[0-9]+)*(?:\\.[0-9]+)?(?![A-Za-z0-9_`]|\\.[0-9]))[0-9][0-9_`]*(?:\\.[0-9][0-9_`]*)?(?![A-Za-z0-9_`])",
+          "name": "invalid.illegal.numeric.foo"
+        },
+        {
+          "match": "(?<![A-Za-z0-9_`])[0-9]+(?:`[0-9]+)*(?:\\.[0-9]+)?(?![A-Za-z0-9_`]|\\.[0-9])",
           "name": "constant.numeric.foo"
+        },
+        {
+          "match": "`",
+          "name": "invalid.illegal.numeric.foo"
         }
       ]
     },

@@ -19,9 +19,12 @@ Whitespace and comments separate tokens but do not end statements.
 `--!` and `---! ... ---` mark documentation comments. The longest comment
 opener wins. An unclosed block comment is an error.
 
-Integers are decimal digit sequences. An underscore may occur only between
-digits. A decimal literal consists of an integer part, a dot, and a fractional
-digit sequence, optionally separated by underscores. There are no leading signs,
+Integer parts are decimal digit sequences. A backtick may occur only between
+digits in the whole-number part as a visual separator; it does not change the
+value. A decimal literal consists of an integer part, a dot, and an unseparated
+fractional digit sequence. For example, ``1`000`` and ``12`345.6789`` have the
+same values as `1000` and `12345.6789`. A backtick after the decimal point is an
+error, and underscores are not numeric separators. There are no leading signs,
 base prefixes or exponents. Subtraction expresses negative values.
 
 Text uses double quotes; characters use single quotes. Neither crosses a
@@ -89,7 +92,11 @@ Test         = "test", TEXT, Block ;
 Eval         = "eval", "{", { Constant | Alias }, "}" ;
 
 Function     = "function", IDENT, [ Parameters ], [ "(", Formals, ")" ],
-               [ FunctionResult ], [ Bounds ], Block ;
+               [ FunctionResult ], { FunctionOption }, [ Bounds ], Block ;
+FunctionOption = "for", ( "startup" | "interrupt" | IDENT )
+               | "without", "setup"
+               | "using", "feature", TEXT
+               | "keeping", "call" ;
 Parameters   = "[", IDENT, { ",", IDENT }, "]" ;
 Formals      = Formal, { ",", Formal } ;
 Formal       = IDENT, Type ;
@@ -112,7 +119,7 @@ Derives      = "derives", Name, { ",", Name } ;
 DefinitionType = Record | Packed | Choice | "opaque" | Type ;
 Record       = "record", "{", { Member }, "}" ;
 Packed       = "packed", Record ;
-Member       = IDENT, "of", "type", Type, STOP ;
+Member       = IDENT, "of", "type", Type, [ "with", "exact", "access" ], STOP ;
 Choice       = "choice", "{", { Variant }, "}" ;
 Variant      = IDENT, [ "(", Type, ")" | "is", INT ], STOP ;
 
@@ -305,8 +312,9 @@ operations require the level of their effects, at least system. Capability
 checks do not alter parsing. Removed spellings are listed in
 [consolidation](consolidation.md); they are not alternative v1 syntax.
 
-`#[repr(C)] define Name as record { ... }.` and the corresponding union declaration
-select C layout. Attribute parentheses belong to the declaration, not its body.
+`define Name as c record { ... }.` and the corresponding union declaration
+select C layout. The older `#[repr(C)]` spelling remains input-compatible during
+migration but is not canonical output.
 `extern "C" function name(...) giving Type.` declares a C symbol. Native function
 headers use the ordinary function signature followed by an opaque native body;
 the `function` keyword distinguishes them from an unnamed native block.

@@ -4,122 +4,268 @@
 
 <h1 align="center">FOO</h1>
 
-<p align="center">Readable systems programming with sentence-like syntax and native output.</p>
+<p align="center">
+  A compiled systems language with sentence-like syntax and native C and Zig backends.
+</p>
 
-### The systems language that reads like English and runs like lightning. ⚡
+<p align="center">
+  <a href="https://fooregistry.web.app/docs/overview">Documentation</a> &middot;
+  <a href="https://fooregistry.web.app/downloads">Downloads</a> &middot;
+  <a href="https://github.com/radiiplus/foo/releases">Releases</a> &middot;
+  <a href="https://marketplace.visualstudio.com/items?itemName=radiiplus.foo-iv">VS Code</a>
+</p>
 
-For too long, programmers have been forced to make a choice: Do you want a language that is easy to read (like Python), or do you want a language that is blazing fast and gives you total control over the hardware (like C or Rust)?
+FOO is designed for readable application and systems code without giving up
+native compilation. Its language, compiler, standard library, package tooling,
+tests, benchmarks, editor integration, and release workflow are developed in
+this repository.
 
-**FOO ends that compromise.**
+> [!NOTE]
+> FOO is under active development. Review the [feature status](docs/status.md)
+> and [changelog](CHANGELOG.md) before depending on a language, library, or ABI
+> contract in production.
 
-FOO is a sentence-like systems language. Its C and Zig backends produce native
-programs while the type, ownership, and failure rules remain visible in source.
+## First program
 
----
+FOO permits executable statements at the top level, so a small program does
+not need a wrapper function or an I/O import:
 
-## 🚀 Hello, World
-
-Most programs can execute statements directly. Put `try` after a failable
-operation to propagate its error, or use `fallback` to recover locally.
 ```foo
 display "Hello, world!".
 ```
----
 
-## 💪 Why FOO? (The Superpowers)
-
-FOO is packed with features that make it unique in the programming world:
-
-### 🧠 The Parser: Reads Like a Book
-FOO understands natural language. Instead of `if (x >= 10 && y != 0)`, you write:
-```foo
-when x greater than or equal to 10 and y is not 0 { ... }
-```
-Instead of `x = x + 1`, you write:
-```foo
-set x to x plus 1.
-```
-Your code becomes self-documenting.
-
-
-### 🏎️ Multiple Backends: C & Zig
-FOO acts as a master translator. It can generate standard **C11** code (for universal compatibility) or modern **Zig** code (for cutting-edge speed). You write FOO once, and it runs on Windows, Mac, Linux, ARM, and even WebAssembly.
-
-### ⚡ Hardware Optimization (`opt`)
-FOO's target profile controls compatible runtime paths. Current release builds
-can select AVX2 medium-copy handling on x86-64, block copying on AArch64, native
-event services, and portable fallbacks. `foo build --explain` reports the path
-and selection reason. See [Optimization Under the Hood](docs/tuning.md).
-
-### 🛡️ Bulletproof Safety (Sealing)
-Memory bugs are the hardest to find. FOO uses a process called **Sealing** to mathematically track the lifecycle of your memory operations. The compiler guarantees that data is read and written in the exact, perfect chronological order, eliminating entire categories of invisible bugs before your app even runs.
-
-### 🪄 Compile-Time Magic (`eval`)
-Why waste time doing heavy math or reading config files every time your app starts? With `eval` blocks, FOO does that work *while the program is being built*. The results are baked directly into the final binary, giving you instant startup times and zero runtime cost.
-
-### 🤝 Interoperability
-The world runs on C. FOO can read C header files and automatically generate safe, English-like wrappers. You get to use the massive ecosystem of C libraries, but you get to write your app in beautiful FOO.
-
-### 🔧 Progressive Standard Library
-Begin with compact `file`, `http`, `json`, and `task` operations. When a system
-needs more control, the same modules expose headers, redirects, partial socket
-sends, file positioning, streaming JSON, explicit allocators, atomics, dynamic
-libraries, and OS-specific facilities without leaking backend handles.
-
-### 📦 Packages Without Registry Syntax
-Use `foo add package` or `foo add package@version` for registry dependencies.
-Pass a URL or local path as the second argument for external code, then run
-`foo install` to resolve and lock the complete dependency graph.
-
----
-
-## 🛠️ Quick Start
-
-FOO is distributed as a standalone binary. No complex package managers required.
-
-1.  **Install:** Download the installer for your OS from the [Releases](https://github.com/radiiplus/foo/releases) page. Linux PCs use `foo-amd64.deb`; ARM64 Linux devices use `foo-arm64.deb`.
-2.  **Verify:** Run `foo doctor` to ensure your toolchain is ready.
-3.  **Create:**
-    ```sh
-    foo new my-app
-    cd my-app
-    ```
-    To use an existing directory, change into it and run `foo new .`.
-4.  **Run:**
-    ```sh
-    foo run
-    ```
-
-Ubuntu running through Termux/proot on an ARM64 Android device uses `foo-arm64.deb`. Inside Ubuntu, confirm `uname -m` reports `aarch64`, then install it with `sudo apt install ./foo-arm64.deb`. The package targets Ubuntu's glibc environment, not Termux's Android environment, so run `foo` from the Ubuntu session.
-
-### Uninstall
-
-On Windows, open **Settings > Apps > Installed apps**, choose **FOO**, and
-select **Uninstall**. The FOO Start Menu group also includes an uninstall
-shortcut. On Ubuntu or Debian, run:
+Run it inside a project with:
 
 ```sh
-sudo apt remove foo
+foo run
 ```
 
-Uninstalling removes the compiler, its system-managed backend, and installer
-PATH changes. It does not remove FOO projects or per-user data under `~/.foo`.
+## Capabilities
 
----
+| Area | Current direction |
+| --- | --- |
+| Language | Checked, sentence-like syntax with top-level statements, pattern matching, generics, choices, postfix `try`, and `fallback`. |
+| Native output | C and Zig backends with target-aware builds and reachability-based executable emission. |
+| Memory and safety | Explicit ownership, regions, cleanup, sealing, checked arithmetic, and low-level capabilities. |
+| Standard library | Portable `file`, `http`, `json`, task, thread, channel, process, and system services with advanced operations where needed. |
+| Tooling | Project scaffolding, incremental builds, tests, benchmarks, package resolution, live LSP diagnostics, and formatter support. |
+| Distribution | Configurable product directories, named executables, command linking, release staging, checksums, icons, and optional signing. |
 
-## 💻 Editor Support (VS Code)
+`foo build --explain` and `foo run --explain` report selected runtime paths,
+cache reuse, parallel jobs, and optimization decisions without exposing raw
+backend command noise. The [optimization guide](docs/tuning.md) documents the
+implemented paths and the evidence required before making performance claims.
 
-Write FOO in your favorite editor with first-class support. The official **FOO extension for Visual Studio Code** provides syntax highlighting, live compiler diagnostics, checked hover information, go-to-definition, snippets, and project watch commands.
+## Install
 
-👉 **[Install the FOO VS Code Extension](https://marketplace.visualstudio.com/items?itemName=radiiplus.foo-iv)**
+Download the current package from the [FOO download page](https://fooregistry.web.app/downloads)
+or [GitHub Releases](https://github.com/radiiplus/foo/releases).
 
-The extension starts `foo lsp` automatically for editor feedback. Run
-**FOO: Watch Project** separately when you also want continuous terminal builds.
+| Platform | Package |
+| --- | --- |
+| Windows x64 | `foo-windows-x64.exe` |
+| Debian or Ubuntu x64 | `foo-amd64.deb` |
+| Debian or Ubuntu ARM64 | `foo-arm64.deb` |
 
----
+Install a Debian package with `apt`, then verify the managed toolchain:
 
-## 📚 Documentation
+```sh
+sudo apt install ./foo-amd64.deb
+foo doctor
+```
 
-Ready to learn more? The [FOO Book](docs/README.md) is the best place to start. It will take you from your first "Hello World" to advanced systems programming, step-by-step.
+For Ubuntu running through Termux/proot on an ARM64 Android device, install
+`foo-arm64.deb` inside the Ubuntu session. The package targets Ubuntu's glibc
+environment and does not run directly in the Termux Android environment.
 
-Release history is maintained in the [changelog](CHANGELOG.md).
+On Windows, run the installer and open a new terminal before calling
+`foo doctor`.
+
+## Create a project
+
+```sh
+foo new hello
+cd hello
+foo run
+```
+
+Use `foo new .` to initialize the current directory. A new application starts
+with this layout:
+
+```text
+hello/
+|-- assets/
+|   |-- icon.ico
+|   `-- icon.svg
+|-- benchmark/
+|   `-- main.iv
+|-- src/
+|   `-- main.iv
+|-- test/
+|   `-- main.iv
+|-- .gitignore
+`-- project.json
+```
+
+Application source belongs in `src/`; correctness checks and performance
+scenarios have separate discovery roots. Finished applications and libraries
+are written to `output/` by default, while `.artifacts/` remains compiler-owned
+workspace. Both the entry file and product directory can be changed in
+`project.json`.
+
+## Language at a glance
+
+Functions declare parameter and result types without repeating `of type`:
+
+```foo
+function greet(name text) giving text {
+  give "Hello, " plus name plus "!".
+}
+
+display greet("vibes").
+```
+
+Failures remain visible in ordinary control flow. Postfix `try` propagates a
+failure to the caller, while `fallback` supplies a local alternative:
+
+```foo
+use file as files.
+
+constant settings is files.read("settings.json") fallback "{}".
+display settings.
+```
+
+The [language guide](docs/language.md) covers declarations, control flow,
+functions, types, ownership, errors, concurrency, interoperation, and the
+standard library in depth.
+
+## Everyday commands
+
+| Command | Purpose |
+| --- | --- |
+| `foo check` | Type-check the project without producing a final application. |
+| `foo run` | Build and run the default entry. |
+| `foo run worker` | Build and run a named entry from `project.json`. |
+| `foo build` | Build products without running them. |
+| `foo test [file.iv]` | Run all tests or select one test file. |
+| `foo benchmark [name\|file.iv]` | Measure all benchmarks or a selected scenario. |
+| `foo watch` | Recheck the project as files change. |
+| `foo doctor` | Report the state of the compiler and managed toolchain. |
+
+Use `--backend c` or `--backend zig` where backend selection is supported.
+Application arguments follow `--`, for example
+`foo run worker -- input.json --verbose`.
+
+## Packages
+
+Registry dependencies use the package name and an optional version constraint:
+
+```sh
+foo add http-client
+foo add http-client@1.4.2
+foo install
+```
+
+External dependencies take an explicit local path or URL:
+
+```sh
+foo add shared ../shared
+foo add widgets https://github.com/example/widgets.git
+foo install
+```
+
+After installation, source code imports the package name, such as
+`use shared.`. The package manager records exact resolutions in `foo.lock`.
+See [Packages and Dependencies](docs/packages.md) for local, Git, optional,
+development, and platform-specific dependencies.
+
+## Multiple programs and direct commands
+
+Projects can map short names to additional entry files in `project.json`:
+
+```json
+{
+  "entry": "src/main.iv",
+  "entries": {
+    "worker": "src/worker.iv"
+  }
+}
+```
+
+Run `foo run worker`, or link it as a command that no longer needs the `foo`
+prefix:
+
+```sh
+foo link worker --name hello-worker
+foo path
+hello-worker
+foo unlink hello-worker
+```
+
+`foo link` does not edit shell profiles or the Windows registry. The
+[project guide](docs/projects.md) explains how to place the printed directory
+on `PATH` once.
+
+## Releases and signing
+
+Release packaging is optional. When configured, `foo release` performs a
+release build and stages the selected products, license, readme, icon, extra
+files, `release.json`, and `SHA256SUMS` in a versioned directory.
+
+```sh
+foo release
+foo release --sign
+foo sign output/hello.exe --provider authenticode
+```
+
+Signing identities remain outside `project.json`. GPG, Authenticode, and Apple
+codesign providers read the selected identity or fingerprint from
+`FOOSIGNER`. See [Projects and Entry Points](docs/projects.md#optional-application-releases)
+and the [release guide](docs/releasing.md) before preparing distributable
+artifacts.
+
+## Editor support
+
+The official [FOO extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=radiiplus.foo-iv)
+provides syntax highlighting, live compiler diagnostics, checked hover
+information, navigation, snippets, and project commands. It starts `foo lsp`
+automatically; use **FOO: Watch Project** when continuous terminal builds are
+also useful.
+
+## Documentation
+
+| Resource | Content |
+| --- | --- |
+| [FOO Guide](docs/README.md) | Learning path from installation through systems programming. |
+| [Language Guide](docs/language.md) | Syntax, semantics, types, memory, errors, and concurrency. |
+| [Project Guide](docs/projects.md) | Entries, output, tests, benchmarks, releases, and signing. |
+| [Package Guide](docs/packages.md) | Registry, URL, Git, and local dependencies. |
+| [CLI Reference](docs/reference.md) | Commands and selection rules. |
+| [Feature Status](docs/status.md) | Implemented, partial, and planned behavior. |
+| [Changelog](CHANGELOG.md) | Latest changes and release history. |
+
+The hosted documentation is available at
+[fooregistry.web.app/docs/overview](https://fooregistry.web.app/docs/overview).
+
+## Build from source
+
+Repository development requires Node.js 22.13 or newer, Nim 2.2, and the
+platform prerequisites described in the [contributing guide](CONTRIBUTING.md).
+
+```sh
+npm install
+npm run native:build
+node bin/foo.mjs doctor
+```
+
+## Contributing and security
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a change and follow the
+[Code of Conduct](CODE_OF_CONDUCT.md). Use the issue templates for bugs,
+features, and implementation inconsistencies. Report vulnerabilities privately
+through the process in [SECURITY.md](SECURITY.md).
+
+## License
+
+FOO is available under either the [MIT License](LICENSE-MIT) or the
+[Apache License 2.0](LICENSE-APACHE), at your option.

@@ -14,7 +14,7 @@ type
     diag: Engine
     root: string
     sourceRoot: string
-    stdRoot: string
+    library: string
     units: Table[string, module.Unit]
     order: seq[string]
     resolutions: Table[pointer, Symbol]
@@ -27,16 +27,16 @@ type
 proc defaultRead(path: string): ReadResult =
   if fileExists(path): (true, readFile(path)) else: (false, "")
 
-proc bundledStdRoot(): string =
-  let configured = getEnv("FOO_STD")
+proc bundled(): string =
+  let configured = getEnv("FOO_LIB")
   if configured.len > 0 and dirExists(configured): return absolutePath(configured)
-  for candidate in [getAppDir().parentDir / "std",
-      getAppDir().parentDir.parentDir / "std",
-      currentSourcePath.parentDir.parentDir.parentDir / "std"]:
+  for candidate in [getAppDir().parentDir / "lib",
+      getAppDir().parentDir.parentDir / "lib",
+      currentSourcePath.parentDir.parentDir.parentDir / "lib"]:
     if dirExists(candidate): return absolutePath(candidate)
-  absolutePath(getCurrentDir() / "std")
+  absolutePath(getCurrentDir() / "lib")
 
-proc newResolver*(diag: Engine; root: string; stdRoot = "";
+proc newResolver*(diag: Engine; root: string; library = "";
     read: ReadProc = nil; parse: ParseProc = nil): Resolver =
   let absoluteRoot = absolutePath(root)
   var source = "src"
@@ -50,7 +50,7 @@ proc newResolver*(diag: Engine; root: string; stdRoot = "";
     diag: diag,
     root: absoluteRoot,
     sourceRoot: absolutePath(absoluteRoot / source),
-    stdRoot: if stdRoot.len > 0: absolutePath(stdRoot) else: bundledStdRoot(),
+    library: if library.len > 0: absolutePath(library) else: bundled(),
     units: initTable[string, module.Unit](),
     resolutions: initTable[pointer, Symbol](),
     cache: initTable[string, ast.Program](),
@@ -206,10 +206,10 @@ proc declare(resolver: Resolver; node: ast.Statement; target: Scope;
     for attribute in declaration.attributes:
       if attribute notin ["start", "interrupt", "naked", "noinline"] and not attribute.startsWith("target_feature(\""):
         resolver.diag.emit(Code.Invalid, node.span,
-          "unknown function attribute '#[" & attribute & "]'")
+          "unknown function option '" & attribute & "'")
     if "start" in declaration.attributes and declaration.params.len > 0:
       resolver.diag.emit(Code.Invalid, node.span,
-        "#[start] functions cannot take parameters")
+        "A function used for startup cannot take parameters")
     resolver.insert(target, declaration.name.text, Form.Function,
       declaration.public, node, moduleName)
   of "extern-function":
@@ -329,7 +329,7 @@ proc modulePath(resolver: Resolver; useNode: ast.Use; current: string): string =
       return project
     let package = resolver.packagePath(useNode.name.text)
     if package.len > 0: return package
-    resolver.stdRoot / (useNode.name.text & ".iv")
+    resolver.library / (useNode.name.text & ".iv")
 
 proc symbols(resolver: Resolver; name: string): seq[Symbol] =
   if not resolver.units.hasKey(name): return

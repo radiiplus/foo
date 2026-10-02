@@ -6,9 +6,9 @@ function double(value unsigned) giving unsigned {
   give value multiply 2.
 }
 
-dynamic values is items.sized[unsigned](10_000) try.
+dynamic values is items.sized[unsigned](10`000) try.
 dynamic index of type unsigned is 0.
-while index less than 10_000 {
+while index less than 10`000 {
   set values at index to index.
   increase index by 1.
 }
@@ -19,5 +19,5 @@ after {
   items.release[unsigned](doubled) fallback nothing.
 }
 
-check.number(items.length[unsigned](doubled), 10_000).
-check.number(doubled at 9_999, 19_998).
+check.number(items.length[unsigned](doubled), 10`000).
+check.number(doubled at 9`999, 19`998).

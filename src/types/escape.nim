@@ -106,7 +106,7 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
         return
       if callee != nil and callee.kind == "function" and
           callee.abi in ["runtime", "runtime.crypto", "runtime.unicode", "runtime.compress",
-            "runtime.json", "runtime.http", "runtime.system", "runtime.arch",
+            "runtime.codec", "runtime.json", "runtime.http", "runtime.system", "runtime.arch",
             "runtime.atomic", "runtime.list", "runtime.memory", "runtime.stream",
             "runtime.table",
             "runtime.io", "runtime.fs", "runtime.net", "runtime.process",

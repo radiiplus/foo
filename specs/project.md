@@ -43,6 +43,7 @@ Other schema or language versions require a matching specification.
 | entry | Optional project-relative .iv entry file; must belong to the discovered source files |
 | entries | Optional object from single-word run names to project-relative `.iv` entry files |
 | build | Optional object defined below |
+| release | Optional deployment object defined below |
 
 The scaffold always writes `entry`, so `foo run` has one unambiguous default.
 Existing projects without it retain the conventional `src/main.iv` discovery
@@ -72,10 +73,27 @@ names, wildcards, and disjunctions are not valid registry constraints.
 `foo add NAME@VERSION` records the supplied constraint. `foo install` resolves
 the manifest and writes the exact selected graph to `foo.lock`.
 
+`foo add NAME PATH` normalizes separators, converts an absolute path to a
+project-relative path when possible, and records `path+PATH`. A root local path
+is resolved relative to the root `project.json`; a local dependency's own
+relative path is resolved relative to that dependency's `project.json`. The
+target must contain `project.json`, its `name` must equal NAME, and its `version`
+must be exact. That declared version becomes the installed package version.
+Installation copies the package into `.foo/packages/NAME` and records the
+normalized source plus its current content digest. A later `foo install`
+rereads path sources rather than treating a previous local digest as immutable.
+Registry packages reachable from the current root and local requirements retain
+their locked versions while those versions satisfy every current constraint.
+
 `platformDependencies` keys select an operating system or target prefix, such
 as `linux`, `macos`, `windows`, or `wasm`. Development dependencies participate
 only in development installs. Optional dependencies participate when a matching
 release exists and otherwise do not enter the exact lock.
+
+Applications and unpublished local packages may use external sources. A package
+published to the registry must express every published dependency as a registry
+version constraint; machine-local paths and mutable external locations cannot
+become part of an immutable registry release.
 
 Dependency names bind package identities, not arbitrary source aliases.
 Registry identities may be unscoped (`package`) or GitHub-owned
@@ -93,9 +111,11 @@ All build properties are optional; unknown properties are errors.
 | --- | --- |
 | target | Preset name or versioned advanced target object; default host preset |
 | optimize | `"dev"` or `"release"`; default dev; both preserve defined semantics |
-| output | Project-relative dedicated output directory; default `target` |
+| output | Project-relative dedicated output directory; default `output` |
+| icon | Optional project-relative `.ico` file embedded in Windows executable products |
 | coverage | Project-relative path for versioned per-function execution counts; default empty |
 | profile | Project-relative path to a version 1 function coverage file consumed by release optimization; default empty |
+| docs | Boolean; default false; emit backend documentation plus `docs/api.json` |
 | products | Object from single-word product names to product records |
 | resources | Array of project-relative glob strings; default empty |
 | native | Object from project-relative .iv paths to native-interface dependency names; default empty |
@@ -128,7 +148,7 @@ the build, and hook-produced inputs participate in the normal build fingerprint.
   "dependencies": { "platform": "path+../platform" },
   "build": {
     "target": ["linux-x64"],
-    "output": "target",
+    "output": "output",
     "optimize": "dev",
     "products": {
       "core": { "entry": "core.iv", "kind": "static" },
@@ -158,6 +178,35 @@ normal process completion. A later release build may set `build.profile` to
 that file. Profile contents participate in artifact identity, and malformed,
 missing, or incompatible profiles are build errors rather than silent fallbacks.
 
+When `build.docs` is true, both backends write `docs/api.json`. The document has
+format `foo.docs`, version 1, the module name, and arrays describing public,
+foreign, and start functions plus declared types. A backend may place additional
+native documentation beside this portable index.
+
+## Release staging and command links
+
+The optional `release` object has `directory` (a dedicated project-relative
+staging directory, default `release`), `icon`, `license`, `readme`, `files`, and
+`sign`. The four file selections are project-relative; `files` is an array and
+the others are strings. `sign` contains `provider` and an optional `timestamp`.
+Provider is `auto`, `gpg`, `authenticode`, or `codesign`. Signing identities and
+private credentials are environment inputs and are never manifest values.
+
+`foo release` requires this object, selects release optimization, builds the
+configured products, and stages one `NAME-VERSION-TARGET` directory. It writes
+a versioned `foo.release` metadata document and SHA-256 checksums. `--sign`
+signs staged executable and shared-library artifacts before checksums are
+produced; static archives are not signed automatically. `foo sign ARTIFACT`
+applies the same provider contract to an existing executable.
+
+`foo link [ENTRY] [--name COMMAND]` creates a launcher in `FOO_BIN`, or
+`~/.foo/bin` when unset. The launcher runs the validated default or named entry
+from its project root. `foo unlink COMMAND` removes exactly that launcher.
+`foo path` prints the bin directory; linking does not mutate the operating
+system's `PATH` configuration. Launchers forward arguments through the
+`foo run ENTRY -- ARGUMENTS` boundary without reinterpreting them as FOO CLI
+options.
+
 An optional `tests` object maps test fixture filenames, without `.iv`, to native
 fixture options. `tests.NAME.sources` is a list of project-relative C source
 paths linked only for that fixture. Common C include paths and sources still
@@ -171,10 +220,12 @@ outside the package are invalid resource selections.
 ## Dependency lock and capability closure
 
 `foo.lock` is JSON with format `foo.lock`, version 1, the registry index
-revision, and a packages array sorted by package identity. Every registry
-package entry records its name, exact version, immutable registry source
-bundle, content digest, direct status, and exact dependency identities. The
-repository URL and commit remain provenance metadata.
+revision when a registry was used, and a packages array sorted by package
+identity. Every package entry records its name, exact version, source locator,
+content digest, direct status, and exact dependency identities. Registry source
+bundles are immutable (cannot change at the same version). Local path sources
+are development inputs: reinstalling rereads them and rewrites their digest.
+The repository URL and commit remain provenance metadata for registry entries.
 
 The project's requires value is an upper bound on the capabilities its source
 and dependency interfaces may require. A higher-level dependency is an error
@@ -182,7 +233,7 @@ with an explicit required-level diagnostic; it never silently upgrades the
 project. Installation is described in [toolchain](toolchain.md).
 
 Completed executable, static-library and shared-library products reside under
-`build.output`, which defaults to `target`. FOO creates missing output
+`build.output`, which defaults to `output`. FOO creates missing output
 directories. The path is confined to the project and must not overlap source,
 test, benchmark, dependency, cache, or compiler-work directories. Generated
 bindings, resource bundles, dependency material, backend intermediates and

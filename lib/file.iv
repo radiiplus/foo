@@ -13,11 +13,13 @@ public use "fs" function kind(path text) giving failable text.
 public use "fs" function copy(source text, destination text) giving failable nothing.
 public use "fs" function working giving failable text.
 public use "fs" function remove(path text) giving failable nothing.
--- Replaces destination atomically on the same filesystem and makes the directory update durable.
+-- Replaces destination on one filesystem and requests durable directory publication where supported.
 public use "fs" function replace(source text, destination text) giving failable nothing.
--- Advanced stream controls. flush empties process buffers; sync also requests stable storage.
+-- Advanced stream controls. flush empties process buffers; sync also requests stable storage from the host.
 public use "fs" function flush(stream pointer to streams.Stream) giving failable nothing.
 public use "fs" function sync(stream pointer to streams.Stream) giving failable nothing.
 public use "fs" function seek(stream pointer to streams.Stream, offset integer, origin text) giving failable nothing.
 public use "fs" function position(stream pointer to streams.Stream) giving failable unsigned.
 public use "fs" function size(stream pointer to streams.Stream) giving failable unsigned.
+-- Borrows the platform's native handle. It is valid only while the stream stays open.
+public use "fs" function handle(stream pointer to streams.Stream) giving failable unsigned.

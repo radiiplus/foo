@@ -50,7 +50,7 @@ function execute(command, args, settings = {}) {
 
 if (process.argv.includes("--help")) {
   console.log("Usage: node tools/benchmark.mjs [--backend c|zig] [--mode dev|release] [--warmup N] [--iterations N] [--output FILE]");
-  console.log("Measures FOO and handwritten native controls, keeping raw samples and startup baselines.");
+  console.log("Measures FOO and handwritten C, Zig, and Rust controls, keeping raw samples and startup baselines.");
   process.exit(0);
 }
 
@@ -119,12 +119,17 @@ function compileNative(backend, mode) {
   if (backend === "c") {
     execute(process.env.CC || "clang", ["-std=c11", mode === "release" ? "-O2" : "-O0", "-g",
       resolve(root, "benchmark", "native.c"), "-o", artifact]);
-  } else {
+  } else if (backend === "zig") {
     const zig = detect();
     if (!zig) throw Error("Managed Zig toolchain is missing; run foo toolchain install");
     execute(zig.path, ["build-exe", resolve(root, "benchmark", "native.zig"),
       "-O", mode === "release" ? "ReleaseSafe" : "Debug",
       "--cache-dir", resolve(directory, "cache"), "-femit-bin=" + artifact]);
+  } else {
+    const rust = process.env.RUSTC || "rustc";
+    execute(rust, ["--edition=2024", "-C", mode === "release" ? "opt-level=3" : "opt-level=0",
+      ...(mode === "release" ? [] : ["-C", "debuginfo=2"]),
+      resolve(root, "benchmark", "native.rs"), "-o", artifact]);
   }
   return { artifact, compilationMs: performance.now() - started };
 }
@@ -148,30 +153,44 @@ function native(backend, mode) {
   }
 }
 
-for (const mode of modes) for (const backend of backends) {
-  foo(backend, mode);
-  native(backend, mode);
+for (const mode of modes) {
+  for (const backend of backends) foo(backend, mode);
+  for (const backend of ["c", "zig", "rust"]) native(backend, mode);
 }
 
-for (const mode of modes) for (const backend of backends) for (const implementation of ["foo", "native"]) {
-  const baseline = measured.get("startup").find(item => item.mode === mode && item.backend === backend && item.implementation === implementation);
-  const runtime = measured.get("runtime").find(item => item.mode === mode && item.backend === backend && item.implementation === implementation);
-  for (const results of measured.values()) for (const result of results) {
-    if (result.mode === mode && result.backend === backend && result.implementation === implementation) {
+for (const mode of modes) for (const backend of new Set([...backends, "c", "zig", "rust"])) {
+  for (const implementation of ["foo", "native"]) {
+    const baseline = measured.get("startup").find(item => item.mode === mode && item.backend === backend && item.implementation === implementation);
+    const runtime = measured.get("runtime").find(item => item.mode === mode && item.backend === backend && item.implementation === implementation);
+    if (!baseline || !runtime) continue;
+    for (const results of measured.values()) for (const result of results) {
+      if (result.mode === mode && result.backend === backend && result.implementation === implementation) {
       result.startupBaselineMs = baseline.medianMs;
       result.runtimeBaselineMs = runtime.medianMs;
       result.startupAdjustedMedianMs = Math.max(0, result.medianMs - baseline.medianMs);
       result.runtimeAdjustedMedianMs = Math.max(0, result.medianMs - runtime.medianMs);
+      }
     }
+  }
+}
+
+for (const results of measured.values()) {
+  for (const result of results.filter(item => item.implementation === "foo")) {
+    const rust = results.find(item => item.implementation === "native" &&
+      item.backend === "rust" && item.mode === result.mode);
+    if (!rust) continue;
+    result.rustMedianMs = rust.medianMs;
+    result.speedupAgainstRust = rust.medianMs / result.medianMs;
+    result.fasterThanRust = result.medianMs < rust.medianMs;
   }
 }
 
 const processors = cpus();
 const report = {
-  schema: "foo.benchmark/v3", measuredAt: new Date().toISOString(),
+  schema: "foo.benchmark/v4", measuredAt: new Date().toISOString(),
   compiler: packageInfo.version, warmup, iterations,
   baselineWarmup, baselineIterations,
-  caution: "Startup-adjusted values are estimates. Compare raw samples and allocation/optimization evidence before attributing a difference to FOO.",
+  caution: "Startup-adjusted values and speed ratios are estimates. Compare raw samples and allocation/optimization evidence before attributing a difference to FOO. A workload result is not a language-wide speed claim.",
   machine: {
     platform: `${platform()} ${release()}`, architecture: arch(),
     processor: processors[0]?.model ?? "unknown", logicalCores: processors.length,

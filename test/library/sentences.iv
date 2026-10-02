@@ -1,5 +1,5 @@
 -- Exercises sentence calls and bounded byte copying without backend syntax.
-use "../../std/memory.iv".
+use "../../lib/memory.iv".
 use io as io.
 use text as words.
 use testing as check.

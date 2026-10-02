@@ -26,6 +26,7 @@ const checks = [
   ['give value.', { give: '#F15BB5', value: '#D4D4D4' }],
   ['data of type pointer to byte.', { data: '#D4D4D4', of: '#FF3CAC', type: '#FFD23F', pointer: '#FFD23F', to: '#FF3CAC', byte: '#39FF88' }],
   ['constant limit is 42.', { constant: '#FFD23F', limit: '#D66BFF', is: '#FF79C6', '42': '#B6FF00' }],
+  ['constant population is 1`000`000.', { '1`000`000': '#B6FF00' }],
   ['dynamic count is limit.', { dynamic: '#FFD23F', count: '#D4D4D4', limit: '#D4D4D4' }],
   ['define UserID as integer.', { define: '#FFD23F', UserID: '#39FF88', as: '#FFD23F', integer: '#39FF88' }],
   ['function greet name text punctuation text default "!" giving text {', { function: '#FFD23F', greet: '#FF7043', name: '#D4D4D4', text: '#39FF88', default: '#FFD23F', giving: '#FFD23F', '!': '#00E5FF' }],
@@ -42,6 +43,8 @@ const checks = [
   ['-- ordinary comment', { ordinary: '#8A9099' }],
   ['--! Documentation', { Documentation: '#8FBCBB' }],
   ['#[packed]', { packed: '#C792EA' }],
+  ['function boot for startup without setup using feature "sse2" keeping call {', { startup: '#FFD23F', without: '#FFD23F', setup: '#FFD23F', using: '#FFD23F', feature: '#FFD23F', sse2: '#00E5FF', keeping: '#FFD23F', call: '#FFD23F' }],
+  ['data of type pointer to byte with exact access.', { with: '#FFD23F', exact: '#FFD23F', access: '#FFD23F' }],
   // These are not reserved FOO words. A palette must not invent syntax.
   ['from with into', { from: '#D4D4D4', with: '#D4D4D4', into: '#D4D4D4' }],
 ];

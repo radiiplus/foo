@@ -1,12 +1,14 @@
 import std/[json, os, osproc, sequtils, strutils, tables]
 import ../../ir/[kind, node]
+import ../../ir/reach
 import ../../build/options as buildOptions
 import ../../build/execute as buildExecute
 import ../../opt/arch
 import ../../pkg/hash
 import ../../toolchain/manager as toolchainManager
+import ../docs as backendDocs
 import ../substrate
-import ../native/[escape, service]
+import ../native/[escape, icon, service]
 import ./emitter
 import ./shim as zigShim
 
@@ -61,8 +63,15 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
       level: options.level, mode: mode, substrate: options.substrate,
       native: substrate.NativeSelection(substrate: options.native.substrate,
         clobbers: options.native.clobbers))
-    let escaped = escape(module, selection)
+    let selected = reach(module, options.kind in ["static", "shared"])
+    let escaped = escape(selected, selection)
     if progress != nil:
+      if selected.funcs.len != module.funcs.len or
+          selected.externs.len != module.externs.len:
+        progress("strategy", "program",
+          "reachability / " & $selected.funcs.len & " of " &
+          $module.funcs.len & " functions | " & $selected.externs.len &
+          " of " & $module.externs.len & " imports", false)
       for decision in escaped.decisions:
         progress("strategy", decision.operation,
           decision.stage & " / " & decision.implementation & " | " & decision.reason,
@@ -72,6 +81,7 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
       library: options.kind in ["static", "shared"], runtime: options.runtime,
       coverage: options.coverage, target: options.target,
       benchmark: options.benchmark))
+    if options.docs: backendDocs.generate(escaped.module, outDir)
     let mainPath = outDir / "main.zig"
     writeFile(mainPath, generated.code)
     writeFile(outDir / "shim.zig", zigShim.`shim`)
@@ -85,7 +95,6 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
     writeFile(outDir / "storage.zig",
       runtimeStorage.replace("FOO_TRANSFER_BLOCK", transferBlock))
     writeFile(outDir / "stream.zig", runtimeStream)
-    writeFile(outDir / "service.zig", runtimeService)
     var mappings = newJArray()
     for sourceLine, generatedLine in generated.map:
       mappings.add(%*{"source": sourceLine, "generated": generatedLine})
@@ -95,15 +104,31 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
     if escaped.code.len > 0:
       fragment = outDir / "escape.c"
       writeFile(fragment, escaped.code)
-    let needsService = hosted(escaped.module)
+    let needsService = options.runtime != "none" and
+      hosted(escaped.module, includeTask = false)
+    let heap = options.runtime != "none" and
+      options.kind notin ["static", "shared"] and
+      (options.target.len == 0 or options.target.contains("windows") or
+        options.target.contains("linux") or options.target.contains("macos") or
+        options.target.contains("darwin")) and
+      escaped.module.externs.anyIt(it.abi == "runtime.sequence" and
+        it.symbol in ["append", "sized", "copy", "remove", "compact"])
     if needsService:
+      writeFile(outDir / "service.zig", runtimeService)
       writeFile(outDir / "service.h", serviceHeader)
       writeFile(outDir / "service.c", serviceSource)
+    else:
+      writeFile(outDir / "service.zig",
+        "// No native services are reachable from this program.\n")
+      for path in [outDir / "service.h", outDir / "service.c"]:
+        if fileExists(path): removeFile(path)
     let artifactPath = outDir / buildOptions.artifact(options)
     if options.compile:
+      let iconScript = icon.script(options.icon, outDir,
+        options.target, options.kind)
       let cache = sharedCacheDirectory()
       createDir(cache)
-      let llvmRequired = fragment.len > 0 or needsService or
+      let llvmRequired = fragment.len > 0 or needsService or iconScript.len > 0 or
         options.sources.len > 0 or options.sanitize.len > 0 or
         options.exports.len > 0 or options.script.len > 0
       let intensive = llvmRequired or mode == "release"
@@ -142,14 +167,18 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
         command.add(" --script " & quoteShell(options.script))
       if mode != "release" and not llvmRequired:
         command.add(" -fno-llvm")
+      elif mode == "release":
+        command.add(" -fstrip")
       for path in options.rpath: command.add(" -rpath " & quoteShell(path))
       for framework in options.frameworks:
         command.add(" -framework " & quoteShell(framework))
       for path in options.objects: command.add(" " & quoteShell(path))
+      if iconScript.len > 0: command.add(" " & quoteShell(iconScript))
       if options.target.len > 0:
         command.add(" -target " & quoteShell(options.target))
       if fragment.len > 0:
-        command.add(" " & quoteShell(fragment) & " -lc")
+        command.add(" " & quoteShell(fragment))
+        if options.runtime != "none": command.add(" -lc")
       if options.target.contains("freestanding"): command.add(" -fno-entry")
       if options.threads:
         command.add(" -mcpu generic+atomics+bulk_memory --shared-memory")
@@ -163,10 +192,16 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
       for path in options.includePaths:
         command.add(" -I " & quoteShell(path))
       if needsService:
-        command.add(" -I " & quoteShell(outDir) & " " &
+        let serviceFlags = if selective(options, fragment.len > 0):
+            resourceDefines(escaped.module) else: @[]
+        command.add(" -I " & quoteShell(outDir) &
+          " -cflags -ffunction-sections -fdata-sections " &
+          serviceFlags.mapIt(quoteShell(it)).join(" ") & " -- " &
           quoteShell(outDir / "service.c") & " -lc")
         for library in libraries(options.target):
           command.add(" -l" & quoteShell(library))
+      elif heap:
+        command.add(" -lc")
       if options.flags.len > 0 and options.sources.len > 0:
         command.add(" -cflags " &
           options.flags.mapIt(quoteShell(it)).join(" ") & " --")

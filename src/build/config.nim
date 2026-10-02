@@ -46,6 +46,7 @@ type
     sanitize*: string
     docs*: bool
     output*: string
+    icon*: string
     c*: CConfig
     link*: LinkConfig
   PublishConfig* = object
@@ -54,6 +55,16 @@ type
     url*: string
     mirrors*: seq[string]
     keys*: Table[string, Table[string, string]]
+  Signing* = object
+    provider*: string
+    timestamp*: string
+  Deployment* = object
+    directory*: string
+    icon*: string
+    license*: string
+    readme*: string
+    files*: seq[string]
+    signing*: Signing
   Manifest* = object
     name*: string
     version*: string
@@ -68,6 +79,7 @@ type
     dependencies*: Table[string, string]
     registry*: RegistryConfig
     publish*: PublishConfig
+    deployment*: Deployment
 
 proc defaultManifest*(): Manifest =
   result.name = "app"
@@ -77,6 +89,6 @@ proc defaultManifest*(): Manifest =
 
 proc hasBuild*(manifest: Manifest): bool =
   manifest.build.backend.len > 0 or manifest.build.compiler.len > 0 or
-    manifest.build.output.len > 0 or
+    manifest.build.output.len > 0 or manifest.build.icon.len > 0 or
     manifest.build.products.len > 0 or manifest.build.resources.len > 0 or
     manifest.build.tasks != nil or manifest.build.hooks != nil

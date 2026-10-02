@@ -1,7 +1,7 @@
 //! FOO's portable library, pinned to Zig 0.16.0.
 const std = @import("std");
 const builtin = @import("builtin");
-const allocator = std.heap.page_allocator;
+const allocator = if (builtin.link_libc) std.heap.c_allocator else std.heap.page_allocator;
 const managed = @import("storage.zig");
 const instrumented = FOO_BENCHMARK_ENABLED;
 pub const memory = managed.memory;

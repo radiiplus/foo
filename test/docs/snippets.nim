@@ -123,14 +123,14 @@ for path in paths:
       inc shellCount
       const commands = ["add", "benchmark", "bind", "build", "check",
         "clean", "doctor", "info", "init", "install", "login", "new",
-        "outdated", "publish", "remove", "run", "search", "test",
-        "update", "watch"]
+        "outdated", "path", "publish", "release", "remove", "run",
+        "search", "sign", "link", "unlink", "test", "update", "watch"]
       for line in fence.source.splitLines():
         let command = line.strip()
         if command.len == 0 or command.startsWith("#") or
             command.startsWith("cd "): continue
         let words = command.splitWhitespace()
-        if words.len >= 4 and words[0].startsWith("FOOSIGNKEY=") and
+        if words.len >= 4 and words[0].startsWith("FOOSIGNER=") and
             words[1] == "npm" and words[2] == "run":
           if not packageScripts.hasKey(words[3]):
             failures.add(location & ": unknown npm script: " & command)

@@ -38,7 +38,7 @@ A module's exported declarations define its detailed API. This specification fix
 | --- | --- |
 | memory | Scope allocation; explicit owners; bounded byte transfer, clearing, value comparison and explicit pointer identity |
 | io | Standard streams, bounded reads, line reads, writes, console display/report and close |
-| file | Binary-safe file transfer; inspection and copying; durable publication; removal; directories; path joining; working directory; flush, sync, seek, position and size controls |
+| file | Binary-safe file transfer; inspection and copying; one-writer durable replacement primitives; removal; directories; path joining; working directory; flush, sync, seek, position and size controls |
 | net | TCP connect, listen, accept, port, complete or partial send, receive, half-close, socket policy and close |
 | http | Client requests and servers; request headers, redirects and connection reuse controls |
 | process | Execute a program with typed arguments; run a shell command; count/read arguments; read environment variables |
@@ -51,7 +51,7 @@ A module's exported declarations define its detailed API. This specification fix
 | log | Message and error output |
 | map, set, queue, stack | Typed immutable key/value lookup, unique values, FIFO and LIFO collections |
 | table | Mutable open-addressed text-key lookup with typed values |
-| codec | Explicit codec values plus generated JSON encoding and parsing for concrete scalar and record types |
+| codec | Explicit codec values plus portable generated JSON for scalars, optional values, sequences, choices, and records |
 | state | An immutable state value paired with an application-defined failable transition |
 | iterator | Explicit state-carrying iteration with item/done exhaustion |
 | transaction | Prepare, commit, and rollback coordination for one-process work |
@@ -79,6 +79,8 @@ File modes are `"read"`, `"write"` and `"append"`. `read` returns up to the requ
 
 Network operations are blocking TCP operations. Port zero asks the operating system to choose a port; `port` returns it. `send` completes the entire byte sequence or fails; `receive` may return fewer bytes than requested and returns empty at end of input. Closing a connection while another operation uses it requires caller synchronization.
 
+`file.handle` and `net.handle` return borrowed, platform-specific unsigned handle values for system-level interoperation. On POSIX, these are a file descriptor and socket descriptor. On Windows, they are a Win32 `HANDLE` and Winsock `SOCKET`, respectively. They remain owned by the FOO resource, become invalid when it closes, and must not be closed or transferred to another owner by the caller. Native operations on them must be synchronized with FOO operations on the same resource. The native interface can use these values for platform-specific calls; portable code uses the regular file and network operations.
+
 `push` performs one operating-system send and may report fewer bytes than supplied. `shutdown` accepts `read`, `write`, or `both` and does not release the connection. `nodelay` controls TCP_NODELAY and `keepalive` controls SO_KEEPALIVE. These options fail when the target socket or platform cannot provide the requested behavior.
 
 Whole-file text uses `read` and `write`. Arbitrary binary files use
@@ -89,11 +91,24 @@ byte counts; querying size preserves the current position. `flush` writes
 process-buffered output without closing the stream and provides no stable-
 storage guarantee. `sync` flushes and issues the platform's stable-storage
 request. `replace` atomically renames a source over a destination on the same
-filesystem and requests durable publication of the directory update; a
+filesystem where the host filesystem supplies atomic replacement; a
 cross-filesystem replacement fails. The source should be synced and closed
-first. A failed `replace` does not prove that the rename did not occur because
-the later directory sync can fail; callers inspect the destination before a
-retry. `remove` deletes a file and fails for a missing path.
+first. POSIX implementations sync the destination parent after rename. Windows
+implementations request write-through replacement. A failed `replace` does not
+prove that the rename did not occur because a later durability request can
+fail; callers inspect the destination before a retry. These operations report
+successful operating-system requests, not a universal physical-media
+guarantee. Remote, virtual, removable, or incorrectly configured storage may
+provide weaker behavior. `remove` deletes a file and fails for a missing path,
+but does not sync the parent directory and therefore has no durable-deletion
+guarantee.
+
+The file surface has no directory iterator, exclusive create, file lock, or
+compare-and-swap operation. A publication protocol therefore permits one writer
+per destination. Concurrent writers have last-successful-replacement behavior,
+not arbitration. Reclamation after restart uses an application-maintained
+durable index or caller-supplied candidate paths; it cannot discover candidates
+by enumerating `file` alone.
 Append-mode writes remain positioned by the operating system's append
 semantics.
 
@@ -109,10 +124,18 @@ The Windows C backend uses WinHTTP and the operating-system trust store rather t
 
 `codec.Codec[T]` contains application-supplied failable `encode` and `decode`
 functions. `codec.encode[T]` and `codec.decode[T]` use the standard JSON wire
-format and generate concrete scalar/record handling for `T`; unsupported value
-graphs are rejected during backend generation. Generated parsing rejects
-invalid syntax, duplicate or missing fields, wrong JSON kinds, and numeric
-overflow. This does not infer an application schema version or trust policy.
+format and generate concrete handling for `T`. The cross-backend generated
+contract is boolean, signed and unsigned integers, decimal, text, optional
+values, sequences, choices, and records recursively containing only those
+types. Sequences use JSON arrays, absent optional values use JSON null, and a
+choice uses a one-field object keyed by its active variant. A payload-free
+variant's value is an empty object.
+Generated parsing rejects invalid
+syntax, duplicate or missing fields, wrong JSON kinds, and numeric overflow.
+Pointer, function, and resource fields remain outside the
+generated contract. Applications use an explicit `Codec[T]` for those graphs.
+No generated codec infers an
+application schema version, size policy, ownership policy, or trust policy.
 `state.Machine[S, E]` contains a
 current value and failable transition function; `step` returns a new machine and
 does not mutate or persist the previous state. `contract` delegates `require`,

@@ -96,7 +96,13 @@ function withdraw(amount decimal)
   give amount.
 }
 
-#[noinline]
-function next(value unsigned) giving unsigned {
+function next(value unsigned) giving unsigned keeping call {
   give value plus 1.
+}
+
+function boot for startup without setup {
+  native asm { "wfe" }
+}
+
+function irq for interrupt {
 }

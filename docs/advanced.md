@@ -126,7 +126,11 @@ Positions and sizes are byte counts. Seek origins are `start`, `current`, and
 `end`. `flush` empties process buffers without closing the stream; it does not
 make a power-loss durability promise. `sync` also asks the operating system to
 commit the file to stable storage. Durable publication writes and syncs a
-temporary stream, closes it, then uses `replace` on the same filesystem.
+temporary stream, closes it, then uses `replace` on the same filesystem. This
+is a one-writer protocol: `file` has no lock, exclusive-create, or
+compare-and-swap operation. The guarantee is limited by the host filesystem and
+storage honoring the operating-system request; see the standard-library file
+contract for platform and failure details.
 Whole-file binary reads use `readbytes`; release their `sequence of byte` with
 `releasebytes`.
 

@@ -58,6 +58,38 @@ proc packedBitWidth*(value: `Type`): int =
       for field in value.fields.values: result += packedBitWidth(field)
   else: return 0
 
+type Lifecycle = ref object
+  arena: bool
+  library: bool
+
+proc lifecycle(module: Module): Lifecycle =
+  let state = Lifecycle()
+  proc inspect(instruction: Instruction)
+  proc inspect(body: Block) =
+    if body == nil: return
+    for instruction in body.instrs: inspect(instruction)
+    inspect(body.term)
+  proc inspect(instruction: Instruction) =
+    if instruction == nil: return
+    if instruction.kind == InstrKind.Alloc and instruction.op != "slot":
+      state.arena = true
+    if instruction.kind == InstrKind.Allocate and instruction.target.type != nil:
+      state.library = true
+    if instruction.kind in {InstrKind.Call, InstrKind.Thread}:
+      if instruction.abi == "runtime": state.arena = true
+      elif instruction.abi.startsWith("runtime."):
+        let provider = instruction.abi[8 .. ^1]
+        if provider notin services: state.library = true
+    if instruction.kind == InstrKind.Add and instruction.dest.type != nil and
+        instruction.dest.type.kind == TypeKind.Slice and
+        instruction.dest.type.constant and instruction.dest.type.elem != nil and
+        instruction.dest.type.elem.width == 8:
+      state.library = true
+    inspect(instruction.fallback)
+  for fn in module.funcs:
+    for body in fn.blocks: inspect(body)
+  result = state
+
 proc valueStr*(value: Value): string =
   case value.kind
   of ValueKind.Reg: "v_" & value.name
@@ -121,9 +153,11 @@ proc usedRegisters*(function: Function): HashSet[string] =
 
 proc region(id: string): string = "@" & quote("arena_" & id)
 
-proc emitInstr(instruction: Instruction; used: HashSet[string]): string
+proc emitInstr(instruction: Instruction; used: HashSet[string];
+    contracts: Table[string, NativeContract]): string
 
-proc emitInstr(instruction: Instruction; used: HashSet[string]): string =
+proc emitInstr(instruction: Instruction; used: HashSet[string];
+    contracts: Table[string, NativeContract]): string =
   if instruction == nil: return ""
   let hasDest = instruction.dest.type != nil
   let destination = if hasDest: "const " & valueStr(instruction.dest) & " = " else: ""
@@ -235,12 +269,13 @@ proc emitInstr(instruction: Instruction; used: HashSet[string]): string =
   of InstrKind.Catch:
     let fallback = instruction.fallback
     var body: seq[string]
-    for child in fallback.instrs: body.add(emitInstr(child, used))
+    for child in fallback.instrs: body.add(emitInstr(child, used, contracts))
     finish(destination & valueStr(instruction.val) & " catch " & fallback.label & ": {\n" &
       body.join("\n") & "\nbreak :" & fallback.label & " " & valueStr(fallback.term.value) & ";\n};")
   of InstrKind.Defer:
     var body: seq[string]
-    for child in instruction.fallback.instrs: body.add(emitInstr(child, used))
+    for child in instruction.fallback.instrs:
+      body.add(emitInstr(child, used, contracts))
     (if instruction.error: "errdefer" else: "defer") & " {\n" & body.join("\n") & "\n}"
   of InstrKind.Jump: "// jump " & instruction.label
   of InstrKind.Cjump: "if (" & valueStr(instruction.cond) & ") { /* " & instruction.trueLabel & " */ } else { /* " & instruction.falseLabel & " */ }"
@@ -271,9 +306,16 @@ proc emitInstr(instruction: Instruction; used: HashSet[string]): string =
     elif instruction.op == "store": "@atomicStore(" & typeStr(instruction.ptr.type.elem) & ", " & valueStr(instruction.ptr) & ", " & valueStr(instruction.val) & ", ." & order & ");"
     else: finish(destination & "@atomicRmw(" & typeStr(instruction.ptr.type.elem) & ", " & valueStr(instruction.ptr) &
       ", ." & (if instruction.op == "add": "Add" else: "Xchg") & ", " & valueStr(instruction.val) & ", ." & order & ");")
-  else: raise newException(ValueError, "Zig backend does not support IR " & $instruction.kind)
+  of InstrKind.Native:
+    if not contracts.hasKey(instruction.symbol):
+      raise newException(ValueError, "Native operation has no contract")
+    let contract = contracts[instruction.symbol]
+    if contract.stage != "@asm":
+      raise newException(ValueError, "Zig can inline only verified assembly contracts")
+    "asm volatile (" & contract.code.strip & ");"
 
-proc control(function: Function; used: HashSet[string]): seq[string] =
+proc control(function: Function; used: HashSet[string];
+    contracts: Table[string, NativeContract]): seq[string] =
   var labels = initTable[string, int]()
   for index, basicBlock in function.blocks: labels[basicBlock.label] = index
   var registers = initOrderedTable[string, Value]()
@@ -304,22 +346,46 @@ proc control(function: Function; used: HashSet[string]): seq[string] =
         inc serial
       before.join(" ") & " " & after.join(" ") & " pc = " & $labels[target] & "; continue :flow;"
     result.add("      " & $index & " => {")
-    for instruction in basicBlock.instrs & @[basicBlock.term]:
-      if instruction.kind == InstrKind.Phi: continue
-      if instruction.kind == InstrKind.Jump: result.add(edge(instruction.label))
-      elif instruction.kind == InstrKind.Cjump:
-        result.add("if (" & valueStr(instruction.cond) & ") { " & edge(instruction.trueLabel) &
-          " } else { " & edge(instruction.falseLabel) & " }")
-      else:
-        let emitted = emitInstr(instruction, assigned)
+    let term = basicBlock.term
+    var body = -1
+    if term.kind == InstrKind.Cjump and labels.hasKey(term.trueLabel):
+      body = labels[term.trueLabel]
+    if body >= 0 and function.blocks[body].term.kind == InstrKind.Jump and
+        function.blocks[body].term.label == basicBlock.label and
+        basicBlock.instrs.allIt(it.kind != InstrKind.Phi) and
+        function.blocks[body].instrs.allIt(it.kind != InstrKind.Phi):
+      result.add("loop: while (true) {")
+      for instruction in basicBlock.instrs:
+        let emitted = emitInstr(instruction, assigned, contracts)
         result.add(if emitted.startsWith("const "): emitted[6 .. ^1] else: emitted)
+      result.add("if (!(" & valueStr(term.cond) & ")) break :loop;")
+      for instruction in function.blocks[body].instrs:
+        let emitted = emitInstr(instruction, assigned, contracts)
+        result.add(if emitted.startsWith("const "): emitted[6 .. ^1] else: emitted)
+      result.add("}")
+      result.add(edge(term.falseLabel))
+    else:
+      for instruction in basicBlock.instrs & @[term]:
+        if instruction.kind == InstrKind.Phi: continue
+        if instruction.kind == InstrKind.Jump: result.add(edge(instruction.label))
+        elif instruction.kind == InstrKind.Cjump:
+          result.add("if (" & valueStr(instruction.cond) & ") { " & edge(instruction.trueLabel) &
+            " } else { " & edge(instruction.falseLabel) & " }")
+        else:
+          let emitted = emitInstr(instruction, assigned, contracts)
+          result.add(if emitted.startsWith("const "): emitted[6 .. ^1] else: emitted)
     result.add("      },")
   result.add(@["      else => unreachable,", "    }", "  }"])
 
 proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
   let module = prepare(input)
-  if module.native.len > 0:
-    raise newException(ValueError, "Native residues need a verified substrate binding before emission")
+  let cleanup = lifecycle(module)
+  var contracts = initTable[string, NativeContract]()
+  for contract in module.native:
+    if contract.stage != "@asm":
+      raise newException(ValueError,
+        "Native residues need a verified substrate binding before emission")
+    contracts[contract.id] = contract
   var code = "// FOO IR v1 -> Zig\nconst shim = @import(\"shim.zig\");\n\n"
   if options.coverage.len > 0:
     if options.runtime == "none":
@@ -374,7 +440,9 @@ proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
   for functionIndex, function in module.funcs:
     let used = usedRegisters(function)
     var params: seq[string]
-    if function.name == "main" and hosted(module, includeIo = false): params.add("process: @import(\"std\").process.Init")
+    if function.name == "main" and
+        hosted(module, includeIo = false, includeTask = false):
+      params.add("process: @import(\"std\").process.Init")
     else:
       for parameter in function.params: params.add(valueStr(parameter) & ": " & typeStr(parameter.type))
     var qualifier = if function.abi == "c" or (options.library and function.public) or
@@ -397,11 +465,15 @@ proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
     if options.coverage.len > 0 and "naked" notin function.attributes:
       addLine(function.line, "  _ = coverage[" & $functionIndex & "].fetchAdd(1, .monotonic);")
     if function.name == "main" and options.runtime != "none":
-      addLine(0, "  shim.init(" & $(mode == "dev") & ");")
-      addLine(0, "  defer shim.deinit();")
+      if cleanup.arena:
+        addLine(0, "  shim.init(" & $(mode == "dev") & ");")
+        addLine(0, "  defer shim.deinit();")
+      if cleanup.library: addLine(0, "  defer shim.finish();")
       if options.benchmark: addLine(0, "  defer shim.benchmark();")
-      if hosted(module, includeIo = false):
+      if hosted(module, includeIo = false, includeTask = false):
         addLine(0, "  try @import(\"service.zig\").init(process.minimal.args);")
+        addLine(0, "  defer @import(\"service.zig\").deinit();")
+      elif hosted(module, includeTask = false):
         addLine(0, "  defer @import(\"service.zig\").deinit();")
       if options.coverage.len > 0: addLine(0, "  defer report();")
     var pending = function.blocks
@@ -422,13 +494,14 @@ proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
             " = @import(\"std\").heap.ArenaAllocator.init(@import(\"std\").heap.page_allocator);")
           addLine(0, "  defer " & region(instruction.region) & ".deinit();")
     if function.blocks.len > 1:
-      for line in control(function, used): addLine(0, line)
+      for line in control(function, used, contracts): addLine(0, line)
     else:
       for basicBlock in function.blocks:
         addLine(0, "  // block " & basicBlock.label)
-        for instruction in basicBlock.instrs: addLine(0, "  " & emitInstr(instruction, used))
+        for instruction in basicBlock.instrs:
+          addLine(0, "  " & emitInstr(instruction, used, contracts))
         if "naked" notin function.attributes or basicBlock.term.kind != InstrKind.Return:
-          addLine(0, "  " & emitInstr(basicBlock.term, used))
+          addLine(0, "  " & emitInstr(basicBlock.term, used, contracts))
     addLine(0, "}")
     if "Equatable" in function.derives:
       addLine(0, "pub fn eql(self: " & function.name & ", other: " &

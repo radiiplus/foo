@@ -44,4 +44,22 @@ let length = ast.Call(ast.Constant(body[7]).value)
 doAssert ast.Field(length.callee).field.text == "length"
 doAssert ast.Action(body[8]).value.tag == "call"
 
+let fieldSource = """define Device as record {
+  data of type pointer to unsigned 32 with exact access.
+}.
+function boot for startup without setup using feature "sse2" keeping call { }
+function irq for interrupt { }
+"""
+let fieldDiagnostics = newEngine()
+fieldDiagnostics.setSource(fieldSource, "field.iv")
+let fieldProgram = newParser(newLexer(fieldSource, fieldDiagnostics).lex(),
+  fieldDiagnostics).parse()
+doAssert not fieldDiagnostics.failed
+let alias = ast.Alias(fieldProgram.units[0].body.stmts[0])
+let field = ast.Record(alias.body).fields[0]
+doAssert field.attributes == @["volatile"]
+let boot = ast.Function(fieldProgram.units[0].body.stmts[1])
+doAssert boot.attributes == @["start", "naked", "target_feature(\"sse2\")", "noinline"]
+doAssert ast.Function(fieldProgram.units[0].body.stmts[2]).attributes == @["interrupt"]
+
 echo "parser machine and sentence parity: ok"

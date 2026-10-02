@@ -2,9 +2,9 @@
 use sequence as items.
 use testing as check.
 
-dynamic values is items.sized[unsigned](1_000_000) try.
+dynamic values is items.sized[unsigned](1`000`000) try.
 dynamic index of type unsigned is 0.
-while index less than 1_000_000 {
+while index less than 1`000`000 {
   set values at index to index.
   increase index by 1.
 }
@@ -15,4 +15,4 @@ for each value in values {
 }
 after { items.release[unsigned](values) fallback nothing. }
 
-check.number(checksum, 499_999_500_000).
+check.number(checksum, 499`999`500`000).

@@ -40,7 +40,7 @@ foo test --filter tax
 foo test --backend c
 foo test --backend zig
 foo test --watch
-foo test std
+foo test lib
 ```
 
 `foo test` discovers `test "description" { ... }` blocks across the project,

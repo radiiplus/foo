@@ -26,6 +26,18 @@ constant port of type unsigned 16 is 8080.
 constant ratio of type decimal 32 is 0.75.
 ```
 
+Use backticks to separate long numbers into readable groups. They do not change
+the value:
+
+```foo
+constant population is 1`000`000.
+constant precise is 12`345.6789.
+```
+
+Backticks group only the whole-number part, including the part before a decimal
+point. The digits after the point remain unchanged. Write ``10`000.25``, not
+`10_000.25` or ``10`000.2`5``. The separator must sit between digits.
+
 ## Text and characters
 
 Double quotes create text. Single quotes create one character.

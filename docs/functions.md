@@ -239,19 +239,54 @@ call's storage), so prefer an iterative loop for unbounded input.
 
 ## Preserving a call boundary
 
-Release builds may inline small private functions. Add `#[noinline]` only when
+Release builds may inline small private functions. Add `keeping call` only when
 the call itself is observable to tooling, such as a call-overhead benchmark or
 a profiler boundary:
 
 ```foo
-#[noinline]
-function next(value unsigned) giving unsigned {
+function next(value unsigned) giving unsigned keeping call {
   give value plus 1.
 }
 ```
 
-This attribute prevents FOO-level and backend inlining. It is not a general
+This clause prevents FOO-level and backend inlining. It is not a general
 performance hint; ordinary application code should let the optimizer decide.
+
+## Hardware function clauses
+
+Hardware-capability projects may describe entry and machine-level functions
+with readable clauses:
+
+| Clause | Meaning |
+| --- | --- |
+| `for startup` | Exports the runtime-free entry symbol that begins execution. |
+| `for interrupt` | Uses the selected target's interrupt calling convention (the register and return rules used by a hardware handler). |
+| `without setup` | Omits the normal function setup and cleanup so verified native instructions control the whole body. |
+| `using feature "sse2"` | Allows one function to use a CPU feature already promised by the selected target profile. |
+
+These clauses do not upgrade a project's authority or the machine it targets.
+Interrupt, setup-free, and target-feature clauses require hardware capability,
+and the requested operation must exist on the selected architecture. A target
+feature clause cannot add a feature that the target profile did not promise.
+Runtime-free code also cannot allocate memory or call file, network, process, or
+other hosted services.
+
+Both native backends preserve these contracts. The C backend expresses them
+with target compiler attributes; the Zig backend expresses them with Zig calling
+conventions and target features. Unsupported combinations fail during checking
+or emission instead of quietly becoming ordinary functions.
+
+```foo
+function boot for startup without setup {
+  native asm { "wfe" }
+}
+
+function irq for interrupt {
+}
+```
+
+Older `#[...]` spellings remain accepted for source compatibility during the
+migration, but formatting and new documentation use these FOO clauses.
 
 ## Try it
 

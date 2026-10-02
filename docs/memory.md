@@ -50,8 +50,7 @@ Use C-layout metadata when a record crosses a C ABI boundary. The field types
 must also have compatible C representations; layout metadata alone cannot make
 an incompatible field safe.
 ```foo
-#[repr(C)]
-public define Point as record {
+public define Point as c record {
   x of type integer.
   y of type integer.
 }.

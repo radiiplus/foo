@@ -235,10 +235,10 @@ for them, or assume they are standard-library values.
 | `log message` and `log error` | Automatically mapped logging statements; use the `log` module for explicit control. |
 | `splat`, `shuffle`, `select`, `reduce` | Compiler intrinsics valid only with the documented vector argument shapes. |
 | `public use "provider" function ...` | Standard-library binding declaration only. Provider names such as `fs` and `runtime.*` are compiler/runtime identifiers, not importable modules. |
-| `#[repr(C)]` | Native-interface record or union layout marker. It is not a user-defined annotation. |
-| `#[noinline]` | Optimizer instruction for a function whose call boundary must remain measurable or externally observable. |
-| `#[start]`, `#[interrupt]`, `#[naked]`, `#[target_feature("...")]` | Hardware-target function attributes. They require the matching target and capability; ordinary applications use `start`. |
-| `#[volatile]` | Hardware-only pointer-field access marker; it is not a general variable modifier. |
+| `c record`, `c union` | Native-interface layouts. They are not ordinary records with a user-defined annotation. |
+| `keeping call` | Preserves a function call boundary when it must remain measurable or externally observable. |
+| `for startup`, `for interrupt`, `without setup`, `using feature "..."` | Hardware function clauses. They require the matching target and capability; ordinary applications use `start`. |
+| `with exact access` | Hardware-only pointer-field access rule; each read and write must occur as written. |
 
 Names beginning with `__`, generated symbols beginning with `foo_`, IR labels
 such as `equals`, `times`, or `catch`, and backend runtime helpers are never

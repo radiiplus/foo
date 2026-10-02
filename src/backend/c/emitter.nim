@@ -1,5 +1,6 @@
-import std/[json, os, sequtils, sets, strutils, tables]
+import std/[algorithm, json, os, sequtils, sets, strutils, tables]
 import ../../ir/[kind, monomorph, node]
+import ../../opt/arch as targetArch
 import ../substrate
 import ./runtime
 
@@ -14,6 +15,7 @@ type
     roots: seq[`Type`]
     shapes: Table[string, string]
     named: HashSet[string]
+    integers: HashSet[string]
 
   EmitState = ref object
     types: Types
@@ -24,6 +26,7 @@ type
     externs: Table[string, Extern]
     contracts: Table[string, NativeContract]
     called, referenced, storage, exported: HashSet[string]
+    symbols: Table[string, string]
 
   Cleanup = object
     bodyBlock: Block
@@ -46,6 +49,26 @@ const
   memoryCode = staticRead("memory.c")
   traceCode = staticRead("trace.c")
   copyCode = staticRead("copy.c")
+  bareCode = """
+static float foo_f32(uint32_t bits) {
+  union { uint32_t bits; float value; } converted = { bits };
+  return converted.value;
+}
+static double foo_f64(uint64_t bits) {
+  union { uint64_t bits; double value; } converted = { bits };
+  return converted.value;
+}
+static void foo_transfer(void *destination, const void *source, size_t size) {
+  uint8_t *out = destination;
+  const uint8_t *in = source;
+  if (!size || out == in) return;
+  if (out < in || out >= in + size) {
+    for (size_t index = 0; index < size; index++) out[index] = in[index];
+  } else {
+    for (size_t index = size; index > 0; index--) out[index - 1] = in[index - 1];
+  }
+}
+"""
 
 proc name*(value: string): string =
   result = "foo_symbol_"
@@ -59,9 +82,22 @@ proc symbol*(value: string): string =
     raise newException(ValueError, "C cannot bind symbol '" & value & "'")
   value
 
+proc convention(value: string): string =
+  case value.toLowerAscii()
+  of "", "c", "runtime": ""
+  of "system": "FOO_SYSTEM "
+  of "stdcall": "FOO_STDCALL "
+  of "fastcall": "FOO_FASTCALL "
+  of "vectorcall": "FOO_VECTORCALL "
+  of "thiscall": "FOO_THISCALL "
+  else:
+    if value.startsWith("runtime."): ""
+    else: raise newException(ValueError,
+      "Unsupported C calling convention '" & value & "'")
+
 proc newTypes*(): Types =
   Types(cache: initTable[pointer, string](), shapes: initTable[string, string](),
-    named: initHashSet[string]())
+    named: initHashSet[string](), integers: initHashSet[string]())
 
 proc getImpl(types: Types; value: `Type`; ignoreAtomic: bool): string
 proc get*(types: Types; value: `Type`): string = types.getImpl(value, false)
@@ -78,9 +114,14 @@ proc getImpl(types: Types; value: `Type`; ignoreAtomic: bool): string =
   of TypeKind.Error: return "const char *"
   of TypeKind.Int, TypeKind.Uint:
     let width = if value.width > 0: value.width else: 32
-    if width notin [8, 16, 32, 64]:
-      raise newException(ValueError, "C backend needs a packed field for " & $width & "-bit integers")
-    return (if value.kind == TypeKind.Uint: "u" else: "") & "int" & $width & "_t"
+    if width < 1 or width > 128:
+      raise newException(ValueError, "C backend cannot represent " & $width & "-bit integers")
+    let storage = if width <= 8: 8 elif width <= 16: 16 elif width <= 32: 32
+      elif width <= 64: 64 else: 128
+    types.integers.incl((if value.kind == TypeKind.Uint: "u" else: "i") & $width)
+    return if storage == 128:
+      "foo_" & (if value.kind == TypeKind.Uint: "u" else: "i") & "128"
+      else: (if value.kind == TypeKind.Uint: "u" else: "") & "int" & $storage & "_t"
   of TypeKind.Float:
     let width = if value.width > 0: value.width else: 64
     if width notin [32, 64]:
@@ -153,10 +194,8 @@ proc getImpl(types: Types; value: `Type`; ignoreAtomic: bool): string =
       raise newException(ValueError, "C arrays and vectors need a positive constant size")
     types.declarations.add("typedef struct { " & elem & " lane[" & $value.width & "]; } " & id & ";")
   of TypeKind.Function:
-    if value.abi.len > 0 and value.abi != "c" and value.abi != "runtime" and
-        not value.abi.startsWith("runtime."):
-      raise newException(ValueError, "Unsupported C calling convention '" & value.abi & "'")
-    types.declarations.add("typedef " & ret & " (*" & id & ")(" &
+    let calling = convention(value.abi)
+    types.declarations.add("typedef " & ret & " (" & calling & "*" & id & ")(" &
       (if params.len > 0: params.join(", ") else: "void") & ");")
   else: raise newException(ValueError, "C backend cannot represent " & $value.kind)
   id
@@ -171,6 +210,7 @@ proc literal(value: string): string =
   literal(value.toOpenArrayByte(0, value.high))
 
 proc functionName(state: EmitState; value: string): string =
+  if state.symbols.hasKey(value): return state.symbols[value]
   if value in state.exported: symbol(value) else: name(value)
 
 proc value(state: EmitState; item: Value): string =
@@ -206,7 +246,31 @@ proc value(state: EmitState; item: Value): string =
     return "UINT64_C(" & item.name & ")"
   if item.type != nil and item.type.kind == TypeKind.Int and item.type.width == 64:
     return if item.name == "-9223372036854775808": "INT64_MIN" else: "INT64_C(" & item.name & ")"
+  if item.type != nil and item.type.kind in {TypeKind.Int, TypeKind.Uint} and
+      item.type.width > 64:
+    let raw = item.name.replace("_", "")
+    let negative = raw.len > 0 and raw[0] == '-'
+    let digits = if negative: raw[1 .. ^1] else: raw
+    var magnitude = "((foo_u128)0)"
+    for digit in digits:
+      magnitude = "(" & magnitude & " * (foo_u128)10 + (foo_u128)" & digit & ")"
+    if item.type.kind == TypeKind.Uint: return magnitude
+    if negative:
+      return "(-((foo_i128)(" & magnitude & " - (foo_u128)1)) - (foo_i128)1)"
+    return "((foo_i128)" & magnitude & ")"
   if item.name == "null": "NULL" else: item.name
+
+proc assigned(state: EmitState; expected: `Type`; item: Value): string =
+  let value = state.value(item)
+  if expected != nil and expected.kind == TypeKind.Optional and
+      item.type != nil and item.type.kind != TypeKind.Optional:
+    return "(" & state.types.get(expected) &
+      "){ .present = true, .value = " & value & " }"
+  if expected != nil and expected.kind == TypeKind.Failable and
+      item.type != nil and item.type.kind != TypeKind.Failable:
+    return "(" & state.types.get(expected) &
+      "){ .error = NULL, .value = " & value & " }"
+  value
 
 proc equality(state: EmitState; typ: `Type`; left, right: string): string =
   if typ.kind == TypeKind.Void: return "true"
@@ -313,6 +377,10 @@ proc cleanup(ctx: FunctionState; error = "false"): string =
   for regionId in ctx.regions: result.add("foo_close(&" & regionId & ");\n")
 
 proc returned(ctx: FunctionState; item: Value): string =
+  if "naked" in ctx.fn.attributes:
+    if ctx.fn.ret.kind != TypeKind.Void:
+      raise newException(ValueError, "A naked function cannot return a value")
+    return ""
   let hasValue = item.type != nil
   if ctx.fn.ret.kind == TypeKind.Void:
     return ctx.cleanup() & (if ctx.fn.name == "main":
@@ -375,12 +443,16 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
   let d = ctx.destination(instruction)
   case instruction.kind
   of InstrKind.Region:
+    if state.options.runtime == "none":
+      raise newException(ValueError, "Regions require the hosted runtime")
     let id = name("arena_" & instruction.region)
     if id notin ctx.defined:
       ctx.declarations.add("foo_region " & id & ";")
       ctx.defined.incl(id)
     return if instruction.op == "open": id & ".head = NULL;" else: "foo_close(&" & id & ");"
   of InstrKind.Allocate:
+    if state.options.runtime == "none":
+      raise newException(ValueError, "Allocator operations require the hosted runtime")
     let size = state.value(instruction.val)
     let output = state.value(instruction.dest)
     if instruction.target.type != nil:
@@ -463,6 +535,8 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
     if instruction.kind == InstrKind.Add and
         instruction.dest.type.kind == TypeKind.Slice and
         instruction.dest.type.constant and instruction.dest.type.elem.width == 8:
+      if state.options.runtime == "none":
+        raise newException(ValueError, "Text joining requires the hosted runtime")
       return d & "foo_join(" & state.value(instruction.val) & ", " &
         state.value(instruction.val2) & ");"
     if instruction.dest.type.kind == TypeKind.Vector:
@@ -483,6 +557,8 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
       inc ctx.counter
       ctx.declarations.add(state.types.get(instruction.dest.type.elem) & " " & cell & ";")
       return d & "&" & cell & ";"
+    if state.options.runtime == "none":
+      raise newException(ValueError, "Dynamic allocation requires the hosted runtime")
     let allocation = "foo_alloc_" & $ctx.counter
     inc ctx.counter
     ctx.declarations.add("void *" & allocation & " = NULL;")
@@ -527,6 +603,16 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
         operation in ["==", "!="] and instruction.val2.kind == ValueKind.Const and
         instruction.val2.name == "null":
       return d & (if operation == "==": "!" else: "") & "(" & left & ").present;"
+    if instruction.val.type.kind == TypeKind.Optional and
+        instruction.val2.type.kind != TypeKind.Optional and operation in ["==", "!="]:
+      let equal = "(" & left & ").present && " &
+        state.equality(instruction.val.type.elem, "(" & left & ").value", right)
+      return d & (if operation == "!=": "!(" & equal & ")" else: equal) & ";"
+    if instruction.val.type.kind != TypeKind.Optional and
+        instruction.val2.type.kind == TypeKind.Optional and operation in ["==", "!="]:
+      let equal = "(" & right & ").present && " &
+        state.equality(instruction.val2.type.elem, left, "(" & right & ").value")
+      return d & (if operation == "!=": "!(" & equal & ")" else: equal) & ";"
     if operation in ["==", "!="] and instruction.val.type.kind in {
         TypeKind.Struct, TypeKind.ExternStruct, TypeKind.TaggedUnion,
         TypeKind.Optional, TypeKind.Slice}:
@@ -539,6 +625,11 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
     if operation notin ["==", "!="] and instruction.val.type.kind in {
         TypeKind.Struct, TypeKind.ExternStruct, TypeKind.TaggedUnion,
         TypeKind.Optional, TypeKind.Slice}:
+      if instruction.val.type.kind == TypeKind.Optional and
+          instruction.val2.type.kind != TypeKind.Optional:
+        return d & "((" & left & ").present ? " &
+          state.ordering(instruction.val.type.elem, "(" & left & ").value", right) &
+          " : -1) " & operation & " 0;"
       return d & state.ordering(instruction.val.type, left, right) &
         " " & operation & " 0;"
     if instruction.val.type.kind notin {TypeKind.Int, TypeKind.Uint,
@@ -567,7 +658,7 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
       if instruction.args.len == 0:
         return d & "(" & state.types.get(typ) & "){ .data = NULL, .len = 0 };"
       var items: seq[string]
-      for item in instruction.args: items.add(state.value(item))
+      for item in instruction.args: items.add(state.assigned(typ.elem, item))
       return d & "(" & state.types.get(typ) & "){ .data = (" &
         state.types.get(typ.elem) & "[]){ " & items.join(", ") &
         " }, .len = " & $items.len & " };"
@@ -580,13 +671,15 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
       if found < 0: raise newException(ValueError, "Unknown tagged union field")
       return d & "(" & state.types.get(typ) & "){ .tag = " & $found &
         (if instruction.args.len > 0: ", .payload." & name(instruction.field) &
-          " = " & state.value(instruction.args[0]) else: "") & " };"
+          " = " & state.assigned(typ.variants[instruction.field],
+            instruction.args[0]) else: "") & " };"
     if typ.kind notin {TypeKind.Struct, TypeKind.ExternStruct}:
       raise newException(ValueError, "Unsupported aggregate construction")
     var fields: seq[string]
     var index = 0
-    for fieldName in typ.fields.keys:
-      fields.add("." & name(fieldName) & " = " & state.value(instruction.args[index]))
+    for fieldName, fieldType in typ.fields:
+      fields.add("." & name(fieldName) & " = " &
+        state.assigned(fieldType, instruction.args[index]))
       inc index
     return d & "(" & state.types.get(typ) & "){ " & fields.join(", ") & " };"
   of InstrKind.Extract:
@@ -687,16 +780,31 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
     if not state.contracts.hasKey(instruction.symbol):
       raise newException(ValueError, "Native operation has no contract")
     state.referenced.incl(instruction.symbol)
-    return native(state.contracts[instruction.symbol], state.selection)
+    let contract = state.contracts[instruction.symbol]
+    if contract.stage == "@asm":
+      return "__asm__ __volatile__(" & contract.code.strip & ");"
+    return native(contract, state.selection)
   else: raise newException(ValueError, "C backend does not support IR " & $instruction.kind)
 
-proc integers(): string =
-  for width in [8, 16, 32, 64]:
-    for unsigned in [false, true]:
-      let typ = (if unsigned: "u" else: "") & "int" & $width & "_t"
-      let suffix = (if unsigned: "u" else: "i") & $width
-      let maximum = (if unsigned: "U" else: "") & "INT" & $width & "_MAX"
-      let minimum = "INT" & $width & "_MIN"
+proc integers(values: HashSet[string]): string =
+  var ordered = toSeq(values)
+  ordered.sort()
+  for suffix in ordered:
+      let unsigned = suffix[0] == 'u'
+      let width = parseInt(suffix[1 .. ^1])
+      let storage = if width <= 8: 8 elif width <= 16: 16 elif width <= 32: 32
+        elif width <= 64: 64 else: 128
+      let typ = if storage == 128:
+        "foo_" & (if unsigned: "u" else: "i") & "128"
+        else: (if unsigned: "u" else: "") & "int" & $storage & "_t"
+      let unsignedType = if storage == 128: "foo_u128"
+        else: "uint" & $storage & "_t"
+      let unsignedMaximum = "(" & typ & ")(((((" & unsignedType &
+        ")1 << " & $(width - 1) & ") - 1) * 2) + 1)"
+      let signedMaximum = "(" & typ & ")(((" & unsignedType & ")1 << " &
+        $(width - 1) & ") - 1)"
+      let maximum = if unsigned: unsignedMaximum else: signedMaximum
+      let minimum = "(-(" & signedMaximum & ") - 1)"
       let addGuard = if unsigned: "a > " & maximum & " - b"
         else: "(b > 0 && a > " & maximum & " - b) || (b < 0 && a < " & minimum & " - b)"
       let subGuard = if unsigned: "a < b"
@@ -705,9 +813,17 @@ proc integers(): string =
         else: "(a > 0 ? (b > 0 ? a > " & maximum & "/b : b < " & minimum &
           "/a) : (a < 0 ? (b > 0 ? a < " & minimum & "/b : b < 0 && a < " &
           maximum & "/b) : false))"
-      result.add("static " & typ & " foo_add_" & suffix & "(" & typ & " a, " &
-        typ & " b) { if (" & addGuard & ") foo_panic(\"IntegerOverflow\"); return (" &
-        typ & ")(a + b); }\n")
+      if width == storage and storage <= 64:
+        result.add("static " & typ & " foo_add_" & suffix & "(" & typ & " a, " &
+          typ & " b) {\n#if defined(__clang__) || defined(__GNUC__)\n" &
+          typ & " sum; if (__builtin_add_overflow(a, b, &sum)) " &
+          "foo_panic(\"IntegerOverflow\"); return sum;\n#else\n" &
+          "if (" & addGuard & ") foo_panic(\"IntegerOverflow\"); return (" &
+          typ & ")(a + b);\n#endif\n}\n")
+      else:
+        result.add("static " & typ & " foo_add_" & suffix & "(" & typ & " a, " &
+          typ & " b) { if (" & addGuard & ") foo_panic(\"IntegerOverflow\"); return (" &
+          typ & ")(a + b); }\n")
       result.add("static " & typ & " foo_sub_" & suffix & "(" & typ & " a, " &
         typ & " b) { if (" & subGuard & ") foo_panic(\"IntegerOverflow\"); return (" &
         typ & ")(a - b); }\n")
@@ -722,6 +838,10 @@ proc integers(): string =
 
 proc emit*(input: Module; mode = "dev"; options = Options()):
     tuple[code: string, libraries: seq[string]] =
+  if options.runtime == "none" and options.coverage.len > 0:
+    raise newException(ValueError, "Coverage requires the hosted runtime")
+  if options.runtime == "none" and options.benchmark:
+    raise newException(ValueError, "Benchmark instrumentation requires the hosted runtime")
   var selection = Selection(target: options.target, cpu: options.cpu,
     level: options.level, mode: mode, substrate: options.substrate)
   let module = prepare(`bind`(input, selection).module)
@@ -730,12 +850,17 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
     externs: initTable[string, Extern](),
     contracts: initTable[string, NativeContract](),
     called: initHashSet[string](), referenced: initHashSet[string](),
-    storage: initHashSet[string](), exported: initHashSet[string]())
+    storage: initHashSet[string](), exported: initHashSet[string](),
+    symbols: initTable[string, string]())
   for external in module.externs: state.externs[external.name] = external
   for contract in module.native: state.contracts[contract.id] = contract
   for item in module.storage: state.storage.incl(item.name)
   for fn in module.funcs:
-    if fn.abi == "c" or (options.library and fn.public):
+    if "start" in fn.attributes:
+      state.symbols[fn.name] = "_start"
+      state.exported.incl(fn.name)
+    elif fn.abi == "c" or (options.library and fn.public) or
+        "interrupt" in fn.attributes:
       state.exported.incl(fn.name)
   for declaration in module.types: discard state.types.get(declaration.type)
 
@@ -747,12 +872,26 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
               (instruction.kind == InstrKind.Alloc and instruction.op != "slot"):
             raise newException(ValueError,
               "C backend does not yet support scoped allocation or cleanup in multi-block IR")
+    var attributes: seq[string]
+    if "naked" in fn.attributes: attributes.add("FOO_NAKED")
+    if "interrupt" in fn.attributes and
+        (options.target.startsWith("x86") or options.target.startsWith("riscv") or
+          options.target.startsWith("arm") or options.target.startsWith("thumb")):
+      attributes.add("FOO_INTERRUPT")
+    let cpu = targetArch.profile(options.target, options.cpu)
     for attribute in fn.attributes:
-      if attribute in ["start", "naked", "interrupt"] or
-          attribute.startsWith("target_feature"):
-        raise newException(ValueError, "C backend cannot preserve attributes on '" &
-          fn.name & "'; use the Zig backend")
-    let resultType = if fn.name == "main" and fn.ret.kind == TypeKind.Void:
+      if attribute.startsWith("target_feature(\"") and attribute.endsWith("\")"):
+        let feature = attribute[16 ..< attribute.len - 2]
+        if feature.len == 0 or not feature[0].isLowerAscii or
+            feature.anyIt(not (it.isLowerAscii or it.isDigit or it == '_')):
+          raise newException(ValueError, "Invalid target feature on '" & fn.name & "'")
+        let normalized = feature.replace('_', '.')
+        if normalized notin cpu.features and feature notin cpu.features:
+          raise newException(ValueError, "CPU feature '" & feature &
+            "' is not enabled for the selected target")
+        attributes.add("FOO_TARGET(\"" & normalized & "\")")
+    let resultType = if fn.name == "main" and fn.ret.kind == TypeKind.Void and
+        options.runtime != "none":
       `Type`(kind: TypeKind.Failable, elem: fn.ret) else: fn.ret
     let returnType = state.types.get(resultType)
     var parameters: seq[string]
@@ -760,9 +899,12 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
     for parameter in fn.params:
       parameters.add(state.types.get(parameter.type) & " " & state.value(parameter))
       defined.incl(parameter.name)
+    if "interrupt" in fn.attributes and options.target.startsWith("x86"):
+      parameters.insert("struct foo_interrupt_frame *foo_frame", 0)
     let signature = (if fn.name in state.exported: "FOO_EXPORT " else: "") &
       (if "noinline" in fn.attributes: "FOO_NOINLINE " else: "") &
-      returnType & " " & state.functionName(fn.name) & "(" &
+      attributes.join(" ") & (if attributes.len > 0: " " else: "") &
+      returnType & " " & convention(fn.abi) & state.functionName(fn.name) & "(" &
       (if parameters.len > 0: parameters.join(", ") else: "void") & ")"
     state.prototypes.add(signature & ";")
     let ctx = FunctionState(emitter: state, fn: fn, resultType: resultType,
@@ -770,11 +912,12 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
     for index, basicBlock in fn.blocks: ctx.labels[basicBlock.label] = index
     for basicBlock in fn.blocks:
       ctx.current = basicBlock.label
-      ctx.body.add(name(basicBlock.label) & ":;")
+      if "naked" notin fn.attributes or fn.blocks.len > 1:
+        ctx.body.add(name(basicBlock.label) & ":;")
       for instruction in basicBlock.instrs: ctx.body.add(ctx.instr(instruction))
       ctx.body.add(ctx.instr(basicBlock.term))
     state.functions.add(signature & " {\n" &
-      (if options.coverage.len > 0:
+      (if options.coverage.len > 0 and "naked" notin fn.attributes:
         "atomic_fetch_add_explicit(&foo_hits[" & $fnIndex &
         "], 1, memory_order_relaxed);\n" else: "") &
       ctx.declarations.join("\n") & "\n" & ctx.body.join("\n") & "\n}")
@@ -786,15 +929,15 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
       runtimeExterns.add(state.externs[called])
   let runtimeResult = runtime(runtimeExterns,
     proc(value: `Type`): string = state.types.get(value),
-    proc(value: string): string = name(value), options.target)
+    proc(value: string): string = name(value), options.target,
+    options.runtime != "none")
   var seen = initTable[string, string]()
   for external in module.externs:
     if external.name notin state.called or external.abi.startsWith("runtime"): continue
-    if external.abi != "c":
-      raise newException(ValueError, "Unsupported C ABI '" & external.abi & "'")
     let externalName = symbol(if external.symbol.len > 0:
       external.symbol else: external.name)
-    let signature = state.types.get(external.ret) & " " & externalName & "(" &
+    let signature = state.types.get(external.ret) & " " &
+      convention(external.abi) & externalName & "(" &
       (if external.params.len > 0:
         external.params.mapIt(state.types.get(it)).join(", ") else: "void") & ");"
     if seen.hasKey(externalName) and seen[externalName] != signature:
@@ -834,7 +977,7 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
     elif copy.implementation == "intrinsic": "#define FOO_COPY_ARM 1"
     else: ""
   var entrypoint = ""
-  if entry != nil:
+  if entry != nil and options.runtime != "none":
     entrypoint = "int main(int argc, char **argv) {\n#ifdef FOO_SERVICE\n" &
       "foo_service_init(argc, argv);\n#else\n(void)argc; (void)argv;\n#endif\n"
     if entry.ret.kind in {TypeKind.Failable, TypeKind.Void}:
@@ -845,15 +988,54 @@ proc emit*(input: Module; mode = "dev"; options = Options()):
     if options.coverage.len > 0: entrypoint.add(" foo_report();")
     entrypoint.add((if options.benchmark: " foo_benchmark_report();" else: "") &
       " foo_shutdown(); return error ? 1 : 0; }\n")
+  let wideTypes = if state.types.integers.anyIt(parseInt(it[1 .. ^1]) > 64):
+    "#if defined(__SIZEOF_INT128__)\ntypedef unsigned __int128 foo_u128; typedef __int128 foo_i128;\n#else\n#error \"The C backend requires 128-bit integer support from the selected compiler\"\n#endif\n"
+    else: ""
+  let hosted = options.runtime != "none"
+  let attributes = """
+#if defined(_MSC_VER)
+#define FOO_EXPORT __declspec(dllexport)
+#define FOO_NOINLINE __declspec(noinline)
+#define FOO_NAKED __declspec(naked)
+#define FOO_TARGET(feature)
+#define FOO_SYSTEM __stdcall
+#define FOO_STDCALL __stdcall
+#define FOO_FASTCALL __fastcall
+#define FOO_VECTORCALL __vectorcall
+#define FOO_THISCALL __thiscall
+#else
+#define FOO_EXPORT __attribute__((visibility("default")))
+#define FOO_NOINLINE __attribute__((noinline))
+#define FOO_NAKED __attribute__((naked))
+#define FOO_TARGET(feature) __attribute__((target(feature)))
+#define FOO_SYSTEM
+#define FOO_STDCALL __attribute__((stdcall))
+#define FOO_FASTCALL __attribute__((fastcall))
+#define FOO_VECTORCALL __attribute__((vectorcall))
+#define FOO_THISCALL __attribute__((thiscall))
+#endif
+#if defined(__riscv)
+#define FOO_INTERRUPT __attribute__((interrupt("machine")))
+#elif defined(__arm__) || defined(__thumb__)
+#define FOO_INTERRUPT __attribute__((interrupt("IRQ")))
+#elif defined(__x86_64__) || defined(__i386__)
+#define FOO_INTERRUPT __attribute__((interrupt))
+struct foo_interrupt_frame { uintptr_t instruction; uintptr_t segment; uintptr_t flags; uintptr_t stack; uintptr_t stack_segment; };
+#else
+#define FOO_INTERRUPT
+#endif
+"""
   result.code = "/* FOO IR -> ISO C11 */\n#include <stdint.h>\n#include <stddef.h>\n" &
-    "#include <stdbool.h>\n#include <stdatomic.h>\n#include <stdlib.h>\n" &
-    "#include <stdio.h>\n#include <string.h>\n#include <limits.h>\n" &
-    "#if defined(_WIN32)\n#define FOO_EXPORT __declspec(dllexport)\n#define FOO_NOINLINE __declspec(noinline)\n#else\n" &
-    "#define FOO_EXPORT\n#define FOO_NOINLINE __attribute__((noinline))\n#endif\nstatic _Noreturn void foo_panic(const char *message) " &
-    "{ fprintf(stderr, \"%s\\n\", message); exit(1); }\n" & memoryCode & "\n" &
+    "#include <stdbool.h>\n#include <stdatomic.h>\n#include <limits.h>\n" &
+    (if hosted: "#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\n" else: "") &
+    wideTypes &
+    attributes & "\nstatic _Noreturn void foo_panic(const char *message) " &
+    (if hosted: "{ fprintf(stderr, \"%s\\n\", message); exit(1); }\n"
+      else: "{ (void)message; __builtin_trap(); }\n") &
+    (if hosted: memoryCode else: bareCode) & "\n" &
     traceCode & "\n" & (if options.benchmark: "#define FOO_BENCHMARK 1\n" else: "") &
-    copyDefine & "\n" & copyCode & "\n" &
-    state.types.declarations.join("\n") & "\n" & integers() & "\n" &
+    (if hosted: copyDefine & "\n" & copyCode & "\n" else: "") &
+    state.types.declarations.join("\n") & "\n" & integers(state.types.integers) & "\n" &
     state.strings.join("\n") & "\n" & globals.join("\n") & "\n" &
     state.prototypes.join("\n") & "\n" & runtimeResult.code & "\n" &
     coverage & definitions.join("\n") & "\n" & state.functions.join("\n") &

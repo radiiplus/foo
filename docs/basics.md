@@ -103,8 +103,11 @@ my-app/
 |   `-- main.iv
 |-- test/
 |   `-- main.iv
-`-- benchmark/
-    `-- main.iv
+|-- benchmark/
+|   `-- main.iv
+`-- assets/
+    |-- icon.ico
+    `-- icon.svg
 ```
 
 Run these commands from the directory containing `project.json`:
@@ -114,6 +117,8 @@ Run these commands from the directory containing `project.json`:
 | `foo check` | Checks syntax and types without building an executable. |
 | `foo run` | Checks, builds, and runs the default entry. |
 | `foo build` | Builds without running. |
+| `foo link` | Links the default entry as a direct user command. |
+| `foo release` | Stages an optionally configured deployment release. |
 | `foo test` | Discovers, compiles, and runs the project's test blocks; no matches is an error. |
 | `foo benchmark` | Measures the benchmark programs. |
 

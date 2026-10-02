@@ -50,11 +50,11 @@ const native = spawnSync(process.execPath, [join(root, "tools/native.mjs"),
 if (native.status !== 0) process.exit(native.status ?? 1);
 rmSync(output, { recursive: true, force: true });
 mkdirSync(join(output, "bin"), { recursive: true });
-for (const name of ["assets", "std", "docs", "test/native/service.c", "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT", "LICENSE-APACHE"])
+for (const name of ["assets", "lib", "docs", "test/native/service.c", "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT", "LICENSE-APACHE"])
   cpSync(join(root, name), join(output, name), { recursive: true });
-for (const name of readdirSync(join(root, "test", "stdlib"))) {
+for (const name of readdirSync(join(root, "test", "library"))) {
   if (!name.endsWith(".iv") && !["project.json", "public.txt"].includes(name)) continue;
-  cpSync(join(root, "test", "stdlib", name), join(output, "test", "stdlib", name));
+  cpSync(join(root, "test", "library", name), join(output, "test", "library", name));
 }
 for (const name of ["foo.mjs", "version.mjs"])
   cpSync(join(root, "bin", name), join(output, "bin", name));
@@ -71,8 +71,8 @@ cpSync(join(root, "tools/toolchain.mjs"), join(output, "tools/toolchain.mjs"));
 const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 delete manifest.devDependencies;
 delete manifest.dependencies;
-manifest.files = ["assets", "bin", "std", "docs", "test/stdlib/*.iv", "test/stdlib/project.json",
-  "test/stdlib/public.txt", "test/native/service.c", "tools/toolchain.mjs",
+manifest.files = ["assets", "bin", "lib", "docs", "test/library/*.iv", "test/library/project.json",
+  "test/library/public.txt", "test/native/service.c", "tools/toolchain.mjs",
   "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT",
   "LICENSE-APACHE", "foo.artifact.json"];
 manifest.scripts = { postinstall: "node tools/toolchain.mjs" };

@@ -15,7 +15,7 @@ proc parseFile(path: string): Program =
   result = newParser(newLexer(source, diag).lex(), diag).parse()
   if diag.failed: raise newException(ValueError, "Unable to parse " & path)
 
-proc doc*(selection = ""; standard = "std"): string =
+proc doc*(selection = ""; standard = "lib"): string =
   var paths: seq[string]
   if selection.len > 0:
     paths = @[if selection.endsWith(".iv"): absolutePath(selection) else: standard / (selection & ".iv")]

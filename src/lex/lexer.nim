@@ -116,17 +116,24 @@ proc characterLiteral(lexer: Lexer): Token =
 proc numberLiteral(lexer: Lexer): Token =
   lexer.mark()
   var text = ""
-  while lexer.pos < lexer.src.len and (digit(lexer.src[lexer.pos]) or lexer.src[lexer.pos] == '_'):
-    if lexer.src[lexer.pos] != '_': text.add(lexer.read()) else: discard lexer.read()
+  while lexer.pos < lexer.src.len and (digit(lexer.src[lexer.pos]) or lexer.src[lexer.pos] in {'`', '_'}):
+    if lexer.src[lexer.pos] notin {'`', '_'}: text.add(lexer.read()) else: discard lexer.read()
   var real = false
   if lexer.pos + 1 < lexer.src.len and lexer.src[lexer.pos] == '.' and digit(lexer.src[lexer.pos + 1]):
     real = true; text.add(lexer.read())
-    while lexer.pos < lexer.src.len and (digit(lexer.src[lexer.pos]) or lexer.src[lexer.pos] == '_'):
-      if lexer.src[lexer.pos] != '_': text.add(lexer.read()) else: discard lexer.read()
+    while lexer.pos < lexer.src.len and (digit(lexer.src[lexer.pos]) or lexer.src[lexer.pos] in {'`', '_'}):
+      if lexer.src[lexer.pos] notin {'`', '_'}: text.add(lexer.read()) else: discard lexer.read()
   let spelling = lexer.src[lexer.start ..< lexer.pos]
-  if spelling.contains("__") or spelling.endsWith('_') or spelling.contains("_.") or spelling.contains("._"):
-    lexer.diag.emit(Code.Digit, lexer.span(), "Place underscores between digits")
-  make(lexer, (if real: Kind.Float else: Kind.Int), text)
+  let point = spelling.find('.')
+  let fractionalSeparator = point >= 0 and '`' in spelling[point + 1 .. ^1]
+  if spelling.contains('_'):
+    lexer.diag.emit(Code.Digit, lexer.span(), "Use backticks between digits instead of underscores")
+  elif fractionalSeparator:
+    lexer.diag.emit(Code.Digit, lexer.span(), "Backticks can separate only the whole-number part")
+  elif spelling.contains("``") or spelling.endsWith('`') or spelling.contains("`.") or spelling.contains(".`"):
+    lexer.diag.emit(Code.Digit, lexer.span(), "Place backticks between digits")
+  result = make(lexer, (if real: Kind.Float else: Kind.Int), text)
+  result.spelling = spelling
 
 proc keywordKind(text: string): Kind =
   case text

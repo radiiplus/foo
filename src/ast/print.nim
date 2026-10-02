@@ -29,7 +29,19 @@ proc text(value: string): string =
 proc print*(value: Node; depth: int = 0): string
 
 proc printAttributes(attributes: seq[string]): string =
-  for attribute in attributes: result.add("#[" & attribute & "] ")
+  for attribute in attributes:
+    if attribute notin ["start", "interrupt", "naked", "noinline", "volatile",
+        "repr(C)"] and not attribute.startsWith("target_feature(\""):
+      result.add("#[" & attribute & "] ")
+
+proc functionClauses(attributes: seq[string]): string =
+  if "start" in attributes: result.add(" for startup")
+  if "interrupt" in attributes: result.add(" for interrupt")
+  if "naked" in attributes: result.add(" without setup")
+  for attribute in attributes:
+    if attribute.startsWith("target_feature(\"") and attribute.endsWith("\")"):
+      result.add(" using feature " & attribute[15 ..< attribute.len - 1])
+  if "noinline" in attributes: result.add(" keeping call")
 
 proc printTypeParams(params: seq[TypeParam]): string =
   if params.len == 0: return ""
@@ -97,7 +109,8 @@ proc print*(value: Node; depth: int = 0): string =
       printTypeParams(item.typeParams) & (if params.len > 0: "(" & params.join(", ") & ")" else: "") &
       (if item.guard != nil: " when " & print(item.guard) else: "") &
       (if item.returnType != nil: " giving " & print(item.returnType) else: "") &
-      (if item.abi.len > 0: " for " & item.abi else: "") & constraints(item.typeParams, item.constraints) & " " & printBlock(item.body, depth)
+      (if item.abi.len > 0: " for " & item.abi else: "") & functionClauses(item.attributes) &
+      constraints(item.typeParams, item.constraints) & " " & printBlock(item.body, depth)
   of "alias":
     let item = Alias(value)
     var body = print(item.body, depth)
@@ -154,8 +167,12 @@ proc print*(value: Node; depth: int = 0): string =
       for arg in item.args: args.add(print(arg))
       result = indent(depth) & item.name.text & (if args.len > 0: "(" & args.join(", ") & ")" else: "") & "."
   of "unreachable-statement": result = indent(depth) & "unreachable."
-  of "integer": result = Integer(value).value
-  of "decimal": result = Decimal(value).value
+  of "integer":
+    let item = Integer(value)
+    result = if item.spelling.len > 0: item.spelling else: item.value
+  of "decimal":
+    let item = Decimal(value)
+    result = if item.spelling.len > 0: item.spelling else: item.value
   of "text": result = text(Text(value).value)
   of "character": result = "'" & Character(value).value & "'"
   of "true": result = "true"
@@ -261,7 +278,11 @@ proc print*(value: Node; depth: int = 0): string =
       for field in item.fields: fields.add(print(field, depth + 1))
       result = "c union {\n" & fields.join("\n") & "\n" & indent(depth) & "}"
   of "opaque": result = "opaque"
-  of "member": result = indent(depth) & printAttributes(Member(value).attributes) & Member(value).name.text & " of type " & print(Member(value).`type`) & "."
-  of "variant": result = indent(depth) & Variant(value).name.text & (if Variant(value).payload != nil: "(" & print(Variant(value).payload) & ")" else: "") & (if Variant(value).value != nil: " is " & Variant(value).value.value else: "") & "."
+  of "member":
+    let item = Member(value)
+    result = indent(depth) & printAttributes(item.attributes) & item.name.text &
+      " of type " & print(item.`type`) &
+      (if "volatile" in item.attributes: " with exact access" else: "") & "."
+  of "variant": result = indent(depth) & Variant(value).name.text & (if Variant(value).payload != nil: "(" & print(Variant(value).payload) & ")" else: "") & (if Variant(value).value != nil: " is " & print(Variant(value).value) else: "") & "."
   of "broken": result = "-- broken"
   else: result = ""

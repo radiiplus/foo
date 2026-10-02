@@ -4,6 +4,8 @@ public use "net" function connect(host text, port unsigned) giving failable poin
 public use "net" function listen(host text, port unsigned) giving failable pointer to Connection.
 public use "net" function accept(listener pointer to Connection) giving failable pointer to Connection.
 public use "net" function port(listener pointer to Connection) giving failable unsigned.
+-- Borrows the platform's native socket. It is valid only while the connection stays open.
+public use "net" function handle(connection pointer to Connection) giving failable unsigned.
 public use "net" function send(connection pointer to Connection, content text) giving failable unsigned.
 public use "net" function receive(connection pointer to Connection, size unsigned) giving failable text.
 -- Advanced socket controls. push may write fewer bytes than requested.

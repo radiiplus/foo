@@ -21,8 +21,10 @@ type
 
   Integer* = ref object of Node
     value*: string
+    spelling*: string
   Decimal* = ref object of Node
     value*: string
+    spelling*: string
   Text* = ref object of Node
     value*: string
   Character* = ref object of Node

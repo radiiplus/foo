@@ -37,7 +37,7 @@ proc overlap(first, second: string): bool =
 proc destination*(root, selected: string; protected: seq[string] = @[]): string =
   ## Resolve a dedicated project output directory without allowing source or
   ## tool-owned directories to be overwritten by a build or removed by clean.
-  let value = if selected.len > 0: selected else: "target"
+  let value = if selected.len > 0: selected else: "output"
   if isAbsolute(value):
     raise newException(ValueError, "build.output must be project-relative")
   let normalized = value.replace('\\', '/')
@@ -102,7 +102,7 @@ proc write*(path, data: string) =
   if parent.len > 0: createDir(parent)
   writeFile(path, data)
 
-proc discover*(root: string; source = ""): seq[string] =
+proc discover*(root: string; source = ""; ignored: seq[string] = @[]): seq[string] =
   let base = absolutePath(root)
   let selected = if source.len > 0: source else: (if dirExists(base / "src"): "src" else: ".")
   let directory = absolutePath(selected, base)
@@ -110,8 +110,8 @@ proc discover*(root: string; source = ""): seq[string] =
   if not dirExists(directory):
     raise newException(IOError, "Source root not found: " & directory)
   var seen = initHashSet[string]()
-  let excluded = if selected == ".":
-      @[base / "target", base / ".foo"] else: @[]
+  var excluded = ignored
+  if selected == ".": excluded.add(@[base / "output", base / "release", base / ".foo"])
   for relative in glob(directory, "**/*.iv", excluded):
     let normalized = relative.replace(DirSep, '/')
     if selected == "." and normalized.split('/')[0].toLowerAscii() in

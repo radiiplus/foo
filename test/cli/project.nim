@@ -8,27 +8,30 @@ doAssert fileExists(projectRoot / "project.json")
 doAssert fileExists(projectRoot / "src" / "main.iv")
 doAssert fileExists(projectRoot / "test" / "main.iv")
 doAssert fileExists(projectRoot / "benchmark" / "main.iv")
+doAssert fileExists(projectRoot / "assets" / "icon.ico")
+doAssert fileExists(projectRoot / "assets" / "icon.svg")
 doAssert readFile(projectRoot / "src" / "main.iv") == "display \"Hello, world!\".\n"
 let generatedManifest = parseJson(readFile(projectRoot / "project.json"))
 doAssert generatedManifest["entry"].getStr() == "src/main.iv"
 doAssert generatedManifest["entries"].kind == JObject
-doAssert generatedManifest["build"]["output"].getStr() == "target"
-doAssert readFile(projectRoot / ".gitignore").contains("target/")
-dependency("add", "std/testing", "1.0.0", projectRoot)
+doAssert generatedManifest["build"]["output"].getStr() == "output"
+doAssert generatedManifest["build"]["icon"].getStr() == "assets/icon.ico"
+doAssert readFile(projectRoot / ".gitignore").contains("output/")
+dependency("add", "lib/testing", "1.0.0", projectRoot)
 var manifest = parseJson(readFile(projectRoot / "project.json"))
-doAssert manifest["dependencies"]["std/testing"].getStr() == "1.0.0"
-dependency("remove", "std/testing", root = projectRoot)
+doAssert manifest["dependencies"]["lib/testing"].getStr() == "1.0.0"
+dependency("remove", "lib/testing", root = projectRoot)
 manifest = parseJson(readFile(projectRoot / "project.json"))
-doAssert not manifest["dependencies"].hasKey("std/testing")
-dependency("add", "std/ranges", "^1.2.0", projectRoot)
+doAssert not manifest["dependencies"].hasKey("lib/testing")
+dependency("add", "lib/ranges", "^1.2.0", projectRoot)
 manifest = parseJson(readFile(projectRoot / "project.json"))
-doAssert manifest["dependencies"]["std/ranges"].getStr() == "^1.2.0"
-manifest["devDependencies"] = %*{"std/dev": "~1.0.0"}
+doAssert manifest["dependencies"]["lib/ranges"].getStr() == "^1.2.0"
+manifest["devDependencies"] = %*{"lib/dev": "~1.0.0"}
 writeFile(projectRoot / "project.json", $manifest)
-dependency("remove", "std/dev", root = projectRoot)
+dependency("remove", "lib/dev", root = projectRoot)
 manifest = parseJson(readFile(projectRoot / "project.json"))
-doAssert not manifest["devDependencies"].hasKey("std/dev")
-dependency("remove", "std/ranges", root = projectRoot)
+doAssert not manifest["devDependencies"].hasKey("lib/dev")
+dependency("remove", "lib/ranges", root = projectRoot)
 dependency("add", "local/library", "..\\library", projectRoot)
 manifest = parseJson(readFile(projectRoot / "project.json"))
 doAssert manifest["dependencies"]["local/library"].getStr() == "path+../library"
@@ -38,11 +41,11 @@ manifest = parseJson(readFile(projectRoot / "project.json"))
 doAssert manifest["dependencies"]["acme/git"].getStr().startsWith("git+https://")
 createDir(projectRoot / ".artifacts" / "build")
 writeFile(projectRoot / ".artifacts" / "build" / "artifact", "x")
-createDir(projectRoot / "target")
-writeFile(projectRoot / "target" / "app", "x")
+createDir(projectRoot / "output")
+writeFile(projectRoot / "output" / "app", "x")
 clean(projectRoot)
 doAssert not dirExists(projectRoot / ".artifacts" / "build")
-doAssert not dirExists(projectRoot / "target")
+doAssert not dirExists(projectRoot / "output")
 manifest = parseJson(readFile(projectRoot / "project.json"))
 manifest["build"] = %*{"output": "dist/native"}
 writeFile(projectRoot / "project.json", $manifest)
@@ -62,6 +65,7 @@ try:
   doAssert fileExists(currentRoot / "src" / "main.iv")
   doAssert dirExists(currentRoot / "test")
   doAssert dirExists(currentRoot / "benchmark")
+  doAssert fileExists(currentRoot / "assets" / "icon.ico")
   var rejected = false
   try: discard create(".")
   except ValueError: rejected = true

@@ -75,19 +75,26 @@ Run the suite using the project's configured mode and one backend with:
 npm run benchmark
 ```
 
-To measure C and Zig in both `dev` and `release`, then refresh the report used
-by the website:
+To measure FOO's C and Zig backends plus handwritten C, Zig, and Rust controls
+in both `dev` and `release`, then refresh the report used by the website:
 
 ```sh
 npm run benchmark:report
 ```
 
-The version 3 report keeps every raw sample in `benchmark/results.json` and
-records four implementations for each workload (the specific operation being
-measured): FOO through C, FOO through
-Zig, handwritten C, and handwritten Zig. Compilation duration and cache reuse
-are separate from runtime samples. Runtime samples include process startup and
-shutdown, so the report records both `startup` and `runtime` baselines.
+The version 4 report keeps every raw sample in `benchmark/results.json` and
+records five implementations for each workload (the specific operation being
+measured): FOO through C, FOO through Zig, handwritten C, handwritten Zig, and
+handwritten Rust. Compilation duration and cache reuse are separate from runtime
+samples. Runtime samples include process startup and shutdown, so the report
+records both `startup` and `runtime` baselines.
+
+Set `RUSTC` when `rustc` is not on `PATH`. The report records
+`speedupAgainstRust` for each FOO backend and mode. A value above `1` means the
+FOO artifact's raw median was faster for that workload on that run; a value below
+`1` means Rust was faster. This is workload evidence, not a broad language claim.
+FOO may target better results, but documentation must not claim it surpasses Rust
+until repeatable measurements on equivalent work support that statement.
 
 The startup artifact receives at least five warmups and 21 timed samples after
 its build has completed. This separate pass reduces post-link scanning and
@@ -116,7 +123,7 @@ The current investigation and measurements are in [Performance Report](performan
 
 These measurements compare specific generated programs and handwritten
 controls under recorded conditions. They do not establish that FOO is broadly
-"as fast as C or Zig."
+"as fast as C, Zig, or Rust."
 
 The report tool verifies that every cataloged workload produced one event for
 each requested backend and mode. A missing or unexpected workload fails report

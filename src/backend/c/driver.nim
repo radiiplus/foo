@@ -1,10 +1,12 @@
 import std/[os, osproc, sequtils, sets, strutils]
 import ../../ir/node
+import ../../ir/reach
 import ../../build/options
 import ../../build/execute as buildExecute
 import ../../opt/arch
+import ../docs as backendDocs
 import ../substrate
-import ../native/[escape, service]
+import ../native/[escape, icon, service]
 import ./emitter
 
 type Result* = object
@@ -32,6 +34,29 @@ proc compilerPath(options: Native): string =
   if configured.len > 0: return configured
   when defined(windows): "clang" else: "cc"
 
+proc compilerCommand(path: string): string =
+  result = quoteShell(path)
+  let executable = splitFile(path).name.toLowerAscii()
+  if executable == "zig": result.add(" cc")
+
+proc managed(path: string): bool =
+  splitFile(path).name.toLowerAscii() == "zig"
+
+proc deadStripFlag*(target, compiler: string): string =
+  if target.contains("macos") or target.contains("darwin"):
+    return "-Wl,-dead_strip"
+  let windows = if target.len > 0:
+      target.contains("windows") or target.contains("win32")
+    else: defined(windows)
+  let executable = splitFile(compiler).name.toLowerAscii()
+  let gnuCompiler = executable.endsWith("gcc") or
+    executable.endsWith("g++")
+  if windows and (target.contains("msvc") or
+      (not target.contains("gnu") and not managed(compiler) and
+        not gnuCompiler)):
+    return "-fuse-ld=lld -Wl,/OPT:REF,/OPT:ICF,/INCREMENTAL:NO"
+  "-Wl,--gc-sections"
+
 proc local(target: string): bool =
   if target.len == 0: return true
   let value = target.toLowerAscii()
@@ -50,17 +75,20 @@ proc build*(module: Module; mode: string; outDir: string;
     progress: BuildProgress = nil): Result =
   try:
     validate(options)
-    if options.runtime == "none":
-      raise newException(ValueError, "The C backend currently requires a hosted C11 runtime")
-    if options.docs or options.threads:
-      raise newException(ValueError, "C backend does not yet support docs or WASI threads")
     createDir(outDir)
     let selection = Selection(backend: "c", target: options.target, cpu: options.cpu,
       level: options.level, mode: mode, substrate: options.substrate,
       native: substrate.NativeSelection(substrate: options.native.substrate,
         clobbers: options.native.clobbers))
-    let escaped = escape(module, selection)
+    let selected = reach(module, options.kind in ["static", "shared"])
+    let escaped = escape(selected, selection)
     if progress != nil:
+      if selected.funcs.len != module.funcs.len or
+          selected.externs.len != module.externs.len:
+        progress("strategy", "program",
+          "reachability / " & $selected.funcs.len & " of " &
+          $module.funcs.len & " functions | " & $selected.externs.len &
+          " of " & $module.externs.len & " imports", false)
       for decision in escaped.decisions:
         progress("strategy", decision.operation,
           decision.stage & " / " & decision.implementation & " | " & decision.reason,
@@ -69,6 +97,7 @@ proc build*(module: Module; mode: string; outDir: string;
       cpu: options.cpu, level: options.level, substrate: options.substrate,
       source: sourceFile, runtime: options.runtime, coverage: options.coverage,
       library: options.kind in ["static", "shared"], benchmark: options.benchmark))
+    if options.docs: backendDocs.generate(escaped.module, outDir)
     let mainPath = outDir / "main.c"
     writeFile(mainPath, generated.code)
     var inputs = @[mainPath]
@@ -76,21 +105,33 @@ proc build*(module: Module; mode: string; outDir: string;
       let escapePath = outDir / "escape.c"
       writeFile(escapePath, escaped.code)
       inputs.add(escapePath)
-    let needsService = hosted(escaped.module)
+    let needsService = options.runtime != "none" and hosted(escaped.module)
     if needsService:
       writeFile(outDir / "service.h", serviceHeader)
       let servicePath = outDir / "service.c"
       writeFile(servicePath, serviceSource)
       inputs.add(servicePath)
+    else:
+      for path in [outDir / "service.h", outDir / "service.c"]:
+        if fileExists(path): removeFile(path)
     inputs.add(options.sources)
     let artifactPath = outDir / artifact(options)
     if options.compile:
+      let iconObject = icon.compile(
+        icon.script(options.icon, outDir, options.target, options.kind),
+        outDir, options.name, progress)
       let compiler = compilerPath(options)
       var common = @["-std=c11", "-D_POSIX_C_SOURCE=200809L",
-        (if mode == "release": "-O2" else: "-O0"), "-g"]
+        (if mode == "release": "-O2" else: "-O0"),
+        (if mode == "release": "-g0" else: "-g"),
+        "-ffunction-sections", "-fdata-sections"]
+      if options.runtime == "none":
+        common.add(@["-ffreestanding", "-fno-stack-protector"])
+      if options.threads:
+        common.add(@["-matomics", "-mbulk-memory", "-pthread"])
       if options.kind == "shared" and not options.target.contains("windows"):
         common.add("-fPIC")
-      if options.target.len > 0 and options.compiler.len == 0 and
+      if options.target.len > 0 and (options.compiler.len == 0 or managed(compiler)) and
           not local(options.target):
         common.add(@["-target", options.target])
       if options.cpu.len > 0:
@@ -101,12 +142,24 @@ proc build*(module: Module; mode: string; outDir: string;
         common.add(if options.sanitize == "c":
           "-fsanitize=undefined" else: "-fsanitize=thread")
       if needsService: common.add(@["-I", outDir])
+      if needsService and selective(options, escaped.code.len > 0):
+        common.add(resourceDefines(escaped.module))
       for path in options.includePaths: common.add(@["-I", path])
       proc addLinkOptions(command: var string) =
-        if options.target.len > 0 and options.compiler.len == 0 and
+        if options.target.len > 0 and (options.compiler.len == 0 or managed(compiler)) and
             not local(options.target):
           command.add(" -target " & quoteShell(options.target))
         if options.kind == "shared": command.add(" -shared")
+        if options.kind != "static":
+          let stripping = deadStripFlag(options.target, compiler)
+          command.add(" " & stripping)
+          if mode == "release":
+            command.add(if "/OPT:REF" in stripping:
+              " -Wl,/DEBUG:NONE" else: " -s")
+        if options.runtime == "none":
+          command.add(" -nostdlib -Wl,-e,_start")
+        if options.threads:
+          command.add(" -Wl,--shared-memory -pthread")
         if options.soname.len > 0:
           command.add(" -Xlinker -soname -Xlinker " & quoteShell(options.soname))
         elif options.version.len > 0 and
@@ -140,6 +193,7 @@ proc build*(module: Module; mode: string; outDir: string;
 
       let fastPath = options.kind != "static" and escaped.code.len == 0 and
         options.sources.len == 0 and options.objects.len == 0 and
+        iconObject.len == 0 and
         options.flags.len == 0 and not options.cpp and options.sanitize.len == 0 and
         options.exports.len == 0 and options.script.len == 0 and
         options.rpath.len == 0 and options.frameworks.len == 0
@@ -160,8 +214,12 @@ proc build*(module: Module; mode: string; outDir: string;
           (if activeJobs == 1: " job" else: " jobs") &
           " | project cache checked", false)
 
+      if mode == "release":
+        for path in [changeFileExt(artifactPath, ".pdb"),
+            changeFileExt(artifactPath, ".ilk")]:
+          if fileExists(path): removeFile(path)
       if fastPath:
-        var command = quoteShell(compiler)
+        var command = compilerCommand(compiler)
         for argument in common: command.add(" " & quoteShell(argument))
         for input in inputs: command.add(" " & quoteShell(absolutePath(input)))
         addLinkOptions(command)
@@ -183,7 +241,7 @@ proc build*(module: Module; mode: string; outDir: string;
             arguments = arguments.filterIt(it != "-std=c11")
             arguments.add("-std=c++17")
           if index > 0: arguments.add(options.flags)
-          var command = quoteShell(compiler)
+          var command = compilerCommand(compiler)
           for argument in arguments: command.add(" " & quoteShell(argument))
           command.add(" -c " & quoteShell(sourcePath) & " -o " & quoteShell(objectPath))
           commands.add(command)
@@ -192,6 +250,7 @@ proc build*(module: Module; mode: string; outDir: string;
           options.name, activeJobs, progress)
         if compiled.exitCode != 0: raise newException(OSError, compiled.output)
         objects.add(options.objects)
+        if iconObject.len > 0: objects.add(iconObject)
         if progress != nil:
           progress("link", options.name,
             if options.kind == "static": "static library" else: "application", false)
@@ -203,7 +262,7 @@ proc build*(module: Module; mode: string; outDir: string;
             options.name, progress)
           if archived.exitCode != 0: raise newException(OSError, archived.output)
         else:
-          var command = quoteShell(compiler)
+          var command = compilerCommand(compiler)
           for objectPath in objects: command.add(" " & quoteShell(objectPath))
           addLinkOptions(command)
           command.add(" -o " & quoteShell(artifactPath))

@@ -5,17 +5,17 @@ use testing as check.
 dynamic values is items.create[unsigned].
 dynamic older is items.create[unsigned].
 dynamic index of type unsigned is 0.
-while index less than 10_000 {
+while index less than 10`000 {
   set values to items.append[unsigned](values, index) try.
   increase index by 1.
-  when index is 5_000 { set older to values. }
+  when index is 5`000 { set older to values. }
 }
 
 dynamic branches of type unsigned is 0.
 dynamic checksum of type unsigned is 0.
-while branches less than 1_000 {
+while branches less than 1`000 {
   constant branch is items.append[unsigned](older, branches) try.
-  set checksum to checksum plus branch at 5_000.
+  set checksum to checksum plus branch at 5`000.
   items.release[unsigned](branch) fallback nothing.
   increase branches by 1.
 }
@@ -24,7 +24,7 @@ after {
   items.release[unsigned](values) fallback nothing.
 }
 
-check.number(items.length[unsigned](older), 5_000).
-check.number(older at 4_999, 4_999).
-check.number(values at 5_000, 5_000).
-check.number(checksum, 499_500).
+check.number(items.length[unsigned](older), 5`000).
+check.number(older at 4`999, 4`999).
+check.number(values at 5`000, 5`000).
+check.number(checksum, 499`500).

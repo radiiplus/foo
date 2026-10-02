@@ -66,20 +66,20 @@ proc inspect(path: string; includeStart: bool; suites: var seq[TestSuite]) =
           break
 
 proc discoverTests*(root: string; includeStarts = false): seq[TestSuite] =
-  var stdlib = ""
+  var library = ""
   proc hasFixtures(directory: string): bool =
     if not dirExists(directory): return false
     for kind, path in walkDir(directory):
       if kind == pcFile and path.toLowerAscii().endsWith(".iv"): return true
-  for candidate in [getCurrentDir() / "test" / "stdlib",
-      getAppDir().parentDir / "test" / "stdlib",
-      getAppDir().parentDir.parentDir / "test" / "stdlib",
-      currentSourcePath.parentDir.parentDir.parentDir / "test" / "stdlib"]:
+  for candidate in [getCurrentDir() / "test" / "library",
+      getAppDir().parentDir / "test" / "library",
+      getAppDir().parentDir.parentDir / "test" / "library",
+      currentSourcePath.parentDir.parentDir.parentDir / "test" / "library"]:
     if hasFixtures(candidate):
-      stdlib = absolutePath(candidate)
+      library = absolutePath(candidate)
       break
-  let selected = if root == "std": stdlib else: absolutePath(root)
-  let starts = includeStarts or fileExists(selected) or selected == stdlib
+  let selected = if root == "lib": library else: absolutePath(root)
+  let starts = includeStarts or fileExists(selected) or selected == library
   var suites: seq[TestSuite] = @[]
   if fileExists(selected):
     inspect(selected, true, suites)
@@ -95,7 +95,7 @@ proc discoverTests*(root: string; includeStarts = false): seq[TestSuite] =
         visit(path)
       elif kind == pcFile:
         inspect(path, starts, suites)
-  if selected == stdlib:
+  if selected == library:
     visit(selected)
   elif fileExists(selected / "project.json"):
     var source = "src"

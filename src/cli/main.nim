@@ -1,8 +1,10 @@
 import std/[json, os, osproc, sequtils, strutils, tables]
 import ./[project as cliProject, runner]
+import ./link as cliLink
 import ./display as cliDisplay
 import ../ir/print
 import ../build/project as buildProject
+import ../build/release as buildRelease
 import ../build/compiler as buildCompiler
 import ../diag/render
 import ../diag/engine
@@ -14,7 +16,7 @@ import ../pkg/[hash, registry as packageRegistry]
 import "../interop/bind.nim" as interopBind
 import ../lsp/server as lspServer
 
-const usage = "usage: foo <login|init|publish|install|update|outdated|remove|deprecate|search|info|new|check|build|run|watch|graph|ir|test|benchmark|fmt|doc|add|toolchain|clean|doctor|version|task|lsp|bind|cc> [options]"
+const usage = "usage: foo <login|init|publish|install|update|outdated|remove|deprecate|search|info|new|check|build|run|release|sign|link|unlink|path|watch|graph|ir|test|benchmark|fmt|doc|add|toolchain|clean|doctor|version|task|lsp|bind|cc> [options]"
 const packageText = staticRead("../../package.json")
 const projectText = staticRead("../../project.json")
 
@@ -125,6 +127,38 @@ proc main*(input: seq[string]): int =
       if input.len != 1: raise newException(ValueError, "usage: foo clean")
       cliProject.clean()
       return 0
+    if input[0] == "path":
+      if input.len != 1: raise newException(ValueError, "usage: foo path")
+      echo cliLink.directory()
+      return 0
+    if input[0] == "link":
+      var entry, name: string
+      var index = 1
+      while index < input.len:
+        if input[index] == "--name":
+          inc index
+          if index >= input.len:
+            raise newException(ValueError, "--name needs a command name")
+          name = input[index]
+        elif input[index].startsWith("--"):
+          raise newException(ValueError, "unknown option: " & input[index])
+        elif entry.len == 0: entry = input[index]
+        else:
+          raise newException(ValueError,
+            "usage: foo link [entry] [--name command]")
+        inc index
+      let linked = cliLink.install(buildProject.newProject(getCurrentDir()),
+        entry, name)
+      echo "Linked " & linked.lastPathPart & " at " & linked & "."
+      if not cliLink.available():
+        echo "Add " & cliLink.directory() & " to PATH for direct commands."
+      return 0
+    if input[0] == "unlink":
+      if input.len != 2:
+        raise newException(ValueError, "usage: foo unlink <command>")
+      let removed = cliLink.remove(input[1])
+      echo "Removed " & removed & "."
+      return 0
     if input[0] == "add":
       if input.len notin [2, 3]:
         raise newException(ValueError, "usage: foo add <package[@version]> [url|path]")
@@ -138,7 +172,7 @@ proc main*(input: seq[string]): int =
         else:
           source = packageRegistry.latestVersion(getCurrentDir(), name)
       cliProject.dependency("add", name, source)
-      let normalized = cliProject.dependencySource(name, source)
+      let normalized = cliProject.dependencySource(name, source, getCurrentDir())
       if normalized[0] in {'^', '~'} or normalized[0].isDigit:
         echo "Added " & name & "@" & normalized & " to project.json."
       else:
@@ -245,17 +279,37 @@ proc main*(input: seq[string]): int =
       args = @["build", "--watch"] &
         (if args.len > 1: args[1 .. ^1] else: @[])
     let command = args[0]
-    var verbose, jsonOutput, watching: bool
+    var verbose, jsonOutput, watching, signing: bool
     var warmup = 1
     var iterations = 10
-    var target, cpu, backend, filter, mode: string
-    var positional: seq[string]
+    var target, cpu, backend, filter, mode, provider: string
+    var positional, passthrough: seq[string]
     var index = 1
     while index < args.len:
       let argument = args[index]
-      if argument in ["--verbose", "--explain"]: verbose = true
+      if argument == "--":
+        if command != "run":
+          raise newException(ValueError, "-- argument passthrough is available for foo run")
+        if index + 1 < args.len: passthrough = args[index + 1 .. ^1]
+        break
+      elif argument in ["--verbose", "--explain"]: verbose = true
       elif argument == "--json": jsonOutput = true
       elif argument == "--watch": watching = true
+      elif argument == "--sign":
+        if command != "release":
+          raise newException(ValueError, "--sign is available for foo release")
+        signing = true
+      elif argument == "--provider" or argument.startsWith("--provider="):
+        if command notin ["release", "sign"]:
+          raise newException(ValueError,
+            "--provider is available for foo release and foo sign")
+        if argument.contains("="): provider = argument.split("=", 1)[1]
+        else:
+          inc index
+          if index < args.len: provider = args[index]
+        if provider notin ["auto", "gpg", "authenticode", "codesign"]:
+          raise newException(ValueError,
+            "--provider must be auto, gpg, authenticode, or codesign")
       elif argument == "-mcpu" or argument.startsWith("-mcpu="):
         if argument.contains("="): cpu = argument[6 .. ^1]
         else:
@@ -319,12 +373,13 @@ proc main*(input: seq[string]): int =
 
     let root = getCurrentDir()
     proc executeProject() =
-      let operation = if command in ["check", "build", "run"]:
+      let operation = if command in ["check", "build", "run", "release"]:
           cliDisplay.newOperation(command, jsonOutput, verbose)
         else: nil
       activeOperation = operation
       let projectOptions = buildProject.ProjectOptions(backend: backend,
-        target: target, cpu: cpu, mode: mode,
+        target: target, cpu: cpu,
+        mode: if command == "release": "release" else: mode,
         progress: if operation != nil: operation.reporter() else: nil)
       let project = buildProject.newProject(root, projectOptions)
       let entry = if positional.len > 0: positional[0] else: ""
@@ -352,7 +407,10 @@ proc main*(input: seq[string]): int =
             "Choose an entry file when a project has multiple executables")
         let artifact = products.values.toSeq[0]
         operation.update("Execution", "application", cliDisplay.stateWorking)
-        let response = execCmdEx(quoteShell(artifact))
+        var executable = quoteShell(artifact)
+        for argument in passthrough:
+          executable.add(" " & quoteShell(argument))
+        let response = execCmdEx(executable)
         operation.update("Execution", "application",
           if response.exitCode == 0: cliDisplay.stateComplete else: cliDisplay.stateFailed)
         operation.finish(response.exitCode == 0,
@@ -361,18 +419,47 @@ proc main*(input: seq[string]): int =
         activeOperation = nil
         if response.output.len > 0: stdout.write(response.output)
         if response.exitCode != 0: raise newException(OSError, response.output)
+      of "release":
+        if positional.len > 0:
+          raise newException(ValueError,
+            "usage: foo release [--sign] [--provider name] [--backend c|zig] [--target name]")
+        operation.update("Packaging", "release", cliDisplay.stateWorking)
+        let bundled = buildRelease.bundle(project, signing, provider)
+        operation.update("Packaging", "release", cliDisplay.stateComplete,
+          bundled.directory, true)
+        operation.finish(summary = $bundled.artifacts.len &
+          (if bundled.artifacts.len == 1: " artifact" else: " artifacts") &
+          (if signing: " signed" else: "") & " · " & bundled.directory)
       of "task":
         for file in project.task(positional): echo file
       else: raise newException(ValueError, usage)
       if operation != nil and not operation.isFinished():
         operation.finish()
       activeOperation = nil
-    if command in ["check", "build", "run", "task", "graph", "ir"]:
+    if command in ["check", "build", "run", "release", "task", "graph", "ir"]:
       if watching:
         if command notin ["check", "build"]:
           raise newException(ValueError, "--watch is available for check and build")
         watch(root, executeProject)
       else: executeProject()
+      return 0
+    if command == "sign":
+      if positional.len != 1:
+        raise newException(ValueError,
+          "usage: foo sign <artifact> [--provider name] [--target name]")
+      activeOperation = cliDisplay.newOperation("SIGN", jsonOutput, verbose)
+      let project = buildProject.newProject(root)
+      let artifact = if isAbsolute(positional[0]): positional[0]
+        else: root / positional[0]
+      activeOperation.update("Signing", artifact.lastPathPart,
+        cliDisplay.stateWorking)
+      let signed = buildRelease.sign(artifact,
+        project.manifest().deployment.signing,
+        if target.len > 0: buildProject.triple(target) else: "", provider)
+      activeOperation.update("Signing", artifact.lastPathPart,
+        cliDisplay.stateComplete, signed, true)
+      activeOperation.finish(summary = signed)
+      activeOperation = nil
       return 0
     case command
     of "test":

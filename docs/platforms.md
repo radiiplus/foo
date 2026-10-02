@@ -50,7 +50,7 @@ FOO's backend (code generator) will automatically generate standard Windows PE
 foo build --target windows-x64
 
 # FOO outputs:
-# target/app.exe
+# output/app.exe
 ```
 You can now copy that `.exe` file to a compatible Windows machine and run it
 natively. A CPU-specific preset still requires the destination CPU features.
@@ -72,6 +72,11 @@ The `wasi` preset emits a WASI module for a compatible host. Browser integration
 requires the imports and JavaScript glue expected by that host; performance
 depends on the workload and runtime.
 
+Use `wasi-threads` when the host provides shared WebAssembly memory and atomics
+(operations that update shared state as one indivisible step). Both the Zig and
+C backends preserve this distinction. A normal `wasi` build does not gain thread
+support merely because its source names a thread operation.
+
 ---
 
 ## 4. Bare Metal (Freestanding)
@@ -84,7 +89,22 @@ FOO supports **Freestanding** targets. This tells the compiler: *"Do not include
 foo build --target riscv64-freestanding
 ```
 
-This strips FOO down to its absolute bare minimum, generating raw machine instructions that can run directly on silicon. 
+This strips FOO down to its absolute bare minimum, generating machine code that
+can be placed into a larger firmware or boot image. Runtime-free C and Zig builds
+support explicit startup, setup-free functions (functions without compiler-generated
+setup), interrupts, and compatible target-feature clauses. The C backend
+uses the managed cross compiler automatically for these targets.
+
+Freestanding does not mean every standard-library function becomes hardware
+code. It means there is no implicit libc, allocator, filesystem, console,
+network, or process runtime. `arch.count`, `arch.pause`, and `arch.ticks` remain
+available on supported x86, ARM, and RISC-V targets because their implementations
+use direct arithmetic or processor instructions. Operations requiring an
+operating system fail at compile time.
+
+Hardware capability grants permission to use device-level operations. The
+target descriptor separately proves that the requested architecture and feature
+exist. Both requirements must be satisfied.
 
 ---
 
@@ -92,7 +112,7 @@ This strips FOO down to its absolute bare minimum, generating raw machine instru
 
 You might be wondering: *"If I am building for Windows, doesn't my compiler need Windows-specific C libraries?"*
 
-Normally, yes. But FOO has a built-in **Toolchain Manager**. Debian installation provisions the pinned Zig backend, while `foo run`, `foo build`, and cross-compilation check the managed cache and install it on demand when necessary. `foo doctor` reports the current state without changing the machine. Clang remains an optional external tool used only for C-header bindings and explicitly selected C builds.
+Normally, yes. But FOO has a built-in **Toolchain Manager**. Debian installation provisions the pinned Zig toolchain, while `foo run`, `foo build`, and cross-compilation check the managed cache and install it on demand when necessary. `foo doctor` reports the current state without changing the machine. The same managed toolchain can act as the C frontend for C-backend WASI and freestanding builds. Clang remains an optional external tool used for C-header bindings and explicitly selected native C builds.
 
 You never have to manually install cross-compilers, linkers (tools that join
 compiled pieces), or sysroots (folders containing another target system's

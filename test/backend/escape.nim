@@ -1,4 +1,3 @@
-import std/tables
 import std/strutils
 import ../../src/backend/native/escape
 import ../../src/backend/substrate
@@ -26,4 +25,18 @@ doAssert nestedResult.module.funcs[0].blocks[0].instrs[0].fallback.instrs[0].kin
 doAssert nestedResult.module.externs.len == 1
 doAssert nestedResult.code.count("#include <stddef.h>") == 1
 doAssert not nestedResult.code.contains("// #include")
+
+let inlineInstruction = Instruction(kind: InstrKind.Native, symbol: "bootasm")
+let inlineModule = Module(name: "inline", funcs: @[
+  Function(name: "boot", attributes: @["start", "naked"],
+    ret: `Type`(kind: TypeKind.Void), blocks: @[
+      Block(label: "entry", instrs: @[inlineInstruction],
+        term: Instruction(kind: InstrKind.Return))])], native: @[
+  NativeContract(id: "bootasm", stage: "@asm", code: "\"nop\"",
+    abi: "foo:1", effects: @["unknown"])])
+let inlineResult = escape(inlineModule,
+  Selection(target: "aarch64-freestanding-none", level: "hardware"))
+doAssert inlineResult.module.funcs[0].blocks[0].instrs[0].kind == InstrKind.Native
+doAssert inlineResult.module.native.len == 1
+doAssert inlineResult.code.len == 0
 echo "native escape parity: ok"

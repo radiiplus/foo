@@ -42,11 +42,14 @@ pub fn init(dev: bool) void {
 }
 
 pub fn deinit() void {
-    library.deinit();
     global_arena.deinit();
     if (is_dev) {
         _ = debug_allocator.deinit();
     }
+}
+
+pub fn finish() void {
+    library.deinit();
 }
 
 pub fn benchmark() void {

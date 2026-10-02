@@ -107,6 +107,7 @@ const current = tokenize([
   'constant content is file.read("settings.json") try.',
   'measure try.',
   'constant item of type core.reference is uninitialized.',
+  'constant population is 1`000`000.',
   'match item {',
   'case anything {',
   'after { release item. }',
@@ -126,9 +127,10 @@ for (const [line, word, scope] of [
   [9, 'try', 'keyword.control.try.foo'],
   [10, 'core', 'entity.name.namespace.foo'],
   [10, 'reference', 'entity.name.type.foo'],
-  [11, 'match', 'keyword.control.match.foo'],
-  [12, 'case', 'keyword.control.match.foo'],
-  [13, 'after', 'keyword.control.after.foo'],
+  [11, '1`000`000', 'constant.numeric.foo'],
+  [12, 'match', 'keyword.control.match.foo'],
+  [13, 'case', 'keyword.control.match.foo'],
+  [14, 'after', 'keyword.control.after.foo'],
 ]) {
   const row = current[line - 1];
   const start = row.line.indexOf(word);
@@ -136,6 +138,18 @@ for (const [line, word, scope] of [
   assert(tokens.length && tokens.every(token => token.scopes.includes(scope)), `Current syntax ${word} must use ${scope}`);
   assertions++;
 }
+const malformedNumber = tokenize('constant bad is 1`.')[0];
+const malformedSeparator = malformedNumber.line.indexOf('`');
+assert(malformedNumber.tokens.some(token => token.startIndex <= malformedSeparator &&
+  token.endIndex > malformedSeparator && token.scopes.includes('invalid.illegal.numeric.foo')),
+  'A misplaced numeric backtick must be marked invalid');
+assertions++;
+const fractionalNumber = tokenize('constant bad is 10`000.2`5.')[0];
+const fractionalSeparator = fractionalNumber.line.lastIndexOf('`');
+assert(fractionalNumber.tokens.some(token => token.startIndex <= fractionalSeparator &&
+  token.endIndex > fractionalSeparator && token.scopes.includes('invalid.illegal.numeric.foo')),
+  'A backtick after the decimal point must be marked invalid');
+assertions++;
 // Check coverage against the compiler when running in the FOO checkout.
 // The standalone grammar package does not require the compiler to run tests.
 const lexer = resolve(root, '../../src/lex/lexer.nim');
@@ -160,6 +174,6 @@ function walk(directory) {
     else if (entry.name.endsWith('.iv')) { tokenize(readFileSync(file, 'utf8')); sources++; }
   }
 }
-walk(resolve(root, '../../std'));
+walk(resolve(root, '../../lib'));
 registry.dispose();
 console.log(`Passed ${assertions} scope assertions, ${expressions} Oniguruma expressions, and ${sources} standard-library files.`);

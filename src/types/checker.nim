@@ -114,10 +114,10 @@ proc attributes(checker: Checker; member: ast.Member) =
   for attribute in member.attributes:
     if attribute != "volatile":
       checker.diag.emit(Code.Invalid, member.span,
-        "unknown field attribute '#[" & attribute & "]'")
+        "unknown field access option '" & attribute & "'")
   if "volatile" in member.attributes and member.type.tag != "pointer":
     checker.diag.emit(Code.Invalid, member.span,
-      "#[volatile] fields must be pointers")
+      "Fields with exact access must be pointers")
     checker.diag.suggestion("Declare the register as a pointer type")
 
 proc defineAlias(checker: Checker; alias: ast.Alias) =
@@ -354,8 +354,10 @@ proc clone(node: ast.Expression;
     if replacements.hasKey(value.text): return replacements[value.text]
     ast.Name(tag: "name", span: node.span, text: value.text,
       invoke: value.invoke, invokeArgs: value.invokeArgs)
-  of "integer": ast.Integer(tag: "integer", span: node.span, value: ast.Integer(node).value)
-  of "decimal": ast.Decimal(tag: "decimal", span: node.span, value: ast.Decimal(node).value)
+  of "integer": ast.Integer(tag: "integer", span: node.span, value: ast.Integer(node).value,
+    spelling: ast.Integer(node).spelling)
+  of "decimal": ast.Decimal(tag: "decimal", span: node.span, value: ast.Decimal(node).value,
+    spelling: ast.Decimal(node).spelling)
   of "text": ast.Text(tag: "text", span: node.span, value: ast.Text(node).value)
   of "character": ast.Character(tag: "character", span: node.span, value: ast.Character(node).value)
   of "true": ast.`True`(tag: "true", span: node.span)

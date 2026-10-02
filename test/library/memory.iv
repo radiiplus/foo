@@ -1,11 +1,15 @@
 -- Checks allocation contents, resizing, ownership and arena cleanup.
-use "../../std/memory.iv".
+use "../../lib/memory.iv".
+use arch as machine.
 use testing.
 function drop(allocator pointer to Allocator, buffer pointer to byte) giving failable text {
   release(allocator, buffer) try.
   give "released".
 }
 start {
+  expect(machine.count(255) is 8).
+  machine.pause.
+  expect(machine.ticks greater than 0).
   constant allocator is system.
   constant buffer is allocate(allocator, 4) try.
   expect(identical[byte](buffer, buffer)).

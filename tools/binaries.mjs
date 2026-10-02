@@ -82,14 +82,14 @@ function sign(binary, phrase) {
 if (process.argv.includes("--help")) {
   console.log("Usage: node tools/binaries.mjs [--release DIR] [--sign] [--nowsl]");
   console.log("Windows builds Windows locally and Linux through WSL when available; Linux builds Linux only.");
-  console.log("FOOSIGNKEY selects the GPG key when Linux signing is enabled.");
+  console.log("FOOSIGNER selects the GPG key when Linux signing is enabled.");
   process.exit(0);
 }
 
 const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 const releaseDirectory = resolve(value("--release") ||
   join(root, "release", `foo-v${manifest.version}`));
-const key = process.env.FOOSIGNKEY || "";
+const key = process.env.FOOSIGNER || "";
 const signing = process.argv.includes("--sign") || key.length > 0;
 const linuxOnly = process.argv.includes("--linux");
 const skipWsl = process.argv.includes("--nowsl");
@@ -105,7 +105,7 @@ if (process.platform === "linux") {
     const binary = join(output, "bin", "foo");
     if (!existsSync(binary)) throw Error(`Linux compiler was not produced: ${binary}`);
     if (signing) sign(binary, phrase);
-    else console.log("Linux binary is unsigned. Set FOOSIGNKEY or pass --sign to require signing.");
+    else console.log("Linux binary is unsigned. Set FOOSIGNER or pass --sign to require signing.");
     console.log(`Completed ${target}`);
   }
   process.exit(0);
@@ -137,7 +137,7 @@ const script = wslPath(join(root, "tools", "binaries.mjs"));
 const linuxRelease = wslPath(releaseDirectory);
 const parameters = ["--"];
 if (key || signing) parameters.push("env");
-if (key) parameters.push(`FOOSIGNKEY=${key}`);
+if (key) parameters.push(`FOOSIGNER=${key}`);
 if (signing) {
   phrase = password();
   parameters.push("FOOSIGNPIPE=1");

@@ -39,6 +39,7 @@ type
     run*: bool
     compile*: bool
     compiler*: string
+    icon*: string
     sources*: seq[string]
     includePaths*: seq[string]
     flags*: seq[string]

@@ -85,10 +85,30 @@ Its explicit start entry performs machine initialization through verified native
 interfaces; device access additionally requires hardware capability.
 A target never gains a libc or a system service merely because an API was named.
 
+Both standard backends implement runtime-none emission. A runtime-none C build
+is compiled and linked as freestanding code, exports its `for startup` function as
+`_start`, and does not include the hosted C runtime. FOO selects its managed C
+cross-compiler path for supported freestanding and WASI targets when no explicit
+C compiler was configured. This changes the compiler driver, not the source
+backend: the generated translation unit remains C11.
+
+`for interrupt` uses the selected architecture's supported interrupt convention;
+`without setup` suppresses ordinary function setup and cleanup; and
+`using feature "NAME"` may enable only a feature contained in the resolved
+target CPU profile. These clauses require hardware capability and invalid
+architecture, feature, or runtime combinations are errors. Runtime-none code
+cannot use region allocation, dynamic allocation, text joining, hosted runtime
+providers, coverage, or benchmark instrumentation.
+
 WASI binaries use their declared import interface. Shared-memory WASI additionally
 requires system capability and a compatible runner. A freestanding binary has
 no undeclared hosted imports. Foreign libraries must match architecture,
 ABI, deployment minimum and required features.
+
+For the C backend, `wasi-threads` enables atomics, bulk memory, shared memory,
+and the compatible thread flags in the managed compiler. The ordinary `wasi`
+preset does not enable them. The build output remains a WebAssembly module in
+both cases.
 
 Cross-compilation must not execute target code as part of ordinary evaluation.
 `foo run` uses a matching local environment or an explicitly configured runner.

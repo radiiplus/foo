@@ -10,10 +10,17 @@ const executable = process.platform === "win32" ? "foo.exe" : "foo";
 const candidates = [
   process.env.FOO_COMPILER,
   resolve(root, "bin", executable),
-  resolve(root, ".artifacts", "native", executable),
   resolve(root, ".artifacts", "native", `${process.platform}-${arch()}`, executable),
+  resolve(root, ".artifacts", "native", executable),
 ].filter(Boolean);
 const available = candidates.filter(existsSync);
+const source = resolve(root, ".artifacts", "native", executable);
+const cached = resolve(root, ".artifacts", "native", `${process.platform}-${arch()}`, executable);
+if (available.includes(source) && available.includes(cached) &&
+    statSync(source).mtimeMs > statSync(cached).mtimeMs) {
+  available.splice(available.indexOf(source), 1);
+  available.splice(available.indexOf(cached), 0, source);
+}
 if (available.length === 0) {
   console.error("The native FOO compiler is missing. Run npm run native:build.");
   process.exit(1);

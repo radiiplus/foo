@@ -13,10 +13,10 @@ var build = BuildConfig(backend: "zig", target: @["linux-x64"], products: {"app"
 build.tasks = %*{"version": {"kind": "text", "output": "version.iv"}}
 build.hooks = %*{"prebuild": "node prepare.mjs", "postbuild": "node finish.mjs"}
 manifest.build = build
-manifest.dependencies = {"std/testing": "1.0.0"}.toTable
+manifest.dependencies = {"lib/testing": "1.0.0"}.toTable
 doAssert manifest.hasBuild()
 doAssert manifest.build.products["app"].entry == "src/main.iv"
 doAssert manifest.build.tasks["version"]["kind"].getStr() == "text"
 doAssert manifest.build.hooks["prebuild"].getStr() == "node prepare.mjs"
-doAssert manifest.dependencies["std/testing"] == "1.0.0"
+doAssert manifest.dependencies["lib/testing"] == "1.0.0"
 echo "build config parity: ok"

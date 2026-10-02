@@ -24,7 +24,7 @@ writeFile(root / "project.json", """{"name":"actual","language":"1","version":"0
 let products = newProject(root).build()
 doAssert products.hasKey("app")
 doAssert fileExists(products["app"])
-doAssert parentDir(products["app"]) == root / "target"
+doAssert parentDir(products["app"]) == root / "output"
 doAssert fileExists(root / ".artifacts" / "build" / products["app"].lastPathPart)
 var manifest = parseJson(readFile(root / "project.json"))
 manifest["build"] = %*{"output": "dist"}

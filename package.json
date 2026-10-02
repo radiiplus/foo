@@ -1,12 +1,12 @@
 {
   "name": "foo",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "bin": {
     "foo": "bin/foo.mjs"
   },
   "scripts": {
-    "test": "node test/stdlib/check.mjs && node test/native/run.mjs",
-    "test:stdlib": "node test/stdlib/check.mjs && node bin/foo.mjs test std --backend c",
+    "test": "node test/library/check.mjs && node test/native/run.mjs",
+    "test:library": "node test/library/check.mjs && node bin/foo.mjs test lib --backend c",
     "test:docs": "node test/docs/run.mjs",
     "test:build": "node test/native/run.mjs",
     "foo": "node bin/foo.mjs",
@@ -54,7 +54,7 @@
     "bin/",
     "assets/",
     "src/",
-    "std/",
+    "lib/",
     "docs/",
     "tools/toolchain.mjs",
     "tools/native.mjs",
@@ -63,9 +63,9 @@
     "project.json",
     "specs/",
     "benchmark/",
-    "test/stdlib/*.iv",
-    "test/stdlib/project.json",
-    "test/stdlib/public.txt",
+    "test/library/*.iv",
+    "test/library/project.json",
+    "test/library/public.txt",
     "test/native/service.c"
   ]
 }

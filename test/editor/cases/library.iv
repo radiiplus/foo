@@ -1,4 +1,4 @@
--- Source: std/sequence.iv
+-- Source: lib/sequence.iv
 -- Builds typed sequences and applies ordering, searching, and transformations.
 public use "sequence" function create[T] giving sequence of T.
 public use "sequence" function append[T](items sequence of T, value T) giving failable sequence of T.
@@ -143,7 +143,7 @@ public function dedup[T](items sequence of T) giving failable sequence of T wher
   give deduplicate[T](items) try.
 }
 
--- Source: std/text.iv
+-- Source: lib/text.iv
 -- Combines, trims, and splits text using byte offsets and ASCII whitespace.
 use sequence as items.
 use "sequence" function sized[T](length unsigned) giving failable sequence of T.
@@ -243,7 +243,7 @@ public function split(content text, separator text) giving failable sequence of 
   give result.
 }
 
--- Source: test/stdlib/collections.iv
+-- Source: test/library/collections.iv
 -- Exercises typed sequence operations and function-valued transformations.
 use sequence as sequence.
 use testing as check.
@@ -427,7 +427,7 @@ start {
   check.expect((stack.top[text](pile) fallback "empty") is "empty").
 }
 
--- Source: test/stdlib/services.iv
+-- Source: test/library/services.iv
 -- Exercises portable files, text, clocks, threads, and TCP connections.
 use io as io.
 use file as files.
@@ -492,6 +492,7 @@ start {
   }
   check.same(content, "FOO" plus newline plus "44").
   constant file is files.open(path, "read") try.
+  check.expect((files.handle(file) try) is (files.handle(file) try)).
   after {
     io.close(file) fallback nothing.
   }
@@ -580,6 +581,7 @@ start {
   tasks.close(mutex) try.
   tasks.close(condition) try.
   constant listener is network.listen("127.0.0.1", 0) try.
+  check.expect((network.handle(listener) try) is (network.handle(listener) try)).
   after {
     network.close(listener) fallback nothing.
   }

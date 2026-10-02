@@ -30,6 +30,9 @@ foo publish
 `foo login` uses GitHub's device flow and stores the resulting token in the user's Foo configuration directory. GitHub leaves its device authorization page open after approval, so return to the terminal once authorization succeeds. `foo publish` first checks the package with the compiler, then reports its packaging and upload stages. It formats and bundles the Foo source alongside metadata and documentation. The package README remains author-owned: publication reads it without generating or rewriting the local file, and the registry materializes its browsable mirror from that content. Separately, the compiler derives a `foo.api/v1` JSON index from the AST (the compiler's tree-shaped representation of source code) and adjacent source comments, so every release records the library modules, types, functions, constants, values, signatures, and API documentation it exposes. The serverless endpoint validates the token with GitHub, derives a stable opaque (not directly readable) HMAC ownership signature (a one-way code produced with a server secret) from the numeric GitHub ID, discards the raw ID, checks ownership, verifies the bundle digest (a fingerprint used to detect changed content) and API paths, and commits the immutable (unchangeable) expanded release record plus the browsable README/source mirror to the registry repository. It never executes package code.
 
 The published release points to the repository and the full Git commit SHA from the clean local checkout. Published versions cannot be replaced.
+Published dependencies must use registry version constraints. Local paths and
+external source locations are valid while developing an application or local
+package, but cannot be embedded in an immutable registry release.
 
 An unscoped name belongs to its first publisher. If that basename is already owned by someone else, publish under `@github-login/package`; the scope must match the GitHub account authenticated by `foo login`.
 
@@ -46,11 +49,10 @@ These commands read the public index shards and package records without calling 
 The registry website reads the same public Git manifest (the listing of
 available registry data), shards (smaller index files), and package records as
 the compiler; discovery does not pass through the publication service. It
-searches packages, standard modules, and exported symbol names. Every bundled
-standard module is indexed under `std/<module>` and appears in the default
-catalog. Open `/package/:package` directly to browse a release and filter its
-public API; for example, `/package/foo-http` or `/package/std%2Fjson`. These are
-normal browser paths, not hash routes.
+searches packages, bundled modules, and exported symbol names. Bundled module
+records use `lib/<module>`. Open
+`/package/:package` directly to browse a release and filter its public API;
+for example, `/package/foo-http`. These are normal browser paths, not hash routes.
 
 ## Adding dependencies
 
@@ -64,6 +66,19 @@ foo add widgets https://github.com/example/widgets.git
 The registry is configured internally. Use `name` or `name@version` for a
 registry package; do not write an internal `registry+...` locator. The optional
 second argument is reserved for an external URL, Git repository, or local path.
+
+Local paths are resolved from the directory containing the declaring
+`project.json`. An absolute path is converted to a project-relative path when
+the two locations permit it. `foo add local-tools ../local-tools` stores
+`path+../local-tools`; `foo install` then checks the local package's declared
+name, reads its exact version from that package's `project.json`, installs it
+under `.foo/packages/local-tools`, and writes the path and content digest (a
+fingerprint of the installed source) to `foo.lock`. Relative paths inside a
+local dependency are resolved from that dependency's own directory. Repeating
+`foo install` rereads local packages, so local development changes replace the
+previous installed copy and digest. Registry packages in the same project stay
+at their reachable locked versions while those versions still satisfy the
+current constraints; use `foo update` to select newer registry releases.
 
 `foo add foo-http` selects the current indexed release. Exact versions and
 compatible `^` or `~` constraints are also accepted. The dependency is written
@@ -90,6 +105,21 @@ makes `foo install` resolve the changed graph and rewrite the lockfile. An
 unchanged manifest (project configuration) installs from the lock exactly;
 `foo update` resolves newer compatible releases within the existing
 constraints, `foo outdated` reports them, and `foo remove` prunes the graph.
+`foo outdated` checks registry constraints and skips local path sources;
+`foo update` reinstalls current local sources while resolving registry entries.
+
+Dependencies are installed as complete packages. Source code names the package,
+not an install-time feature:
+
+```text
+use stateful.
+```
+
+That import resolves the package's configured public entry, or
+`<source>/main.iv` when the package does not configure `entry`. It does not make
+every `.iv` file public. Package authors expose supported declarations from the
+entry and may use `public use` to build a facade (one public entry over internal
+modules). Consumers need no full filesystem path after `foo install`.
 
 ## Using a package before installation
 

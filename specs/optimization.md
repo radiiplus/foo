@@ -61,6 +61,21 @@ Error propagation is ordinary typed control flow. A backend may lower postfix
 `try` to a test and branch without an exception runtime, but it must preserve
 the error value, trace, cleanup, and exact propagation boundary.
 
+Executable emission uses whole-module reachability before backend generation.
+The roots are the executable entry, startup and interrupt entries, and exported
+ABI functions. Library products additionally root public functions. Direct
+calls and address-taken function values extend the reachable set. Only storage,
+external runtime declarations, native contracts, and traces referenced by that
+set may be removed. When no executable or library root exists, emission keeps
+the module intact rather than guessing an entry.
+
+Runtime and service inclusion is derived from the reachable declarations, not
+from every declaration made visible by an import. A backend may omit lifecycle
+setup only when no retained operation requires its allocation or cleanup
+contract. Link-time section collection is a final safeguard, not a substitute
+for semantic reachability. Release stripping may remove symbols and debug
+records, but it must preserve exported ABI symbols and requested debug mode.
+
 Allocation placement is also a selection problem. Compile-time storage, stack
 storage, region storage, persistent storage, or shared storage are eligible
 only when lifetime, address identity, alignment, escape, cleanup, and task
@@ -70,7 +85,7 @@ value into stack storage merely because stack allocation is faster.
 The current implementation removes block-local non-escaping stack slots,
 same-type conversions, adjacent private pure call boundaries, and proven
 synchronous `task.block` callbacks. It generates the standard JSON encoding and
-parser for concrete scalar and record codecs and adopts the completed encoded
+parser for concrete scalar, optional, sequence, choice, and record codecs and adopts the completed encoded
 buffer without a second full-buffer copy. Suspending state machines,
 specialized continuation frames, effectful loop fusion, and general storage
 placement remain outside this implemented scope. An in-memory record layout is

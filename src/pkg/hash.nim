@@ -85,7 +85,7 @@ proc hashDirectory*(directory: string; excluded: seq[string] = @[]): string =
     if isAbsolute(it): absolutePath(it) else: absolutePath(it, directory))
   proc visit(path: string) =
     for kind, child in walkDir(path):
-      if child.lastPathPart in [".git", "node_modules", ".artifacts"] or
+      if child.lastPathPart in [".git", ".foo", "node_modules", ".artifacts", "target"] or
           absolutePath(child) in ignored: continue
       if kind == pcDir: visit(child)
       elif kind == pcFile: files.add(child)

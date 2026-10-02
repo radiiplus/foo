@@ -21,7 +21,7 @@ let presets* = {
   "wasi": Target(arch: "wasm32", os: "wasi", abi: "none", libc: "wasi", cpu: "generic"),
   "wasi-threads": Target(arch: "wasm32", os: "wasi", abi: "none", libc: "wasi", cpu: "generic", features: @["threads"]),
   "wasm-freestanding": Target(arch: "wasm32", os: "freestanding", abi: "none", libc: "none", cpu: "generic"),
-  "aarch64-freestanding": Target(arch: "aarch64", os: "freestanding", abi: "none", libc: "none", cpu: "generic"),
+  "arm64-freestanding": Target(arch: "aarch64", os: "freestanding", abi: "none", libc: "none", cpu: "generic"),
   "riscv64-freestanding": Target(arch: "riscv64", os: "freestanding", abi: "none", libc: "none", cpu: "generic")
 }.toTable
 

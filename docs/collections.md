@@ -42,10 +42,10 @@ allocation and copying required by persistent `append`.
 ```foo
 use sequence as sequences.
 
-constant values is sequences.sized[integer](10_000) try.
+constant values is sequences.sized[integer](10`000) try.
 after { sequences.release[integer](values) fallback nothing. }
 dynamic index is 0.
-while index less than 10_000 {
+while index less than 10`000 {
   set values at index to index.
   increase index by 1.
 }

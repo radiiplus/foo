@@ -63,7 +63,8 @@ This page answers a practical question: **Which familiar language features exist
 *   **Concurrency:** Library-based overlapping work through scoped tasks, pools, channels, OS threads, mutexes (single-worker locks), condition variables, and atomics (shared operations completed as one step).
 *   **C ABI:** The binary rules used to call C: `extern "C"`, C-layout records, callbacks, generated header bindings, dynamic libraries, and verified native contracts.
 *   **Other Languages:** Rust and other libraries are accessed via the stable C ABI.
-*   **Low-Level Access:** Typed surfaces for advanced HTTP, sockets, binary-safe files, durable file publication, JSON, allocators, atomics, OS, native C, and assembly.
+*   **Low-Level Access:** Typed surfaces for advanced HTTP, sockets, binary-safe files, one-writer file publication, JSON, allocators, atomics, OS, native C, and assembly.
+*   **Hardware Targets:** Both C and Zig backends preserve explicit startup, setup-free and interrupt functions, checked target features, exact device access, and runtime-free AArch64/RISC-V emission. C cross-builds use the managed toolchain and also emit WASI and WASI-thread modules.
 
 ### ❌ What is NOT in FOO v1 (Do not assume these exist)
 *   `async` or `await` keywords.
@@ -78,7 +79,7 @@ This page answers a practical question: **Which familiar language features exist
 ### ✅ What is in FOO v1
 *   **Modules:** One namespace per `.iv` file. Private-by-default, explicit `public` exports, aliases, explicit unaliased `public use` re-exports, and cycle detection.
 *   **Builds:** C and Zig backends, dev/release optimization, target/CPU selection, products, resources, native inputs, and shared/project caches. `--explain` reports selected runtime substrates and their reasons.
-*   **Current Optimization:** Concrete generic specialization, local pure-expression reuse, dead pure-result removal, release inlining and private-function sharing, measured byte-transfer paths, and single-allocation collection transforms.
+*   **Current Optimization:** Executable call-graph reachability (retaining only entry/export roots and their dependencies), selective runtime/service emission, concrete generic specialization, local pure-expression reuse, dead pure-result removal, release inlining and private-function sharing, measured byte-transfer paths, and single-allocation collection transforms.
 *   **Packages:** Registry, Git, URL, and path dependencies. Semver (major/minor/patch version rules) constraints, deterministic `foo.lock` (the same inputs produce the same file), and platform/dev/optional dependencies.
 *   **Entries:** One explicit default `entry`, plus simple named `entries` selected via CLI (`foo run NAME`).
 *   **Tests:** File-level test blocks, filtering, watch mode, backend choice, native fixtures, timeouts, and the `testing` assertions module.
@@ -91,11 +92,14 @@ This page answers a practical question: **Which familiar language features exist
 *   Microbenchmark declarations.
 *   Test mocks.
 *   A public coverage CLI.
+*   File locks, exclusive creation, filesystem compare-and-swap, and directory
+    enumeration. Applications currently use one publisher and retain their own
+    durable candidate index when restart-time discovery is required.
 *   Effectful or loop pipeline fusion, cross-block/shared allocation placement,
     suspended continuation frames, Apple/BSD and Zig event reactors, adaptive
-    search indexing, and typed codecs for arbitrary sequence/choice/pointer
-    graphs. The current optimizer covers local pure pipelines, local stack-slot
-    elimination, synchronous continuation removal, typed record codecs, PGO
+    search indexing, and typed codecs for pointer or resource graphs. The
+    current optimizer covers local pure pipelines, local stack-slot
+    elimination, synchronous continuation removal, typed composite codecs, PGO
     (profile-guided optimization using earlier run measurements),
     C task pools on Windows/Linux, and adaptive file/text paths.
 

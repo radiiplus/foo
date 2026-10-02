@@ -1,6 +1,7 @@
 /* Backend-independent hosted runtime. Compiles as ISO C11; OS APIs are isolated
  * here. */
 #include <stdatomic.h>
+#include "arch.h"
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN

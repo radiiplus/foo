@@ -53,7 +53,7 @@ The function exposes the following authenticated routes and compatibility read r
 - `POST /publish`
 - `POST /deprecate`
 
-The registry data repository contains expanded canonical records in `packages/` and generated JSONL discovery shards in `indexes/`. Each record carries a structured public API surface for the web explorer. `scripts/standard.mjs` indexes every bundled standard module as `std/<module>`; `scripts/index.mjs` normalizes and shards the combined catalog.
+The registry data repository contains expanded canonical records in `packages/` and generated JSONL discovery shards in `indexes/`. Each record carries a structured public API surface for the web explorer. Bundled modules use the `lib/<module>` namespace.
 
 ## CLI flow
 

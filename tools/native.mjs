@@ -1,4 +1,5 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { delimiter, resolve, join, dirname } from "node:path";
 import { homedir } from "node:os";
@@ -49,6 +50,27 @@ const source = join(root, "src", "main.nim");
 if (!existsSync(source)) throw Error("Missing src/main.nim");
 mkdirSync(dirname(output), { recursive: true });
 mkdirSync(cache, { recursive: true });
+const embedded = [
+  "package.json", "project.json",
+  "assets/dark.svg", "installers/assets/logo-installer.ico",
+  "src/backend/native/service.c", "src/backend/native/service.h",
+  "src/backend/zig/library.zig", "src/backend/zig/storage.zig",
+  "src/backend/zig/stream.zig", "src/backend/zig/service.zig",
+  "src/backend/zig/shim.zig", "src/backend/c/runtime.h",
+  "src/backend/c/arch.h", "src/backend/c/json.h", "src/backend/c/http.h",
+  "src/backend/c/storage.h", "src/backend/c/stream.h",
+  "src/backend/c/memory.c", "src/backend/c/trace.c", "src/backend/c/copy.c",
+];
+const embeddedDigest = createHash("sha256");
+for (const name of embedded) {
+  embeddedDigest.update(name);
+  embeddedDigest.update("\0");
+  embeddedDigest.update(readFileSync(join(root, name)));
+  embeddedDigest.update("\0");
+}
+const digest = embeddedDigest.digest("hex");
+const stamp = join(cache, "embedded.sha256");
+const embeddedChanged = !existsSync(stamp) || readFileSync(stamp, "utf8").trim() !== digest;
 const checking = process.argv.includes("--check");
 const ssl = process.platform === "win32" ? [] : ["-d:ssl"];
 const cross = crossArm ? ["--os:linux", "--cpu:arm64", "--cc:gcc",
@@ -56,6 +78,7 @@ const cross = crossArm ? ["--os:linux", "--cpu:arm64", "--cc:gcc",
 const args = checking
   ? ["check", ...ssl, ...cross, "--path:" + root, "--nimcache:" + cache, source]
   : ["c", "-d:release", ...ssl, ...cross, "--opt:size", "--nimcache:" + cache, "-o:" + output];
+if (embeddedChanged) args.splice(1, 0, "-f");
 if (!checking && process.platform === "win32") {
   const resource = join(cache, "foo.res");
   const resourceCompiler = process.env.LLVMRC || "llvm-rc.exe";
@@ -91,4 +114,5 @@ if (result.error?.code === "ENOENT") {
   process.exit(1);
 }
 if (result.status !== 0) process.exit(result.status ?? 1);
+if (!checking) writeFileSync(stamp, digest + "\n");
 console.log(checking ? "Nim compiler check passed." : `Built native FOO compiler: ${output}`);

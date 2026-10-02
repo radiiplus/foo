@@ -259,7 +259,7 @@ The `json` module parses, inspects, streams, and writes JSON. `Codec[T]` (a
 paired encoder and decoder) groups
 an explicit text encoder and decoder so applications can pass a typed codec as
 one value. `codec.encode[T]` and `codec.decode[T]` generate concrete JSON code
-for supported scalars and records without runtime reflection. Byte buffers and
+for supported scalars, optional values, sequences, choices, and records without runtime reflection. Byte buffers and
 text conversions remain explicit. Applications use an explicit `Codec[T]`
 when field naming, versions, unknown fields, allocation, endianness (the byte
 order used to store a number), or input policy differs from that standard form.

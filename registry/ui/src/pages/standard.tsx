@@ -2,6 +2,7 @@ import { ChevronRight, Copy, FileJson, LibraryBig, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { standardIndex, standards, type PublicApiItem, type StandardPackage } from "../utils/registry";
+import { displayPackageName } from "../utils/format";
 
 type StandardProps = {
   onOpen: (name: string) => void;
@@ -80,7 +81,7 @@ export default function Standard({ onOpen }: StandardProps) {
               <p className="px-2 pb-2 font-mono text-[8px] tracking-[0.14em] text-[#555] uppercase">{matches.length} matching modules</p>
               {matches.map(({ packageItem, items }) => (
                 <a key={packageItem.name} className="flex min-h-8 items-center justify-between rounded px-2 font-mono text-[10px] text-[#777] no-underline hover:bg-[#12191a] hover:text-[#60D5DF]" href={`#${anchor(packageItem.name)}`}>
-                  <span>{packageItem.name.replace("std/", "")}</span><span className="text-[8px] text-[#4f4f4f]">{items.length}</span>
+                  <span>{displayPackageName(packageItem.name)}</span><span className="text-[8px] text-[#4f4f4f]">{items.length}</span>
                 </a>
               ))}
             </aside>

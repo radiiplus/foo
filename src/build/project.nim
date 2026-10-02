@@ -91,9 +91,38 @@ proc manifest*(project: Project): Manifest =
   result.dependencies = initTable[string, string]()
   if node.hasKey("dependencies") and node["dependencies"].kind == JObject:
     for name, source in node["dependencies"]: result.dependencies[name] = source.getStr()
+  if node.hasKey("release"):
+    if node["release"].kind != JObject:
+      raise newException(ValueError, "release must be an object")
+    let release = node["release"]
+    result.deployment.directory = field(release, "directory", "release").getStr()
+    result.deployment.icon = field(release, "icon", "").getStr()
+    result.deployment.license = field(release, "license", "").getStr()
+    result.deployment.readme = field(release, "readme", "").getStr()
+    result.deployment.files = strings(release, "files")
+    if release.hasKey("sign"):
+      if release["sign"].kind != JObject:
+        raise newException(ValueError, "release.sign must be an object")
+      result.deployment.signing.provider =
+        field(release["sign"], "provider", "auto").getStr()
+      result.deployment.signing.timestamp =
+        field(release["sign"], "timestamp", "").getStr()
+      if result.deployment.signing.provider notin
+          ["auto", "gpg", "authenticode", "codesign"]:
+        raise newException(ValueError,
+          "release.sign.provider must be auto, gpg, authenticode, or codesign")
+
+proc config*(project: Project): BuildConfig
 
 proc files*(project: Project): seq[string] =
-  discover(project.root, project.manifest().source)
+  let manifest = project.manifest()
+  let config = project.config()
+  var ignored = @[files.destination(project.root, config.output,
+    @["src", "test", "benchmark"])]
+  if manifest.deployment.directory.len > 0:
+    ignored.add(files.destination(project.root, manifest.deployment.directory,
+      @["src", "test", "benchmark", relativePath(ignored[0], project.root)]))
+  discover(project.root, manifest.source, ignored)
 
 proc config*(project: Project): BuildConfig =
   let file = project.root / "project.json"
@@ -112,7 +141,8 @@ proc config*(project: Project): BuildConfig =
     result.profile = field(build, "profile", "").getStr()
     result.cpu = field(build, "cpu", "").getStr()
     result.sanitize = field(build, "sanitize", "").getStr()
-    result.output = field(build, "output", "target").getStr()
+    result.output = field(build, "output", "output").getStr()
+    result.icon = field(build, "icon", "").getStr()
     result.semantic = boolean(build, "semantic")
     result.docs = boolean(build, "docs")
     if build.hasKey("target"):
@@ -303,8 +333,12 @@ proc build*(project: Project; entry = ""): Table[string, string] =
   let backend = if project.options.backend.len > 0: project.options.backend else: (if config.backend.len > 0: config.backend else: "zig")
   project.prepare(config)
   let destination = project.destination(config)
-  let projectDigest = hashDirectory(project.root,
-    @[destination, project.root / "target", project.root / ".foo"])
+  var excluded = @[destination, project.root / "output", project.root / ".foo"]
+  if project.manifest().deployment.directory.len > 0:
+    excluded.add(files.destination(project.root,
+      project.manifest().deployment.directory,
+      @["src", "test", "benchmark", relativePath(destination, project.root)]))
+  let projectDigest = hashDirectory(project.root, excluded)
   let compilerDigest = compilerIdentity()
   let tool = if backend == "zig": install(pin(project.root)).path else: ""
   var active = initTable[string, bool]()
@@ -338,13 +372,21 @@ proc build*(project: Project; entry = ""): Table[string, string] =
     for path in config.c.`include`: includes.add(if isAbsolute(path): path else: project.root / path)
     let profilePath = if config.profile.len == 0: ""
       elif isAbsolute(config.profile): config.profile else: project.root / config.profile
+    let cCompiler = if config.compiler.len > 0: config.compiler
+      elif backend == "c" and (target.contains("wasi") or
+          target.contains("freestanding")):
+        install(pin(project.root)).path
+      else: ""
+    proc projectPath(value: string): string =
+      if value.len == 0 or isAbsolute(value): value else: project.root / value
     let nativeOptions = Native(name: name, kind: if product.kind.len > 0: product.kind else: "exe", target: target,
-      compile: true, compiler: config.compiler, runtime: config.runtime, sources: sourcePaths,
+      compile: true, compiler: cCompiler, runtime: config.runtime, sources: sourcePaths,
+      icon: projectPath(config.icon),
       includePaths: includes, flags: config.c.flags, libs: config.link.libs, frameworks: config.link.frameworks,
       objects: objects, cpp: config.link.cpp, soname: if product.soname.len > 0: product.soname else: config.link.soname,
       version: if product.version.len > 0: product.version else: config.link.version,
-      script: if product.script.len > 0: product.script else: config.link.script,
-      exports: if product.exports.len > 0: product.exports else: config.link.exports,
+      script: projectPath(if product.script.len > 0: product.script else: config.link.script),
+      exports: projectPath(if product.exports.len > 0: product.exports else: config.link.exports),
       rpath: if product.rpath.len > 0: product.rpath else: config.link.rpath,
       level: if project.manifest().requires.len > 0:
         project.manifest().requires else: "base",

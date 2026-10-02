@@ -12,9 +12,11 @@ Find a package:
 
 ```sh
 foo search http
-foo info std/json
+foo info lib/json
 foo info package-name
 ```
+
+Bundled modules use the reserved `lib/` namespace in the public index.
 
 Add and install a package:
 

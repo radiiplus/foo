@@ -213,6 +213,31 @@ proc takeWord(parser: Parser; word: string) =
   if token.text != word:
     parser.diagnostics.emit(Code.Syntax, token.span, "expected '" & word & "'")
 
+proc functionOptions(parser: Parser; attributes: var seq[string]; abi: var string) =
+  while true:
+    parser.lines()
+    if parser.match(Kind.For):
+      let role = parser.name.text
+      case role
+      of "startup": attributes.add("start")
+      of "interrupt": attributes.add("interrupt")
+      else: abi = role
+    elif parser.check(Kind.Ident) and parser.peek.text == "without":
+      discard parser.advance
+      parser.takeWord("setup")
+      attributes.add("naked")
+    elif parser.check(Kind.Ident) and parser.peek.text == "using":
+      discard parser.advance
+      parser.takeWord("feature")
+      let feature = parser.expect(Kind.String, "expected a target feature name")
+      attributes.add("target_feature(\"" & feature.text & "\")")
+    elif parser.check(Kind.Ident) and parser.peek.text == "keeping":
+      discard parser.advance
+      parser.takeWord("call")
+      attributes.add("noinline")
+    else:
+      break
+
 proc machine(parser: Parser): Machine =
   let first = parser.advance
   if first.text == "call":
@@ -274,8 +299,8 @@ proc primary(parser: Parser): Expression =
     Closure(tag: "closure", span: token.span, params: params,
       returnType: returnType, captures: captures, body: parser.blockNode)
   of Kind.Int:
-    Integer(tag: "integer", span: token.span, value: token.text)
-  of Kind.Float: Decimal(tag: "decimal", span: token.span, value: token.text)
+    Integer(tag: "integer", span: token.span, value: token.text, spelling: token.spelling)
+  of Kind.Float: Decimal(tag: "decimal", span: token.span, value: token.text, spelling: token.spelling)
   of Kind.String: Text(tag: "text", span: token.span, value: token.text)
   of Kind.Char: Character(tag: "character", span: token.span, value: token.text)
   of Kind.True: `True`(tag: "true", span: token.span)
@@ -617,12 +642,19 @@ proc parse*(parser: Parser): Program
 
 proc member(parser: Parser): Member =
   parser.mark()
+  var attributes = parser.attributes()
   let fieldName = parser.name
   discard parser.expect(Kind.Of, "expected 'of'")
   discard parser.expect(Kind.Type, "expected 'type'")
   let fieldType = parser.parseType
+  if parser.check(Kind.Ident) and parser.peek.text == "with":
+    discard parser.advance
+    parser.takeWord("exact")
+    parser.takeWord("access")
+    attributes.add("volatile")
   discard parser.expect(Kind.Dot, "expected '.'")
-  Member(tag: "member", span: parser.span, name: fieldName, `type`: fieldType)
+  Member(tag: "member", span: parser.span, name: fieldName, `type`: fieldType,
+    attributes: attributes)
 
 proc recordType(parser: Parser; layout = ""): Record =
   parser.mark()
@@ -661,7 +693,7 @@ proc choiceType(parser: Parser): Choice =
       discard parser.expect(Kind.Close, "expected ')'")
     if parser.match(Kind.Is):
       let integer = parser.expect(Kind.Int, "expected integer value")
-      value = Integer(tag: "integer", span: integer.span, value: integer.text)
+      value = Integer(tag: "integer", span: integer.span, value: integer.text, spelling: integer.spelling)
     discard parser.expect(Kind.Dot, "expected '.'")
     variants.add(Variant(tag: "variant", span: variantName.span, name: variantName, value: value, payload: payload))
   discard parser.expect(Kind.Shut, "expected '}'")
@@ -681,7 +713,7 @@ proc pattern(parser: Parser): Pattern =
     Null(tag: "null", span: token.span)
   of Kind.Int:
     discard parser.advance
-    Integer(tag: "integer", span: token.span, value: token.text)
+    Integer(tag: "integer", span: token.span, value: token.text, spelling: token.spelling)
   of Kind.True:
     discard parser.advance
     `True`(tag: "true", span: token.span)
@@ -786,7 +818,7 @@ proc action(parser: Parser): Action =
 
 proc statement(parser: Parser): Statement =
   parser.mark()
-  let attributes = parser.attributes()
+  var attributes = parser.attributes()
   let public = parser.match(Kind.Public)
   let token = parser.peek
   if token.kind == Kind.Ident and token.text == "extern" and parser.peek(1).kind == Kind.String:
@@ -909,8 +941,7 @@ proc statement(parser: Parser): Statement =
       returnType = parser.parseType
     parser.lines()
     var abi = ""
-    if parser.match(Kind.For): abi = parser.name.text
-    parser.lines()
+    parser.functionOptions(attributes, abi)
     let constraints = parser.constraints()
     parser.lines()
     let body = parser.blockNode
@@ -924,7 +955,9 @@ proc statement(parser: Parser): Statement =
       parser.diagnostics.emit(Code.Syntax, token.span,
         "Remove empty parentheses from start")
       discard parser.expect(Kind.Close, "expected ')'")
-    Function(tag: "function", span: parser.span, public: public, name: Name(tag: "name", span: token.span, text: "start"), params: @[], attributes: attributes, body: parser.blockNode)
+    var abi = ""
+    parser.functionOptions(attributes, abi)
+    Function(tag: "function", span: parser.span, public: public, name: Name(tag: "name", span: token.span, text: "start"), params: @[], abi: abi, attributes: attributes, body: parser.blockNode)
   of Kind.Test:
     discard parser.advance
     let nameToken = parser.expect(Kind.String, "expected a test name")

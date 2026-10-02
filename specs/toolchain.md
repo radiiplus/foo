@@ -21,7 +21,7 @@ A level includes every capability below it and the additions in its row.
 | base | Source reading/parsing, type checking, ordinary records/choices, generics, errors, scope arenas, portable library APIs, normal native output, packages, formatting, testing and diagnostics |
 | system | Explicit Allocator values, memory lifetime primitives, unsafe raw-memory access, FOO/foreign ABI interfaces, C declarations and header interfaces, processes, platform-specific system APIs, threads and atomics |
 | machine | Assembly authoring through native interfaces, register access, architecture primitives, intrinsics and freestanding machine execution |
-| hardware | Device interfaces, memory-mapped I/O, volatile device registers, interrupts, packed hardware layouts and SIMD authoring |
+| hardware | Device interfaces, memory-mapped I/O, exact device access, interrupts, packed hardware layouts and SIMD authoring |
 
 These levels authorize APIs and authoring features. They do not classify the
 hidden machinery required to produce an ordinary executable. The trusted base

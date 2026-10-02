@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const library = join(root, "std");
+const library = join(root, "lib");
 const launcher = join(root, "bin", "foo.mjs");
 const files = readdirSync(library, { recursive: true, withFileTypes: true })
   .filter(entry => entry.isFile() && entry.name.endsWith(".iv"))

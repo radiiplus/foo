@@ -1,5 +1,5 @@
 -- Checks actual output and length-aware writes including embedded zero bytes.
-use "../../std/stream.iv".
+use "../../lib/stream.iv".
 start {
   constant out is output.
   print(out, "Hello from FOO!" plus newline) try.

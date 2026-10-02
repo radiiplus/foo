@@ -67,6 +67,12 @@ and a package uses its final name segment. An explicit alias supplies a simpler 
 name. Two imports cannot bind the same name, and an import cannot collide with
 a local declaration. An alias changes neither visibility nor identity.
 
+Installation operates on a complete package identity, not on selected features
+or internal files. `use package.` resolves the installed package entry and only
+exposes declarations made public by that entry, including deliberate
+`public use` re-exports. Consumers do not supply the installed filesystem path
+or an internal feature name in the import.
+
 Imports precede no mandatory section: they may appear anywhere at file scope, and their scope is the entire file. Import cycles are errors. Each canonical file is analyzed once per configuration regardless of how many paths reach it.
 
 Source discovery scans every .iv file below the configured source root. It
@@ -83,7 +89,12 @@ candidate exists, a did-you-mean suggestion. Import cycles use FOO0012 and
 identify the offending use and dependency chain.
 
 ## Dependencies
-[Project configuration](project.md) defines dependency sources, versions and locks. Resolution chooses one version per registry package identity in a project graph; incompatible requirements are errors. Local packages retain distinct identities even if their file stems match.
+[Project configuration](project.md) defines dependency sources, versions and
+locks. Resolution chooses one version per registry package identity in a
+project graph; incompatible requirements are errors. A local package's
+identity is its dependency name, which must match the name in its
+`project.json`; its exact version comes from that manifest. Nested local paths
+are resolved from the package that declares them.
 
 Dependencies provide FOO interfaces. A package requiring native support must declare its capability requirement and target contracts; it cannot expose a substrate-specific type through an ordinary public API. The effective installation requirement is the greatest requirement in the reachable dependency graph, bounded by the application's declared level.
 

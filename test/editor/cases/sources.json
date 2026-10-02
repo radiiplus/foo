@@ -1,8 +1,8 @@
 {
   "declarations": {
     "source": "docs/functions.md",
-    "sourceSha256": "aa92589490caea0e84210241ccb76090b7f6eee36ebb80f6e49a4d7baebe441a",
-    "fixtureSha256": "6d359c92f348f0dd65a5628b29f87e532fd5de002306f3c45dec4fa561ea47d2"
+    "sourceSha256": "011f474edb40216006af6b351301e1a71d0dd1eb510fedd2f2cea9c7193d898b",
+    "fixtureSha256": "45fcfe1da353ee8a83cab16679f7291a6948c3523b00f47504134f6738d0fb99"
   },
   "types": {
     "source": "specs/types.md",
@@ -25,39 +25,39 @@
     "fixtureSha256": "1793c7eda6b957f0da9691baba820590dfac01a2e40a5eb02130de8193d51cf4"
   },
   "pointers": {
-    "source": "std/memory.iv",
+    "source": "lib/memory.iv",
     "sourceSha256": "9506f2dafb4994f01a357fc6317e3891fc330ac2309991b3945b2be95e5b4971",
     "fixtureSha256": "9506f2dafb4994f01a357fc6317e3891fc330ac2309991b3945b2be95e5b4971"
   },
   "errors": {
-    "source": "std/crypto.iv",
+    "source": "lib/crypto.iv",
     "sourceSha256": "197be6204b15f595b28362321bace9670b73f611b6cfae5a2958699e49731975",
     "fixtureSha256": "197be6204b15f595b28362321bace9670b73f611b6cfae5a2958699e49731975"
   },
   "platforms": {
-    "source": "std/system.iv",
+    "source": "lib/system.iv",
     "sourceSha256": "fad809a7d4ceafee69b644d247b6958dc78b4e88fcd33e905410ce0b1e54b383",
     "fixtureSha256": "fad809a7d4ceafee69b644d247b6958dc78b4e88fcd33e905410ce0b1e54b383"
   },
   "library": {
     "sources": [
       {
-        "source": "std/sequence.iv",
+        "source": "lib/sequence.iv",
         "sourceSha256": "a4d07d838c7371934ed1f7bfe708e73919499cf0f66bd291bdae1994830ee1f8"
       },
       {
-        "source": "std/text.iv",
+        "source": "lib/text.iv",
         "sourceSha256": "ae72e0ed3eb9ef2766e84ee7b28c9de40401ab77275dddaec2c8070d08e41224"
       },
       {
-        "source": "test/stdlib/collections.iv",
+        "source": "test/library/collections.iv",
         "sourceSha256": "2d749390e7cc58841257d1c4dd4554178e37021313fb95268f5b350cc6fdc3d1"
       },
       {
-        "source": "test/stdlib/services.iv",
-        "sourceSha256": "6992995303ada45d47662c83c21fa7a54bde55d1fe083d099110db7ad3fd93d9"
+        "source": "test/library/services.iv",
+        "sourceSha256": "e60f281ed32d46d8e5fbd52667be6dffedbe3003970c8919f6992c28020d711e"
       }
     ],
-    "fixtureSha256": "9d8215f871551eba31eb5d97a86ad7065692a16c12a996addcb70734d0fb2acf"
+    "fixtureSha256": "0b37c81ade2966713c3209cd6b2ead6458b8aaa1f2ce39067c16204055056a04"
   }
 }

@@ -1,4 +1,4 @@
-import std/[os, strutils, unittest]
+import std/[os, sequtils, strutils, unittest]
 import ../../src/build/files
 
 let root = getTempDir() / "foo-build-files-test"
@@ -17,6 +17,8 @@ doAssert glob(root / "src", "**/*.iv") == @["main.iv", "nested/helper.iv"]
 expect ValueError:
   discard glob(root, "../*.iv")
 doAssert discover(root).len == 2
+doAssert destination(root, "", @["src", "test", "benchmark"]) ==
+  absolutePath(root / "output")
 doAssert destination(root, "target", @["src", "test", "benchmark"]) ==
   absolutePath(root / "target")
 doAssert destination(root, "dist/native", @["src"]) ==
@@ -27,6 +29,13 @@ for invalid in ["../outside", ".artifacts/output", "src/output", "project.json"]
 createDir(root / "dist")
 write(root / "dist" / "generated.iv", "generated")
 doAssert "dist/generated.iv" notin glob(root, "**/*.iv", @[root / "dist"])
+createDir(root / "output")
+createDir(root / "release")
+write(root / "output" / "generated.iv", "generated")
+write(root / "release" / "generated.iv", "generated")
+let discovered = discover(root, ".").mapIt(it.replace('\\', '/'))
+doAssert discovered.allIt(not it.contains("/output/generated.iv"))
+doAssert discovered.allIt(not it.contains("/release/generated.iv"))
 
 let stable = root / "generated" / "out.txt"
 write(stable, "same")

@@ -65,6 +65,39 @@ doAssert codec.contains("foo_adopt(writer.data, writer.length)")
 doAssert codec.contains("p0.x")
 doAssert codec.contains("strtoll")
 doAssert codec.contains("MissingField")
+let numbers = `Type`(kind: TypeKind.Slice,
+  elem: `Type`(kind: TypeKind.Int, width: 32))
+let sequenceCodec = runtime(@[
+  Extern(name: "encodeNumbers", symbol: "encode", abi: "runtime.codec",
+    params: @[numbers], ret: `Type`(kind: TypeKind.Failable, elem: text)),
+  Extern(name: "decodeNumbers", symbol: "decode", abi: "runtime.codec",
+    params: @[text], ret: `Type`(kind: TypeKind.Failable, elem: numbers))],
+  printType, printName).code
+doAssert sequenceCodec.contains("foo_put(&writer, \"[\", 1)")
+doAssert sequenceCodec.contains("ExpectedSequence")
+doAssert sequenceCodec.contains("foo_sequence_owned")
+let maybe = `Type`(kind: TypeKind.Optional,
+  elem: `Type`(kind: TypeKind.Int, width: 32))
+let optionalCodec = runtime(@[
+  Extern(name: "encodeMaybe", symbol: "encode", abi: "runtime.codec",
+    params: @[maybe], ret: `Type`(kind: TypeKind.Failable, elem: text)),
+  Extern(name: "decodeMaybe", symbol: "decode", abi: "runtime.codec",
+    params: @[text], ret: `Type`(kind: TypeKind.Failable, elem: maybe))],
+  printType, printName).code
+doAssert optionalCodec.contains("foo_put(&writer, \"null\", 4)")
+doAssert optionalCodec.contains(".present = true")
+let choice = `Type`(kind: TypeKind.TaggedUnion, name: "Selection",
+  variants: {"chosen": `Type`(kind: TypeKind.Int, width: 32),
+    "missing": `Type`(kind: TypeKind.Void)}.toOrderedTable)
+let choiceCodec = runtime(@[
+  Extern(name: "encodeChoice", symbol: "encode", abi: "runtime.codec",
+    params: @[choice], ret: `Type`(kind: TypeKind.Failable, elem: text)),
+  Extern(name: "decodeChoice", symbol: "decode", abi: "runtime.codec",
+    params: @[text], ret: `Type`(kind: TypeKind.Failable, elem: choice))],
+  printType, printName).code
+doAssert choiceCodec.contains("InvalidChoice")
+doAssert choiceCodec.contains("ExpectedChoicePayload")
+doAssert choiceCodec.contains("UnknownVariant")
 let windowsHttp = runtime(@[http], printType, printName, "windows-x64")
 doAssert windowsHttp.libraries == @["winhttp", "ws2_32"]
 doAssert windowsHttp.code.contains("WinHttpOpen")

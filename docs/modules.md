@@ -12,7 +12,7 @@ use http as web.
 ```
 
 Standard modules use their plain names. Application code does not write a
-`std/` prefix.
+`lib/` prefix.
 
 The alias controls the qualifier (the name written before the dot) used in the
 file. Without `as`, the module's own name is the qualifier, so both
@@ -159,7 +159,29 @@ foo add shared ..\shared
 ```
 
 Git dependencies use an immutable (unchangeable) full commit. Local paths are normalized and
-stored as `path+...` entries in `project.json`.
+stored as `path+...` entries in `project.json`. An absolute path is converted
+to a project-relative path when the two locations permit it. A local path is resolved from
+the directory containing the `project.json` that declares it. Therefore the
+same dependency is written on Linux and macOS as:
+
+```sh
+foo add shared ../shared
+```
+
+`foo install` reads the local package's exact `version` from its own
+`project.json`, checks that its declared `name` matches `shared`, copies the
+package under `.foo/packages/shared`, and records its source digest (a content
+fingerprint) in `foo.lock`. A local package may use another relative local path;
+that nested path is resolved from the local package that declares it. Running
+`foo install` again rereads local sources and refreshes their lock entries while
+preserving registry versions already selected by the reachable lock graph.
+
+Install the package as a whole. You do not name one feature or internal file in
+`foo add`. After installation, `use shared.` opens the package's configured
+public `entry`, or `<source>/main.iv` when no entry is configured. Only public
+declarations reachable from that entry are available. A package should use a
+facade module (one public entry that re-exports its supported API) when it has
+several internal source files.
 
 ## If a package is not installed
 
@@ -218,7 +240,7 @@ test file can write `use values.` to import `src/values.iv`, while
 
 | Problem | Fix |
 | --- | --- |
-| Writing `use std/file.` | Write `use file.` or give it an alias. |
+| Writing `use lib/file.` | Write `use file.` or give it an alias. |
 | A declaration is invisible | Add `public` in the defining module. |
 | Package source is unavailable | Run `foo install` before checking. |
 | Depending on a Git branch | Pin a full commit for reproducibility. |

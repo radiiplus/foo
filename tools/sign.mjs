@@ -15,7 +15,7 @@ function elf(path) {
 
 if (process.argv.includes("--help")) {
   console.log("Usage: node tools/sign.mjs [--verify] BINARY");
-  console.log("Creates or verifies BINARY.asc using GPG. FOOSIGNKEY selects the signing key.");
+  console.log("Creates or verifies BINARY.asc using GPG. FOOSIGNER selects the signing key.");
   process.exit(0);
 }
 
@@ -27,11 +27,11 @@ if (!existsSync(binary)) throw Error(`Linux binary does not exist: ${binary}`);
 if (!elf(binary)) throw Error(`Refusing to sign a non-ELF file: ${binary}`);
 
 const verifying = process.argv.includes("--verify");
-const key = process.env.FOOSIGNKEY || "";
+const key = process.env.FOOSIGNER || "";
 const piped = process.env.FOOSIGNPIPE === "1";
 let phrase = piped ? readFileSync(0, "utf8").replace(/\r?\n$/, "") : "";
 if (!verifying && !key) {
-  throw Error("Set FOOSIGNKEY to the signing key fingerprint");
+  throw Error("Set FOOSIGNER to the signing key fingerprint");
 }
 const parameters = verifying
   ? ["--batch", "--verify", signature, binary]

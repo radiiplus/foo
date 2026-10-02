@@ -1,6 +1,6 @@
 import std/[algorithm, json, os, osproc, sequtils, sets, strutils, tables, times]
 when not defined(windows): import std/httpclient
-import ./[hash, semver, surface]
+import ./[fetch, hash, semver, surface]
 import ../fmt/formatter as fooFormatter
 
 const
@@ -21,6 +21,7 @@ type
   Installed* = object
     name*: string
     version*: string
+    source*: string
     repository*: string
     revision*: string
     digest*: string
@@ -111,7 +112,7 @@ proc requireResponse(response: RegistryResponse; operation: string): JsonNode =
 
 proc validName(value: string): bool =
   var package = value
-  if value.startsWith("std/"):
+  if value.startsWith("lib/"):
     let parts = value.split('/')
     if parts.len < 2: return false
     for part in parts[1 .. ^1]:
@@ -147,6 +148,18 @@ proc exactVersion*(value: string): bool =
 
 proc ensurePackage(name, version: string) =
   if not validName(name): raise newException(ValueError, "Invalid package name: " & name)
+  discard parseConstraint(version)
+
+proc sourceDependency(value: string): bool =
+  value.startsWith("path+") or value.startsWith("git+") or
+    value.startsWith("https://") or value.startsWith("http://")
+
+proc ensureDependency(name, version: string) =
+  if not validName(name): raise newException(ValueError, "Invalid package name: " & name)
+  if sourceDependency(version):
+    if version.startsWith("path+") and version.len == 5:
+      raise newException(ValueError, "Local dependency path cannot be empty: " & name)
+    return
   discard parseConstraint(version)
 
 proc ensureRelease(name, version: string) =
@@ -301,7 +314,7 @@ proc addDependencies(result: JsonNode; project: JsonNode; field, kind: string) =
       version = values[name].getOrDefault("version").getStr()
       let configured = values[name].getOrDefault("platforms")
       if configured != nil and configured.kind == JArray: platforms = configured
-    ensurePackage(name, version)
+    ensureDependency(name, version)
     result.add(%*{"name": name, "version": version, "kind": kind, "platforms": platforms})
 
 proc projectDependencies(project: JsonNode): JsonNode =
@@ -322,7 +335,7 @@ proc projectDependencies(project: JsonNode): JsonNode =
       names.sort()
       for name in names:
         let version = values[name].getStr()
-        ensurePackage(name, version)
+        ensureDependency(name, version)
         result.add(%*{"name": name, "version": version, "kind": "platform", "platforms": [selector]})
 
 proc bundledSource(root: string): JsonNode =
@@ -357,7 +370,8 @@ proc publish*(root: string; token = ""; progress: PublishProgress = nil): string
   let project = parseJson(readFile(manifestPath))
   let name = required(project, "name").toLowerAscii()
   let version = required(project, "version")
-  if name.startsWith("std/"): raise newException(ValueError, "The std/ package namespace is reserved")
+  if name.startsWith("lib/"):
+    raise newException(ValueError, "The bundled library package namespace is reserved")
   ensurePackage(name, version)
   let state = git(root, "status", "--porcelain")
   if state.len > 0: raise newException(ValueError, "Commit project changes before publishing")
@@ -375,6 +389,11 @@ proc publish*(root: string; token = ""; progress: PublishProgress = nil): string
   if tags == nil or tags.kind != JArray: tags = newJArray()
   var platforms = project.getOrDefault("platforms")
   if platforms == nil or platforms.kind != JArray: platforms = newJArray()
+  let publishedDependencies = projectDependencies(project)
+  for dependency in publishedDependencies:
+    if sourceDependency(dependency["version"].getStr()):
+      raise newException(ValueError, "Published dependencies must use registry versions: " &
+        dependency["name"].getStr())
   let packageName = name & "@" & version
   if progress != nil: progress("package", packageName, "revision " & revision[0 .. 11])
   let source = bundledSource(root)
@@ -402,7 +421,7 @@ proc publish*(root: string; token = ""; progress: PublishProgress = nil): string
       "repository": repository,
       "revision": revision,
       "install": "foo add " & name,
-      "dependencies": projectDependencies(project),
+      "dependencies": publishedDependencies,
     },
     "documentation": documentation,
     "source": source,
@@ -452,6 +471,7 @@ proc sourceDigest(source: JsonNode): string =
 proc extractRelease(root: string; record: JsonNode): Installed =
   result.name = record.getOrDefault("name").getStr()
   result.version = record.getOrDefault("version").getStr()
+  result.source = "registry+" & result.name & "@" & result.version
   result.repository = record.getOrDefault("repository").getStr()
   result.revision = record.getOrDefault("revision").getStr().toLowerAscii()
   ensureRelease(result.name, result.version)
@@ -501,6 +521,127 @@ proc rootRequirements(project: JsonNode): seq[Requirement] =
       version: dependency["version"].getStr(), kind: kind, platforms: platforms,
       direct: true, optional: kind == "optional"))
 
+type SourceNode = object
+  package: Installed
+  path: string
+  requirements: seq[Requirement]
+
+proc canonicalSource(source, base, root: string): string =
+  if not source.startsWith("path+"): return source
+  let value = source[5 .. ^1]
+  let absolute = if value.isAbsolute: absolutePath(value) else: absolutePath(value, base)
+  "path+" & relativePath(absolute, root).replace('\\', '/')
+
+proc copySource(source, destination: string) =
+  createDir(destination)
+  for kind, child in walkDir(source):
+    let name = child.lastPathPart
+    if name in [".git", ".foo", ".artifacts", "node_modules", "target"]: continue
+    let target = destination / name
+    case kind
+    of pcDir: copySource(child, target)
+    of pcFile:
+      createDir(target.parentDir)
+      copyFile(child, target)
+    else:
+      raise newException(ValueError, "Local packages cannot contain filesystem links: " & child)
+
+proc sourceNodes(root: string; roots: seq[Requirement]; registryRoots: var seq[Requirement];
+    progress: RegistryProgress = nil): seq[SourceNode] =
+  var queue: seq[tuple[requirement: Requirement, base: string]]
+  for requirement in roots:
+    if sourceDependency(requirement.version):
+      queue.add((requirement: requirement, base: root))
+    else:
+      registryRoots.add(requirement)
+  var selected = initTable[string, string]()
+  var position = 0
+  while position < queue.len:
+    var requirement = queue[position].requirement
+    let base = queue[position].base
+    inc position
+    requirement.version = canonicalSource(requirement.version, base, root)
+    if selected.hasKey(requirement.name):
+      if selected[requirement.name] != requirement.version:
+        raise newException(ValueError, "Dependency conflict for " & requirement.name &
+          ": " & selected[requirement.name] & ", " & requirement.version)
+      if requirement.direct:
+        for item in result.mitems:
+          if item.package.name == requirement.name: item.package.direct = true
+      continue
+    if progress != nil: progress("fetch", requirement.name, requirement.version)
+    var fetched: FetchResult
+    try:
+      fetched = fetchDep(requirement.name, requirement.version, root)
+    except CatchableError:
+      if requirement.optional: continue
+      raise
+    let store = absolutePath(root / ".foo" / "packages")
+    let stored = relativePath(absolutePath(fetched.path), store).replace('\\', '/')
+    if stored == "." or (not stored.isAbsolute and stored != ".." and
+        not stored.startsWith("../")):
+      raise newException(ValueError,
+        "Dependency source cannot be inside .foo/packages: " & requirement.name)
+    selected[requirement.name] = requirement.version
+    let manifestPath = fetched.path / "project.json"
+    if not fileExists(manifestPath):
+      raise newException(ValueError, "Dependency " & requirement.name & " has no project.json")
+    let manifest = parseJson(readFile(manifestPath))
+    let declared = manifest.getOrDefault("name").getStr()
+    let version = manifest.getOrDefault("version").getStr()
+    if declared != requirement.name:
+      raise newException(ValueError, "Dependency name " & requirement.name &
+        " does not match project name " & declared)
+    ensureRelease(declared, version)
+    var node = SourceNode(
+      package: Installed(name: declared, version: version,
+        source: requirement.version, digest: fetched.hash, direct: requirement.direct),
+      path: fetched.path)
+    for dependency in projectDependencies(manifest):
+      let kind = dependency["kind"].getStr()
+      if kind == "dev": continue
+      var platforms: seq[string]
+      for platform in dependency["platforms"]: platforms.add(platform.getStr())
+      if kind == "platform" and not enabled(platforms): continue
+      var child = Requirement(name: dependency["name"].getStr(),
+        version: dependency["version"].getStr(), kind: kind,
+        platforms: platforms, optional: kind == "optional")
+      if sourceDependency(child.version):
+        child.version = canonicalSource(child.version, fetched.path, root)
+        queue.add((requirement: child, base: root))
+      else:
+        registryRoots.add(child)
+      node.requirements.add(child)
+    result.add(node)
+
+proc installSources(root: string; nodes: var seq[SourceNode];
+    registryPackages: seq[Installed]; progress: RegistryProgress): seq[Installed] =
+  var versions = initTable[string, string]()
+  for item in registryPackages: versions[item.name] = item.version
+  for item in nodes:
+    if versions.hasKey(item.package.name):
+      removeTree(root / ".foo" / "packages")
+      raise newException(ValueError, "Dependency " & item.package.name &
+        " is selected from both a registry and an external source")
+    versions[item.package.name] = item.package.version
+  for item in nodes.mitems:
+    for dependency in item.requirements:
+      if versions.hasKey(dependency.name):
+        item.package.dependencies.add(dependency.name & "@" & versions[dependency.name])
+      elif not dependency.optional:
+        raise newException(ValueError, "Dependency " & item.package.name &
+          " is missing " & dependency.name)
+    item.package.dependencies.sort()
+    let destination = root / ".foo" / "packages" / item.package.name
+    removeTree(destination)
+    copySource(item.path, destination)
+    if progress != nil:
+      progress("install", item.package.name & "@" & item.package.version,
+        "digest:" & item.package.digest[0 .. 11])
+    result.add(item.package)
+  result.add(registryPackages)
+  result.sort(proc(left, right: Installed): int = cmp(left.name, right.name))
+
 proc requirementJson(requirements: seq[Requirement]): JsonNode =
   result = newJArray()
   var sorted = requirements
@@ -509,6 +650,59 @@ proc requirementJson(requirements: seq[Requirement]): JsonNode =
     var platforms = newJArray()
     for platform in item.platforms: platforms.add(%platform)
     result.add(%*{"name": item.name, "version": item.version, "kind": item.kind, "platforms": platforms})
+
+proc registryLock(lock: JsonNode; roots: seq[Requirement]): JsonNode =
+  let packages = lock.getOrDefault("packages")
+  if lock.getOrDefault("format").getStr() != "foo.lock" or
+      packages == nil or packages.kind != JArray:
+    raise newException(ValueError, "Invalid foo.lock")
+  var locked = initTable[string, JsonNode]()
+  for item in packages:
+    let source = item.getOrDefault("source").getStr()
+    if not source.startsWith("registry+"): continue
+    let name = item.getOrDefault("name").getStr()
+    let version = item.getOrDefault("version").getStr()
+    ensureRelease(name, version)
+    if locked.hasKey(name):
+      raise newException(ValueError, "Duplicate lockfile package: " & name)
+    locked[name] = item
+  var reachable = initHashSet[string]()
+  var queue: seq[string]
+  for requirement in roots:
+    if not locked.hasKey(requirement.name):
+      if requirement.optional: continue
+      return nil
+    if not satisfies(locked[requirement.name]["version"].getStr(), requirement.version):
+      return nil
+    queue.add(requirement.name)
+  while queue.len > 0:
+    let name = queue.pop()
+    if name in reachable: continue
+    reachable.incl(name)
+    let dependencies = locked[name].getOrDefault("dependencies")
+    if dependencies == nil or dependencies.kind != JArray:
+      raise newException(ValueError, "Invalid lockfile dependencies for " & name)
+    for dependency in dependencies:
+      let identity = dependency.getStr()
+      let marker = identity.rfind('@')
+      if marker <= 0: raise newException(ValueError, "Invalid locked dependency: " & identity)
+      let child = identity[0 ..< marker]
+      if not locked.hasKey(child): return nil
+      queue.add(child)
+  var values = newJArray()
+  var names = toSeq(reachable)
+  names.sort()
+  for name in names:
+    var item = locked[name].copy()
+    item["direct"] = %roots.anyIt(it.name == name and it.direct)
+    values.add(item)
+  %*{
+    "format": "foo.lock",
+    "version": 1,
+    "registry": lock.getOrDefault("registry").getStr(),
+    "requirements": requirementJson(roots),
+    "packages": values,
+  }
 
 proc versions(catalog: seq[JsonNode]; name: string; deprecated = false): seq[string] =
   for entry in catalog:
@@ -593,7 +787,7 @@ proc writeLock(root, registryRevision: string; requirements: seq[Requirement]; p
     values.add(%*{
       "name": item.name,
       "version": item.version,
-      "source": "registry+" & item.name & "@" & item.version,
+      "source": item.source,
       "digest": item.digest,
       "direct": item.direct,
       "dependencies": dependencies,
@@ -654,7 +848,8 @@ proc reproduce(root: string; config: Registry; lock: JsonNode;
         "sha256:" & installed.digest[0 .. 11])
     result.add(installed)
 
-proc install*(root: string; package = ""; progress: RegistryProgress = nil): seq[Installed] =
+proc install*(root: string; package = ""; progress: RegistryProgress = nil;
+    refreshRegistry = false): seq[Installed] =
   let manifestPath = root / "project.json"
   if not fileExists(manifestPath): raise newException(IOError, "project.json not found")
   let config = configuration(root)
@@ -672,11 +867,11 @@ proc install*(root: string; package = ""; progress: RegistryProgress = nil): seq
     project["dependencies"][name] = %version
     writeFile(manifestPath, pretty(project) & "\n")
   let requirements = rootRequirements(project)
+  let hasSources = requirements.anyIt(sourceDependency(it.version))
   if progress != nil:
     progress("resolve", "dependencies", $requirements.len & " direct requirements")
-  let catalog = entries(config)
   let lockPath = root / "foo.lock"
-  if package.len == 0 and fileExists(lockPath):
+  if not refreshRegistry and not hasSources and package.len == 0 and fileExists(lockPath):
     let lock = parseJson(readFile(lockPath))
     if lock.getOrDefault("requirements") != nil and
         $lock.getOrDefault("requirements") == $requirementJson(requirements):
@@ -684,10 +879,28 @@ proc install*(root: string; package = ""; progress: RegistryProgress = nil): seq
         let revision = lock.getOrDefault("registry").getStr()
         progress("locked", "foo.lock", if revision.len >= 12: revision[0 .. 11] else: revision)
       return reproduce(root, config, lock, progress)
+  var registryRoots: seq[Requirement]
+  var sources = sourceNodes(root, requirements, registryRoots, progress)
+  var lockedRegistry: JsonNode
+  if not refreshRegistry and package.len == 0 and fileExists(lockPath):
+    lockedRegistry = registryLock(parseJson(readFile(lockPath)), registryRoots)
   removeTree(root / ".foo" / "packages")
-  result = resolve(root, config, catalog.values, requirements, progress)
-  writeLock(root, catalog.revision, requirements, result)
-  if progress != nil: progress("lock", "foo.lock", catalog.revision[0 .. 11])
+  var revision = ""
+  var registered: seq[Installed]
+  if registryRoots.len > 0:
+    if lockedRegistry != nil:
+      revision = lockedRegistry.getOrDefault("registry").getStr()
+      if progress != nil:
+        progress("locked", "foo.lock", if revision.len >= 12: revision[0 .. 11] else: revision)
+      registered = reproduce(root, config, lockedRegistry, progress)
+    else:
+      let catalog = entries(config)
+      revision = catalog.revision
+      registered = resolve(root, config, catalog.values, registryRoots, progress)
+  result = installSources(root, sources, registered, progress)
+  writeLock(root, revision, requirements, result)
+  if progress != nil:
+    progress("lock", "foo.lock", if revision.len >= 12: revision[0 .. 11] else: "local sources")
 
 proc update*(root: string; package = ""; progress: RegistryProgress = nil): seq[Installed] =
   let manifestPath = root / "project.json"
@@ -695,6 +908,10 @@ proc update*(root: string; package = ""; progress: RegistryProgress = nil): seq[
   let project = parseJson(readFile(manifestPath))
   let config = configuration(root)
   let requirements = rootRequirements(project)
+  if requirements.anyIt(sourceDependency(it.version)):
+    if package.len > 0 and requirements.allIt(it.name != package):
+      raise newException(ValueError, "Package is not a direct project dependency: " & package)
+    return install(root, progress = progress, refreshRegistry = true)
   if progress != nil:
     progress("resolve", "dependencies", $requirements.len & " direct requirements")
   let catalog = entries(config)
@@ -730,12 +947,14 @@ proc outdated*(root: string): seq[JsonNode] =
   let lockPath = root / "foo.lock"
   if not fileExists(lockPath): raise newException(IOError, "foo.lock not found; run foo install")
   let project = parseJson(readFile(root / "project.json"))
+  let requirements = rootRequirements(project).filterIt(not sourceDependency(it.version))
+  if requirements.len == 0: return
   let catalog = entries(configuration(root))
   let lock = parseJson(readFile(lockPath))
   var locked = initTable[string, string]()
   for item in lock.getOrDefault("packages"):
     locked[item["name"].getStr()] = item["version"].getStr()
-  for requirement in rootRequirements(project):
+  for requirement in requirements:
     let latest = semver.select(versions(catalog.values, requirement.name), @[requirement.version])
     let current = locked.getOrDefault(requirement.name)
     if latest.len > 0 and current.len > 0 and latest != current:

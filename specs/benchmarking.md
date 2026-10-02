@@ -37,11 +37,14 @@ other.
 Benchmarking introduces no source declaration or altered optimization rules.
 For in-process measurement, a benchmark may call the standard `time.measure`
 operation. Performance results are observations, not semantic guarantees.
-Repository reports use `foo.benchmark/v3`. Each workload records FOO-to-C,
-FOO-to-Zig, handwritten C, and handwritten Zig results. Every result identifies
-its implementation and backend and keeps build duration, cache reuse, raw
-runtime samples, allocation telemetry, and compiler optimization facts separate.
-Native compilation is shared by workloads and is marked as such.
+Repository reports use `foo.benchmark/v4`. Each workload records FOO-to-C,
+FOO-to-Zig, handwritten C, handwritten Zig, and handwritten Rust results. Every
+result identifies its implementation and backend and keeps build duration, cache
+reuse, raw runtime samples, allocation telemetry, and compiler optimization facts
+separate. Native compilation is shared by workloads and is marked as such.
+FOO results record the matching Rust median, their raw median ratio against Rust,
+and whether that individual measurement was faster. Ratios do not establish a
+language-wide performance ordering.
 
 The `startup` workload is the process/harness baseline. The `runtime` workload
 adds standard runtime initialization and one hosted query. Subtracted medians

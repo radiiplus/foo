@@ -62,6 +62,7 @@ start {
   }
   check.same(content, "FOO" plus newline plus "44").
   constant file is files.open(path, "read") try.
+  check.expect((files.handle(file) try) is (files.handle(file) try)).
   after {
     io.close(file) fallback nothing.
   }
@@ -150,6 +151,7 @@ start {
   tasks.close(mutex) try.
   tasks.close(condition) try.
   constant listener is network.listen("127.0.0.1", 0) try.
+  check.expect((network.handle(listener) try) is (network.handle(listener) try)).
   after {
     network.close(listener) fallback nothing.
   }

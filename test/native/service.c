@@ -22,6 +22,20 @@ static void notify(void *context) {
 }
 
 void verify(void) {
+  FooText texts[1024];
+  for (size_t index = 0; index < 1024; index++) {
+    FooResult value = foo_text_concatenate(
+        (FooText){(const uint8_t *)"a", 1},
+        (FooText){(const uint8_t *)"b", 1});
+    assert(!value.error && value.text.len == 2);
+    texts[index] = value.text;
+  }
+  for (size_t index = 0; index < 1024; index += 2)
+    assert(!foo_text_release(texts[index]).error);
+  for (size_t index = 1; index < 1024; index += 2)
+    assert(!foo_text_release(texts[index]).error);
+  assert(foo_text_release(texts[0]).error);
+
   FooResult lock = foo_thread_mutex(), signal = foo_thread_condition();
   assert(!lock.error && !signal.error);
   mutex = lock.pointer;
@@ -42,6 +56,11 @@ void verify(void) {
   assert(foo_process_argument(UINT64_MAX).error);
   FooText host = {(const uint8_t *)"127.0.0.1", 9};
   assert(foo_net_listen(host, 65536).error);
+  FooResult listener = foo_net_listen(host, 0);
+  assert(!listener.error);
+  assert(!foo_net_handle(listener.pointer).error);
+  assert(!foo_net_close(listener.pointer).error);
+  assert(foo_net_handle(listener.pointer).error);
   FooText invalid = {(const uint8_t *)"A\0B", 3};
   assert(foo_process_environment(invalid).error);
   FooText process_arguments[] = {
@@ -73,9 +92,12 @@ void verify(void) {
       (FooText){(const uint8_t *)draft, strlen(draft)},
       (FooText){(const uint8_t *)"write", 5});
   assert(!output.error);
+  FooResult native = foo_fs_handle(output.pointer);
+  assert(!native.error);
   assert(!foo_io_write(output.pointer, bytes).error);
   assert(!foo_fs_sync(output.pointer).error);
   assert(!foo_io_close(output.pointer).error);
+  assert(foo_fs_handle(output.pointer).error);
   assert(!foo_fs_replace(
       (FooText){(const uint8_t *)draft, strlen(draft)},
       (FooText){(const uint8_t *)live, strlen(live)}).error);

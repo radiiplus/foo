@@ -2,7 +2,7 @@
 use testing as check.
 
 eval {
-  constant checksum of type unsigned is 499_999_500_000.
+  constant checksum of type unsigned is 499`999`500`000.
 }
 
-check.number(checksum, 499_999_500_000).
+check.number(checksum, 499`999`500`000).

@@ -11,8 +11,8 @@ start {
     give value.
   }
   define Box[T] as record { value of type T. } derives Equatable, Hash.
-  constant count of type integer 32 is 1_000.
-  dynamic amount of type decimal is 12_345.67_89.
+  constant count of type integer 32 is 1`000.
+  dynamic amount of type decimal is 12`345.6789.
   constant lane of type vector[4, decimal 32] is splat(1.0).
   constant item is values at 0.
   constant result is values at (index at 1).
@@ -25,11 +25,11 @@ start {
   public use "crypto" function hash(value text) giving failable text.
   extern "C" function header giving nothing.
   use sample as other.
-  #[start]
-  #[interrupt]
-  #[naked]
-  #[volatile]
-  #[target_feature("sse2")]
+  function boot for startup { }
+  function irq for interrupt { }
+  function spin without setup { }
+  define Device as record { data of type pointer to unsigned 32 with exact access. }.
+  function vectorized using feature "sse2" { }
   test "a test" { give true. }
   constant message is "Hello" plus newline plus "World".
   constant empty is "".
@@ -55,7 +55,7 @@ start {
   constant bad is 'many'.
   constant bad is "unfinished with \"escaped
   constant recovered is 45.
-  0 42 1_000 1__2 1_ 0.5 12_345.6_7 5.
+  0 42 1`000 1``2 1` 0.5 12`345.6789 12`345.6`7 5. 1_000
   constant kibibytes is 2 multiply 1024.
   constant delay is clock.seconds(1).
   0xFF 0o77 0b10 1e3

@@ -3,6 +3,107 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## Unreleased
+
+## 0.7.0 - 2026-10-02
+
+### Build And Release
+
+- Rename the public product directory from `target/` to the language-neutral
+  `output/` while retaining `.artifacts/` for compiler-owned intermediates and
+  caches.
+- Generate application icon assets with new projects and embed the configured
+  `.ico` in Windows executables on both native backends.
+- Add optional release staging with selected license, readme, icon, and extra
+  files, versioned metadata, SHA-256 checksums, and opt-in GPG, Authenticode, or
+  codesign executable signing without storing credentials in project files.
+- Add named-entry command linking under the FOO user bin directory, with
+  `foo path`, `foo link`, and `foo unlink` for direct commands that do not need
+  the `foo` prefix.
+
+### Packages
+
+- Rename the bundled library directory and registry prefix from `std` to `lib`.
+  Use `foo test lib` for its fixtures and `FOO_LIB` to override its location.
+  Remove the old test selector, environment variable, and registry namespace so
+  tooling exposes one unambiguous name.
+- Install direct and transitive local path dependencies through `foo install`,
+  derive their exact versions from their manifests, copy them into
+  `.foo/packages`, and record normalized sources and content digests in
+  `foo.lock`.
+- Allow local and registry dependencies in the same project while preserving
+  reachable locked registry versions and treating nested local paths relative
+  to the package that declares them.
+
+### Documentation And Testing
+
+- Rewrite the project README around verified language capabilities, installation,
+  project structure, everyday commands, packages, releases, editor support, and
+  contribution paths.
+- Add contributor, conduct, and security policies together with structured bug,
+  feature, implementation-inconsistency, and pull request templates.
+- Use backticks as the readable separator inside integer and decimal literals,
+  limited to the whole-number portion. Preserve valid grouping through
+  formatting, reject underscores and fractional separators with focused
+  diagnostics, and align compiler tests, benchmarks, documentation, and editor
+  highlighting.
+- Make executable emission reachability-driven: retain entry points, exported
+  ABI functions, and their transitive calls while excluding unused functions,
+  runtime imports, native fragments, storage, and traces before C or Zig
+  generation. Native service bridges are selected only for reached providers,
+  and empty Zig programs no longer initialize unused allocator/library
+  lifecycles.
+- Enable function/data section collection for hosted C releases, select the
+  native dead-code linker contract on GNU, Darwin, and MSVC targets, disable
+  incremental/debug linker output in MSVC-targeted releases, and explicitly
+  strip Zig release artifacts.
+- Invalidate the native compiler cache when a C/Zig runtime fragment, service
+  declaration, embedded manifest, or other `staticRead` input changes, avoiding
+  stale generated backends without disabling ordinary Nim incremental builds.
+- Add cross-backend generated JSON codecs for optional values, sequences, and
+  choices, including nested record fields, checked C allocation, and end-to-end
+  C and Zig regression coverage.
+- Match Zig's optional-to-value equality in either operand order and its
+  optional-to-value ordering behavior in generated C.
+- Implement the public `arch.count`, `arch.pause`, and `arch.ticks` operations
+  on the C backend for supported x86, ARM, and RISC-V targets.
+- Bring hardware-target C emission to parity with Zig for explicit startup,
+  setup-free and interrupt functions, checked target-feature clauses, runtime-free
+  builds, common foreign calling conventions, WASI threads, and generated API
+  documentation.
+- Preserve exact-access hardware fields while parsing record and union members,
+  so device pointer access reaches type checking and backend lowering.
+- Replace Rust-shaped source attributes with FOO clauses: `for startup`,
+  `for interrupt`, `without setup`, `using feature`, `keeping call`, and
+  `with exact access`. Legacy attribute spellings remain input-compatible during
+  migration, while formatting and documentation use the new forms.
+- Align the public `arm64-freestanding` preset with its `aarch64` backend triple
+  instead of passing the user-facing architecture name through unchanged.
+- Compile native C fragments in runtime-free Zig builds without implicitly
+  linking libc, while continuing to link it for hosted native interoperability.
+- Keep verified assembly inline inside naked functions on both backends instead
+  of lowering it to a forbidden helper call, enabling real boot entry bodies.
+- Route C cross-builds for WASI and freestanding AArch64/RISC-V through the
+  managed toolchain while preserving C11 source output, and verify the produced
+  WebAssembly and ELF machine headers in backend tests. The Linux hardware gate
+  now boots both C and Zig freestanding artifacts on the AArch64 and RISC-V QEMU
+  boards.
+- Represent every FOO integer width from 1 through 128 in C and generate
+  width-specific checked arithmetic and JSON conversion instead of rejecting
+  or truncating non-C-native widths.
+- Specify the operating-system and filesystem boundaries of `file.sync` and
+  `file.replace`, including the current one-writer and caller-supplied
+  reclamation requirements.
+- Add a local dependency regression covering transitive paths, installation,
+  lock data, version resolution, and repeated installation.
+- Run native tests through a CPU- and memory-bounded worker pool with isolated
+  temporary directories, configurable job and timeout limits, and separate C
+  cross-target, WASI, and threaded-WASI integration groups.
+- Add equivalent handwritten Rust controls to every repository benchmark,
+  including startup baselines, allocation telemetry, raw samples, and explicit
+  per-workload Rust comparison ratios without making language-wide speed claims.
+  Refresh the checked-in report with the v4 C, Zig, and Rust comparison.
+
 ## 0.6.1 - 2026-10-01
 
 ### Build System
@@ -323,7 +424,7 @@ changes are recorded here.
 - Embed the application icon in Windows PE binaries and install Linux desktop,
   icon-theme, and AppStream metadata with packaged ELF binaries.
 - Add detached armored GPG signing and verification for Linux ELF binaries,
-  selecting the production key only through `FOOSIGNKEY`.
+  selecting the production key only through `FOOSIGNER`.
 
 ## 0.3.0 - 2026-09-26
 

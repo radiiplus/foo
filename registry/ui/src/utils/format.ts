@@ -14,5 +14,5 @@ export function date(value: string) {
 }
 
 export function displayPackageName(name: string) {
-  return name.startsWith("std/") ? name.slice(4) : name;
+  return name.startsWith("lib/") ? name.slice(4) : name;
 }

@@ -1,6 +1,6 @@
 # Chapter 7: The Standard Library (Batteries Included)
 
-One of the greatest strengths of FOO is its **Standard Library** (`std/`, the
+One of the greatest strengths of FOO is its **Standard Library** (`lib/`, the
 modules shipped with the language). In many languages, you have to hunt down
 third-party packages for basic tasks like reading JSON, hashing passwords, or
 making HTTP requests.
@@ -53,11 +53,29 @@ to distinguish a file, directory, or other filesystem object. `copy` copies a
 whole file without promising durable publication. `working` returns the current
 working directory as owned text.
 
-For durable publication, write a temporary stream with `io.write`, call
-`file.sync`, close it, then call `file.replace` with a destination on the same
-filesystem. `file.flush` only empties process buffers. `file.remove` deletes a
-file. Explicit streams currently use length-aware `text` for
-bounded transfers; whole-file binary code should prefer `readbytes`.
+For durable publication (making a completed file visible after a restart),
+write a temporary stream with `io.write`, call `file.sync`, close it, then call
+`file.replace` with a destination on the same filesystem. `file.sync` first
+empties FOO's process buffers and then asks the operating system to persist the
+open file. On POSIX, a successful replacement also syncs the destination's
+parent directory. On Windows, replacement uses the operating system's
+write-through move. A successful call means those requests succeeded; it cannot
+promise survival on hardware, remote filesystems, or virtual filesystems that
+do not honor them. A cross-filesystem replacement fails.
+
+`file.replace` is atomic (readers see the old name or the new name, not a partly
+renamed name) only where the local filesystem provides atomic replacement.
+FOO does not currently expose file locks, exclusive creation, or a filesystem
+compare-and-swap (replace only if a value is still current). Use one publishing
+writer for each store. Several writers otherwise race, and the last successful
+replacement wins. `file.remove` does not sync the parent directory, so it does
+not promise a deletion that survives sudden power loss.
+
+The module also cannot list a directory. A collector that must rediscover
+immutable files after restart needs an application-maintained durable index, or
+the caller must supply the candidate paths. `file.flush` only empties process
+buffers. Explicit streams currently use length-aware `text` for bounded
+transfers; whole-file binary code should prefer `readbytes`.
 
 The `process` module separates direct execution from shell interpretation.
 `process.execute(program, arguments)` passes every item in its
@@ -123,12 +141,28 @@ constant token is codec.decode("abc") try.
 ```
 
 For the standard JSON form, `codecs.encode[T]` and `codecs.decode[T]` generate
-type-specific code for booleans, numbers, text, and nested records. Encoding
-adopts its completed output buffer directly instead of copying it into a second
-managed buffer. The parser
-checks syntax, duplicate and missing fields, JSON value kinds, and numeric
-ranges. Use an explicit `Codec[T]` when the application needs different field
-names, versions, validation, size limits, or unknown-field policy.
+type-specific code. The portable generated-code set (the set supported by both
+native backends) is boolean, signed and unsigned integers, decimal, text,
+optional values, sequences, choices, and nested records whose contained values
+use the same set. Encoding adopts its
+completed output buffer directly instead of copying it into a second managed
+buffer. Parsing checks syntax, duplicate and missing fields, JSON value kinds,
+and numeric ranges.
+
+Generated codec support is not currently identical for every type:
+
+| Value shape | C backend | Zig backend | Portable application contract |
+| --- | --- | --- | --- |
+| Boolean, integer, decimal, text | Supported | Supported | Supported |
+| Optional values, sequences, choices, and records made only from portable values | Supported recursively | Supported recursively | Supported |
+| Pointer, function, or resource fields | Not a generated-code contract | Backend-dependent | Not portable |
+
+Generated sequences use JSON arrays, optional values use their value or JSON
+`null`, and choices use a one-field object whose key is the active variant.
+Payload-free variants use an empty object as their value. Sequences are decoded
+into runtime-managed storage. Define and pass an explicit `Codec[T]` when field names,
+schema versions, validation, unknown-field handling, maximum input size, or a
+different ownership policy belongs to the application contract.
 
 ### Typed monotonic time
 
@@ -195,6 +229,8 @@ generator). C and Zig provide their own implementations without changing
 application source.
 
 Advanced users can stay inside those portable contracts while controlling more of the underlying service. `http` exposes persistent request headers, redirect limits, and connection reuse. `net` exposes partial sends, half-close, TCP_NODELAY, and keepalive. `file` exposes process-buffer flushing, stable-storage sync, atomic same-filesystem replacement, removal, byte seeking, position, and size. These are explicit operations on the same handles used by the simpler APIs; no backend object leaks into FOO code.
+
+`file.handle(stream)` and `net.handle(connection)` expose borrowed operating-system handles for native calls. They return file descriptors and socket descriptors on POSIX, or a Win32 `HANDLE` and Winsock `SOCKET` on Windows. Keep the FOO resource open while using its handle, synchronize native and FOO operations on it, and leave closing to the FOO resource owner.
 
 The transfer contract is used throughout the runtime, including sequences,
 text, JSON, HTTP buffers, and allocator growth (expanding reserved memory).

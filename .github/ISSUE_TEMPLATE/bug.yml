@@ -1,0 +1,83 @@
+name: Bug report
+description: Report reproducible incorrect compiler, toolchain, package, or runtime behavior.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report vulnerabilities here. Use the private process in SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: FOO version
+      description: Paste the output of `foo version`.
+      placeholder: "compiler 0.6.1, language 1"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Include the operating system, architecture, and installation method.
+      placeholder: "Ubuntu 24.04 x86_64, foo-amd64.deb"
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options:
+        - Zig
+        - C
+        - Both
+        - Not backend-specific
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Target and command
+      placeholder: "foo run --backend zig --target linux-x64"
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Minimal source and project configuration
+      description: Include the smallest `.iv` source and relevant `project.json` fields.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Create ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and diagnostics
+      description: Include complete relevant output. Remove secrets and personal paths where needed.
+      render: text
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and the changelog.
+          required: true
+        - label: This report does not contain a vulnerability or private credential.
+          required: true

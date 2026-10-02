@@ -15,7 +15,7 @@ Imports in the selected file retain ordinary module resolution: bare names
 search a sibling and then the configured source root, while quoted paths are
 relative to the importing file. Selecting a test file does not make its
 directory the command's working directory or change import semantics.
-`foo test std` runs the shipped standard-library fixtures. An explicitly selected
+`foo test lib` runs the shipped standard-library fixtures. An explicitly selected
 fixture file with a `start` and no test blocks runs that entry point. Where test
 blocks exist, the application entry point is never executed alongside them.
 `--backend c` or `--backend zig` selects the compiler backend.
@@ -50,7 +50,10 @@ Snapshots exclude timestamps, host-specific absolute paths and unstable allocati
 Execution comparisons cover observable values, output bytes, errors, panics, cleanup, ownership and synchronization. Foreign tests compare sizes, alignments, offsets and callback behavior against the declared ABI. Target-specific expectations are explicit rather than silently skipped.
 
 ## Formatting and editors
-`foo fmt` emits only canonical v1 syntax, preserving comments and literal values. It is idempotent. A short leading responsibility comment remains at the top of a file. Formatting cannot change which dot is a member selector or statement terminator.
+`foo fmt` applies the v1 formatting rules while preserving comments, literal
+values, and valid backtick grouping inside numbers. It is idempotent. A short leading
+responsibility comment remains at the top of a file. Formatting cannot change
+which dot is a member selector or statement terminator.
 
 Formatting preserves blank lines between statements and multiline function
 parameters. Native payloads remain verbatim. Sentence calls may normalize to

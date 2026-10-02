@@ -57,5 +57,17 @@ doAssert submitted["api"]["modules"].len >= 1
 doAssert submitted["api"]["modules"][0]["items"][0]["documentation"].getStr() ==
   "Exposes the package version."
 doAssert readFile(root / "README.md") == documentation
+
+var external = parseJson(readFile(root / "project.json"))
+external["dependencies"] = %*{"local": "path+../local"}
+writeFile(root / "project.json", $external)
+discard run("add project.json")
+discard run("commit --quiet -m external")
+var rejectedExternal = false
+try:
+  discard publish(root, "github-token")
+except ValueError as error:
+  rejectedExternal = error.msg.contains("must use registry versions")
+doAssert rejectedExternal
 removeDir(root)
 echo "pkg registry publication: ok"

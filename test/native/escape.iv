@@ -15,7 +15,7 @@ native c function step giving integer 32 {
 native asm function mirror(value unsigned) giving unsigned {
   "movq %[value], %[result]" : [result] "=r"(result) : [value] "r"(value) : "memory", "cc"
 }
-#[repr(C)] define Point as record { x of type integer 32. y of type integer 32. }.
+define Point as c record { x of type integer 32. y of type integer 32. }.
 native c function sum(point Point) giving integer 32 { return point.x + point.y; }
 start {
   check.expect(number is 44).

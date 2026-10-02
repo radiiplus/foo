@@ -31,10 +31,21 @@ let scopedEntry = %*{
   "tags": ["http"],
   "versions": [{"version": "2.0.0", "path": "packages/@radiiplus/foo-http/2.0.0.json"}],
 }
+let built = %*{
+  "schema": "foo.entry/v1",
+  "name": "lib/json",
+  "version": "1.0.0",
+  "description": "Bundled JSON module.",
+  "category": "data",
+  "versions": [{"version": "1.0.0", "path": "packages/lib/json/1.0.0.json"}],
+}
 var files = initTable[string, string]()
 files["indexes/index.json"] = $index
-files["indexes/index-000001.jsonl"] = $entry & "\n" & $scopedEntry & "\n"
+files["indexes/index-000001.jsonl"] = $entry & "\n" & $scopedEntry & "\n" & $built & "\n"
 files["packages/foo-http/1.4.2.json"] = $package
+files["packages/lib/json/1.0.0.json"] = $(%*{
+  "schema": "foo.package/v1", "name": "lib/json", "version": "1.0.0",
+  "description": "Bundled JSON module."})
 setRegistryTransport(proc(config: Registry; path, methodName, body, token: string): RegistryResponse =
   discard config; discard methodName; discard body; discard token
   if files.hasKey(path): RegistryResponse(status: 200, body: files[path])
@@ -48,5 +59,7 @@ doAssert search(".", "websocket").len == 1
 doAssert search(".", "connect").len == 1
 doAssert latestVersion(".", "foo-http") == "1.4.2"
 doAssert latestVersion(".", "@radiiplus/foo-http") == "2.0.0"
+doAssert latestVersion(".", "lib/json") == "1.0.0"
 doAssert info(".", "foo-http")["version"].getStr() == "1.4.2"
+doAssert info(".", "lib/json")["version"].getStr() == "1.0.0"
 echo "pkg registry discovery: ok"

@@ -41,7 +41,7 @@ toolchain. Debian packaging additionally requires `fakeroot`, `dpkg-deb`, and
 ## Signing Linux
 
 Linux executables use an armored detached OpenPGP signature. Keep the private
-key outside this repository and set `FOOSIGNKEY` to its full fingerprint:
+key outside this repository and set `FOOSIGNER` to its full fingerprint:
 
 ```sh
 npm run key
@@ -82,7 +82,7 @@ npm run binaries:signed
 On PowerShell, set it for the process before running the command:
 
 ```powershell
-$env:FOOSIGNKEY = "KEYFINGERPRINT"
+$env:FOOSIGNER = "KEYFINGERPRINT"
 npm run binaries -- --sign
 ```
 

@@ -8,6 +8,7 @@ type RuntimeResult* = object
 
 const
   runtimeSource = staticRead("runtime.h")
+  archSource = staticRead("arch.h")
   jsonSource = staticRead("json.h")
   httpSource = staticRead("http.h")
   storageSource = staticRead("storage.h")
@@ -27,6 +28,7 @@ proc member(typ: `Type`): string =
 
 proc supported(provider, operation: string): bool =
   let operations = {
+    "arch": @["count", "pause", "ticks"],
     "list": @["create", "push", "get", "length", "close"],
     "memory": @["system", "arena", "allocate", "release", "expand", "copy",
       "view", "close", "transfer", "clear", "compare", "identical"],
@@ -50,8 +52,9 @@ proc supported(provider, operation: string): bool =
 proc runtime*(externs: seq[Extern];
     typePrinter: proc(value: `Type`): string;
     namePrinter: proc(value: string): string;
-    target = ""): RuntimeResult =
+    target = ""; hosted = true): RuntimeResult =
   if externs.len == 0:
+    if not hosted: return RuntimeResult()
     return RuntimeResult(code:
       "static void foo_benchmark_report(void) { fprintf(stderr, \"FOO_METRICS {\\\"allocations\\\":0,\\\"allocatedBytes\\\":0,\\\"reallocations\\\":0,\\\"bytesCopied\\\":0,\\\"growthOperations\\\":0,\\\"growthBytesCopied\\\":0,\\\"averageCapacity\\\":0.0,\\\"maximumCapacity\\\":0,\\\"growthFactor\\\":0.0,\\\"liveBytes\\\":0,\\\"peakBytes\\\":0,\\\"olderVersionBytes\\\":0,\\\"slowPathHits\\\":0,\\\"branchOperations\\\":0,\\\"branchBytesCopied\\\":0}\\n\"); }\n" &
       "static void foo_shutdown(void) {}", libraries: @[])
@@ -78,6 +81,27 @@ proc runtime*(externs: seq[Extern];
       inc serial
       let buffer = "number" & $serial
       let count = "count" & $serial
+      if typ.kind in {TypeKind.Int, TypeKind.Uint} and typ.width > 64:
+        let number = "wide" & $serial
+        let magnitude = "magnitude" & $serial
+        let cursor = "cursor" & $serial
+        let negative = "negative" & $serial
+        let signed = typ.kind == TypeKind.Int
+        result = "char " & buffer & "[64]; size_t " & cursor & " = sizeof(" &
+          buffer & "); " & (if signed:
+            "foo_i128 " & number & " = (foo_i128)(" & value & "); bool " &
+              negative & " = " & number & " < 0; foo_u128 " & magnitude &
+              " = " & negative & " ? (foo_u128)(-(" & number &
+              " + 1)) + 1 : (foo_u128)" & number & ";"
+            else:
+              "bool " & negative & " = false; foo_u128 " & magnitude &
+              " = (foo_u128)(" & value & ");") &
+          " do { " & buffer & "[--" & cursor & "] = (char)('0' + " &
+          magnitude & " % 10); " & magnitude & " /= 10; } while (" &
+          magnitude & "); if (" & negative & ") " & buffer & "[--" & cursor &
+          "] = '-'; foo_put(&writer, " & buffer & " + " & cursor &
+          ", sizeof(" & buffer & ") - " & cursor & ");"
+        return
       let format = if typ.kind == TypeKind.Int: "%lld"
         elif typ.kind == TypeKind.Uint: "%llu" else: "%.17g"
       let conversion = if typ.kind == TypeKind.Int: "(long long)"
@@ -88,11 +112,42 @@ proc runtime*(externs: seq[Extern];
         buffer & ")) { codec_error = \"NumberOverflow\"; goto codec_failed; } " &
         "foo_put(&writer, " & buffer & ", (size_t)" & count & ");"
     of TypeKind.Slice:
-      if typ.elem == nil or typ.elem.kind != TypeKind.Uint or typ.elem.width != 8:
-        raise newException(ValueError, "Codec supports text but not arbitrary sequences")
-      result = "if (!foo_unicode_valid((FOOText){" & value & ".data, " & value &
-        ".len})) { codec_error = \"InvalidUtf8\"; goto codec_failed; } " &
-        "foo_quote(&writer, (FOOText){" & value & ".data, " & value & ".len});"
+      if typ.constant and typ.elem != nil and typ.elem.kind == TypeKind.Uint and
+          typ.elem.width == 8:
+        result = "if (!foo_unicode_valid((FOOText){" & value & ".data, " & value &
+          ".len})) { codec_error = \"InvalidUtf8\"; goto codec_failed; } " &
+          "foo_quote(&writer, (FOOText){" & value & ".data, " & value & ".len});"
+      else:
+        if typ.elem == nil:
+          raise newException(ValueError, "Codec sequence needs a concrete element type")
+        inc serial
+        let index = "index" & $serial
+        result = "foo_put(&writer, \"[\", 1); for (size_t " & index &
+          " = 0; " & index & " < " & value & ".len; " & index & "++) { " &
+          "if (" & index & ") foo_put(&writer, \",\", 1); "
+        result.add(write(typ.elem, value & ".data[" & index & "]", serial))
+        result.add(" } foo_put(&writer, \"]\", 1);")
+    of TypeKind.Optional:
+      if typ.elem == nil:
+        raise newException(ValueError, "Codec optional needs a concrete value type")
+      result = "if (!" & value & ".present) { foo_put(&writer, \"null\", 4); } else { "
+      result.add(write(typ.elem, value & ".value", serial))
+      result.add(" }")
+    of TypeKind.TaggedUnion:
+      result = "switch ((" & value & ").tag) { "
+      var index = 0
+      for variant, variantType in typ.variants:
+        result.add("case " & $index & ": foo_put(&writer, \"{\", 1); " &
+          "foo_quote(&writer, (FOOText){(const uint8_t *)\"" & variant &
+          "\", " & $variant.len & "}); foo_put(&writer, \":\", 1); ")
+        if variantType == nil or variantType.kind == TypeKind.Void:
+          result.add("foo_put(&writer, \"{}\", 2);")
+        else:
+          result.add(write(variantType, "(" & value & ").payload." &
+            namePrinter(variant), serial))
+        result.add(" foo_put(&writer, \"}\", 1); break; ")
+        inc index
+      result.add("default: codec_error = \"InvalidChoice\"; goto codec_failed; }")
     of TypeKind.Struct, TypeKind.ExternStruct:
       result = "foo_put(&writer, \"{\", 1);"
       var index = 0
@@ -119,6 +174,38 @@ proc runtime*(externs: seq[Extern];
       let number = "number" & $serial
       let ending = "ending" & $serial
       let signed = typ.kind == TypeKind.Int
+      if typ.width > 64:
+        let index = "index" & $serial
+        let digit = "digit" & $serial
+        let negative = "negative" & $serial
+        let limit = "limit" & $serial
+        let positiveLimit = "(((foo_u128)1 << " & $(typ.width - 1) & ") - 1)"
+        let negativeLimit = "((foo_u128)1 << " & $(typ.width - 1) & ")"
+        let unsignedLimit = if typ.width == 128: "~(foo_u128)0"
+          else: "(((foo_u128)1 << " & $typ.width & ") - 1)"
+        result = "if (" & source & "->kind != 'd') { codec_error = \"ExpectedNumber\"; goto codec_failed; } " &
+          "bool " & negative & " = " & source & "->raw.len && " & source &
+          "->raw.data[0] == '-'; " & (if not signed:
+            "if (" & negative & ") { codec_error = \"NumberOverflow\"; goto codec_failed; } "
+            else: "") & "size_t " & index & " = " & negative & " ? 1 : 0; " &
+          "if (" & index & " == " & source &
+          "->raw.len) { codec_error = \"NumberOverflow\"; goto codec_failed; } " &
+          "foo_u128 " & number & " = 0; const foo_u128 " & limit & " = " &
+          (if signed: "(" & negative & " ? " & negativeLimit & " : " &
+            positiveLimit & ")" else: unsignedLimit) & "; for (; " & index &
+          " < " & source & "->raw.len; " & index & "++) { uint8_t " & digit &
+          " = " & source & "->raw.data[" & index & "]; if (" & digit &
+          " < '0' || " & digit & " > '9') { codec_error = \"NumberOverflow\"; goto codec_failed; } " &
+          digit & " = (uint8_t)(" & digit & " - '0'); if (" & number & " > (" &
+          limit & " - " & digit & ") / 10) { codec_error = \"NumberOverflow\"; goto codec_failed; } " &
+          number & " = " & number & " * 10 + " & digit & "; } "
+        if signed:
+          result.add(target & " = " & negative & " ? (" & number &
+            " ? -((foo_i128)(" & number & " - 1)) - 1 : 0) : (foo_i128)" &
+            number & ";")
+        else:
+          result.add(target & " = (foo_u128)" & number & ";")
+        return
       result = "if (" & source & "->kind != 'd') { codec_error = \"ExpectedNumber\"; goto codec_failed; } " &
         (if not signed: "if (" & source & "->raw.len && " & source &
           "->raw.data[0] == '-') { codec_error = \"NumberOverflow\"; goto codec_failed; } " else: "") &
@@ -147,15 +234,67 @@ proc runtime*(externs: seq[Extern];
         "->raw.data + " & source & "->raw.len) { codec_error = \"NumberOverflow\"; goto codec_failed; } " &
         target & " = (" & typePrinter(typ) & ")" & number & ";"
     of TypeKind.Slice:
-      if typ.elem == nil or typ.elem.kind != TypeKind.Uint or typ.elem.width != 8:
-        raise newException(ValueError, "Codec supports text but not arbitrary sequences")
+      if typ.constant and typ.elem != nil and typ.elem.kind == TypeKind.Uint and
+          typ.elem.width == 8:
+        inc serial
+        let copied = "copied" & $serial
+        result = "if (" & source & "->kind != 's') { codec_error = \"ExpectedText\"; goto codec_failed; } " &
+          "FOOResult " & copied & " = foo_copy(" & source & "->raw.data, " & source &
+          "->raw.len); if (" & copied & ".error) { codec_error = " & copied &
+          ".error; goto codec_failed; } " & target & " = (" & typePrinter(typ) &
+          "){" & copied & ".text.data, " & copied & ".text.len};"
+      else:
+        if typ.elem == nil:
+          raise newException(ValueError, "Codec sequence needs a concrete element type")
+        inc serial
+        let count = "count" & $serial
+        let child = "item" & $serial
+        let index = "index" & $serial
+        let items = "items" & $serial
+        let elementType = typePrinter(typ.elem)
+        result = "if (" & source & "->kind != '[') { codec_error = \"ExpectedSequence\"; goto codec_failed; } " &
+          "size_t " & count & " = 0; for (FOOJson *" & child & " = " & source &
+          "->child; " & child & "; " & child & " = " & child & "->next) { if (" &
+          count & " == SIZE_MAX) { codec_error = \"Overflow\"; goto codec_failed; } " &
+          count & "++; } if (" & count & " > SIZE_MAX / sizeof(" & elementType &
+          ")) { codec_error = \"Overflow\"; goto codec_failed; } " & elementType &
+          " *" & items & " = NULL; if (" & count & ") { " & items &
+          " = foo_sequence_owned(sizeof(*" & items & "), " & count & ", " & count &
+          "); if (!" & items & ") { codec_error = \"OutOfMemory\"; goto codec_failed; } } " &
+          "size_t " & index & " = 0; for (FOOJson *" & child & " = " & source &
+          "->child; " & child & "; " & child & " = " & child & "->next, " & index &
+          "++) { "
+        result.add(read(typ.elem, items & "[" & index & "]", child, serial))
+        result.add(" } " & target & " = (" & typePrinter(typ) & "){" & items &
+          ", " & count & "};")
+    of TypeKind.Optional:
+      if typ.elem == nil:
+        raise newException(ValueError, "Codec optional needs a concrete value type")
+      result = "if (" & source & "->kind == 'n') { " & target & " = (" &
+        typePrinter(typ) & "){0}; } else { " & target & ".present = true; "
+      result.add(read(typ.elem, target & ".value", source, serial))
+      result.add(" }")
+    of TypeKind.TaggedUnion:
       inc serial
-      let copied = "copied" & $serial
-      result = "if (" & source & "->kind != 's') { codec_error = \"ExpectedText\"; goto codec_failed; } " &
-        "FOOResult " & copied & " = foo_copy(" & source & "->raw.data, " & source &
-        "->raw.len); if (" & copied & ".error) { codec_error = " & copied &
-        ".error; goto codec_failed; } " & target & " = (" & typePrinter(typ) &
-        "){" & copied & ".text.data, " & copied & ".text.len};"
+      let variant = "variant" & $serial
+      result = "if (" & source & "->kind != '{') { codec_error = \"ExpectedChoice\"; goto codec_failed; } " &
+        "FOOJson *" & variant & " = " & source & "->child; if (!" & variant &
+        " || " & variant & "->next) { codec_error = \"ExpectedChoice\"; goto codec_failed; } "
+      var index = 0
+      for variantName, variantType in typ.variants:
+        result.add((if index == 0: "if (" else: " else if (") & variant &
+          "->key.len == " & $variantName.len & " && !memcmp(" & variant &
+          "->key.data, \"" & variantName & "\", " & $variantName.len & ")) { " &
+          "(" & target & ").tag = " & $index & "; ")
+        if variantType == nil or variantType.kind == TypeKind.Void:
+          result.add("if (" & variant & "->kind != '{' || " & variant &
+            "->child) { codec_error = \"ExpectedChoicePayload\"; goto codec_failed; }")
+        else:
+          result.add(read(variantType, "(" & target & ").payload." &
+            namePrinter(variantName), variant, serial))
+        result.add(" }")
+        inc index
+      result.add(" else { codec_error = \"UnknownVariant\"; goto codec_failed; }")
     of TypeKind.Struct, TypeKind.ExternStruct:
       result = "if (" & source & "->kind != '{') { codec_error = \"ExpectedObject\"; goto codec_failed; }"
       for field, fieldType in typ.fields:
@@ -176,6 +315,9 @@ proc runtime*(externs: seq[Extern];
         declaration.abi[8 .. ^1] else: ""
     let operation = if declaration.symbol.len > 0:
       declaration.symbol else: declaration.name
+    if not hosted and provider != "arch":
+      raise newException(ValueError, provider & "." & operation &
+        " requires the hosted runtime")
     var parameters: seq[string]
     for index, typ in declaration.params:
       parameters.add(typePrinter(typ) & " p" & $index)
@@ -399,10 +541,15 @@ proc runtime*(externs: seq[Extern];
   var defines: seq[string]
   for provider in modules:
     defines.add("#define FOO_" & provider.toUpperAscii & " 1")
+  if not hosted:
+    result.code = aliases & "\n" & defines.join("\n") & "\n" &
+      archSource & "\n" & wrappers.join("\n")
+    return
   let serviceCode = if "service" in modules:
     "#include \"service.h\"\nstatic const char *foo_service_error(int code) { static const char *names[] = {NULL, \"OutOfMemory\", \"InvalidInput\", \"IoFailure\", \"Closed\", \"MissingValue\", \"SystemFailure\", \"Bounds\"}; return code >= 0 && code < 8 ? names[code] : \"SystemFailure\"; }\n"
     else: ""
   let header = runtimeSource
+    .replace("#include \"arch.h\"", archSource)
     .replace("#include \"json.h\"", jsonSource)
     .replace("#include \"http.h\"", httpSource)
     .replace("#include \"storage.h\"", storageSource)

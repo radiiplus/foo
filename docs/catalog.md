@@ -1,7 +1,7 @@
 # Standard Library Index
 
 This page answers two questions: which module should you import, and how much
-control does it expose? Use the focused module source under `std/` as the exact
+control does it expose? Use the focused module source under `lib/` as the exact
 signature reference for the installed compiler version.
 
 ## Everyday modules
@@ -9,7 +9,7 @@ signature reference for the installed compiler version.
 | Module | Purpose | Common operations |
 | --- | --- | --- |
 | `io` | Standard and file streams | bare console `display`/`report`; stream `input`/`output`/`report`, `read`, `line`, `write`, `close` |
-| `file` | Text and binary files, inspection, copying, durable publication, directories, and stream position | `open`, `read`, `write`, `readbytes`, `writebytes`, `releasebytes`, `exists`, `kind`, `copy`, `working`, `remove`, `replace`, `sync`, `seek`, `position`, `size` |
+| `file` | Text and binary files, inspection, copying, same-filesystem replacement, directories, and stream position | `open`, `read`, `write`, `readbytes`, `writebytes`, `releasebytes`, `exists`, `kind`, `copy`, `working`, `remove`, `replace`, `sync`, `seek`, `position`, `size` |
 | `text` | Owned text operations and byte-oriented predicates | `concatenate`, `trim`, `length`, `slice`, `find`, `starts`, `ends`, `contains`, `split`, `release` |
 | `json` | JSON documents and streaming | `parse`, `write`, `field`, `item`, `kind`, `size`, `set`, `append`, `stream`, `feed`, `next`, `data`, `close` |
 | `time` | Raw and typed monotonic time (measured by a clock that does not move backward) | `current`, `sleep`, `measure`, `nanos`, `millis`, `seconds`, `now`, `elapsed`, `wait` |
@@ -18,6 +18,10 @@ signature reference for the installed compiler version.
 | `log` | Application messages | `note`, `alert` |
 
 The filesystem module is `file`.
+It does not currently provide directory enumeration, file locks, exclusive
+creation, or compare-and-swap. `sync` plus same-filesystem `replace` supports a
+one-writer publication protocol; exact storage guarantees and caveats are in
+[The Standard Library](library.md#2-files-and-paths-file).
 
 ## Collections
 
@@ -78,7 +82,7 @@ This layered API keeps common code short without hiding protocol controls.
 | `compress` | Compression with explicit format and output limits | `pack`, `unpack` |
 | `unicode` | Unicode validation and conversion | `scan`, `next`, `valid`, `points`, `wide`, `narrow`, `release` |
 | `buffer` | Release converted buffers | `free`, `words`, `points` |
-| `codec` | Typed text conversion and generated JSON | `Codec[T]`, `encode[T]`, `decode[T]` |
+| `codec` | Application-defined typed conversion plus portable generated JSON for scalar, optional, sequence, choice, and record values | `Codec[T]`, `encode[T]`, `decode[T]` |
 
 Cryptographic calls can fail and must use postfix `try` or a deliberate
 fallback. Do not invent keys or nonces by formatting ordinary application

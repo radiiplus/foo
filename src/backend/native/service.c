@@ -11,6 +11,12 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+#ifndef FOO_SERVICE_SELECTIVE
+#define FOO_SERVICE_FS 1
+#define FOO_SERVICE_NET 1
+#define FOO_SERVICE_THREAD 1
+#define FOO_SERVICE_TASK 1
+#endif
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <direct.h>
@@ -54,10 +60,14 @@ typedef struct Resource {
   void *data;
   size_t size;
   int kind;
-  int closed;
+  atomic_int closed;
   struct Resource *next;
+  struct Resource *prev;
+  struct Resource *chain;
 } Resource;
 static Resource *resources;
+enum { BINS = 256 };
+static Resource *bins[BINS];
 static atomic_flag gate = ATOMIC_FLAG_INIT;
 static int count;
 static char **arguments;
@@ -71,6 +81,18 @@ static void enter(void) {
 static void leave(void) {
   atomic_flag_clear_explicit(&gate, memory_order_release);
 }
+static size_t bucket(void *data) {
+  uintptr_t address = (uintptr_t)data >> 4;
+  address ^= address >> 11;
+  return address % BINS;
+}
+static void forget(Resource *entry) {
+  Resource **slot = &bins[bucket(entry->data)];
+  while (*slot && *slot != entry)
+    slot = &(*slot)->chain;
+  if (*slot)
+    *slot = entry->chain;
+}
 static FooResult failure(int code) { return (FooResult){.error = code}; }
 static int adopt(void *data, size_t size, int kind) {
   Resource *entry = calloc(1, sizeof(*entry));
@@ -79,9 +101,15 @@ static int adopt(void *data, size_t size, int kind) {
   entry->data = data;
   entry->size = size;
   entry->kind = kind;
+  atomic_init(&entry->closed, 0);
   enter();
   entry->next = resources;
+  if (resources)
+    resources->prev = entry;
   resources = entry;
+  size_t index = bucket(data);
+  entry->chain = bins[index];
+  bins[index] = entry;
   leave();
   return 1;
 }
@@ -95,11 +123,13 @@ static void *owned(size_t size, int kind) {
 }
 static Resource *resource(void *data, int kind) {
   enter();
-  Resource *entry = resources;
+  Resource *entry = bins[bucket(data)];
   while (entry && (entry->data != data || entry->kind != kind))
-    entry = entry->next;
+    entry = entry->chain;
+  if (entry && entry->closed)
+    entry = NULL;
   leave();
-  return entry && !entry->closed ? entry : NULL;
+  return entry;
 }
 static FooResult text(const void *data, size_t size) {
   if (!size)
@@ -129,15 +159,20 @@ FooResult foo_text_release(FooText value) {
   if (!value.len)
     return (FooResult){0};
   enter();
-  Resource **slot = &resources;
-  while (*slot && ((*slot)->data != value.data || (*slot)->kind != TEXT))
-    slot = &(*slot)->next;
-  Resource *entry = *slot;
+  Resource *entry = bins[bucket((void *)value.data)];
+  while (entry && (entry->data != value.data || entry->kind != TEXT))
+    entry = entry->chain;
   if (!entry || entry->size != value.len) {
     leave();
     return failure(ARGUMENT);
   }
-  *slot = entry->next;
+  if (entry->prev)
+    entry->prev->next = entry->next;
+  else
+    resources = entry->next;
+  if (entry->next)
+    entry->next->prev = entry->prev;
+  forget(entry);
   leave();
   free(entry->data);
   free(entry);
@@ -231,6 +266,23 @@ static File *file(void *pointer) {
     if (pointer == &standard[index])
       return standard[index].file ? pointer : NULL;
   return resource(pointer, FILES) ? pointer : NULL;
+}
+FooResult foo_fs_handle(void *pointer) {
+  File *stream = file(pointer);
+  if (!stream || !stream->file)
+    return failure(CLOSED);
+#ifdef _WIN32
+  int descriptor = _fileno(stream->file);
+  if (descriptor < 0)
+    return failure(IO);
+  intptr_t handle = _get_osfhandle(descriptor);
+  return handle == -1 ? failure(IO)
+                      : (FooResult){.number = (uint64_t)(uintptr_t)handle};
+#else
+  int descriptor = fileno(stream->file);
+  return descriptor < 0 ? failure(IO)
+                        : (FooResult){.number = (uint64_t)descriptor};
+#endif
 }
 FooResult foo_io_write(void *pointer, FooText value) {
   File *stream = file(pointer);
@@ -717,6 +769,11 @@ FooResult foo_net_port(void *pointer) {
       .number = ntohs(address.ss_family == AF_INET
                           ? ((struct sockaddr_in *)&address)->sin_port
                           : ((struct sockaddr_in6 *)&address)->sin6_port)};
+}
+FooResult foo_net_handle(void *pointer) {
+  if (!resource(pointer, SOCKETS))
+    return failure(CLOSED);
+  return (FooResult){.number = (uint64_t)((Connection *)pointer)->socket};
 }
 FooResult foo_net_send(void *pointer, FooText value) {
   if (!resource(pointer, SOCKETS))
@@ -1531,6 +1588,7 @@ FooResult foo_task_label(FooText name) {
   return (FooResult){.number = (uint64_t)ok};
 }
 void foo_service_close(void) {
+#ifdef FOO_SERVICE_THREAD
   /* Join callbacks before reclaiming any memory they can still access. */
   for (;;) {
     enter();
@@ -1543,32 +1601,46 @@ void foo_service_close(void) {
     if (foo_thread_wait(entry->data).error)
       return;
   }
+#endif
   while (resources) {
     Resource *entry = resources;
     if (!entry->closed) {
+#ifdef FOO_SERVICE_FS
       if (entry->kind == FILES)
         foo_io_close(entry->data);
+#endif
+#ifdef FOO_SERVICE_NET
       if (entry->kind == SOCKETS)
         foo_net_close(entry->data);
+#endif
+#ifdef FOO_SERVICE_THREAD
       if (entry->kind == MUTEX || entry->kind == CONDITION)
         foo_thread_close(entry->data);
+#endif
+#ifdef FOO_SERVICE_TASK
 #if defined(_WIN32) || defined(__linux__)
       if (entry->kind == TASK_POOL) {
         dispose(entry->data);
         entry->closed = 1;
       }
 #endif
+#endif
     }
     resources = entry->next;
+    if (resources)
+      resources->prev = NULL;
+    forget(entry);
     free(entry->data);
     free(entry);
   }
   count = 0;
   arguments = NULL;
 #ifdef _WIN32
+#ifdef FOO_SERVICE_NET
   if (winsock) {
     WSACleanup();
     winsock = 0;
   }
+#endif
 #endif
 }

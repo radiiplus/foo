@@ -41,6 +41,13 @@ FOO is unique because it doesn't just target one backend (code generator). It ca
 Select the C11 backend with `--backend c`.
 **The Benefit:** C runs on everything. If you want your FOO program to run on a massive cloud server, a Raspberry Pi, or a legacy Windows machine, the C backend is your best friend.
 
+The C backend is not limited to the host computer. For WASI and supported
+freestanding targets, FOO uses the managed compiler as a C frontend and linker
+(the tools that compile C and join the final program). The emitted source stays
+C11, while the managed target libraries and linker produce the requested
+WebAssembly, AArch64, or RISC-V artifact. FOO verifies target selection through
+the build contract; native dependencies must still support the same target.
+
 ### The Zig Backend (Modern Speed)
 FOO uses the Zig backend by default.
 The managed Zig toolchain provides the default native build and cross-target
@@ -64,7 +71,7 @@ implementations for the selected target. Generic types are specialized (turned
 into versions for exact types) before
 emission, repeated pure decimal expressions can be shared, and unused pure
 results can be removed. Checked integer arithmetic, failures, cleanup, I/O,
-volatile access (reads and writes that must happen exactly as written), and
+exact device access (reads and writes that must happen exactly as written), and
 atomics (shared operations completed as one step) keep their observable behavior.
 
 FOO calls the broader rule **execution specialization**. For each operation,
@@ -78,6 +85,24 @@ The backend can test and propagate the error without an exception runtime, but
 it must still preserve the error value, trace, and cleanup. Generic
 specialization similarly removes runtime type selection when the exact type is
 already known.
+
+Executable generation is reachability-driven (it follows what the entry point
+can actually call). FOO starts from `main`, a startup function, an interrupt
+entry, and any explicitly exported ABI function (a function another compiled
+component may call). It then retains their transitive calls (calls reached
+through other calls), referenced storage, runtime imports, native fragments,
+and traces. An unused imported package operation does not pull its C or Zig
+implementation into the executable. Static and shared libraries instead keep
+their public API as roots so externally callable functions remain available.
+
+Runtime setup follows the same rule. An empty Zig executable does not initialize
+the arena or finalize the portable library. A program using only an operating
+system service receives the selected service bridge, while managed collection
+or allocation operations retain their required cleanup. The C backend places
+functions and data in collectable sections; the target linker removes sections
+with no reachable reference. Release builds also omit debug and incremental
+link state. Development builds remain larger because their diagnostics and
+debug information are intentional.
 
 Runtime byte transfer is adaptive (it selects an implementation from the known
 conditions). AVX2 (processor instructions that handle several bytes at once)
@@ -96,8 +121,8 @@ The optimizer also reviews **boundaries** between functions, allocations,
 representations, libraries, schedulers, serialization buffers, and the
 operating system. It currently removes redundant conversions, block-local
 non-escaping stack slots, adjacent private pure call boundaries, and proven
-synchronous task callbacks. Typed scalar and record codecs generate direct JSON
-field code. Effectful loop fusion, cross-block storage placement, and suspended
+synchronous task callbacks. Typed scalar, optional, sequence, choice, and record
+codecs generate direct JSON code. Effectful loop fusion, cross-block storage placement, and suspended
 continuation frames remain design work because their failure, cleanup,
 ownership, scheduling, ABI (binary rules between compiled components), and
 wire-format contracts (the exact bytes used when data is stored or sent) need
@@ -124,7 +149,7 @@ where the backend cannot provide it.
 
 Internal generated files and cache metadata stay in `.artifacts/`. After a
 successful build, FOO publishes only the completed app or library into
-`target/`, or the project-relative directory selected by `build.output`. A
+`output/`, or the project-relative directory selected by `build.output`. A
 cache hit recreates a missing published product without recompiling it.
 
 ### Adaptive build paths

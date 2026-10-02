@@ -113,10 +113,10 @@ function fingerprint(identity) {
 }
 
 function save(key) {
-  const line = `FOOSIGNKEY=${key}`;
+  const line = `FOOSIGNER=${key}`;
   const source = readFileSync(settings, "utf8");
-  const updated = /^FOOSIGNKEY=.*$/m.test(source)
-    ? source.replace(/^FOOSIGNKEY=.*$/m, line)
+  const updated = /^FOOSIGNER=.*$/m.test(source)
+    ? source.replace(/^FOOSIGNER=.*$/m, line)
     : `${source.trimEnd()}\n${line}\n`;
   writeFileSync(settings, updated);
 }

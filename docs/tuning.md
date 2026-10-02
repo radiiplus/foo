@@ -171,7 +171,7 @@ decimal expression without effects can be reused when its inputs are identical.
 | Boundary elimination and pipeline fusion | Current, local | Redundant same-type conversions disappear; adjacent private pure calls inline as one boundary-free chain. General loop and effectful fusion remains design work. |
 | Automatic allocation placement | Current, local | Non-escaping block-local stack slots are forwarded and removed. Cross-block, shared, and escaping placement remains explicit. |
 | Continuation specialization | Current, synchronous | A proven synchronous `task.block` callback becomes a direct call. Suspending continuation frames remain design work. |
-| Direct serialization and generated parsing | Current | Constant JSON quoting folds at compile time; `codec.encode[T]` and `codec.decode[T]` generate concrete record/scalar code on C and Zig, and the completed output buffer is adopted without a second full copy. |
+| Direct serialization and generated parsing | Current | Constant JSON quoting folds at compile time; `codec.encode[T]` and `codec.decode[T]` generate concrete scalar, optional, sequence, choice, and record code on C and Zig, and the completed output buffer is adopted without a second full copy. |
 | Event-backed task pool | Current on hosted C | C pools dispatch through IOCP on Windows and epoll/eventfd on Linux. Zig and other targets retain the threaded fallback; network readiness integration remains design work. |
 | PGO (profile-guided optimization using earlier run data) | Current | Versioned coverage profiles enlarge inlining thresholds and budgets for measured hot functions and participate in cache identity. |
 | Adaptive file and text search paths | Current on hosted runtime | Seekable files (files whose position can be moved) use exact-size direct ownership; unknown sizes stream geometrically. Text search selects single-byte, small linear, or large skip-table search. |
@@ -197,6 +197,12 @@ The benefit is not simply wider instructions. Small copies avoid a path intended
 for bulk data, overlapping copies stay correct, and large transfers return to
 the system implementation where cache, streaming, and platform tuning can be
 more effective.
+
+Hosted Zig executables with reachable sequence allocation link libc and use its
+allocator for runtime allocations. The page allocator remains the fallback when
+libc is not linked, including freestanding builds. This avoids a direct page
+allocation for each persistent branch buffer; the focused measurement and its
+binary-size tradeoff are in [Performance](performance.md#focused-branch-allocator-measurement).
 
 ## Collections and representation
 
@@ -230,6 +236,15 @@ WinHTTP and the operating-system certificate store, avoiding an OpenSSL runtime
 dependency while retaining platform trust and networking facilities.
 
 ## Build and cache specialization
+
+Before C or Zig emission, executable reachability follows calls from the entry
+and exported ABI roots. Unused package functions, runtime imports, native
+fragments, storage, and traces never enter backend generation. The remaining
+runtime providers select the native service components that are compiled.
+Zig also omits unused allocator and portable-library lifecycle calls; C release
+linking collects unreferenced function/data sections with the selected target's
+native linker contract. This reduces generated work and final footprint without
+weakening externally visible library symbols.
 
 The selected target, CPU, backend, optimization mode, compiler contents, and
 project inputs participate in cache identities. Reusing an artifact (generated

@@ -43,7 +43,7 @@ test("serves searchable Git-backed discovery endpoints", async () => {
   const category = await json(`${baseUrl}/functions/v1/registry/category/${encodeURIComponent("developer tools")}`);
   assert.deepEqual(category.packages.map((entry: { name: string }) => entry.name), ["foo-args", "foo-test"]);
   const tag = await json(`${baseUrl}/functions/v1/registry/tag/http`);
-  assert.deepEqual(tag.packages.map((entry: { name: string }) => entry.name), ["foo-http", "std/http"]);
+  assert.deepEqual(tag.packages.map((entry: { name: string }) => entry.name), ["foo-http", "lib/http"]);
 
   const detail = await json(`${baseUrl}/functions/v1/registry/package/foo-http?version=1.4.2`);
   assert.equal(detail.schema, "foo.package-response/v1");

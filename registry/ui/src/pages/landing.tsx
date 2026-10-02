@@ -14,10 +14,8 @@ import {
   ShieldCheck,
   Terminal,
 } from "lucide-react";
-import benchmark from "../../../../benchmark/results.json";
+import benchmark from "../../../../benchmark/branch-allocator.json";
 import { useEffect } from "react";
-
-const headline = benchmark.workloads.find((workload) => workload.name === "allocation")!;
 
 type LandingProps = {
   onEnter: () => void;
@@ -186,30 +184,30 @@ export default function Landing({ onEnter }: LandingProps) {
         <section id="benchmark" className="border-b border-[#222] bg-[#080808] px-5 py-18 sm:px-8 sm:py-24">
           <div className="mx-auto grid max-w-300 gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-end lg:gap-20">
             <div>
-              <Eyebrow icon={<Gauge size={13} />} text="Benchmark / Measured locally" />
+              <Eyebrow icon={<Gauge size={13} />} text="Benchmark / Branch workload" />
               <h2 className="mt-4 text-3xl leading-tight font-semibold tracking-normal text-[#f1f1f1] sm:text-4xl">Measured, with the conditions attached.</h2>
               <p className="mt-5 text-sm leading-7 text-[#858585]">
-                {headline.work}. Measured {benchmark.iterations} times after {benchmark.warmup} warmups. Compilation is reported separately; process startup, harness noise, and result validation remain in each runtime sample.
+                {benchmark.work}. Measured {benchmark.iterations} times after {benchmark.warmup} warmups. {benchmark.method}
               </p>
               <p className="mt-3 text-xs leading-6 text-[#686868]">{benchmark.caution}</p>
-              <a className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-[#60D5DF] no-underline hover:text-[#8be6ed]" href="/docs/benchmarking">
-                Reproduce the benchmark <ArrowRight size={14} />
+              <a className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-[#60D5DF] no-underline hover:text-[#8be6ed]" href="/docs/performance">
+                Read the measurements <ArrowRight size={14} />
               </a>
             </div>
 
-            <div className="landing-benchmark" aria-label="FOO allocation benchmark and handwritten control results">
+            <div className="landing-benchmark" aria-label="Branch workload FOO, Rust, and allocator results">
               <div className="landing-benchmark-head"><span>Strategy</span><span>Median</span><span>P95</span><span>Minimum</span></div>
-              {headline.results.map((result) => (
-                <div className="landing-benchmark-row" key={`${result.implementation}-${result.backend}-${result.mode}`}>
-                  <strong>{result.implementation === "foo" ? "FOO to" : "Native"} {result.backend.toUpperCase()}</strong>
+              {benchmark.results.map((result) => (
+                <div className="landing-benchmark-row" key={result.name}>
+                  <strong>{result.name}</strong>
                   <span><small>Median</small><code>{result.medianMs.toFixed(2)} ms</code></span>
-                  <span><small>P95</small><code>{result.percentile95Ms.toFixed(2)} ms</code></span>
+                  <span><small>P95</small><code>{result.p95Ms.toFixed(2)} ms</code></span>
                   <span><small>Minimum</small><code>{result.minimumMs.toFixed(2)} ms</code></span>
                 </div>
               ))}
               <footer>
-                <span>{benchmark.machine.processor}</span>
-                <span>FOO {benchmark.compiler} / release / {benchmark.measuredAt.slice(0, 10)}</span>
+                <span>{benchmark.machine}</span>
+                <span>Release / {benchmark.measuredAt}</span>
               </footer>
             </div>
           </div>

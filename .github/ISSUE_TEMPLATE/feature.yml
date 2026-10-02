@@ -1,0 +1,46 @@
+name: Feature proposal
+description: Propose a focused language, library, toolchain, editor, or website improvement.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the user problem before describing syntax or implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include concise FOO or command examples where useful.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: semantics
+    attributes:
+      label: Semantics and edge cases
+      description: Explain errors, safety, portability, backend parity, and compatibility.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Performance evidence
+      description: Required only for speed, memory, binary-size, or optimization claims.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues, specifications, documentation, and the changelog.
+          required: true
+        - label: I have separated requested behavior from speculative implementation details.
+          required: true

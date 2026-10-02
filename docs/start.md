@@ -63,12 +63,19 @@ Open `project.json`. The important starting fields are deliberately explicit:
 {
   "source": "src",
   "entry": "src/main.iv",
-  "entries": {}
+  "entries": {},
+  "build": {
+    "output": "output",
+    "icon": "assets/icon.ico"
+  }
 }
 ```
 
 `entry` is what plain `foo run` starts. You do not need to search the source
-tree or rely on a guessed filename.
+tree or rely on a guessed filename. `build.output` receives finished products;
+`.artifacts/` remains private compiler workspace. The generated `.ico` becomes
+the icon of Windows executables, while the `.svg` is available for desktop and
+release packaging.
 
 ---
 

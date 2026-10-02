@@ -61,6 +61,7 @@ proc escape*(input: Module; options: Selection): tuple[module: Module, code: str
   let bound = `bind`(input, options)
   var module = bound.module
   var contracts = initTable[string, EscapeContract]()
+  var inlined = initHashSet[string]()
   for contract in module.native:
     var item = EscapeContract(id: contract.id, stage: contract.stage, code: contract.code, abi: contract.abi, effects: contract.effects)
     if contract.abi == "foo.native:1":
@@ -85,6 +86,9 @@ proc escape*(input: Module; options: Selection): tuple[module: Module, code: str
         if instruction.kind != InstrKind.Native: continue
         if instruction.symbol notin contracts: raise newException(ValueError, "Native operation has no contract")
         var contract = contracts[instruction.symbol]
+        if "naked" in fn.attributes and contract.stage == "@asm":
+          inlined.incl(contract.id)
+          continue
         let symbol = "foo_escape_" & contract.id
         if contract.id notin invoked:
           var params: seq[`Type`]
@@ -107,6 +111,7 @@ proc escape*(input: Module; options: Selection): tuple[module: Module, code: str
   var declared = initHashSet[string]()
   var definitions, includes: seq[string]
   for contract in contracts.values:
+    if contract.id in inlined: continue
     var external: Extern
     var found = false
     for declaration in module.externs:
@@ -139,7 +144,9 @@ proc escape*(input: Module; options: Selection): tuple[module: Module, code: str
       raise newException(ValueError,
         "Assembly returning a value needs a constrained output named result")
     definitions.add(returnType & " " & identifier(name) & "(" & (if params.len > 0: params.join(", ") else: "void") & ") {\n" & body & "\n}")
-  module.native = @[]
+  module.native = module.native.filterIt(it.id in inlined)
   result.module = module
   result.decisions = bound.decisions
-  result.code = if definitions.len > 0: "#include <stdint.h>\n#include <stdbool.h>\n#include <stdlib.h>\n" & includes.join("\n") & "\n" & declarations.join("\n") & "\n" & definitions.join("\n\n") & "\n" else: ""
+  result.code = if definitions.len > 0: "#include <stdint.h>\n#include <stdbool.h>\n" &
+    includes.join("\n") & "\n" & declarations.join("\n") & "\n" &
+    definitions.join("\n\n") & "\n" else: ""

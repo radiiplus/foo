@@ -122,7 +122,7 @@ constant stored is codec.encode(token) try.
 display stored.
 ```
 
-For the standard JSON representation of a concrete scalar or record, FOO can
+For the standard JSON representation of a concrete supported value, FOO can
 generate both directions directly:
 
 ```foo
@@ -139,7 +139,8 @@ constant restored is codecs.decode[Token](stored) try.
 The generated path is type-specific and does not use runtime reflection. Use an
 explicit `Codec[T]` when field names, versions, validation, or the wire format
 differ from the standard representation. Generated codecs currently cover
-booleans, integers, decimals, text, and nested records.
+booleans, integers, decimals, text, optional values, sequences, choices, and
+nested records composed from those values.
 
 ## State machines
 

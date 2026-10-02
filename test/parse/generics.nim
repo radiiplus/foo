@@ -26,11 +26,11 @@ let maximum = functions.filterIt(it.name.text == "maximum")[0]
 doAssert maximum.typeParams.len == 1
 doAssert maximum.constraints.len == 1
 
-let library = parseFile(currentSourcePath().parentDir.parentDir.parentDir / "std" / "sequence.iv")
+let library = parseFile(currentSourcePath().parentDir.parentDir.parentDir / "lib" / "sequence.iv")
 doAssert library.units[0].body.stmts.anyIt(it.tag == "extern-function" and ast.ExternFunction(it).typeParams.len == 1)
 
-let layouts = parseSource("""#[repr(C)] define Point as record { x of type integer 32. }.
-#[repr(C)] define Data as union { number of type integer. }.
+let layouts = parseSource("""define Point as c record { x of type integer 32. }.
+define Data as c union { number of type integer. }.
 use sample as other.
 function map[
   Input,

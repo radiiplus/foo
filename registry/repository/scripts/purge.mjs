@@ -20,9 +20,9 @@ if (current.truncated) throw new Error("Registry tree listing was truncated");
 
 const packageRecord = /^packages\/.+\/(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?\.json$/;
 const standardItems = current.tree.filter((item) => item.type === "blob" &&
-  item.path?.startsWith("packages/std/") && packageRecord.test(item.path));
+  item.path?.startsWith("packages/lib/") && packageRecord.test(item.path));
 const removals = current.tree.filter((item) => item.type === "blob" &&
-  item.path?.startsWith("packages/") && !item.path.startsWith("packages/std/"));
+  item.path?.startsWith("packages/") && !item.path.startsWith("packages/lib/"));
 if (standardItems.length === 0) throw new Error("Refusing to purge a registry with no standard packages");
 if (removals.length === 0) {
   console.log("No non-standard packages remain");
@@ -39,7 +39,7 @@ for (const shard of manifest.shards ?? []) {
   if (!item) throw new Error(`Registry shard is missing: ${shard.path}`);
   for (const line of (await content(item)).split(/\r?\n/).filter((value) => value.trim())) {
     const entry = JSON.parse(line);
-    if (entry.kind === "standard" && entry.name?.startsWith("std/")) indexed.push(entry);
+    if (entry.kind === "standard" && entry.name?.startsWith("lib/")) indexed.push(entry);
   }
 }
 indexed.sort((left, right) => compare(left.category, right.category) || compare(left.name, right.name));

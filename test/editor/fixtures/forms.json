@@ -94,7 +94,7 @@
   },
   {
     "line": 14,
-    "text": "1_000",
+    "text": "1`000",
     "scope": "constant.numeric.foo"
   },
   {
@@ -104,7 +104,7 @@
   },
   {
     "line": 15,
-    "text": "12_345.67_89",
+    "text": "12`345.6789",
     "scope": "constant.numeric.foo"
   },
   {
@@ -190,38 +190,33 @@
   },
   {
     "line": 28,
-    "text": "start",
-    "scope": "entity.name.tag.foo"
+    "text": "startup",
+    "scope": "keyword.other.foo"
   },
   {
     "line": 29,
     "text": "interrupt",
-    "scope": "entity.name.tag.foo"
+    "scope": "keyword.other.foo"
   },
   {
     "line": 30,
-    "text": "naked",
-    "scope": "entity.name.tag.foo"
+    "text": "without",
+    "scope": "keyword.other.foo"
   },
   {
     "line": 31,
-    "text": "volatile",
-    "scope": "entity.name.tag.foo"
+    "text": "exact",
+    "scope": "keyword.other.foo"
   },
   {
     "line": 32,
-    "text": "target_feature",
-    "scope": "entity.name.tag.foo"
+    "text": "feature",
+    "scope": "keyword.other.foo"
   },
   {
     "line": 32,
     "text": "\"sse2\"",
     "scope": "string.quoted.double.foo"
-  },
-  {
-    "line": 32,
-    "text": "#[",
-    "scope": "punctuation.definition.annotation.foo"
   },
   {
     "line": 33,
@@ -399,18 +394,13 @@
   },
   {
     "line": 58,
-    "text": "1_000",
+    "text": "1`000",
     "scope": "constant.numeric.foo"
   },
   {
     "line": 58,
-    "text": "1__2",
-    "scope": "constant.numeric.foo"
-  },
-  {
-    "line": 58,
-    "text": "1_",
-    "scope": "constant.numeric.foo"
+    "text": "1``2",
+    "scope": "invalid.illegal.numeric.foo"
   },
   {
     "line": 58,
@@ -419,7 +409,7 @@
   },
   {
     "line": 58,
-    "text": "12_345.6_7",
+    "text": "12`345.6789",
     "scope": "constant.numeric.foo"
   },
   {
@@ -432,6 +422,11 @@
     "text": ".",
     "scope": "punctuation.terminator.foo",
     "last": true
+  },
+  {
+    "line": 58,
+    "text": "1_000",
+    "scope": "invalid.illegal.numeric.foo"
   },
   {
     "line": 61,

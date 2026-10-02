@@ -11,6 +11,7 @@ type
     kind*: Kind
     span*: Span
     text*: string
+    spelling*: string
     native*: Option[NativeInfo]
     raw*: Option[string]
     leading*: Option[string]

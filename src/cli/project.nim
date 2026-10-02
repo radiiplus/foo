@@ -2,6 +2,10 @@ import std/[json, os, strutils]
 import ../build/files
 import ../pkg/semver
 
+const
+  defaultIcon = staticRead("../../installers/assets/logo-installer.ico")
+  defaultVector = staticRead("../../assets/dark.svg")
+
 proc validName(name: string): bool =
   if name.len == 0 or not name[0].isAlphaAscii: return false
   for character in name[1 .. ^1]:
@@ -17,16 +21,18 @@ proc create*(name: string): string =
   if not validName(projectName): raise newException(ValueError, "Choose a project name beginning with a letter, using letters, digits or hyphens.")
   if current:
     for file in ["project.json", "src/main.iv", "test/main.iv",
-        "benchmark/main.iv", ".gitignore"]:
+        "benchmark/main.iv", "assets/icon.ico", "assets/icon.svg", ".gitignore"]:
       if fileExists(root / file):
         raise newException(ValueError, "Cannot initialize the current directory because " & file & " already exists.")
   else:
     createDir(root)
-  write(root / "project.json", "{\n  \"schema\": 1,\n  \"name\": " & escapeJson(projectName) & ",\n  \"language\": \"1\",\n  \"version\": \"0.1.0\",\n  \"source\": \"src\",\n  \"entry\": \"src/main.iv\",\n  \"entries\": {},\n  \"requires\": \"base\",\n  \"dependencies\": {},\n  \"build\": { \"output\": \"target\" }\n}\n")
+  write(root / "project.json", "{\n  \"schema\": 1,\n  \"name\": " & escapeJson(projectName) & ",\n  \"language\": \"1\",\n  \"version\": \"0.1.0\",\n  \"source\": \"src\",\n  \"entry\": \"src/main.iv\",\n  \"entries\": {},\n  \"requires\": \"base\",\n  \"dependencies\": {},\n  \"build\": { \"output\": \"output\", \"icon\": \"assets/icon.ico\" }\n}\n")
   write(root / "src" / "main.iv", "display \"Hello, world!\".\n")
   write(root / "test" / "main.iv", "use testing as check.\n\ntest \"project starts\" {\n  check.expect(true).\n}\n")
-  write(root / "benchmark" / "main.iv", "-- Replace this loop with work you want to measure.\ndynamic counter is 0.\nwhile counter less than 10000 {\n  set counter to counter plus 1.\n}\n")
-  write(root / ".gitignore", ".artifacts/\n.foo/\ntarget/\n")
+  write(root / "benchmark" / "main.iv", "-- Replace this loop with work you want to measure.\ndynamic counter is 0.\nwhile counter less than 10`000 {\n  set counter to counter plus 1.\n}\n")
+  write(root / "assets" / "icon.ico", defaultIcon)
+  write(root / "assets" / "icon.svg", defaultVector)
+  write(root / ".gitignore", ".artifacts/\n.foo/\noutput/\nrelease/\n")
   root
 
 proc createPackage*(name: string): string =
@@ -59,17 +65,17 @@ proc createPackage*(name: string): string =
     "  \"source\": \"src\",\n" &
     "  \"requires\": \"base\",\n" &
     "  \"dependencies\": {},\n" &
-    "  \"build\": { \"output\": \"target\" }\n" &
+    "  \"build\": { \"output\": \"output\" }\n" &
     "}\n")
   write(root / "src" / "main.iv", "public constant version is \"0.1.0\".\n")
   write(root / "test" / "main.iv", "use testing as check.\n\ntest \"package loads\" {\n  check.expect(true).\n}\n")
-  write(root / "benchmark" / "main.iv", "-- Replace this loop with package work you want to measure.\ndynamic counter is 0.\nwhile counter less than 10000 {\n  set counter to counter plus 1.\n}\n")
+  write(root / "benchmark" / "main.iv", "-- Replace this loop with package work you want to measure.\ndynamic counter is 0.\nwhile counter less than 10`000 {\n  set counter to counter plus 1.\n}\n")
   write(root / "README.md", "# " & packageName & "\n\n" &
     "Describe what this package does.\n\n" &
     "## Installation\n\n```text\nfoo add " & packageName & "\nfoo install\n```\n\n" &
     "## Usage\n\nDocument the public API and include practical examples here.\n\n" &
     "## Compatibility\n\nDocument supported platforms and system requirements here.\n")
-  write(root / ".gitignore", ".artifacts/\n.foo/\ntarget/\n")
+  write(root / ".gitignore", ".artifacts/\n.foo/\noutput/\nrelease/\n")
   root
 
 proc removeTree(path: string) =
@@ -85,13 +91,13 @@ proc clean*(root = getCurrentDir()) =
     if dirExists(target): removeTree(target)
     elif fileExists(target): removeFile(target)
   let manifest = root / "project.json"
-  var output = "target"
+  var output = "output"
   var source = "src"
   if fileExists(manifest):
     let node = parseJson(readFile(manifest))
     source = node.getOrDefault("source").getStr("src")
     if node.hasKey("build") and node["build"].kind == JObject:
-      output = node["build"].getOrDefault("output").getStr("target")
+      output = node["build"].getOrDefault("output").getStr("output")
   var protected = @["src", "test", "benchmark"]
   if source notin [".", "src"]: protected.add(source)
   let target = destination(root, output, protected)
@@ -140,6 +146,13 @@ proc dependencySource*(name, source: string): string =
   else:
     raise newException(ValueError, "A dependency source or registry version is required.")
 
+proc dependencySource*(name, source, root: string): string =
+  result = dependencySource(name, source)
+  if result.startsWith("path+"):
+    let value = result[5 .. ^1]
+    let absolute = if value.isAbsolute: absolutePath(value) else: absolutePath(value, root)
+    result = "path+" & relativePath(absolute, root).replace('\\', '/')
+
 proc dependency*(command, name: string; source = ""; root = getCurrentDir()) =
   if command notin ["add", "remove"]: raise newException(ValueError, "Unknown dependency command")
   if not validDependencyName(name): raise newException(ValueError, "Invalid dependency name.")
@@ -160,5 +173,5 @@ proc dependency*(command, name: string; source = ""; root = getCurrentDir()) =
     if not removed: raise newException(ValueError, "No dependency named '" & name & "'.")
   else:
     if manifest["dependencies"].hasKey(name): raise newException(ValueError, "Dependency '" & name & "' already exists; edit its exact source in project.json.")
-    manifest["dependencies"][name] = %dependencySource(name, source)
+    manifest["dependencies"][name] = %dependencySource(name, source, root)
   write(file, pretty(manifest) & "\n")

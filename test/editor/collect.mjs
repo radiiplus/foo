@@ -12,10 +12,10 @@ const sources = {
   interop: 'specs/native.md',
   concurrency: 'docs/concurrency.md',
   control: 'test/lex/fixtures/sample.iv',
-  pointers: 'std/memory.iv',
-  errors: 'std/crypto.iv',
-  platforms: 'std/system.iv',
-  library: ['std/sequence.iv', 'std/text.iv', 'test/stdlib/collections.iv', 'test/stdlib/services.iv'],
+  pointers: 'lib/memory.iv',
+  errors: 'lib/crypto.iv',
+  platforms: 'lib/system.iv',
+  library: ['lib/sequence.iv', 'lib/text.iv', 'test/library/collections.iv', 'test/library/services.iv'],
 };
 const selected = process.argv.slice(2);
 if (selected.some(name => !Object.hasOwn(sources, name))) throw Error('Unknown fixture family');

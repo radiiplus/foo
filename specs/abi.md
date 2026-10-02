@@ -110,8 +110,8 @@ that C symbol. C symbols are not FOO-mangled. `public` independently controls
 whether another FOO file can name the declaration.
 
 The foreign declaration also accepts `giving T` for its result. Formatting uses
-the existing `of type T` spelling. `#[repr(C)]` marks a record or union with the
-target C layout; `c record` and `c union` remain supported.
+the existing `of type T` spelling. `c record` and `c union` select the target C
+layout. The older `#[repr(C)]` spelling remains input-compatible during migration.
 
 `use c "header.h".` translates the requested header's declarations and required
 types. Constant macros become FOO constants; function-like macros are recorded

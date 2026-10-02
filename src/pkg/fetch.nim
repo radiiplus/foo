@@ -15,7 +15,8 @@ proc removeTree(path: string) =
 
 proc fetchDep*(name, source, root: string): FetchResult =
   if source.startsWith("path+"):
-    let localPath = absolutePath(root / source[5 .. ^1])
+    let value = source[5 .. ^1]
+    let localPath = if value.isAbsolute: absolutePath(value) else: absolutePath(value, root)
     if not dirExists(localPath): raise newException(IOError, "Local dependency not found: " & localPath)
     return FetchResult(path: localPath, hash: hashDirectory(localPath))
   if source.startsWith("git+"):

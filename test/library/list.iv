@@ -1,6 +1,6 @@
 -- Checks list growth, order, bounds and borrowed-item ownership.
-use "../../std/list.iv".
-use "../../std/memory.iv" as heap.
+use "../../lib/list.iv".
+use "../../lib/memory.iv" as heap.
 use testing.
 function bounds(collection pointer to List) giving failable text {
   constant item is get(collection, 10) try.
