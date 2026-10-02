@@ -3,8 +3,6 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
-## Unreleased
-
 ## 0.7.0 - 2026-10-02
 
 ### Build And Release

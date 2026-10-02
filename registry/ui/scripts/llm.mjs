@@ -42,7 +42,7 @@ const parts = [
   "",
   "This file contains the complete canonical language, tool, tutorial, and implementation reference for the current compiler.",
   "",
-  "Before relying on a language or toolchain behavior, read the Unreleased section and newest release in CHANGELOG.md. They may supersede an older example elsewhere in this file.",
+  "Before relying on a language or toolchain behavior, read the newest release in CHANGELOG.md. It may supersede an older example elsewhere in this file.",
   "",
   "Do not silently reconcile contradictions. If the documentation, standard library declarations, compiler behavior, or C and Zig backends disagree, write an issue-ready observation report for https://github.com/radiiplus/foo/issues. Include a concise title, FOO version or commit when known, platform and backend, expected behavior with its documentation or declaration source, observed behavior, minimal reproduction, exact diagnostics or output, impact, and any verified workaround. Distinguish confirmed behavior from inference. Do not claim that an issue was submitted unless it actually was.",
 ];
