@@ -90,6 +90,7 @@ const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 const releaseDirectory = resolve(value("--release") ||
   join(root, "release", `foo-v${manifest.version}`));
 const key = process.env.FOOSIGNER || "";
+const distro = process.env.FOOWSL || "Ubuntu-22.04";
 const signing = process.argv.includes("--sign") || key.length > 0;
 const linuxOnly = process.argv.includes("--linux");
 const skipWsl = process.argv.includes("--nowsl");
@@ -124,9 +125,9 @@ if (skipWsl) {
   process.exit(0);
 }
 
-const wsl = spawnSync("wsl.exe", ["--exec", "true"], { windowsHide: true });
+const wsl = spawnSync("wsl.exe", ["-d", distro, "--", "true"], { windowsHide: true });
 if (wsl.error?.code === "ENOENT" || wsl.status !== 0) {
-  console.warn("WSL is not installed or no default Linux distribution is ready.");
+  console.warn(`WSL is not installed or Linux distribution ${distro} is not ready.`);
   console.warn("Install it from an elevated PowerShell terminal with:");
   console.warn("  wsl --install -d Ubuntu-22.04");
   console.warn("The Windows binary was built; rerun this command after WSL setup to add Linux.");
@@ -135,7 +136,7 @@ if (wsl.error?.code === "ENOENT" || wsl.status !== 0) {
 
 const script = wslPath(join(root, "tools", "binaries.mjs"));
 const linuxRelease = wslPath(releaseDirectory);
-const parameters = ["--"];
+const parameters = ["-d", distro, "--"];
 if (key || signing) parameters.push("env");
 if (key) parameters.push(`FOOSIGNER=${key}`);
 if (signing) {
