@@ -1,4 +1,4 @@
-import { AlertTriangle, Archive, CheckCircle2, Download, ExternalLink, Laptop, Package, Terminal, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Archive, CheckCircle2, Download, ExternalLink, Laptop, Package, Puzzle, Terminal, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type GitHubAsset = {
@@ -44,6 +44,7 @@ const fallbackRelease: GitHubRelease = {
     "foo-linux-arm64.tar.gz",
     "foo-windows-x64.exe",
     "foo-windows-x64.zip",
+    "foo.iv-2.6.1.vsix",
     "SHA256SUMS.txt",
   ].map((name) => ({ name, browser_download_url: `${fallbackBase}/${name}` })),
 };
@@ -125,6 +126,7 @@ export default function Downloads() {
   const version = release?.tag_name.replace(/^foo-v/, "");
   const assets = useMemo(() => release?.assets ?? [], [release]);
   const npmAsset = assets.find((asset) => /^foo-\d.+\.tgz$/.test(asset.name));
+  const extension = assets.find((asset) => asset.name.endsWith(".vsix"));
   const checksums = assets.find((asset) => asset.name === "SHA256SUMS.txt");
 
   return (
@@ -188,8 +190,9 @@ export default function Downloads() {
 
         <section className="mt-3 border-t border-[#292929] pt-3">
           <h2 className="text-sm font-semibold text-[#ededed]">Release files</h2>
-          <div className="mt-2 grid gap-px overflow-hidden rounded-md border border-[#292929] bg-[#292929] sm:grid-cols-3">
+          <div className="mt-2 grid gap-px overflow-hidden rounded-md border border-[#292929] bg-[#292929] sm:grid-cols-2 lg:grid-cols-4">
             <ReleaseFile asset={npmAsset} icon={Terminal} title="npm package" />
+            <ReleaseFile asset={extension} icon={Puzzle} title="VS Code extension" />
             <ReleaseFile asset={checksums} icon={CheckCircle2} title="SHA-256 checksums" />
             <a className="flex min-h-14 items-center gap-3 bg-[#0e0e0e] px-4 text-[#aaa] no-underline hover:bg-[#131313] hover:text-white" href={release?.html_url ?? "https://github.com/radiiplus/foo/releases"} target="_blank" rel="noreferrer">
               <ExternalLink size={15} className="text-[#60D5DF]" /><span><strong className="block text-xs font-medium">Release notes</strong><small className="mt-1 block font-mono text-[9px] text-[#5f5f5f]">GitHub release</small></span>

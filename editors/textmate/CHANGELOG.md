@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.6.2 - 2026-10-02
+
+- Highlight machine clauses and exact-access modifiers in declarations.
+- Recognize backtick-separated numeric literals and flag invalid separators.
+
 ## 2.6.1 - 2026-10-01
 
 - Highlight statement-leading bare zero-argument calls before postfix `try` as

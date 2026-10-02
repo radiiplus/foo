@@ -51,7 +51,7 @@ class FooLanguageClient {
       processId: process.pid,
       rootUri,
       capabilities: {},
-      clientInfo: { name: 'foo.iv', version: '2.6.1' },
+      clientInfo: { name: 'foo.iv', version: '2.6.2' },
     }).then(() => {
       if (this.process !== child) return;
       this.ready = true;

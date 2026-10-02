@@ -95,7 +95,7 @@ Use **FOO: Restart Language Server** after changing toolchains.
 
 To install a downloaded
 package instead, choose **Install from VSIX** in the Extensions view and select
-`foo.iv-2.6.1.vsix`.
+`foo.iv-2.6.2.vsix`.
 
 ---
 
