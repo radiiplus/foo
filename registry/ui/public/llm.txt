@@ -16,6 +16,21 @@ Do not silently reconcile contradictions. If the documentation, standard library
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## 0.7.1 - 2026-10-03
+
+### Compiler And Libraries
+
+- Emit JSON byte sequences as numeric arrays on both C and Zig backends,
+  including nested records and choices, so encoded data transfers between
+  backends without a format workaround.
+- Provision the C backend's libsodium, zlib, and libcurl development files
+  automatically on native Debian and Ubuntu builds when they are missing.
+  Cache the packages without administrator access and include the libcurl
+  runtime beside executables and in release bundles when needed.
+- Have `foo doctor` verify or provision the C dependencies used by a project.
+- Show toolchain download, verification, and installation progress during
+  interactive setup, with periodic output when redirected.
+
 ## 0.7.0 - 2026-10-02
 
 ### Build And Release
@@ -752,7 +767,7 @@ Once it's installed, open your terminal (Command Prompt/PowerShell on Windows, o
 foo doctor
 ```
 
-**Why this is useful:** `foo doctor` runs a complete health check on your computer. The Debian installer provisions (downloads and configures) the pinned Zig backend (the exact supported Zig code generator) automatically, and `foo run` or `foo build` retries that managed installation on first use when setup happened offline. `foo doctor` reports what is ready and gives the exact repair command when something is missing. Clang is optional unless a project imports C headers.
+**Why this is useful:** `foo doctor` checks the toolchain for the current project. The Debian installer provisions (downloads and configures) the pinned Zig backend (the exact supported Zig code generator) automatically, and `foo run` or `foo build` retries that managed installation on first use when setup happened offline. On Debian and Ubuntu, the C backend also provisions missing dependencies for the bundled `crypto`, `compress`, and `http` modules. `foo doctor` verifies these dependencies and reports what still needs attention. Clang is optional unless a project imports C headers.
 
 ### Uninstalling FOO
 
@@ -3120,8 +3135,10 @@ Generated codec support is not currently identical for every type:
 | Optional values, sequences, choices, and records made only from portable values | Supported recursively | Supported recursively | Supported |
 | Pointer, function, or resource fields | Not a generated-code contract | Backend-dependent | Not portable |
 
-Generated sequences use JSON arrays, optional values use their value or JSON
-`null`, and choices use a one-field object whose key is the active variant.
+Generated sequences, including `sequence of byte`, use JSON arrays. Each byte
+is a number from 0 through 255; text uses a JSON string. Optional values use
+their value or JSON `null`, and choices use a one-field object whose key is the
+active variant.
 Payload-free variants use an empty object as their value. Sequences are decoded
 into runtime-managed storage. Define and pass an explicit `Codec[T]` when field names,
 schema versions, validation, unknown-field handling, maximum input size, or a
@@ -3153,16 +3170,26 @@ Cryptography means protecting information with mathematical methods. Hashing
 creates a one-way fingerprint; encryption scrambles data so only an authorized
 reader can restore it.
 
-Security is serious business. FOO's `crypto` module wraps industry-standard C
-libraries to provide hashing (turning data into a fixed-size fingerprint) and
-encryption (making data unreadable without the required key) with zero
-configuration. You do not need to be a cryptographer to use safe, modern
-algorithms.
+FOO's `crypto` module provides hashing (turning data into a fixed-size
+fingerprint) and encryption (making data unreadable without the required key).
+The C backend uses libsodium headers and its static library at build time. On
+Debian and Ubuntu, FOO downloads and caches `libsodium-dev` automatically when
+the dependency is missing; no system installation or administrator access is
+required. The Zig backend uses Zig's cryptography library.
 
 **Supported Libraries:**
-*   **libsodium:** The default backend for modern, high-speed cryptography (NaCl).
+*   **libsodium:** The C backend's cryptography dependency.
 *   **Platform TLS:** WinHTTP and the Windows certificate store on Windows;
     libcurl-backed transport on Linux and macOS.
+
+For C builds, compression uses zlib and HTTP on Linux uses libcurl. On Debian
+and Ubuntu, FOO also provisions missing `zlib1g-dev` and
+`libcurl4-openssl-dev` into its toolchain cache. When provisioned, C binaries
+link the cached libsodium and zlib archives and ship a cached `libcurl.so.4`
+beside the executable. `foo doctor` verifies or provisions these dependencies
+for native modules imported by local project sources. Provisioning requires
+working apt package metadata and network access. On other systems, install the
+development files or supply their include and library paths explicitly.
 
 **Available Algorithms:**
 *   **Hashing:** SHA-256 through `crypto.hash`.

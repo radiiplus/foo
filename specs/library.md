@@ -127,8 +127,10 @@ functions. `codec.encode[T]` and `codec.decode[T]` use the standard JSON wire
 format and generate concrete handling for `T`. The cross-backend generated
 contract is boolean, signed and unsigned integers, decimal, text, optional
 values, sequences, choices, and records recursively containing only those
-types. Sequences use JSON arrays, absent optional values use JSON null, and a
-choice uses a one-field object keyed by its active variant. A payload-free
+types. Sequences, including byte sequences, use JSON arrays; each byte is a
+number from 0 through 255, while text uses a JSON string. Absent optional
+values use JSON null, and a choice uses a one-field object keyed by its active
+variant. A payload-free
 variant's value is an empty object.
 Generated parsing rejects invalid
 syntax, duplicate or missing fields, wrong JSON kinds, and numeric overflow.

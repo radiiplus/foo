@@ -3,6 +3,21 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## 0.7.1 - 2026-10-03
+
+### Compiler And Libraries
+
+- Emit JSON byte sequences as numeric arrays on both C and Zig backends,
+  including nested records and choices, so encoded data transfers between
+  backends without a format workaround.
+- Provision the C backend's libsodium, zlib, and libcurl development files
+  automatically on native Debian and Ubuntu builds when they are missing.
+  Cache the packages without administrator access and include the libcurl
+  runtime beside executables and in release bundles when needed.
+- Have `foo doctor` verify or provision the C dependencies used by a project.
+- Show toolchain download, verification, and installation progress during
+  interactive setup, with periodic output when redirected.
+
 ## 0.7.0 - 2026-10-02
 
 ### Build And Release

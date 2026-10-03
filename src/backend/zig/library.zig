@@ -469,10 +469,65 @@ pub fn call(comptime module: []const u8, comptime name: []const u8, comptime Res
     return convert(Result, @call(.auto, function, converted));
 }
 
+fn serialize(value: anytype, writer: *std.json.Stringify) !void {
+    const T = @TypeOf(value);
+    switch (@typeInfo(T)) {
+        .pointer => |info| {
+            if (info.size == .slice and info.child == u8 and !info.is_const) {
+                try writer.beginArray();
+                for (value) |item| try writer.write(item);
+                try writer.endArray();
+            } else if (info.size == .slice and info.child != u8) {
+                try writer.beginArray();
+                for (value) |item| try serialize(item, writer);
+                try writer.endArray();
+            } else try writer.write(value);
+        },
+        .optional => {
+            if (value) |item| try serialize(item, writer) else try writer.write(null);
+        },
+        .@"struct" => |info| {
+            try writer.beginObject();
+            inline for (info.fields) |field| {
+                if (field.type == void) continue;
+                try writer.objectField(field.name);
+                try serialize(@field(value, field.name), writer);
+            }
+            try writer.endObject();
+        },
+        .@"union" => |info| {
+            const Tag = info.tag_type orelse @compileError("Codec requires a tagged choice");
+            try writer.beginObject();
+            inline for (info.fields) |field| {
+                if (value == @field(Tag, field.name)) {
+                    try writer.objectField(field.name);
+                    if (field.type == void) {
+                        try writer.beginObject();
+                        try writer.endObject();
+                    } else try serialize(@field(value, field.name), writer);
+                    break;
+                }
+            }
+            try writer.endObject();
+        },
+        else => try writer.write(value),
+    }
+}
+
+fn Wrapped(comptime T: type) type {
+    return struct {
+        value: T,
+
+        pub fn jsonStringify(self: @This(), writer: *std.json.Stringify) !void {
+            try serialize(self.value, writer);
+        }
+    };
+}
+
 fn codec(comptime name: []const u8, comptime Result: type, args: anytype) Result {
     const Payload = @typeInfo(Result).error_union.payload;
     if (comptime std.mem.eql(u8, name, "encode")) {
-        const encoded = try std.json.Stringify.valueAlloc(allocator, args[0], .{});
+        const encoded = try std.json.Stringify.valueAlloc(allocator, Wrapped(@TypeOf(args[0])){ .value = args[0] }, .{});
         errdefer allocator.free(encoded);
         return try adopt(u8, encoded);
     }

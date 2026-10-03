@@ -75,6 +75,13 @@ receipt is published only after its probes succeed. Failure leaves previous
 valid levels available. Builds check `requires` before project tasks and native
 compilation. Missing levels report the exact installation command.
 
+For native Debian and Ubuntu C builds, FOO probes the headers and libraries
+required by the imported `crypto`, `compress`, and `http` modules. If missing,
+it downloads the matching apt development packages into the user toolchain
+cache without a privileged system installation. `foo doctor` uses the same
+provisioning check. Custom C imports and other host platforms require an
+explicit development package or include and library paths.
+
 Hardware setup verifies device authoring tools and registers a QEMU simulator
 found on PATH or selected by `FOO_SIMULATOR`. Automatic simulator downloads are
 not provided. If no simulator is available, hardware installation fails without

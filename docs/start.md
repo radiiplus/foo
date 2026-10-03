@@ -20,7 +20,7 @@ Once it's installed, open your terminal (Command Prompt/PowerShell on Windows, o
 foo doctor
 ```
 
-**Why this is useful:** `foo doctor` runs a complete health check on your computer. The Debian installer provisions (downloads and configures) the pinned Zig backend (the exact supported Zig code generator) automatically, and `foo run` or `foo build` retries that managed installation on first use when setup happened offline. `foo doctor` reports what is ready and gives the exact repair command when something is missing. Clang is optional unless a project imports C headers.
+**Why this is useful:** `foo doctor` checks the toolchain for the current project. The Debian installer provisions (downloads and configures) the pinned Zig backend (the exact supported Zig code generator) automatically, and `foo run` or `foo build` retries that managed installation on first use when setup happened offline. On Debian and Ubuntu, the C backend also provisions missing dependencies for the bundled `crypto`, `compress`, and `http` modules. `foo doctor` verifies these dependencies and reports what still needs attention. Clang is optional unless a project imports C headers.
 
 ### Uninstalling FOO
 

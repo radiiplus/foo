@@ -157,8 +157,10 @@ Generated codec support is not currently identical for every type:
 | Optional values, sequences, choices, and records made only from portable values | Supported recursively | Supported recursively | Supported |
 | Pointer, function, or resource fields | Not a generated-code contract | Backend-dependent | Not portable |
 
-Generated sequences use JSON arrays, optional values use their value or JSON
-`null`, and choices use a one-field object whose key is the active variant.
+Generated sequences, including `sequence of byte`, use JSON arrays. Each byte
+is a number from 0 through 255; text uses a JSON string. Optional values use
+their value or JSON `null`, and choices use a one-field object whose key is the
+active variant.
 Payload-free variants use an empty object as their value. Sequences are decoded
 into runtime-managed storage. Define and pass an explicit `Codec[T]` when field names,
 schema versions, validation, unknown-field handling, maximum input size, or a
@@ -190,16 +192,26 @@ Cryptography means protecting information with mathematical methods. Hashing
 creates a one-way fingerprint; encryption scrambles data so only an authorized
 reader can restore it.
 
-Security is serious business. FOO's `crypto` module wraps industry-standard C
-libraries to provide hashing (turning data into a fixed-size fingerprint) and
-encryption (making data unreadable without the required key) with zero
-configuration. You do not need to be a cryptographer to use safe, modern
-algorithms.
+FOO's `crypto` module provides hashing (turning data into a fixed-size
+fingerprint) and encryption (making data unreadable without the required key).
+The C backend uses libsodium headers and its static library at build time. On
+Debian and Ubuntu, FOO downloads and caches `libsodium-dev` automatically when
+the dependency is missing; no system installation or administrator access is
+required. The Zig backend uses Zig's cryptography library.
 
 **Supported Libraries:**
-*   **libsodium:** The default backend for modern, high-speed cryptography (NaCl).
+*   **libsodium:** The C backend's cryptography dependency.
 *   **Platform TLS:** WinHTTP and the Windows certificate store on Windows;
     libcurl-backed transport on Linux and macOS.
+
+For C builds, compression uses zlib and HTTP on Linux uses libcurl. On Debian
+and Ubuntu, FOO also provisions missing `zlib1g-dev` and
+`libcurl4-openssl-dev` into its toolchain cache. When provisioned, C binaries
+link the cached libsodium and zlib archives and ship a cached `libcurl.so.4`
+beside the executable. `foo doctor` verifies or provisions these dependencies
+for native modules imported by local project sources. Provisioning requires
+working apt package metadata and network access. On other systems, install the
+development files or supply their include and library paths explicitly.
 
 **Available Algorithms:**
 *   **Hashing:** SHA-256 through `crypto.hash`.

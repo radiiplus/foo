@@ -28,6 +28,8 @@ type
     color: bool
     started: float
     lastRender: float
+    last: float
+    phase: string
     frame: int
     renderedLines: int
     tasks: seq[OperationTask]
@@ -162,6 +164,16 @@ proc report*(operation: Operation; phase, name, detail: string; cached = false) 
     if phase != "tick":
       echo $(%*{"event": phase, "name": name, "file": detail, "cached": cached})
     return
+  if (operation.name == "TOOLCHAIN" or phase in ["download", "downloaded"]) and
+      not operation.interactive:
+    let current = epochTime()
+    if phase != "download" or operation.phase != phase or
+        current - operation.last >= 5:
+      stderr.writeLine("  " & phase.capitalizeAscii() & " " & name &
+        (if detail.len > 0: ": " & detail else: ""))
+      stderr.flushFile()
+      operation.phase = phase
+      operation.last = current
   case phase
   of "check": operation.update("Source", name, stateWorking, detail)
   of "checked": operation.update("Source", name, stateComplete)

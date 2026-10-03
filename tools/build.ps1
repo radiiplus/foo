@@ -54,7 +54,8 @@ if (-not $SkipWindows) {
 
   $windowsArchive = Join-Path $ReleaseDirectory 'foo-windows-x64.zip'
   if (Test-Path $windowsArchive) { Remove-Item -LiteralPath $windowsArchive -Force }
-  Compress-Archive -LiteralPath $windowsSource -DestinationPath $windowsArchive -CompressionLevel Optimal
+  & tar -a -cf $windowsArchive -C $ReleaseDirectory (Split-Path -Leaf $windowsSource)
+  if ($LASTEXITCODE -ne 0) { throw 'The Windows archive build failed.' }
   Write-Host "Created $windowsArchive"
 }
 
@@ -95,7 +96,10 @@ if (-not $installers) { throw 'No installer artifacts were produced.' }
 $installers | ForEach-Object { Write-Host "Created $($_.FullName)" }
 
 $releaseFiles = Get-ChildItem $ReleaseDirectory -File | Where-Object {
-  $_.Name -match '\.(asc|deb|exe|tgz|vsix|zip)$' -or $_.Name -match '\.tar\.gz$'
+  $_.Name -ne 'SHA256SUMS.txt.asc' -and (
+    $_.Name -match '\.(asc|deb|exe|tgz|vsix|zip)$' -or
+    $_.Name -match '\.tar\.gz$' -or $_.Name -eq 'notes.md'
+  )
 } | Sort-Object Name
 $checksumLines = $releaseFiles | ForEach-Object {
   $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()

@@ -136,6 +136,9 @@ proc bundle*(source: Project; signing = false; selected = ""): Bundle =
     for name, artifact in artifacts:
       let targetPath = staging / artifact.lastPathPart
       copyFileWithPermissions(artifact, targetPath)
+      let shared = artifact.parentDir / "libcurl.so.4"
+      if fileExists(shared):
+        copyFileWithPermissions(shared, staging / shared.lastPathPart)
       stagedArtifacts.add(targetPath)
       let kind = if config.products.hasKey(name) and
           config.products[name].kind.len > 0: config.products[name].kind

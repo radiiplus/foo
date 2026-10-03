@@ -5,6 +5,12 @@ import ../../../src/build/options
 
 doAssert dependencies("main.o: main.c helper.h") ==
   @[absolutePath("main.c"), absolutePath("helper.h")]
+doAssert diagnose("fatal error: sodium.h: No such file or directory", @["sodium"]).contains("libsodium-dev")
+doAssert diagnose("fatal error: zlib.h: No such file or directory", @["z"]).contains("zlib1g-dev")
+doAssert diagnose("fatal error: curl/curl.h: No such file or directory", @["curl"]).contains("libcurl4-openssl-dev")
+doAssert diagnose("ld: cannot find -lsodium", @["sodium"]).contains("libsodium-dev")
+doAssert diagnose("fatal error: sodium.h: No such file or directory", @["z"]) ==
+  "fatal error: sodium.h: No such file or directory"
 doAssert deadStripFlag("x86_64-windows-msvc", "clang").contains("/OPT:REF")
 doAssert deadStripFlag("x86_64-windows-gnu", "clang") ==
   "-Wl,--gc-sections"

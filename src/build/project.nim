@@ -341,6 +341,11 @@ proc build*(project: Project; entry = ""): Table[string, string] =
   let projectDigest = hashDirectory(project.root, excluded)
   let compilerDigest = compilerIdentity()
   let tool = if backend == "zig": install(pin(project.root)).path else: ""
+  proc publish(artifact, target: string) =
+    copyFileWithPermissions(artifact, target)
+    let shared = artifact.parentDir / "libcurl.so.4"
+    if fileExists(shared):
+      copyFileWithPermissions(shared, target.parentDir / shared.lastPathPart)
   var active = initTable[string, bool]()
   proc visit(name: string) =
     if artifacts[].hasKey(name): return
@@ -414,7 +419,7 @@ proc build*(project: Project; entry = ""): Table[string, string] =
           artifacts[][name] = artifactPathExpected
         else:
           createDir(destination)
-          copyFileWithPermissions(artifactPathExpected, published)
+          publish(artifactPathExpected, published)
           artifacts[][name] = published
         active.del(name)
         if project.options.progress != nil:
@@ -458,12 +463,18 @@ proc build*(project: Project; entry = ""): Table[string, string] =
       artifacts[][name] = artifactPath
     else:
       createDir(destination)
-      copyFileWithPermissions(artifactPath, published)
+      publish(artifactPath, published)
       artifacts[][name] = published
     write(cachePath, $(%*{"fingerprint": fingerprint, "artifact": artifactPath}))
     if project.options.progress != nil:
       project.options.progress("done", name, artifacts[][name], false)
     active.del(name)
   for name in products.keys: visit(name)
+  if backend == "c" and not project.options.benchmark:
+    var needed = false
+    for artifact in internals[].values:
+      if fileExists(artifact.parentDir / "libcurl.so.4"): needed = true
+    let shared = destination / "libcurl.so.4"
+    if not needed and fileExists(shared): removeFile(shared)
   project.runHook(config, "postbuild")
   result = artifacts[]

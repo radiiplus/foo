@@ -7,6 +7,8 @@ import ../../opt/arch
 import ../docs as backendDocs
 import ../substrate
 import ../native/[escape, icon, service]
+import ../../toolchain/native
+import ../../toolchain/manager
 import ./emitter
 
 type Result* = object
@@ -28,10 +30,33 @@ proc dependencies*(text: string): seq[string] =
     let value = word.replace("\\ ", " ").replace("\\#", "#").replace("\\\\", "\\")
     if value.len > 0: result.add(absolutePath(value))
 
+proc diagnose*(output: string; libs: openArray[string]): string =
+  let lower = output.toLowerAscii()
+  let rules = [
+    ("sodium", "sodium.h", "C crypto requires libsodium development files. Install libsodium-dev on Debian/Ubuntu, or provide its include and library paths."),
+    ("z", "zlib.h", "C compression requires zlib development files. Install zlib1g-dev on Debian/Ubuntu, or provide its include and library paths."),
+    ("curl", "curl/curl.h", "C HTTP requires libcurl development files. Install libcurl4-openssl-dev on Debian/Ubuntu, or provide its include and library paths.")
+  ]
+  for rule in rules:
+    if rule[0] notin libs: continue
+    let header = lower.contains(rule[1]) and
+      (lower.contains("no such file") or lower.contains("file not found"))
+    let linker = lower.contains("-l" & rule[0]) and
+      (lower.contains("cannot find") or lower.contains("unable to find") or
+        lower.contains("library not found"))
+    if header or linker: return rule[2] & "\n" & output
+  output
+
 proc compilerPath(options: Native): string =
   if options.compiler.len > 0: return options.compiler
   let configured = getEnv("CC")
   if configured.len > 0: return configured
+  when defined(windows):
+    if findExe("clang").len > 0: return "clang"
+  else:
+    if findExe("cc").len > 0: return "cc"
+  let backend = detect()
+  if backend.path.len > 0: return backend.path
   when defined(windows): "clang" else: "cc"
 
 proc compilerCommand(path: string): string =
@@ -121,6 +146,8 @@ proc build*(module: Module; mode: string; outDir: string;
         icon.script(options.icon, outDir, options.target, options.kind),
         outDir, options.name, progress)
       let compiler = compilerPath(options)
+      let supply = native.prepare(generated.libraries, options.includePaths,
+        compiler, options.target, progress)
       var common = @["-std=c11", "-D_POSIX_C_SOURCE=200809L",
         (if mode == "release": "-O2" else: "-O0"),
         (if mode == "release": "-g0" else: "-g"),
@@ -142,6 +169,7 @@ proc build*(module: Module; mode: string; outDir: string;
         common.add(if options.sanitize == "c":
           "-fsanitize=undefined" else: "-fsanitize=thread")
       if needsService: common.add(@["-I", outDir])
+      for path in supply.headers: common.add(@["-I", path])
       if needsService and selective(options, escaped.code.len > 0):
         common.add(resourceDefines(escaped.module))
       for path in options.includePaths: common.add(@["-I", path])
@@ -178,8 +206,13 @@ proc build*(module: Module; mode: string; outDir: string;
         for library in generated.libraries & options.libs:
           if library in linkedLibraries: continue
           linkedLibraries.incl(library)
-          command.add(if fileExists(library): " " & quoteShell(library)
-            else: " -l" & quoteShell(library))
+          var selected = library
+          for link in supply.links:
+            if link.name == library: selected = link.path
+          command.add(if fileExists(selected): " " & quoteShell(selected)
+            else: " -l" & quoteShell(selected))
+        if supply.runtime.len > 0 and options.kind != "static":
+          command.add(" -Wl,-rpath," & quoteShell("$ORIGIN"))
         if needsService:
           for library in libraries(options.target):
             if library notin linkedLibraries:
@@ -226,7 +259,8 @@ proc build*(module: Module; mode: string; outDir: string;
         command.add(" -o " & quoteShell(artifactPath))
         let compiled = buildExecute.runCommand(command, outDir / ".compile-output",
           options.name, progress)
-        if compiled.exitCode != 0: raise newException(OSError, compiled.output)
+        if compiled.exitCode != 0:
+          raise newException(OSError, diagnose(compiled.output, generated.libraries))
       else:
         var objects: seq[string]
         var commands: seq[string]
@@ -248,7 +282,8 @@ proc build*(module: Module; mode: string; outDir: string;
           objects.add(objectPath)
         let compiled = buildExecute.runCommands(commands, outDir / ".compile-output",
           options.name, activeJobs, progress)
-        if compiled.exitCode != 0: raise newException(OSError, compiled.output)
+        if compiled.exitCode != 0:
+          raise newException(OSError, diagnose(compiled.output, generated.libraries))
         objects.add(options.objects)
         if iconObject.len > 0: objects.add(iconObject)
         if progress != nil:
@@ -268,10 +303,17 @@ proc build*(module: Module; mode: string; outDir: string;
           command.add(" -o " & quoteShell(artifactPath))
           let linked = buildExecute.runCommand(command, outDir / ".link-output",
             options.name, progress)
-          if linked.exitCode != 0: raise newException(OSError, linked.output)
+          if linked.exitCode != 0:
+            raise newException(OSError, diagnose(linked.output, generated.libraries))
         if progress != nil:
           progress("linked", options.name,
             if options.kind == "static": "static library" else: "application", false)
+      let shared = outDir / "libcurl.so.4"
+      if (options.kind == "static" or supply.runtime.len == 0) and
+          fileExists(shared): removeFile(shared)
+      if options.kind != "static":
+        for path in supply.runtime:
+          copyFile(path, outDir / path.lastPathPart)
     result.success = true
     result.artifact = artifactPath
     result.cached = false
