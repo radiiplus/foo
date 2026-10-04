@@ -31,20 +31,20 @@ type Platform = {
 
 const compilerRelease = /^foo-v\d/;
 const refreshInterval = 15 * 60 * 1_000;
-const fallbackTag = "foo-v0.6.1";
+const fallbackTag = "foo-v0.7.1";
 const fallbackBase = `https://github.com/radiiplus/foo/releases/download/${fallbackTag}`;
 const fallbackRelease: GitHubRelease = {
   tag_name: fallbackTag,
   html_url: `https://github.com/radiiplus/foo/releases/tag/${fallbackTag}`,
   assets: [
-    "foo-0.6.1.tgz",
+    "foo-0.7.1.tgz",
     "foo-amd64.deb",
     "foo-arm64.deb",
     "foo-linux-x64.tar.gz",
     "foo-linux-arm64.tar.gz",
     "foo-windows-x64.exe",
     "foo-windows-x64.zip",
-    "foo.iv-2.6.1.vsix",
+    "foo.iv-2.6.2.vsix",
     "SHA256SUMS.txt",
   ].map((name) => ({ name, browser_download_url: `${fallbackBase}/${name}` })),
 };
