@@ -201,13 +201,18 @@ The console operations are intentionally available without an import:
 | Operation | Meaning | Result |
 | --- | --- | --- |
 | `input` | Read one line from standard input | `failable text` |
-| `display value.` | Write text to standard output | `nothing` |
+| `display value.` | Write text or a codec-supported value to standard output | `nothing` |
 | `report value.` | Write diagnostic text to standard error | `nothing` |
 
 Use `io.input`, `io.output`, and `io.report` only when code needs the
 stream itself. Use `io.read`, `io.line`, `io.write`, and `io.close` for explicit
 stream ownership and failure handling. The bare operations are compiler-provided
 console conveniences; they are not declarations that a package must import.
+`display` writes text unchanged and uses `codec.encode[T]` internally for
+supported non-text values, including numbers, booleans, and records. It does
+not append a newline. If encoding fails, it writes `<unprintable>`. `report`
+still takes text. Use `codec` explicitly when you need the encoded text as a
+value or need to handle encoding failure.
 
 ## Compiler-owned names
 

@@ -8,7 +8,7 @@ signature reference for the installed compiler version.
 
 | Module | Purpose | Common operations |
 | --- | --- | --- |
-| `io` | Standard and file streams | bare console `display`/`report`; stream `input`/`output`/`report`, `read`, `line`, `write`, `close` |
+| `io` | Standard and file streams; `display` converts codec-supported values | bare console `display`/`report`; stream `input`/`output`/`report`, `read`, `line`, `write`, `close` |
 | `file` | Text and binary files, inspection, copying, same-filesystem replacement, directories, and stream position | `open`, `read`, `write`, `load`, `save`, `release`, `exists`, `kind`, `copy`, `working`, `remove`, `replace`, `sync`, `seek`, `position`, `size` |
 | `text` | Owned text operations and byte-oriented predicates | `concatenate`, `trim`, `length`, `slice`, `find`, `starts`, `ends`, `contains`, `split`, `release` |
 | `json` | JSON documents and streaming | `parse`, `write`, `field`, `item`, `kind`, `size`, `set`, `append`, `stream`, `feed`, `next`, `data`, `close` |

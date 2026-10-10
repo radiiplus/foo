@@ -42,9 +42,9 @@ Open `src/main.iv` and replace its contents with:
 display "Hello, vibes!".
 ```
 
-`display` prints a line. The quoted text is the message. The final period ends
-the statement. That is a complete FOO program; functions and named values come
-in later lessons.
+`display` writes a value to standard output. The quoted text is the message.
+The final period ends the statement. That is a complete FOO program; functions
+and named values come in later lessons.
 
 ---
 
@@ -147,7 +147,8 @@ path stays in `project.json`, so nobody has to remember it.
 When an operation is useful in more than one file, put it in its own module.
 The module controls which names other files can see.
 
-Create a new file named `math.iv` and add this:
+Create `src/math.iv` beside `src/main.iv` (inside the `hello` project) and add
+this:
 
 <!-- snippet: project math src/math.iv -->
 ```foo
@@ -158,16 +159,19 @@ public function add(left integer, right integer) {
 `public` makes `add` available to other modules. Without it, the function stays
 private to `math.iv`. FOO infers the result type from `give` here.
 
-Now, go back to `src/main.iv` and use it. This fragment depends on the
-`math.iv` file created immediately above:
+Replace the contents of `src/main.iv` with this program. The relative import
+`"math.iv"` finds `src/math.iv` because the two files are in the same folder:
 
 <!-- snippet: project math src/main.iv -->
 ```foo
-use "math.iv" as math. -- This brings in our new file!
+use "math.iv" as math.
 
 constant total is math.add(10, 20).
-when total is 30 { display "Total calculated". }
+display total.
 ```
+
+From the `hello` project folder, run `foo run`. It prints `30`. `display` uses
+the standard codec to convert the integer to text; no extra import is needed.
 
 ---
 

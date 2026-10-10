@@ -1,4 +1,6 @@
--- Reads and writes text through standard streams and open files.
+-- Reads and writes values through standard streams and open files.
+use "codec" function encode[T](value T) giving failable text.
+use "text" function release(content text) giving failable nothing.
 public define stream as opaque.
 public use "io" function input giving pointer to stream.
 public use "io" function output giving pointer to stream.
@@ -9,6 +11,12 @@ public use "io" function write(stream pointer to stream, content text) giving fa
 public use "io" function close(stream pointer to stream) giving failable nothing.
 public function display(content text) giving nothing {
   write(output, content) fallback nothing.
+}
+-- Displays codec-supported values using their standard text representation.
+public function display[T](content T) giving nothing {
+  constant rendered is encode[T](content) fallback "<unprintable>".
+  after { release(rendered) fallback nothing. }
+  write(output, rendered) fallback nothing.
 }
 public function diagnose(content text) giving nothing {
   write(report, content) fallback nothing.

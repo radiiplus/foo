@@ -12,5 +12,6 @@ createDir(empty / "test")
 writeFile(empty / "project.json", """{"source":"src"}""")
 writeFile(empty / "src" / "main.iv", "display \"ready\".\n")
 doAssert main(@["test", empty, "--backend", "c"]) == 1
+doAssert main(@["check", empty / "src" / "main.iv", "--compact"]) == 0
 removeDir(empty)
 echo "cli main parity: ok"

@@ -462,7 +462,7 @@
 .docs-code figcaption i { width: 5px; height: 5px; border-radius: 50%; background: #60d5df; box-shadow: 0 0 9px #60d5df66; }
 .docs-code figcaption button { display: grid; width: 26px; height: 26px; place-items: center; border: 0; border-radius: 4px; background: transparent; color: #666; cursor: pointer; }
 .docs-code figcaption button:hover { background: #1c1c1c; color: #ddd; }
-.docs-code pre { margin: 0; overflow-x: auto; padding: 18px 20px 20px; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.7; tab-size: 2; }
+.docs-code pre { margin: 0; overflow-x: auto; padding: 18px 20px 20px; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.7; tab-size: 2; white-space: pre-wrap; overflow-wrap: anywhere; }
 .docs-code code { font-family: inherit; }
 .token.doc-comment { color: #8fbcbb; }
 .token.comment { color: #8a9099; font-style: italic; }
@@ -627,7 +627,7 @@
 .registry-reference p { margin: 0; color: var(--registry-muted); font-size: 12px; line-height: 1.7; }
 .registry-reference-label { display: flex; align-items: center; justify-content: space-between; }
 .registry-reference-label h3 { margin: 0; }
-.registry-reference pre { max-width: 100%; max-height: 330px; margin: 0; overflow: auto; border: 0; border-radius: 7px; background: #171b1b; padding: 16px; color: #d9e5e1; font: 11px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size: 2; }
+.registry-reference pre { max-width: 100%; max-height: 330px; margin: 0; overflow: auto; border: 0; border-radius: 7px; background: #171b1b; padding: 16px; color: #d9e5e1; font: 11px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size: 2; white-space: pre-wrap; overflow-wrap: anywhere; }
 .registry-reference .registry-source-path { color: var(--registry-warm); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .registry-source-excerpt { margin-top: 18px; }
 .registry-source-excerpt h4 { margin: 0 0 9px; color: var(--registry-quiet); font-size: 10px; font-weight: 600; }
@@ -1168,7 +1168,6 @@
 .registry-source-popup > header button:hover { background: #263839; color: var(--registry-text); }
 .registry-source-popup-code { min-height: 0; flex: 1 1 auto; overflow: auto; }
 .registry-source-popup-code .docs-code { min-height: 100%; margin: 0; border: 0; border-radius: 0; box-shadow: none; }
-.registry-source-popup-code .docs-code pre { min-width: max-content; }
 .registry-source-excerpt .docs-code { margin: 7px 0 0; border: 0; box-shadow: none; }
 .registry-source-excerpt .docs-code pre { max-height: 250px; }
 .registry-open-source { display: inline-flex; align-items: center; gap: 7px; margin-top: 11px; border: 0; background: transparent; padding: 0; color: var(--registry-accent); font-size: 11px; cursor: pointer; }

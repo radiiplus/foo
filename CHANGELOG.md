@@ -5,6 +5,24 @@ changes are recorded here.
 
 ## Unreleased
 
+## 0.8.1 - 2026-10-10
+
+### Language And Standard Library
+
+- Accept codec-supported values in bare and qualified `display` calls. Text
+  remains verbatim; integers, decimals, booleans, and supported structured
+  values use the standard codec representation without an explicit import.
+- Clarify the two-file module example and document console conversion,
+  ownership, and the lack of an implicit newline.
+
+### Tooling And Registry
+
+- Add compact single-line progress and show an estimated completion time only
+  when enough consistent timing samples exist; retain completed step counts
+  while timings are unknown.
+- Keep source excerpts readable when long lines wrap in the registry UI, and
+  refresh the standard-library catalog for the new `io.display` overload.
+
 ## 0.8.0 - 2026-10-09
 
 ### Packages

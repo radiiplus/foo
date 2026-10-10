@@ -157,9 +157,13 @@ cache hit recreates a missing published product without recompiling it.
 
 FOO uses one operation interface for builds, runs, package changes, publishing,
 and toolchain setup. It shows real source files and stages, an activity flow,
-elapsed time, and a final summary. The activity blocks show that work is moving;
-only a finished operation displays `100%`. Add `--explain` when paths, digests,
-registry endpoints, and other diagnostic context are useful.
+elapsed time, completed step counts, and a final summary. A percentage and
+approximate time remaining appear only after at least three consistent timing
+samples exist for every pending stage. Otherwise the display shows `?%` rather
+than predicting a finish time from default guesses. Only a finished operation
+displays `100%`. Add `--explain` when paths, digests, registry endpoints, and
+other diagnostic context are useful. Add `--compact` for a single updating
+terminal line instead of the detailed stage view.
 
 Build operations also show the active build path and the number of jobs
 available. Ordinary development builds use the fast path and leave CPU and

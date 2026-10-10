@@ -241,18 +241,19 @@ foo check
 foo build --backend zig
 foo build --backend c
 foo run --explain
+foo build --compact
 ```
 
 The default output shows meaningful stages, job count, cache reuse, elapsed
 time, and the selected fast or compatibility path. `--explain` adds diagnostic
 detail without dumping every backend command.
-The progress bar counts completed source checks, product builds, test runs, and
-benchmark samples according to the selected command. Its ETA uses the planned
-work and adjusts as jobs finish; it is an estimate, especially for the first
-long compilation. A completed command reaches 100%, while a failed command
-keeps the progress reached before the failure. `--json` includes numeric
-progress counts, percentage, and estimated remaining seconds in each progress
-event.
+The progress display counts completed source checks, product builds, test runs,
+and benchmark samples according to the selected command. It shows `?%` and
+elapsed time until enough consistent timing history exists to estimate a
+percentage and approximate time remaining. A completed command reaches 100%.
+`--compact` shows the same status on one updating terminal line. `--json`
+includes progress counts, percentage, timing availability, and estimated
+remaining seconds in each progress event.
 Completed noncached work updates per-project timing estimates in
 `.artifacts/progress.json`; cache hits do not replace cold-build timings.
 

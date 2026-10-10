@@ -1,13 +1,13 @@
 {
   "schema": "foo.standard-catalog/v1",
-  "revision": "61adbbaba1ea2b878a52f4d6654bb1415b4941ae102018411a534de8dd284376",
+  "revision": "96ecc5ca5d4e8dc431fed9aebf8b46c87e490ec3a7c7e32cad9815063284edd6",
   "count": 72,
   "entries": [
     {
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/adapter",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Snapshots assigned network interface addresses.",
       "category": "standard library",
       "tags": [
@@ -20,13 +20,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "address",
         "close",
@@ -41,8 +41,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -52,7 +52,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/arch",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares guarded CPU intrinsics.",
       "category": "standard library",
       "tags": [
@@ -65,13 +65,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "combine",
         "count",
@@ -86,8 +86,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -97,7 +97,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/atomic",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares atomic values and memory ordering operations.",
       "category": "standard library",
       "tags": [
@@ -110,13 +110,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "add",
         "atom",
@@ -141,8 +141,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -152,7 +152,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/base64",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Canonical unpadded URL-safe Base64 encoding.",
       "category": "standard library",
       "tags": [
@@ -165,13 +165,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "decode",
         "encode"
@@ -179,8 +179,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -190,7 +190,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/binary",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Portable unsigned integer encodings over owned byte sequences. Results from encode and fixed must be released with sequence.release[byte].",
       "category": "standard library",
       "tags": [
@@ -203,13 +203,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "decode",
         "decoded",
@@ -220,8 +220,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -231,7 +231,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/bitmap",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Persistent compact bitmaps. Each word stores 64 bits.",
       "category": "standard library",
       "tags": [
@@ -244,13 +244,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "bitmap",
         "count",
@@ -272,8 +272,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -283,7 +283,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/blake",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "BLAKE3 digests arbitrary bytes and supports incremental input.",
       "category": "standard library",
       "tags": [
@@ -296,13 +296,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "begin",
         "close",
@@ -316,8 +316,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -327,7 +327,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/block",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Length-prefixed payloads with a trailing little-endian CRC32C checksum. CRC32C detects accidental corruption; it does not authenticate a block.",
       "category": "standard library",
       "tags": [
@@ -340,13 +340,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "pack",
         "packet",
@@ -356,8 +356,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -367,7 +367,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/bloom",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Owned bit-packed Bloom filter for binary keys. False positives are possible. The hash is noncryptographic; do not use this for hostile-input admission.",
       "category": "standard library",
       "tags": [
@@ -380,13 +380,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "add",
         "bits",
@@ -399,8 +399,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -410,7 +410,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/buffer",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares owned byte buffers.",
       "category": "standard library",
       "tags": [
@@ -423,7 +423,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -438,8 +438,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -449,7 +449,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/calendar",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Provides validated Gregorian dates and fixed UTC offsets.",
       "category": "standard library",
       "tags": [
@@ -462,13 +462,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "civil",
         "date",
@@ -482,8 +482,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -493,7 +493,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/checksum",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Computes CRC32C for corruption detection; it is not a cryptographic digest.",
       "category": "standard library",
       "tags": [
@@ -506,13 +506,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "begin",
         "close",
@@ -524,8 +524,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -535,7 +535,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/codec",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Defines explicit, reusable conversions between a value and text.",
       "category": "standard library",
       "tags": [
@@ -548,13 +548,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "codec",
         "decode",
@@ -565,8 +565,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -576,7 +576,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/compress",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares zlib and gzip compression.",
       "category": "standard library",
       "tags": [
@@ -589,13 +589,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "decode",
         "encode",
@@ -607,8 +607,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -618,7 +618,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/contract",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Checks application invariants with the runtime assertion mechanism.",
       "category": "standard library",
       "tags": [
@@ -631,7 +631,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -646,8 +646,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -657,7 +657,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/cpu",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Runs byte arithmetic with runtime CPU feature selection. Add wraps each byte modulo 256. Output may be either input exactly, but partial overlap is rejected. All three slices must have the same length.",
       "category": "standard library",
       "tags": [
@@ -670,21 +670,21 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "add"
       ],
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -694,7 +694,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/crypto",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares cryptography and secure random operations.",
       "category": "standard library",
       "tags": [
@@ -707,13 +707,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "absorb",
         "auth",
@@ -753,8 +753,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -764,7 +764,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/dns",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Resolves names and queries DNS record sets.",
       "category": "standard library",
       "tags": [
@@ -777,13 +777,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "answer",
         "close",
@@ -797,8 +797,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -808,7 +808,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/dylib",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Loads a native shared library and invokes symbols with an explicit C ABI. The caller must know the exported signature; the operating system cannot verify it.",
       "category": "standard library",
       "tags": [
@@ -821,13 +821,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "call",
         "close",
@@ -840,8 +840,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -851,7 +851,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/file",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Opens files, transfers their contents, creates directories, and joins paths.",
       "category": "standard library",
       "tags": [
@@ -864,13 +864,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "accessed",
         "block",
@@ -929,8 +929,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -940,7 +940,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/frame",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Bounded length-prefixed binary values. The prefix is canonical unsigned LEB128.",
       "category": "standard library",
       "tags": [
@@ -953,13 +953,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "pack",
         "packet",
@@ -969,8 +969,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -980,7 +980,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/gpu",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Runs checked FOO compute kernels through Vulkan.",
       "category": "standard library",
       "tags": [
@@ -993,13 +993,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "atomic",
         "available",
@@ -1042,8 +1042,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1053,7 +1053,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/heap",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Persistent minimum-priority heap. Updates copy the sequence before reordering.",
       "category": "standard library",
       "tags": [
@@ -1066,13 +1066,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "build",
         "create",
@@ -1091,8 +1091,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1102,7 +1102,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/hex",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Canonical lowercase hexadecimal encoding.",
       "category": "standard library",
       "tags": [
@@ -1115,13 +1115,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "decode",
         "encode"
@@ -1129,8 +1129,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1140,7 +1140,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/http",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares HTTP clients and servers.",
       "category": "standard library",
       "tags": [
@@ -1153,13 +1153,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "accept",
         "attach",
@@ -1190,8 +1190,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1201,8 +1201,8 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/io",
-      "version": "0.8.0",
-      "description": "Reads and writes text through standard streams and open files.",
+      "version": "0.8.1",
+      "description": "Reads and writes values through standard streams and open files.",
       "category": "standard library",
       "tags": [
         "io",
@@ -1214,13 +1214,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "close",
         "diagnose",
@@ -1236,8 +1236,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1247,7 +1247,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/ipc",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Named file-backed shared regions for local processes.",
       "category": "standard library",
       "tags": [
@@ -1260,13 +1260,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "close",
         "create",
@@ -1281,8 +1281,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1292,7 +1292,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/issue",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "A structured error description. Text fields borrow their source storage.",
       "category": "standard library",
       "tags": [
@@ -1305,13 +1305,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "begin",
         "create",
@@ -1326,8 +1326,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1337,7 +1337,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/iterator",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Defines explicit, state-carrying iteration for user-defined sources.",
       "category": "standard library",
       "tags": [
@@ -1350,13 +1350,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "create",
         "cursor",
@@ -1369,8 +1369,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1380,7 +1380,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/json",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares JSON trees and streaming tokens.",
       "category": "standard library",
       "tags": [
@@ -1393,13 +1393,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "append",
         "close",
@@ -1422,8 +1422,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1433,7 +1433,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/limit",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "POSIX process limits. Unsupported kinds or targets report missing values. Kinds: \"files\", \"address\", \"cpu\", and \"stack\".",
       "category": "standard library",
       "tags": [
@@ -1446,13 +1446,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "available",
         "hard",
@@ -1462,8 +1462,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1473,7 +1473,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/list",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares growable lists of borrowed byte pointers.",
       "category": "standard library",
       "tags": [
@@ -1486,13 +1486,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "close",
         "create",
@@ -1504,8 +1504,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1515,7 +1515,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/log",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Writes application messages and errors to the diagnostic stream.",
       "category": "standard library",
       "tags": [
@@ -1528,7 +1528,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1544,8 +1544,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1555,7 +1555,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/map",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Stores typed key/value pairs with equality-based lookup.",
       "category": "standard library",
       "tags": [
@@ -1568,13 +1568,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "contains",
         "create",
@@ -1591,8 +1591,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1602,7 +1602,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/matrix",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Dense row-major decimal matrices with explicit ownership.",
       "category": "standard library",
       "tags": [
@@ -1615,13 +1615,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "add",
         "bias",
@@ -1638,8 +1638,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1649,7 +1649,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/memory",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares owned allocations and grouped arena lifetimes.",
       "category": "standard library",
       "tags": [
@@ -1662,13 +1662,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "aligned",
         "allocate",
@@ -1691,8 +1691,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1702,7 +1702,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/metric",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Owned, synchronized instruments. Bounds must be strictly ascending.",
       "category": "standard library",
       "tags": [
@@ -1715,13 +1715,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "add",
         "bucket",
@@ -1739,8 +1739,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1750,7 +1750,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/net",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Opens TCP connections and UDP sockets with explicit resource lifetimes.",
       "category": "standard library",
       "tags": [
@@ -1763,13 +1763,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "accept",
         "address",
@@ -1849,8 +1849,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1860,7 +1860,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/packing",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Canonical, independently owned byte-oriented packing formats.",
       "category": "standard library",
       "tags": [
@@ -1873,13 +1873,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "bits",
         "deltas",
@@ -1891,8 +1891,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1902,7 +1902,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/platform",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Runtime properties of the host ABI and virtual-memory page layout.",
       "category": "standard library",
       "tags": [
@@ -1915,13 +1915,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "alignment",
         "little",
@@ -1932,8 +1932,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1943,7 +1943,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/poll",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Polls owned TCP and UDP sockets and one-shot monotonic deadlines.",
       "category": "standard library",
       "tags": [
@@ -1956,13 +1956,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "child",
         "close",
@@ -1977,8 +1977,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1988,7 +1988,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/process",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Executes programs, runs shell commands, and reads arguments and environment values.",
       "category": "standard library",
       "tags": [
@@ -2001,13 +2001,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "abort",
         "active",
@@ -2036,8 +2036,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2047,7 +2047,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/queue",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Stores typed values in first-in, first-out order.",
       "category": "standard library",
       "tags": [
@@ -2060,13 +2060,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "append",
         "create",
@@ -2079,8 +2079,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2090,7 +2090,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/radix",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Stable least-significant-byte radix ordering for unsigned 64-bit values.",
       "category": "standard library",
       "tags": [
@@ -2103,13 +2103,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "signed",
         "sort"
@@ -2117,8 +2117,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2128,7 +2128,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/resource",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Reports live native resources owned by the current process.",
       "category": "standard library",
       "tags": [
@@ -2141,13 +2141,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "files",
         "heap",
@@ -2159,8 +2159,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2170,7 +2170,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/ring",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Owned bounded byte ring. Calls may be shared across threads; synchronize close.",
       "category": "standard library",
       "tags": [
@@ -2183,13 +2183,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "capacity",
         "close",
@@ -2206,8 +2206,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2217,7 +2217,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/route",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Snapshots routes; a blank gateway identifies an on-link route.",
       "category": "standard library",
       "tags": [
@@ -2230,13 +2230,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "close",
         "count",
@@ -2252,8 +2252,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2263,7 +2263,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/sequence",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Builds typed sequences and applies ordering, searching, and transformations.",
       "category": "standard library",
       "tags": [
@@ -2276,13 +2276,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "all",
         "any",
@@ -2319,8 +2319,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2330,7 +2330,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/set",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Keeps each typed value once using equality-based membership.",
       "category": "standard library",
       "tags": [
@@ -2343,13 +2343,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "contains",
         "create",
@@ -2367,8 +2367,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2378,7 +2378,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/simd",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "FOO standard library module simd.",
       "category": "standard library",
       "tags": [
@@ -2391,13 +2391,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "assign",
         "load",
@@ -2411,8 +2411,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2422,7 +2422,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/stack",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Stores typed values in last-in, first-out order.",
       "category": "standard library",
       "tags": [
@@ -2435,13 +2435,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "create",
         "length",
@@ -2454,8 +2454,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2465,7 +2465,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/state",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Applies application-defined transitions without adding state-machine syntax.",
       "category": "standard library",
       "tags": [
@@ -2478,13 +2478,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "create",
         "machine",
@@ -2493,8 +2493,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2504,7 +2504,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/stream",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares length-aware input, output and diagnostic streams.",
       "category": "standard library",
       "tags": [
@@ -2517,13 +2517,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "close",
         "input",
@@ -2537,8 +2537,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2548,7 +2548,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/system",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares host system information.",
       "category": "standard library",
       "tags": [
@@ -2561,7 +2561,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2576,8 +2576,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2587,7 +2587,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/table",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Mutable open-addressed maps for hot text-keyed lookup paths. Values are shallow-copied into backend-owned storage.",
       "category": "standard library",
       "tags": [
@@ -2600,13 +2600,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "close",
         "contains",
@@ -2620,8 +2620,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2631,7 +2631,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/task",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares task execution and networking.",
       "category": "standard library",
       "tags": [
@@ -2644,13 +2644,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "affinity",
         "backend",
@@ -2686,8 +2686,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2697,7 +2697,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/tensor",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Dense row-major decimal tensors with explicit ownership.",
       "category": "standard library",
       "tags": [
@@ -2710,13 +2710,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "add",
         "broadcast",
@@ -2738,8 +2738,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2749,7 +2749,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/testing",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares executable test assertions.",
       "category": "standard library",
       "tags": [
@@ -2762,13 +2762,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "clear",
         "every",
@@ -2785,8 +2785,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2796,7 +2796,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/text",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Combines, trims, and splits text using byte offsets and ASCII whitespace.",
       "category": "standard library",
       "tags": [
@@ -2809,13 +2809,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "concatenate",
         "contains",
@@ -2831,8 +2831,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2842,7 +2842,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/thread",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Runs function-valued tasks and coordinates shared work with locks and conditions.",
       "category": "standard library",
       "tags": [
@@ -2855,13 +2855,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "close",
         "condition",
@@ -2879,8 +2879,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2890,7 +2890,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/time",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Measures elapsed time using a monotonic nanosecond clock.",
       "category": "standard library",
       "tags": [
@@ -2903,13 +2903,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "between",
         "current",
@@ -2930,8 +2930,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2941,7 +2941,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/timer",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Owns a cancellable one-shot timer driven by the monotonic clock.",
       "category": "standard library",
       "tags": [
@@ -2954,13 +2954,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "alarm",
         "arm",
@@ -2972,8 +2972,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2983,7 +2983,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/tls",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "TLS client streams over TCP. A verified handshake completes before connect returns.",
       "category": "standard library",
       "tags": [
@@ -2996,13 +2996,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "available",
         "close",
@@ -3015,8 +3015,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3026,7 +3026,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/topology",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Queries logical processors and temporarily pins the calling thread.",
       "category": "standard library",
       "tags": [
@@ -3039,13 +3039,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "allowed",
         "count",
@@ -3060,8 +3060,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3071,7 +3071,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/trace",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Nested spans on one thread; finish in reverse start order.",
       "category": "standard library",
       "tags": [
@@ -3084,13 +3084,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "begin",
         "close",
@@ -3105,8 +3105,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3116,7 +3116,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/transaction",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Coordinates one-process transactions with rollback on propagated failure.",
       "category": "standard library",
       "tags": [
@@ -3129,13 +3129,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "execute",
         "participant"
@@ -3143,8 +3143,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3154,7 +3154,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/tree",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Persistent packed ordered search tree. Midpoint search is logarithmic; immutable insertion and removal copy storage in linear time.",
       "category": "standard library",
       "tags": [
@@ -3167,13 +3167,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "contains",
         "create",
@@ -3190,8 +3190,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3201,7 +3201,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/unicode",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares Unicode validation and conversion.",
       "category": "standard library",
       "tags": [
@@ -3214,13 +3214,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "cursor",
         "narrow",
@@ -3234,8 +3234,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3245,7 +3245,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/units",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Keeps values from unrelated physical dimensions in distinct generic types.",
       "category": "standard library",
       "tags": [
@@ -3258,13 +3258,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "add",
         "celsius",
@@ -3281,8 +3281,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3292,7 +3292,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/virtual",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Page-backed address space. Operations cover the entire reserved region.",
       "category": "standard library",
       "tags": [
@@ -3305,13 +3305,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "commit",
         "decommit",
@@ -3326,8 +3326,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3337,7 +3337,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/vulkan",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Executes SPIR-V compute shaders on an available Vulkan device.",
       "category": "standard library",
       "tags": [
@@ -3350,13 +3350,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "available",
         "bind",
@@ -3383,8 +3383,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3394,7 +3394,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/zigzag",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Signed 64-bit ZigZag integers use canonical unsigned LEB128 on the wire.",
       "category": "standard library",
       "tags": [
@@ -3407,13 +3407,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "exports": [
         "decode",
         "decoded",
@@ -3422,8 +3422,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.0",
-          "updated": "2026-10-09",
+          "version": "0.8.1",
+          "updated": "2026-10-10",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3435,7 +3435,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/adapter",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Snapshots assigned network interface addresses.",
       "category": "standard library",
       "tags": [
@@ -3448,13 +3448,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use adapter.",
       "dependencies": [],
       "readme": [
@@ -3542,7 +3542,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/arch",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares guarded CPU intrinsics.",
       "category": "standard library",
       "tags": [
@@ -3555,13 +3555,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use arch.",
       "dependencies": [],
       "readme": [
@@ -3649,7 +3649,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/atomic",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares atomic values and memory ordering operations.",
       "category": "standard library",
       "tags": [
@@ -3662,13 +3662,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use atomic.",
       "dependencies": [],
       "readme": [
@@ -3816,7 +3816,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/base64",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Canonical unpadded URL-safe Base64 encoding.",
       "category": "standard library",
       "tags": [
@@ -3829,13 +3829,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use base64.",
       "dependencies": [],
       "readme": [
@@ -3881,7 +3881,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/binary",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Portable unsigned integer encodings over owned byte sequences. Results from encode and fixed must be released with sequence.release[byte].",
       "category": "standard library",
       "tags": [
@@ -3894,13 +3894,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use binary.",
       "dependencies": [],
       "readme": [
@@ -3964,7 +3964,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/bitmap",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Persistent compact bitmaps. Each word stores 64 bits.",
       "category": "standard library",
       "tags": [
@@ -3977,13 +3977,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use bitmap.",
       "dependencies": [],
       "readme": [
@@ -4113,7 +4113,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/blake",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "BLAKE3 digests arbitrary bytes and supports incremental input.",
       "category": "standard library",
       "tags": [
@@ -4126,13 +4126,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use blake.",
       "dependencies": [],
       "readme": [
@@ -4214,7 +4214,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/block",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Length-prefixed payloads with a trailing little-endian CRC32C checksum. CRC32C detects accidental corruption; it does not authenticate a block.",
       "category": "standard library",
       "tags": [
@@ -4227,13 +4227,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use block.",
       "dependencies": [],
       "readme": [
@@ -4291,7 +4291,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/bloom",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Owned bit-packed Bloom filter for binary keys. False positives are possible. The hash is noncryptographic; do not use this for hostile-input admission.",
       "category": "standard library",
       "tags": [
@@ -4304,13 +4304,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use bloom.",
       "dependencies": [],
       "readme": [
@@ -4386,7 +4386,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/buffer",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares owned byte buffers.",
       "category": "standard library",
       "tags": [
@@ -4399,7 +4399,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4457,7 +4457,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/calendar",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Provides validated Gregorian dates and fixed UTC offsets.",
       "category": "standard library",
       "tags": [
@@ -4470,13 +4470,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use calendar.",
       "dependencies": [],
       "readme": [
@@ -4558,7 +4558,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/checksum",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Computes CRC32C for corruption detection; it is not a cryptographic digest.",
       "category": "standard library",
       "tags": [
@@ -4571,13 +4571,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use checksum.",
       "dependencies": [],
       "readme": [
@@ -4647,7 +4647,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/codec",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Defines explicit, reusable conversions between a value and text.",
       "category": "standard library",
       "tags": [
@@ -4660,13 +4660,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use codec.",
       "dependencies": [],
       "readme": [
@@ -4730,7 +4730,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/compress",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares zlib and gzip compression.",
       "category": "standard library",
       "tags": [
@@ -4743,13 +4743,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use compress.",
       "dependencies": [],
       "readme": [
@@ -4819,7 +4819,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/contract",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Checks application invariants with the runtime assertion mechanism.",
       "category": "standard library",
       "tags": [
@@ -4832,7 +4832,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4890,7 +4890,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/cpu",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Runs byte arithmetic with runtime CPU feature selection. Add wraps each byte modulo 256. Output may be either input exactly, but partial overlap is rejected. All three slices must have the same length.",
       "category": "standard library",
       "tags": [
@@ -4903,13 +4903,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use cpu.",
       "dependencies": [],
       "readme": [
@@ -4949,7 +4949,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/crypto",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares cryptography and secure random operations.",
       "category": "standard library",
       "tags": [
@@ -4962,13 +4962,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use crypto.",
       "dependencies": [],
       "readme": [
@@ -5206,7 +5206,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/dns",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Resolves names and queries DNS record sets.",
       "category": "standard library",
       "tags": [
@@ -5219,13 +5219,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use dns.",
       "dependencies": [],
       "readme": [
@@ -5307,7 +5307,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/dylib",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Loads a native shared library and invokes symbols with an explicit C ABI. The caller must know the exported signature; the operating system cannot verify it.",
       "category": "standard library",
       "tags": [
@@ -5320,13 +5320,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use dylib.",
       "dependencies": [],
       "readme": [
@@ -5402,7 +5402,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/file",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Opens files, transfers their contents, creates directories, and joins paths.",
       "category": "standard library",
       "tags": [
@@ -5415,13 +5415,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use file.",
       "dependencies": [],
       "readme": [
@@ -5779,7 +5779,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/frame",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Bounded length-prefixed binary values. The prefix is canonical unsigned LEB128.",
       "category": "standard library",
       "tags": [
@@ -5792,13 +5792,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use frame.",
       "dependencies": [],
       "readme": [
@@ -5856,7 +5856,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/gpu",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Runs checked FOO compute kernels through Vulkan.",
       "category": "standard library",
       "tags": [
@@ -5869,13 +5869,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use gpu.",
       "dependencies": [],
       "readme": [
@@ -6131,7 +6131,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/heap",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Persistent minimum-priority heap. Updates copy the sequence before reordering.",
       "category": "standard library",
       "tags": [
@@ -6144,13 +6144,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use heap.",
       "dependencies": [],
       "readme": [
@@ -6262,7 +6262,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/hex",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Canonical lowercase hexadecimal encoding.",
       "category": "standard library",
       "tags": [
@@ -6275,13 +6275,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use hex.",
       "dependencies": [],
       "readme": [
@@ -6327,7 +6327,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/http",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares HTTP clients and servers.",
       "category": "standard library",
       "tags": [
@@ -6340,13 +6340,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use http.",
       "dependencies": [],
       "readme": [
@@ -6530,8 +6530,8 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/io",
-      "version": "0.8.0",
-      "description": "Reads and writes text through standard streams and open files.",
+      "version": "0.8.1",
+      "description": "Reads and writes values through standard streams and open files.",
       "category": "standard library",
       "tags": [
         "io",
@@ -6543,26 +6543,26 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use io.",
       "dependencies": [],
       "readme": [
-        "Reads and writes text through standard streams and open files.",
+        "Reads and writes values through standard streams and open files.",
         "Import this module with use io."
       ],
       "source": {
         "format": "foo.source/v1",
-        "digest": "8c216e92b62db14043951414b523e99f967c0926240877d04d2dfff40e45bfd7",
+        "digest": "c81fcb68edcf93a56cc7e4e2c6d602c6b0ff4627c9e693a4f3b5fb944e29c94d",
         "files": [
           {
             "path": "lib/io.iv",
-            "content": "-- Reads and writes text through standard streams and open files.\npublic define stream as opaque.\npublic use \"io\" function input giving pointer to stream.\npublic use \"io\" function output giving pointer to stream.\npublic use \"io\" function report giving pointer to stream.\npublic use \"io\" function read(stream pointer to stream, size unsigned) giving failable text.\npublic use \"io\" function line(stream pointer to stream) giving failable text.\npublic use \"io\" function write(stream pointer to stream, content text) giving failable nothing.\npublic use \"io\" function close(stream pointer to stream) giving failable nothing.\npublic function display(content text) giving nothing {\n  write(output, content) fallback nothing.\n}\npublic function diagnose(content text) giving nothing {\n  write(report, content) fallback nothing.\n}\n"
+            "content": "-- Reads and writes values through standard streams and open files.\nuse \"codec\" function encode[T](value T) giving failable text.\nuse \"text\" function release(content text) giving failable nothing.\npublic define stream as opaque.\npublic use \"io\" function input giving pointer to stream.\npublic use \"io\" function output giving pointer to stream.\npublic use \"io\" function report giving pointer to stream.\npublic use \"io\" function read(stream pointer to stream, size unsigned) giving failable text.\npublic use \"io\" function line(stream pointer to stream) giving failable text.\npublic use \"io\" function write(stream pointer to stream, content text) giving failable nothing.\npublic use \"io\" function close(stream pointer to stream) giving failable nothing.\npublic function display(content text) giving nothing {\n  write(output, content) fallback nothing.\n}\n-- Displays codec-supported values using their standard text representation.\npublic function display[T](content T) giving nothing {\n  constant rendered is encode[T](content) fallback \"<unprintable>\".\n  after { release(rendered) fallback nothing. }\n  write(output, rendered) fallback nothing.\n}\npublic function diagnose(content text) giving nothing {\n  write(report, content) fallback nothing.\n}\n"
           }
         ]
       },
@@ -6572,13 +6572,13 @@
           {
             "name": "lib/io",
             "path": "lib/io.iv",
-            "summary": "Reads and writes text through standard streams and open files.",
+            "summary": "Reads and writes values through standard streams and open files.",
             "items": [
               {
                 "kind": "type",
                 "name": "stream",
                 "declaration": "public define stream as opaque.",
-                "documentation": "Reads and writes text through standard streams and open files."
+                "documentation": ""
               },
               {
                 "kind": "function",
@@ -6630,6 +6630,12 @@
               },
               {
                 "kind": "function",
+                "name": "display",
+                "declaration": "public function display[T](content T) giving nothing.",
+                "documentation": "Displays codec-supported values using their standard text representation."
+              },
+              {
+                "kind": "function",
                 "name": "diagnose",
                 "declaration": "public function diagnose(content text) giving nothing.",
                 "documentation": ""
@@ -6643,7 +6649,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/ipc",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Named file-backed shared regions for local processes.",
       "category": "standard library",
       "tags": [
@@ -6656,13 +6662,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use ipc.",
       "dependencies": [],
       "readme": [
@@ -6750,7 +6756,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/issue",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "A structured error description. Text fields borrow their source storage.",
       "category": "standard library",
       "tags": [
@@ -6763,13 +6769,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use issue.",
       "dependencies": [],
       "readme": [
@@ -6857,7 +6863,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/iterator",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Defines explicit, state-carrying iteration for user-defined sources.",
       "category": "standard library",
       "tags": [
@@ -6870,13 +6876,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use iterator.",
       "dependencies": [],
       "readme": [
@@ -6952,7 +6958,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/json",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares JSON trees and streaming tokens.",
       "category": "standard library",
       "tags": [
@@ -6965,13 +6971,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use json.",
       "dependencies": [],
       "readme": [
@@ -7107,7 +7113,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/limit",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "POSIX process limits. Unsupported kinds or targets report missing values. Kinds: \"files\", \"address\", \"cpu\", and \"stack\".",
       "category": "standard library",
       "tags": [
@@ -7120,13 +7126,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use limit.",
       "dependencies": [],
       "readme": [
@@ -7184,7 +7190,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/list",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares growable lists of borrowed byte pointers.",
       "category": "standard library",
       "tags": [
@@ -7197,13 +7203,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use list.",
       "dependencies": [],
       "readme": [
@@ -7273,7 +7279,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/log",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Writes application messages and errors to the diagnostic stream.",
       "category": "standard library",
       "tags": [
@@ -7286,7 +7292,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -7350,7 +7356,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/map",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Stores typed key/value pairs with equality-based lookup.",
       "category": "standard library",
       "tags": [
@@ -7363,13 +7369,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use map.",
       "dependencies": [],
       "readme": [
@@ -7469,7 +7475,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/matrix",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Dense row-major decimal matrices with explicit ownership.",
       "category": "standard library",
       "tags": [
@@ -7482,13 +7488,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use matrix.",
       "dependencies": [],
       "readme": [
@@ -7588,7 +7594,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/memory",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares owned allocations and grouped arena lifetimes.",
       "category": "standard library",
       "tags": [
@@ -7601,13 +7607,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use memory.",
       "dependencies": [],
       "readme": [
@@ -7743,7 +7749,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/metric",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Owned, synchronized instruments. Bounds must be strictly ascending.",
       "category": "standard library",
       "tags": [
@@ -7756,13 +7762,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use metric.",
       "dependencies": [],
       "readme": [
@@ -7868,7 +7874,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/net",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Opens TCP connections and UDP sockets with explicit resource lifetimes.",
       "category": "standard library",
       "tags": [
@@ -7881,13 +7887,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use net.",
       "dependencies": [],
       "readme": [
@@ -8365,7 +8371,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/packing",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Canonical, independently owned byte-oriented packing formats.",
       "category": "standard library",
       "tags": [
@@ -8378,13 +8384,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use packing.",
       "dependencies": [],
       "readme": [
@@ -8454,7 +8460,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/platform",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Runtime properties of the host ABI and virtual-memory page layout.",
       "category": "standard library",
       "tags": [
@@ -8467,13 +8473,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use platform.",
       "dependencies": [],
       "readme": [
@@ -8537,7 +8543,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/poll",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Polls owned TCP and UDP sockets and one-shot monotonic deadlines.",
       "category": "standard library",
       "tags": [
@@ -8550,13 +8556,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use poll.",
       "dependencies": [],
       "readme": [
@@ -8644,7 +8650,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/process",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Executes programs, runs shell commands, and reads arguments and environment values.",
       "category": "standard library",
       "tags": [
@@ -8657,13 +8663,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use process.",
       "dependencies": [],
       "readme": [
@@ -8835,7 +8841,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/queue",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Stores typed values in first-in, first-out order.",
       "category": "standard library",
       "tags": [
@@ -8848,13 +8854,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use queue.",
       "dependencies": [],
       "readme": [
@@ -8930,7 +8936,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/radix",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Stable least-significant-byte radix ordering for unsigned 64-bit values.",
       "category": "standard library",
       "tags": [
@@ -8943,13 +8949,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use radix.",
       "dependencies": [],
       "readme": [
@@ -8995,7 +9001,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/resource",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Reports live native resources owned by the current process.",
       "category": "standard library",
       "tags": [
@@ -9008,13 +9014,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use resource.",
       "dependencies": [],
       "readme": [
@@ -9084,7 +9090,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/ring",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Owned bounded byte ring. Calls may be shared across threads; synchronize close.",
       "category": "standard library",
       "tags": [
@@ -9097,13 +9103,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use ring.",
       "dependencies": [],
       "readme": [
@@ -9203,7 +9209,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/route",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Snapshots routes; a blank gateway identifies an on-link route.",
       "category": "standard library",
       "tags": [
@@ -9216,13 +9222,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use route.",
       "dependencies": [],
       "readme": [
@@ -9316,7 +9322,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/sequence",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Builds typed sequences and applies ordering, searching, and transformations.",
       "category": "standard library",
       "tags": [
@@ -9329,13 +9335,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use sequence.",
       "dependencies": [],
       "readme": [
@@ -9555,7 +9561,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/set",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Keeps each typed value once using equality-based membership.",
       "category": "standard library",
       "tags": [
@@ -9568,13 +9574,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use set.",
       "dependencies": [],
       "readme": [
@@ -9680,7 +9686,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/simd",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "FOO standard library module simd.",
       "category": "standard library",
       "tags": [
@@ -9693,13 +9699,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use simd.",
       "dependencies": [],
       "readme": [
@@ -9781,7 +9787,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/stack",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Stores typed values in last-in, first-out order.",
       "category": "standard library",
       "tags": [
@@ -9794,13 +9800,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use stack.",
       "dependencies": [],
       "readme": [
@@ -9876,7 +9882,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/state",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Applies application-defined transitions without adding state-machine syntax.",
       "category": "standard library",
       "tags": [
@@ -9889,13 +9895,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use state.",
       "dependencies": [],
       "readme": [
@@ -9947,7 +9953,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/stream",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares length-aware input, output and diagnostic streams.",
       "category": "standard library",
       "tags": [
@@ -9960,13 +9966,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use stream.",
       "dependencies": [],
       "readme": [
@@ -10048,7 +10054,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/system",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares host system information.",
       "category": "standard library",
       "tags": [
@@ -10061,7 +10067,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -10119,7 +10125,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/table",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Mutable open-addressed maps for hot text-keyed lookup paths. Values are shallow-copied into backend-owned storage.",
       "category": "standard library",
       "tags": [
@@ -10132,13 +10138,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use table.",
       "dependencies": [],
       "readme": [
@@ -10220,7 +10226,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/task",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares task execution and networking.",
       "category": "standard library",
       "tags": [
@@ -10233,13 +10239,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use task.",
       "dependencies": [],
       "readme": [
@@ -10453,7 +10459,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/tensor",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Dense row-major decimal tensors with explicit ownership.",
       "category": "standard library",
       "tags": [
@@ -10466,13 +10472,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use tensor.",
       "dependencies": [],
       "readme": [
@@ -10602,7 +10608,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/testing",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares executable test assertions.",
       "category": "standard library",
       "tags": [
@@ -10615,13 +10621,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use testing.",
       "dependencies": [],
       "readme": [
@@ -10721,7 +10727,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/text",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Combines, trims, and splits text using byte offsets and ASCII whitespace.",
       "category": "standard library",
       "tags": [
@@ -10734,13 +10740,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use text.",
       "dependencies": [],
       "readme": [
@@ -10834,7 +10840,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/thread",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Runs function-valued tasks and coordinates shared work with locks and conditions.",
       "category": "standard library",
       "tags": [
@@ -10847,13 +10853,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use thread.",
       "dependencies": [],
       "readme": [
@@ -10959,7 +10965,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/time",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Measures elapsed time using a monotonic nanosecond clock.",
       "category": "standard library",
       "tags": [
@@ -10972,13 +10978,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use time.",
       "dependencies": [],
       "readme": [
@@ -11102,7 +11108,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/timer",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Owns a cancellable one-shot timer driven by the monotonic clock.",
       "category": "standard library",
       "tags": [
@@ -11115,13 +11121,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use timer.",
       "dependencies": [],
       "readme": [
@@ -11191,7 +11197,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/tls",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "TLS client streams over TCP. A verified handshake completes before connect returns.",
       "category": "standard library",
       "tags": [
@@ -11204,13 +11210,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use tls.",
       "dependencies": [],
       "readme": [
@@ -11286,7 +11292,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/topology",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Queries logical processors and temporarily pins the calling thread.",
       "category": "standard library",
       "tags": [
@@ -11299,13 +11305,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use topology.",
       "dependencies": [],
       "readme": [
@@ -11393,7 +11399,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/trace",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Nested spans on one thread; finish in reverse start order.",
       "category": "standard library",
       "tags": [
@@ -11406,13 +11412,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use trace.",
       "dependencies": [],
       "readme": [
@@ -11500,7 +11506,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/transaction",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Coordinates one-process transactions with rollback on propagated failure.",
       "category": "standard library",
       "tags": [
@@ -11513,13 +11519,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use transaction.",
       "dependencies": [],
       "readme": [
@@ -11565,7 +11571,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/tree",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Persistent packed ordered search tree. Midpoint search is logarithmic; immutable insertion and removal copy storage in linear time.",
       "category": "standard library",
       "tags": [
@@ -11578,13 +11584,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use tree.",
       "dependencies": [],
       "readme": [
@@ -11684,7 +11690,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/unicode",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Declares Unicode validation and conversion.",
       "category": "standard library",
       "tags": [
@@ -11697,13 +11703,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use unicode.",
       "dependencies": [],
       "readme": [
@@ -11785,7 +11791,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/units",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Keeps values from unrelated physical dimensions in distinct generic types.",
       "category": "standard library",
       "tags": [
@@ -11798,13 +11804,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "346cea6b50fe38bd2f2867db5e10da37d7b40069",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use units.",
       "dependencies": [],
       "readme": [
@@ -11904,7 +11910,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/virtual",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Page-backed address space. Operations cover the entire reserved region.",
       "category": "standard library",
       "tags": [
@@ -11917,13 +11923,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use virtual.",
       "dependencies": [],
       "readme": [
@@ -12011,7 +12017,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/vulkan",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Executes SPIR-V compute shaders on an available Vulkan device.",
       "category": "standard library",
       "tags": [
@@ -12024,13 +12030,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use vulkan.",
       "dependencies": [],
       "readme": [
@@ -12190,7 +12196,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/zigzag",
-      "version": "0.8.0",
+      "version": "0.8.1",
       "description": "Signed 64-bit ZigZag integers use canonical unsigned LEB128 on the wire.",
       "category": "standard library",
       "tags": [
@@ -12203,13 +12209,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-09",
+      "updated": "2026-10-10",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "5fc6e38dd69cd2e51691dd68a8b0513b776145dd",
+      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
       "install": "use zigzag.",
       "dependencies": [],
       "readme": [

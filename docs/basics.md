@@ -16,8 +16,18 @@ Output:
 Hello, world!
 ```
 
-`display` writes text to standard output. The final dot ends the statement. FOO
-does not require a `start` function for ordinary top-level code.
+`display` writes text to standard output. It also converts codec-supported
+values, such as integers, booleans, decimals, and records, to text automatically:
+
+```foo
+constant total is 10 plus 20.
+display total.
+```
+
+This writes `30`. Text is written as-is; other supported values use the
+standard codec representation. `display` does not add a newline. The final dot
+ends the statement. FOO does not require a `start` function for ordinary
+top-level code.
 
 Read one line from standard input with the high-level `input` operation. It
 is failable because an input stream can fail:

@@ -1,0 +1,15 @@
+use io as console.
+
+define Sample as record {
+  id of type integer.
+  active of type boolean.
+}.
+
+test "display encodes supported values" {
+  display 30.
+  display true.
+  display 1.5.
+  display Sample(7, true).
+  display "plain text".
+  console.display(42).
+}

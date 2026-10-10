@@ -18,6 +18,24 @@ changes are recorded here.
 
 ## Unreleased
 
+## 0.8.1 - 2026-10-10
+
+### Language And Standard Library
+
+- Accept codec-supported values in bare and qualified `display` calls. Text
+  remains verbatim; integers, decimals, booleans, and supported structured
+  values use the standard codec representation without an explicit import.
+- Clarify the two-file module example and document console conversion,
+  ownership, and the lack of an implicit newline.
+
+### Tooling And Registry
+
+- Add compact single-line progress and show an estimated completion time only
+  when enough consistent timing samples exist; retain completed step counts
+  while timings are unknown.
+- Keep source excerpts readable when long lines wrap in the registry UI, and
+  refresh the standard-library catalog for the new `io.display` overload.
+
 ## 0.8.0 - 2026-10-09
 
 ### Packages
@@ -1027,9 +1045,9 @@ Open `src/main.iv` and replace its contents with:
 display "Hello, vibes!".
 ```
 
-`display` prints a line. The quoted text is the message. The final period ends
-the statement. That is a complete FOO program; functions and named values come
-in later lessons.
+`display` writes a value to standard output. The quoted text is the message.
+The final period ends the statement. That is a complete FOO program; functions
+and named values come in later lessons.
 
 ---
 
@@ -1132,7 +1150,8 @@ path stays in `project.json`, so nobody has to remember it.
 When an operation is useful in more than one file, put it in its own module.
 The module controls which names other files can see.
 
-Create a new file named `math.iv` and add this:
+Create `src/math.iv` beside `src/main.iv` (inside the `hello` project) and add
+this:
 
 <!-- snippet: project math src/math.iv -->
 ```foo
@@ -1143,16 +1162,19 @@ public function add(left integer, right integer) {
 `public` makes `add` available to other modules. Without it, the function stays
 private to `math.iv`. FOO infers the result type from `give` here.
 
-Now, go back to `src/main.iv` and use it. This fragment depends on the
-`math.iv` file created immediately above:
+Replace the contents of `src/main.iv` with this program. The relative import
+`"math.iv"` finds `src/math.iv` because the two files are in the same folder:
 
 <!-- snippet: project math src/main.iv -->
 ```foo
-use "math.iv" as math. -- This brings in our new file!
+use "math.iv" as math.
 
 constant total is math.add(10, 20).
-when total is 30 { display "Total calculated". }
+display total.
 ```
+
+From the `hello` project folder, run `foo run`. It prints `30`. `display` uses
+the standard codec to convert the integer to text; no extra import is needed.
 
 ---
 
@@ -1218,8 +1240,18 @@ Output:
 Hello, world!
 ```
 
-`display` writes text to standard output. The final dot ends the statement. FOO
-does not require a `start` function for ordinary top-level code.
+`display` writes text to standard output. It also converts codec-supported
+values, such as integers, booleans, decimals, and records, to text automatically:
+
+```foo
+constant total is 10 plus 20.
+display total.
+```
+
+This writes `30`. Text is written as-is; other supported values use the
+standard codec representation. `display` does not add a newline. The final dot
+ends the statement. FOO does not require a `start` function for ordinary
+top-level code.
 
 Read one line from standard input with the high-level `input` operation. It
 is failable because an input stream can fail:
@@ -2733,18 +2765,19 @@ foo check
 foo build --backend zig
 foo build --backend c
 foo run --explain
+foo build --compact
 ```
 
 The default output shows meaningful stages, job count, cache reuse, elapsed
 time, and the selected fast or compatibility path. `--explain` adds diagnostic
 detail without dumping every backend command.
-The progress bar counts completed source checks, product builds, test runs, and
-benchmark samples according to the selected command. Its ETA uses the planned
-work and adjusts as jobs finish; it is an estimate, especially for the first
-long compilation. A completed command reaches 100%, while a failed command
-keeps the progress reached before the failure. `--json` includes numeric
-progress counts, percentage, and estimated remaining seconds in each progress
-event.
+The progress display counts completed source checks, product builds, test runs,
+and benchmark samples according to the selected command. It shows `?%` and
+elapsed time until enough consistent timing history exists to estimate a
+percentage and approximate time remaining. A completed command reaches 100%.
+`--compact` shows the same status on one updating terminal line. `--json`
+includes progress counts, percentage, timing availability, and estimated
+remaining seconds in each progress event.
 Completed noncached work updates per-project timing estimates in
 `.artifacts/progress.json`; cache hits do not replace cold-build timings.
 
@@ -3833,7 +3866,7 @@ signature reference for the installed compiler version.
 
 | Module | Purpose | Common operations |
 | --- | --- | --- |
-| `io` | Standard and file streams | bare console `display`/`report`; stream `input`/`output`/`report`, `read`, `line`, `write`, `close` |
+| `io` | Standard and file streams; `display` converts codec-supported values | bare console `display`/`report`; stream `input`/`output`/`report`, `read`, `line`, `write`, `close` |
 | `file` | Text and binary files, inspection, copying, same-filesystem replacement, directories, and stream position | `open`, `read`, `write`, `load`, `save`, `release`, `exists`, `kind`, `copy`, `working`, `remove`, `replace`, `sync`, `seek`, `position`, `size` |
 | `text` | Owned text operations and byte-oriented predicates | `concatenate`, `trim`, `length`, `slice`, `find`, `starts`, `ends`, `contains`, `split`, `release` |
 | `json` | JSON documents and streaming | `parse`, `write`, `field`, `item`, `kind`, `size`, `set`, `append`, `stream`, `feed`, `next`, `data`, `close` |
@@ -4731,9 +4764,13 @@ cache hit recreates a missing published product without recompiling it.
 
 FOO uses one operation interface for builds, runs, package changes, publishing,
 and toolchain setup. It shows real source files and stages, an activity flow,
-elapsed time, and a final summary. The activity blocks show that work is moving;
-only a finished operation displays `100%`. Add `--explain` when paths, digests,
-registry endpoints, and other diagnostic context are useful.
+elapsed time, completed step counts, and a final summary. A percentage and
+approximate time remaining appear only after at least three consistent timing
+samples exist for every pending stage. Otherwise the display shows `?%` rather
+than predicting a finish time from default guesses. Only a finished operation
+displays `100%`. Add `--explain` when paths, digests, registry endpoints, and
+other diagnostic context are useful. Add `--compact` for a single updating
+terminal line instead of the detailed stage view.
 
 Build operations also show the active build path and the number of jobs
 available. Ordinary development builds use the fast path and leave CPU and
@@ -5325,13 +5362,18 @@ The console operations are intentionally available without an import:
 | Operation | Meaning | Result |
 | --- | --- | --- |
 | `input` | Read one line from standard input | `failable text` |
-| `display value.` | Write text to standard output | `nothing` |
+| `display value.` | Write text or a codec-supported value to standard output | `nothing` |
 | `report value.` | Write diagnostic text to standard error | `nothing` |
 
 Use `io.input`, `io.output`, and `io.report` only when code needs the
 stream itself. Use `io.read`, `io.line`, `io.write`, and `io.close` for explicit
 stream ownership and failure handling. The bare operations are compiler-provided
 console conveniences; they are not declarations that a package must import.
+`display` writes text unchanged and uses `codec.encode[T]` internally for
+supported non-text values, including numbers, booleans, and records. It does
+not append a newline. If encoding fails, it writes `<unprintable>`. `report`
+still takes text. Use `codec` explicitly when you need the encoded text as a
+value or need to handle encoding failure.
 
 ## Compiler-owned names
 
@@ -6967,7 +7009,7 @@ library first.
 
 ## From words to a program
 
-FOO uses a small, precise vocabulary. `display` writes a line of text. `plus`
+FOO uses a small, precise vocabulary. `display` writes a value. `plus`
 joins text or adds numbers. When you need to keep a value, give it a name:
 
 ```foo
@@ -8177,7 +8219,8 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | `foo doctor` | Reports installed and missing toolchain components. |
 | `foo bind <file.h>` | Automatically generates FOO bindings from a C header file. |
 
-Long-running commands share the FOO operation view. Add `--explain` to `build`,
+Long-running commands share the FOO operation view. Add `--compact` to show a
+single updating terminal line. Add `--explain` to `build`,
 `run`, `check`, `install`, `update`, `remove`, `publish`, or `toolchain` to show
 diagnostic details that are hidden by default. Use `--json` with compiler
 commands when another program needs structured progress events.
@@ -8187,6 +8230,7 @@ commands when another program needs structured progress events.
 | Option or environment | Effect |
 | :--- | :--- |
 | `--explain` / `--verbose` | Adds stable codes, related locations, and technical context. |
+| `--compact` | Shows progress on one terminal line instead of the detailed stage view. |
 | `--json` | Emits structured output without ANSI color or human progress. |
 | `NO_COLOR=1` | Disables terminal colors. |
 | `TERM=dumb` | Selects plain terminal output. |

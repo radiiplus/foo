@@ -12,7 +12,7 @@ library first.
 
 ## From words to a program
 
-FOO uses a small, precise vocabulary. `display` writes a line of text. `plus`
+FOO uses a small, precise vocabulary. `display` writes a value. `plus`
 joins text or adds numbers. When you need to keep a value, give it a name:
 
 ```foo

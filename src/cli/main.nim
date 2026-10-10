@@ -68,8 +68,10 @@ proc main*(input: seq[string]): int =
       return 0
     if input[0] == "toolchain":
       let explain = "--explain" in input
-      let toolInput = input.filterIt(it != "--explain")
-      activeOperation = cliDisplay.newOperation("TOOLCHAIN", explain = explain)
+      let compact = "--compact" in input
+      let toolInput = input.filterIt(it notin ["--explain", "--compact"])
+      activeOperation = cliDisplay.newOperation("TOOLCHAIN", explain = explain,
+        compact = compact)
       if toolInput.len == 1:
         let found = toolchainManager.detect()
         activeOperation.update("Compiler", "backend",
@@ -89,7 +91,7 @@ proc main*(input: seq[string]): int =
         activeOperation.finish(summary = toolInput[2] & " capability ready")
       else:
         raise newException(ValueError,
-          "usage: foo toolchain [install base|system|machine|hardware] [--explain]")
+          "usage: foo toolchain [install base|system|machine|hardware] [--explain] [--compact]")
       activeOperation = nil
       return 0
     if input[0] == "doctor":
@@ -182,11 +184,16 @@ proc main*(input: seq[string]): int =
     if input[0] in ["publish", "install", "update", "outdated", "remove", "deprecate", "search", "info"]:
       let root = getCurrentDir()
       let explain = "--explain" in input
-      let packageInput = input.filterIt(it != "--explain")
+      let compact = "--compact" in input
+      if compact and input[0] notin ["publish", "install", "update", "remove"]:
+        raise newException(ValueError,
+          "--compact is available for publish, install, update, and remove")
+      let packageInput = input.filterIt(it notin ["--explain", "--compact"])
       case packageInput[0]
       of "publish":
         if packageInput.len != 1: raise newException(ValueError, "usage: foo publish [--explain]")
-        activeOperation = cliDisplay.newOperation("PUBLISH", explain = explain)
+        activeOperation = cliDisplay.newOperation("PUBLISH", explain = explain,
+          compact = compact)
         let reporter = activeOperation.reporter()
         buildProject.newProject(root,
           buildProject.ProjectOptions(progress: reporter)).check()
@@ -196,7 +203,8 @@ proc main*(input: seq[string]): int =
         activeOperation = nil
       of "install":
         if packageInput.len > 2: raise newException(ValueError, "usage: foo install [package[@version]] [--explain]")
-        activeOperation = cliDisplay.newOperation("INSTALL", explain = explain)
+        activeOperation = cliDisplay.newOperation("INSTALL", explain = explain,
+          compact = compact)
         let packages = packageRegistry.install(root,
           if packageInput.len == 2: packageInput[1] else: "", progress =
           proc(phase, name, detail: string) = activeOperation.report(phase, name, detail))
@@ -205,7 +213,8 @@ proc main*(input: seq[string]): int =
         activeOperation = nil
       of "update":
         if packageInput.len > 2: raise newException(ValueError, "usage: foo update [package] [--explain]")
-        activeOperation = cliDisplay.newOperation("UPDATE", explain = explain)
+        activeOperation = cliDisplay.newOperation("UPDATE", explain = explain,
+          compact = compact)
         let packages = packageRegistry.update(root,
           if packageInput.len == 2: packageInput[1] else: "", progress =
           proc(phase, name, detail: string) = activeOperation.report(phase, name, detail))
@@ -221,7 +230,8 @@ proc main*(input: seq[string]): int =
             package["latest"].getStr() & " (" & package["constraint"].getStr() & ")"
       of "remove":
         if packageInput.len != 2: raise newException(ValueError, "usage: foo remove <package> [--explain]")
-        activeOperation = cliDisplay.newOperation("REMOVE", explain = explain)
+        activeOperation = cliDisplay.newOperation("REMOVE", explain = explain,
+          compact = compact)
         let packages = packageRegistry.removePackage(root, packageInput[1], progress =
           proc(phase, name, detail: string) = activeOperation.report(phase, name, detail))
         activeOperation.finish(summary = packageInput[1] & " removed · " &
@@ -279,7 +289,7 @@ proc main*(input: seq[string]): int =
       args = @["build", "--watch"] &
         (if args.len > 1: args[1 .. ^1] else: @[])
     let command = args[0]
-    var verbose, jsonOutput, watching, signing: bool
+    var verbose, jsonOutput, watching, signing, compact: bool
     var warmup = 1
     var iterations = 10
     var target, cpu, backend, filter, mode, provider: string
@@ -294,6 +304,12 @@ proc main*(input: seq[string]): int =
         break
       elif argument in ["--verbose", "--explain"]: verbose = true
       elif argument == "--json": jsonOutput = true
+      elif argument == "--compact":
+        if command notin ["check", "build", "run", "release", "sign",
+            "test", "benchmark"]:
+          raise newException(ValueError,
+            "--compact is available for check, build, run, release, sign, test, and benchmark")
+        compact = true
       elif argument == "--watch": watching = true
       elif argument == "--sign":
         if command != "release":
@@ -374,7 +390,7 @@ proc main*(input: seq[string]): int =
     let root = getCurrentDir()
     proc executeProject() =
       let operation = if command in ["check", "build", "run", "release"]:
-          cliDisplay.newOperation(command, jsonOutput, verbose)
+          cliDisplay.newOperation(command, jsonOutput, verbose, compact)
         else: nil
       activeOperation = operation
       let projectOptions = buildProject.ProjectOptions(backend: backend,
@@ -467,7 +483,7 @@ proc main*(input: seq[string]): int =
       if positional.len != 1:
         raise newException(ValueError,
           "usage: foo sign <artifact> [--provider name] [--target name]")
-      activeOperation = cliDisplay.newOperation("SIGN", jsonOutput, verbose)
+      activeOperation = cliDisplay.newOperation("SIGN", jsonOutput, verbose, compact)
       activeOperation.plan("Signing", 1, 2.0)
       let project = buildProject.newProject(root)
       let artifact = if isAbsolute(positional[0]): positional[0]
@@ -490,7 +506,7 @@ proc main*(input: seq[string]): int =
         raise newException(ValueError,
           "usage: foo test [file.iv|directory] [--filter name] [--backend c|zig] [--mode dev|release] [--watch]")
       proc executeTests() =
-        activeOperation = cliDisplay.newOperation("TEST", jsonOutput, verbose)
+        activeOperation = cliDisplay.newOperation("TEST", jsonOutput, verbose, compact)
         activeOperation.configure(root,
           if backend.len > 0: backend else: "zig", buildProject.host,
           if mode.len > 0: mode else: "dev")
@@ -521,7 +537,7 @@ proc main*(input: seq[string]): int =
       if positional.len == 1:
         if filter.len > 0: raise newException(ValueError, "Choose a benchmark name or --filter, not both")
         filter = positional[0]
-      activeOperation = cliDisplay.newOperation("BENCHMARK", jsonOutput, verbose)
+      activeOperation = cliDisplay.newOperation("BENCHMARK", jsonOutput, verbose, compact)
       activeOperation.configure(root,
         if backend.len > 0: backend else: "zig", buildProject.host,
         if mode.len > 0: mode else: "project")

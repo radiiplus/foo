@@ -53,7 +53,8 @@ const listed = git(["ls-files", "-z", "--cached", "--others", "--exclude-standar
 const selected = [...new Set(listed.filter(path => {
   const parts = path.split("/");
   if (parts.length === 1) return rootFiles.has(path);
-  return roots.has(parts[0]) && !parts.some(part => generated.has(part));
+  return roots.has(parts[0]) && !parts.some(part => generated.has(part)) &&
+    !path.startsWith("registry/repository/indexes/");
 }))].sort();
 
 for (const required of ["src/main.nim", "src/backend/zig/library.zig", "lib/sequence.iv",

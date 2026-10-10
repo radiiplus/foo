@@ -27,7 +27,8 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | `foo doctor` | Reports installed and missing toolchain components. |
 | `foo bind <file.h>` | Automatically generates FOO bindings from a C header file. |
 
-Long-running commands share the FOO operation view. Add `--explain` to `build`,
+Long-running commands share the FOO operation view. Add `--compact` to show a
+single updating terminal line. Add `--explain` to `build`,
 `run`, `check`, `install`, `update`, `remove`, `publish`, or `toolchain` to show
 diagnostic details that are hidden by default. Use `--json` with compiler
 commands when another program needs structured progress events.
@@ -37,6 +38,7 @@ commands when another program needs structured progress events.
 | Option or environment | Effect |
 | :--- | :--- |
 | `--explain` / `--verbose` | Adds stable codes, related locations, and technical context. |
+| `--compact` | Shows progress on one terminal line instead of the detailed stage view. |
 | `--json` | Emits structured output without ANSI color or human progress. |
 | `NO_COLOR=1` | Disables terminal colors. |
 | `TERM=dumb` | Selects plain terminal output. |
