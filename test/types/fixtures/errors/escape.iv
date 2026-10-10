@@ -9,10 +9,10 @@
   }
 
   start {
-    constant localdata of type Data is uninitialized.
+    constant local of type Data is uninitialized.
     
     -- This should trigger the escape error
-    process localdata.
+    process local.
     
     give nothing.
   }

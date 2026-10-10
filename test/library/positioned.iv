@@ -1,0 +1,91 @@
+use file as files.
+use io as streams.
+use sequence as sequences.
+use "../../lib/resource.iv" as usage.
+use testing as check.
+use text as words.
+
+test "positioned binary transfers" {
+  files.directory(".artifacts/positioned") try.
+  check.expect((files.block(".artifacts/positioned") try) is greater than 0).
+  check.expect((files.free(".artifacts/positioned") try) is greater than 0).
+  constant path is ".artifacts/positioned/value.bin".
+  after { files.remove(path) fallback nothing. }
+
+  constant source is sequences.sized[byte](4) try.
+  after { sequences.release[byte](source) fallback nothing. }
+  set source at 0 to 65.
+  set source at 1 to 0.
+  set source at 2 to 66.
+  set source at 3 to 255.
+  constant output is files.open(path, "write") try.
+  check.expect((files.store(output, 0, source) try) is 4).
+  check.expect((files.position(output) try) is 0).
+  constant empty is sequences.view[byte](source, 0, 0) try.
+  check.expect((files.store(output, 4, empty) try) is 0).
+  streams.close(output) try.
+
+  constant reader is files.open(path, "read") try.
+  after { streams.close(reader) fallback nothing. }
+  constant destination is sequences.sized[byte](6) try.
+  after { sequences.release[byte](destination) fallback nothing. }
+  check.expect((files.fetch(reader, 0, destination) try) is 4).
+  check.expect((files.position(reader) try) is 0).
+  check.expect(destination at 0 is 65).
+
+  constant folder is ".artifacts/positioned/scan".
+  files.directory(folder) try.
+  constant child is ".artifacts/positioned/scan/entry.bin".
+  after { files.remove(child) fallback nothing. }
+  files.write(child, "one") try.
+  constant cursor is files.scan(folder) try.
+  constant name is files.next(cursor) try.
+  check.same(name, "entry.bin").
+  words.release(name) try.
+  check.same(files.next(cursor) try, "").
+  files.finish(cursor) try.
+  check.same(files.next(cursor) fallback "closed", "closed").
+  files.remove(child) try.
+  files.remove(folder) try.
+  constant blank is ".artifacts/positioned/blank".
+  files.directory(blank) try.
+  constant vacant is files.scan(blank) try.
+  check.same(files.next(vacant) try, "").
+  files.finish(vacant) try.
+  files.remove(blank) try.
+  check.expect(destination at 1 is 0).
+  check.expect(destination at 2 is 66).
+  check.expect(destination at 3 is 255).
+  check.expect((files.fetch(reader, 8, destination) try) is 0).
+  check.expect((files.store(reader, 0, source) fallback 99) is 99).
+
+  constant reserved is ".artifacts/positioned/reserved.bin".
+  after { files.remove(reserved) fallback nothing. }
+  constant baseline is usage.files.
+  constant created is files.open(reserved, "create") try.
+  check.expect(usage.files is baseline plus 1).
+  files.lock(created, "exclusive") try.
+  files.reserve(created, 8192) try.
+  check.expect((files.size(created) try) is 8192).
+  files.truncate(created, 2) try.
+  check.expect((files.size(created) try) is 2).
+  check.expect((files.store(created, 0, source) try) is 4).
+  files.unlock(created) try.
+  streams.close(created) try.
+  check.expect(usage.files is baseline).
+  constant updated is files.open(reserved, "update") try.
+  after { streams.close(updated) fallback nothing. }
+  check.expect((files.fetch(updated, 0, destination) try) is 4).
+  check.expect(destination at 0 is 65).
+  constant first is streams.read(updated, 1) try.
+  after { words.release(first) fallback nothing. }
+  check.same(first, "A").
+  check.expect((files.position(updated) try) is 1).
+  check.expect((files.store(updated, 2, source) try) is 4).
+  check.expect((files.position(updated) try) is 1).
+  check.expect((files.fetch(updated, 2, destination) try) is 4).
+  check.expect(destination at 0 is 65).
+  check.expect(destination at 1 is 0).
+  check.expect(destination at 2 is 66).
+  check.expect(destination at 3 is 255).
+}

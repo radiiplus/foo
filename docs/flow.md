@@ -1,6 +1,8 @@
 # Conditions and Loops
 
-Control flow chooses which statements run and how often they run.
+Programs get useful when they can make a choice or repeat a task. FOO uses
+`when` for decisions and loops for repeated work; this lesson shows when each
+statement runs.
 
 ## `when`
 

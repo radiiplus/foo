@@ -1,0 +1,13 @@
+-- Nested spans on one thread; finish in reverse start order.
+public define span as opaque.
+public use "trace" function begin(name text) giving failable pointer to span.
+public use "trace" function current giving unsigned.
+public use "trace" function identity(value pointer to span) giving failable unsigned.
+public use "trace" function parent(value pointer to span) giving failable unsigned.
+-- Returns independently owned text.
+public use "trace" function name(value pointer to span) giving failable text.
+-- Finishes the active span and returns its monotonic duration in nanoseconds.
+public use "trace" function finish(value pointer to span) giving failable unsigned.
+public use "trace" function elapsed(value pointer to span) giving failable unsigned.
+-- A span must be finished before close; both operations use its creating thread.
+public use "trace" function close(value pointer to span) giving failable nothing.

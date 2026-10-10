@@ -52,8 +52,10 @@ mkdirSync(dirname(output), { recursive: true });
 mkdirSync(cache, { recursive: true });
 const embedded = [
   "package.json", "project.json",
-  "assets/dark.svg", "installers/assets/logo-installer.ico",
+  "assets/dark.svg", "installers/assets/installer.ico",
   "src/backend/native/service.c", "src/backend/native/service.h",
+  "src/backend/native/vulkan.c",
+  "src/backend/native/gpu.c",
   "src/backend/zig/library.zig", "src/backend/zig/storage.zig",
   "src/backend/zig/stream.zig", "src/backend/zig/service.zig",
   "src/backend/zig/shim.zig", "src/backend/c/runtime.h",

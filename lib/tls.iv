@@ -1,0 +1,11 @@
+-- TLS client streams over TCP. A verified handshake completes before connect returns.
+public define connection as opaque.
+public use "tls" function available giving boolean.
+public use "tls" function connect(host text, port unsigned) giving failable pointer to connection.
+-- Send transfers the entire byte string or fails; receive returns empty text at EOF.
+public use "tls" function send(connection pointer to connection, content text) giving failable unsigned.
+public use "tls" function receive(connection pointer to connection, size unsigned) giving failable text.
+-- Direction is "send" or "receive"; zero disables the timeout.
+public use "tls" function timeout(connection pointer to connection, direction text,
+  milliseconds unsigned) giving failable unsigned.
+public use "tls" function close(connection pointer to connection) giving failable nothing.

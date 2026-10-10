@@ -1,0 +1,17 @@
+-- Queries logical processors and temporarily pins the calling thread.
+public define placement as opaque.
+-- Number of online logical processors in the host system.
+public use "topology" function count giving failable unsigned.
+-- CPUs available to this calling thread (within its Windows processor group).
+public use "topology" function allowed giving failable unsigned.
+-- OS logical processor identifier for the calling thread.
+public use "topology" function current giving failable unsigned.
+-- NUMA discovery is available on Windows and Linux. CPU IDs match current/pin.
+public use "topology" function nodes giving failable unsigned.
+public use "topology" function node(cpu unsigned) giving failable unsigned.
+-- Pins this thread to an available CPU in the requested NUMA node.
+public use "topology" function place(node unsigned) giving failable pointer to placement.
+-- Pins this thread to one online logical processor and saves its prior affinity.
+public use "topology" function pin(cpu unsigned) giving failable pointer to placement.
+-- Restores the affinity saved by pin. Call from the same thread, once.
+public use "topology" function restore(value pointer to placement) giving failable nothing.

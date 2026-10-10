@@ -9,10 +9,15 @@ writeFile(root / "assets" / "nested" / "two.txt", "world")
 var definitions = {
   "version": Task(kind: "text", output: "version.iv", text: "value {{number}}", values: {"number": %*42}.toTable),
   "resources": Task(kind: "embed", output: "resources", inputs: @["assets/**/*.txt"]),
+  "schema": Task(kind: "record", output: "schema.iv", values: {
+    "name": %*"Schema", "fields": %*[{"name": "id", "type": "unsigned"},
+      {"name": "ready", "type": "boolean"}]}.toTable),
 }.toTable
 let generated = tasks(root, definitions)
-doAssert generated.len == 2
+doAssert generated.len == 3
 doAssert readFile(root / ".artifacts/build/generated/version.iv") == "value 42"
+doAssert readFile(root / ".artifacts/build/generated/schema.iv") ==
+  "public define Schema as record {\n  id of type unsigned.\n  ready of type boolean.\n}.\n"
 let embedded = readFile(root / ".artifacts/build/generated/resources")
 doAssert embedded[0 .. 4] == "FOO\0\1"
 definitions["copy"] = Task(kind: "copy", output: "copy.iv", needs: @["version"], inputs: @["@version"])
@@ -21,6 +26,12 @@ doAssert readFile(chained[0]) == "value 42"
 let cycle = {"a": Task(kind: "text", output: "a", needs: @["b"]), "b": Task(kind: "text", output: "b", needs: @["a"])}.toTable
 try:
   discard tasks(root, cycle)
+  doAssert false
+except ValueError: discard
+let injection = {"bad": Task(kind: "record", output: "bad.iv", values: {
+  "name": %*"Bad", "fields": %*[{"name": "value", "type": "text. start { }"}]}.toTable)}.toTable
+try:
+  discard tasks(root, injection)
   doAssert false
 except ValueError: discard
 removeDir(root)

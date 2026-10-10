@@ -1,0 +1,19 @@
+use ipc as shared.
+use file as files.
+use testing as check.
+
+test "named mappings share bytes and enforce exclusive creation" {
+  constant path is files.temporary(".", "ipc") try.
+  after { files.remove(path) fallback nothing. }
+  files.remove(path) try.
+  constant first is shared.create(path, 8) try.
+  after { shared.close(first) fallback nothing. }
+  constant second is shared.join(path) try.
+  after { shared.close(second) fallback nothing. }
+  check.number(shared.size(second) try, 8).
+  shared.lock(first) try.
+  constant writable is shared.edit(first) try.
+  set writable at 2 to 73.
+  shared.unlock(first) try.
+  check.expect((shared.view(second) try) at 2 is 73).
+}

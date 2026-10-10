@@ -1,0 +1,278 @@
+{
+  "mode": "a",
+  "controlKind": "foo",
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "cpu": "11th Gen Intel(R) Core(TM) i5-1145G7 @ 2.60GHz",
+    "node": "v24.11.1"
+  },
+  "operationMedianMs": {
+    "foo": 1.8383,
+    "control": 2.4505
+  },
+  "processMedianMs": {
+    "foo": 79.41550000000007,
+    "control": 77.35789999999997
+  },
+  "samples": {
+    "foo": [
+      {
+        "wallMs": 57.558299999999974,
+        "operationMs": 1.8631
+      },
+      {
+        "wallMs": 72.918,
+        "operationMs": 1.69
+      },
+      {
+        "wallMs": 72.70309999999995,
+        "operationMs": 1.6919
+      },
+      {
+        "wallMs": 79.41550000000007,
+        "operationMs": 1.9119
+      },
+      {
+        "wallMs": 77.98340000000007,
+        "operationMs": 2.3673
+      },
+      {
+        "wallMs": 134.09000000000015,
+        "operationMs": 1.9325
+      },
+      {
+        "wallMs": 74.99790000000007,
+        "operationMs": 1.8438
+      },
+      {
+        "wallMs": 98.47450000000003,
+        "operationMs": 4.8665
+      },
+      {
+        "wallMs": 81.30930000000012,
+        "operationMs": 1.9733
+      },
+      {
+        "wallMs": 109.89589999999998,
+        "operationMs": 1.8599
+      },
+      {
+        "wallMs": 87.79320000000007,
+        "operationMs": 2.0763
+      },
+      {
+        "wallMs": 67.74789999999985,
+        "operationMs": 1.8234
+      },
+      {
+        "wallMs": 84.04739999999993,
+        "operationMs": 1.4422
+      },
+      {
+        "wallMs": 72.0005000000001,
+        "operationMs": 3.7902
+      },
+      {
+        "wallMs": 52.16800000000012,
+        "operationMs": 1.3226
+      },
+      {
+        "wallMs": 84.92860000000019,
+        "operationMs": 1.6395
+      },
+      {
+        "wallMs": 69.46250000000009,
+        "operationMs": 1.7193
+      },
+      {
+        "wallMs": 65.76159999999982,
+        "operationMs": 1.6115
+      },
+      {
+        "wallMs": 73.55060000000003,
+        "operationMs": 1.402
+      },
+      {
+        "wallMs": 116.70119999999997,
+        "operationMs": 2.0146
+      },
+      {
+        "wallMs": 80.3798999999999,
+        "operationMs": 1.8844
+      },
+      {
+        "wallMs": 78.10689999999977,
+        "operationMs": 1.6507
+      },
+      {
+        "wallMs": 108.07940000000053,
+        "operationMs": 1.976
+      },
+      {
+        "wallMs": 110.71829999999954,
+        "operationMs": 1.75
+      },
+      {
+        "wallMs": 93.13999999999942,
+        "operationMs": 1.8285
+      },
+      {
+        "wallMs": 66.45740000000023,
+        "operationMs": 1.5706
+      },
+      {
+        "wallMs": 66.89509999999973,
+        "operationMs": 1.6719
+      },
+      {
+        "wallMs": 76.05289999999968,
+        "operationMs": 1.7464
+      },
+      {
+        "wallMs": 84.50390000000061,
+        "operationMs": 3.6945
+      },
+      {
+        "wallMs": 111.80729999999949,
+        "operationMs": 1.8383
+      },
+      {
+        "wallMs": 80.63090000000011,
+        "operationMs": 2.2932
+      }
+    ],
+    "control": [
+      {
+        "wallMs": 57.34749999999997,
+        "operationMs": 2.5873
+      },
+      {
+        "wallMs": 74.37279999999998,
+        "operationMs": 2.4138
+      },
+      {
+        "wallMs": 84.59180000000003,
+        "operationMs": 2.4661
+      },
+      {
+        "wallMs": 82.29669999999999,
+        "operationMs": 2.309
+      },
+      {
+        "wallMs": 72.82379999999989,
+        "operationMs": 2.4968
+      },
+      {
+        "wallMs": 226.15139999999997,
+        "operationMs": 11.4071
+      },
+      {
+        "wallMs": 99.41740000000004,
+        "operationMs": 2.4505
+      },
+      {
+        "wallMs": 89.72410000000013,
+        "operationMs": 2.5215
+      },
+      {
+        "wallMs": 63.20609999999988,
+        "operationMs": 2.4462
+      },
+      {
+        "wallMs": 85.86020000000008,
+        "operationMs": 3.7618
+      },
+      {
+        "wallMs": 77.35789999999997,
+        "operationMs": 2.0533
+      },
+      {
+        "wallMs": 93.60300000000007,
+        "operationMs": 2.4479
+      },
+      {
+        "wallMs": 134.98229999999967,
+        "operationMs": 2.4239
+      },
+      {
+        "wallMs": 89.17769999999973,
+        "operationMs": 3.7628
+      },
+      {
+        "wallMs": 65.07060000000001,
+        "operationMs": 2.4246
+      },
+      {
+        "wallMs": 73.13770000000022,
+        "operationMs": 2.5075
+      },
+      {
+        "wallMs": 63.65819999999985,
+        "operationMs": 2.4592
+      },
+      {
+        "wallMs": 63.427799999999934,
+        "operationMs": 3.0402
+      },
+      {
+        "wallMs": 61.32290000000012,
+        "operationMs": 1.8133
+      },
+      {
+        "wallMs": 72.17790000000014,
+        "operationMs": 2.1257
+      },
+      {
+        "wallMs": 66.57940000000008,
+        "operationMs": 1.7333
+      },
+      {
+        "wallMs": 84.91560000000027,
+        "operationMs": 2.1183
+      },
+      {
+        "wallMs": 106.82539999999972,
+        "operationMs": 2.4718
+      },
+      {
+        "wallMs": 71.59079999999994,
+        "operationMs": 2.4347
+      },
+      {
+        "wallMs": 90.80329999999958,
+        "operationMs": 2.0904
+      },
+      {
+        "wallMs": 78.34490000000005,
+        "operationMs": 2.5325
+      },
+      {
+        "wallMs": 63.41949999999997,
+        "operationMs": 2.4736
+      },
+      {
+        "wallMs": 72.11880000000019,
+        "operationMs": 6.6541
+      },
+      {
+        "wallMs": 63.5002999999997,
+        "operationMs": 2.2971
+      },
+      {
+        "wallMs": 80.59490000000005,
+        "operationMs": 2.5003
+      },
+      {
+        "wallMs": 105.7458000000006,
+        "operationMs": 2.3435
+      }
+    ]
+  },
+  "paired": {
+    "wins": 26,
+    "samples": 31,
+    "twoSidedSignP": 0.0001921951770782471
+  }
+}

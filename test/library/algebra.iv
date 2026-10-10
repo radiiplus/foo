@@ -1,0 +1,139 @@
+use set as groups.
+use sequence as items.
+use testing as check.
+
+define Key as record {
+  code of type integer.
+} derives Equatable.
+
+function odd giving failable groups.members[integer] {
+  constant values is items.sized[integer](3) try.
+  set values at 0 to 1.
+  set values at 1 to 3.
+  set values at 2 to 5.
+  give groups.members[integer](values).
+}
+
+function mixed giving failable groups.members[integer] {
+  constant values is items.sized[integer](3) try.
+  set values at 0 to 3.
+  set values at 1 to 4.
+  set values at 2 to 5.
+  give groups.members[integer](values).
+}
+
+test "set union preserves first-seen order and owns values" {
+  constant left is odd try.
+  constant right is mixed try.
+  after {
+    groups.release[integer](left) fallback nothing.
+    groups.release[integer](right) fallback nothing.
+  }
+  constant result is groups.unite[integer](left, right) try.
+  after { groups.release[integer](result) fallback nothing. }
+  check.number(groups.length[integer](result), 4).
+  check.expect(result.values at 0 is 1 and result.values at 1 is 3).
+  check.expect(result.values at 2 is 5 and result.values at 3 is 4).
+  set result.values at 0 to 99.
+  check.expect(left.values at 0 is 1).
+  constant empty is groups.create[integer].
+  constant copy is groups.unite[integer](empty, right) try.
+  after { groups.release[integer](copy) fallback nothing. }
+  check.number(groups.length[integer](copy), 3).
+  check.expect(copy.values at 0 is 3 and copy.values at 2 is 5).
+}
+
+test "set intersection retains common members" {
+  constant left is odd try.
+  constant right is mixed try.
+  after {
+    groups.release[integer](left) fallback nothing.
+    groups.release[integer](right) fallback nothing.
+  }
+  constant result is groups.intersect[integer](left, right) try.
+  after { groups.release[integer](result) fallback nothing. }
+  check.number(groups.length[integer](result), 2).
+  check.expect(result.values at 0 is 3 and result.values at 1 is 5).
+  set result.values at 0 to 99.
+  check.expect(left.values at 1 is 3).
+  constant empty is groups.create[integer].
+  constant none is groups.intersect[integer](left, empty) try.
+  after { groups.release[integer](none) fallback nothing. }
+  check.number(groups.length[integer](none), 0).
+}
+
+test "set difference retains left-only members" {
+  constant left is odd try.
+  constant right is mixed try.
+  after {
+    groups.release[integer](left) fallback nothing.
+    groups.release[integer](right) fallback nothing.
+  }
+  constant result is groups.difference[integer](left, right) try.
+  after { groups.release[integer](result) fallback nothing. }
+  check.number(groups.length[integer](result), 1).
+  check.expect(result.values at 0 is 1).
+  set result.values at 0 to 99.
+  check.expect(left.values at 0 is 1).
+  constant empty is groups.create[integer].
+  constant copy is groups.difference[integer](left, empty) try.
+  after { groups.release[integer](copy) fallback nothing. }
+  check.number(groups.length[integer](copy), 3).
+  check.expect(copy.values at 0 is 1 and copy.values at 2 is 5).
+}
+
+test "set symmetric difference retains exclusive members" {
+  constant left is odd try.
+  constant right is mixed try.
+  after {
+    groups.release[integer](left) fallback nothing.
+    groups.release[integer](right) fallback nothing.
+  }
+  constant result is groups.symmetric[integer](left, right) try.
+  after { groups.release[integer](result) fallback nothing. }
+  check.number(groups.length[integer](result), 2).
+  check.expect(result.values at 0 is 1 and result.values at 1 is 4).
+  set result.values at 0 to 99.
+  check.expect(left.values at 0 is 1 and right.values at 1 is 4).
+  constant same is groups.symmetric[integer](left, left) try.
+  after { groups.release[integer](same) fallback nothing. }
+  check.number(groups.length[integer](same), 0).
+}
+
+test "set subset checks inclusion without changing inputs" {
+  constant left is odd try.
+  constant right is mixed try.
+  after {
+    groups.release[integer](left) fallback nothing.
+    groups.release[integer](right) fallback nothing.
+  }
+  check.expect(not groups.subset[integer](left, right)).
+  check.expect(groups.subset[integer](left, left)).
+  constant joined is groups.unite[integer](left, right) try.
+  after { groups.release[integer](joined) fallback nothing. }
+  check.expect(groups.subset[integer](left, joined)).
+  check.expect(groups.subset[integer](right, joined)).
+  constant empty is groups.create[integer].
+  check.expect(groups.subset[integer](empty, left)).
+  check.expect(not groups.subset[integer](left, empty)).
+  check.number(groups.length[integer](left), 3).
+  check.number(groups.length[integer](right), 3).
+}
+
+test "set algebra accepts equality-only records" {
+  constant empty is groups.create[Key].
+  constant left is groups.insert[Key](empty, Key(7)) try.
+  constant right is groups.insert[Key](empty, Key(7)) try.
+  after {
+    groups.release[Key](left) fallback nothing.
+    groups.release[Key](right) fallback nothing.
+  }
+  constant shared is groups.intersect[Key](left, right) try.
+  after { groups.release[Key](shared) fallback nothing. }
+  check.number(groups.length[Key](shared), 1).
+  check.expect(shared.values at 0 is Key(7)).
+  check.expect(groups.subset[Key](left, right)).
+  constant exclusive is groups.symmetric[Key](left, right) try.
+  after { groups.release[Key](exclusive) fallback nothing. }
+  check.number(groups.length[Key](exclusive), 0).
+}

@@ -43,15 +43,17 @@ export function Categories({ items, value, open, onOpenChange, onChange }: Categ
   return (
     <div ref={rootRef} className="relative">
       <button
-        className={`flex h-7 items-center gap-1.5 rounded-md border px-2 text-[10px] ${value ? "border-[#32747A] bg-[#112628] text-[#60D5DF]" : "border-[#292929] bg-[#111] text-[#777] hover:text-white"}`}
+        className={`registry-category-trigger flex h-9 items-center gap-1.5 rounded-md px-2 text-[10px] ${value ? "bg-[#233638] text-[#60D5DF]" : "bg-[#171717] text-[#929292] hover:text-white"}`}
         type="button"
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-label={value ? `Category: ${value}` : "Categories"}
+        title={value ? `Category: ${value}` : "Categories"}
       >
         <Shapes size={12} />
-        <span className="max-w-24 truncate">{value || "Categories"}</span>
-        <ChevronDown size={11} />
+        {value && <span className="max-w-24 truncate">{value}</span>}
+        {value && <ChevronDown size={11} />}
       </button>
 
       {open && (

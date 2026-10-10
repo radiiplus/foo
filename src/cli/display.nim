@@ -1,4 +1,4 @@
-import std/[json, os, strutils, terminal, times]
+import std/[json, os, strutils, tables, terminal, times]
 import ../build/planner
 import ../build/options
 import ../diag/palette
@@ -20,6 +20,15 @@ type
     name: string
     detail: string
     state: OperationState
+  WorkBudget = object
+    stage: string
+    total: int
+    completed: int
+    weight: float
+    predicted: float
+    started: float
+    observed: float
+    samples: int
   Operation* = ref object
     name: string
     jsonOutput: bool
@@ -30,10 +39,46 @@ type
     lastRender: float
     last: float
     phase: string
-    frame: int
     renderedLines: int
     tasks: seq[OperationTask]
+    work: seq[WorkBudget]
+    context: string
+    historyFile: string
+    history: Table[string, float]
     finished: bool
+    successful: bool
+
+proc history(path: string): Table[string, float] =
+  result = initTable[string, float]()
+  if path.len == 0 or not fileExists(path): return
+  try:
+    let stored = parseJson(readFile(path))
+    if stored.kind != JObject or not stored.hasKey("seconds") or
+        stored["seconds"].kind != JObject: return
+    for key, value in stored["seconds"]:
+      if value.kind notin {JInt, JFloat}: continue
+      let seconds = value.getFloat()
+      if seconds >= 0.001 and seconds <= 3600:
+        result[key] = seconds
+  except CatchableError:
+    discard
+
+proc saveHistory(operation: Operation) =
+  if operation.historyFile.len == 0: return
+  var stored = history(operation.historyFile)
+  var changed = false
+  for item in operation.work:
+    if item.samples == 0: continue
+    let key = operation.context & "|" & item.stage
+    let observed = item.observed / item.samples.float
+    stored[key] = if stored.hasKey(key):
+      stored[key] * 0.3 + observed * 0.7 else: observed
+    changed = true
+  if not changed: return
+  var seconds = newJObject()
+  for key, value in stored: seconds[key] = %value
+  createDir(parentDir(operation.historyFile))
+  writeFile(operation.historyFile, $(%*{"version": 1, "seconds": seconds}) & "\n")
 
 proc paint(operation: Operation; value, role: string): string =
   if operation.color: shade(role) & value & "\e[0m" else: value
@@ -66,6 +111,29 @@ proc glyph(operation: Operation; state: OperationState): string =
 proc accent(operation: Operation): string =
   if operation.name in ["BUILD", "CHECK", "RUN", "TOOLCHAIN"]: "debug" else: "info"
 
+proc estimate*(operation: Operation): tuple[known: bool, percent, completed,
+    total: int, remaining: float] =
+  if operation == nil: return
+  var weight, finished: float
+  for item in operation.work:
+    result.total += item.total
+    result.completed += item.completed
+    weight += item.total.float * item.weight
+    finished += item.completed.float * item.weight
+    let pending = item.total - item.completed
+    if pending <= 0: continue
+    result.remaining += pending.float * item.predicted
+    if item.started > 0:
+      let elapsed = max(0.0, epochTime() - item.started)
+      result.remaining += max(0.1, max(item.predicted - elapsed,
+        elapsed * 0.25)) - item.predicted
+  result.known = weight > 0
+  if result.known:
+    result.percent = min(99, int(finished * 100 / weight))
+    if operation.finished and operation.successful and
+        result.completed == result.total:
+      result.percent = 100
+
 proc snapshot(operation: Operation; complete = false; successful = true;
     summary = ""): seq[string] =
   let width = if operation.interactive: max(44, min(100, terminalWidth())) else: 80
@@ -97,10 +165,22 @@ proc snapshot(operation: Operation; complete = false; successful = true;
           (if detail.len > 0: operation.paint(detail, "muted") else: "") &
           "  " & operation.glyph(task.state))
   result.add("")
-  let filled = if complete: 8 else: operation.frame mod 8 + 1
+  let progress = operation.estimate()
+  let percent = if complete and successful and not progress.known: 100
+    else: progress.percent
+  let filled = if percent == 100: 8 else: min(7, percent * 8 div 100)
   let blocks = repeat("▰", filled) & repeat("▱", 8 - filled)
-  let timing = if complete: " 100%" else:
-    " " & now().format("HH:mm:ss") & " · " & duration(epochTime() - operation.started)
+  var timing = if progress.known or complete: " " & $percent & "%"
+    else: " ?%"
+  if not complete and progress.known:
+    if width >= 68:
+      timing.add(" · " & $progress.completed & "/" & $progress.total & " steps")
+    if progress.remaining > 0:
+      timing.add(" · ETA " & fromUnix(int64(epochTime() +
+        progress.remaining)).local.format("HH:mm:ss"))
+      if width >= 84: timing.add(" (~" & duration(progress.remaining) & ")")
+  elif not complete:
+    timing.add(" · estimating")
   result.add("  " & operation.paint(blocks, if complete and successful: "success" else: operation.accent()) & timing)
   if complete:
     result.add("")
@@ -132,10 +212,50 @@ proc newOperation*(name: string; jsonOutput = false; explain = false): Operation
     started: epochTime())
   result.render()
 
+proc configure*(operation: Operation; root, backend, target, mode: string) =
+  if operation == nil or operation.finished: return
+  operation.context = operation.name & "|" & backend & "|" & target & "|" & mode
+  operation.historyFile = root / ".artifacts" / "progress.json"
+  operation.history = history(operation.historyFile)
+
+proc plan*(operation: Operation; stage: string; count: int;
+    secondsPerJob: float) =
+  if operation == nil or operation.finished or count <= 0: return
+  for item in operation.work.mitems:
+    if item.stage == stage:
+      item.total += count
+      operation.render()
+      return
+  let key = operation.context & "|" & stage
+  let predicted = operation.history.getOrDefault(key, secondsPerJob)
+  operation.work.add(WorkBudget(stage: stage, total: count,
+    weight: predicted, predicted: predicted))
+  operation.render()
+
+proc startWork*(operation: Operation; stage: string) =
+  if operation == nil or operation.finished: return
+  for item in operation.work.mitems:
+    if item.stage == stage and item.completed < item.total:
+      item.started = epochTime()
+      return
+
+proc finishWork*(operation: Operation; stage: string; cached = false) =
+  if operation == nil or operation.finished: return
+  for item in operation.work.mitems:
+    if item.stage == stage and item.completed < item.total:
+      if item.started > 0 and not cached:
+        let elapsed = max(0.001, epochTime() - item.started)
+        item.predicted = item.predicted * 0.25 + elapsed * 0.75
+        item.observed += elapsed
+        inc item.samples
+      item.started = 0
+      inc item.completed
+      operation.render()
+      return
+
 proc update*(operation: Operation; stage, name: string; state: OperationState;
     detail = ""; alwaysShowDetail = false) =
   if operation == nil or operation.finished: return
-  inc operation.frame
   let visibleDetail = if operation.explain or alwaysShowDetail: detail else: ""
   for task in operation.tasks.mitems:
     if task.stage == stage and task.name == name:
@@ -160,10 +280,6 @@ proc failWorking(operation: Operation) =
 
 proc report*(operation: Operation; phase, name, detail: string; cached = false) =
   if operation == nil or operation.finished: return
-  if operation.jsonOutput:
-    if phase != "tick":
-      echo $(%*{"event": phase, "name": name, "file": detail, "cached": cached})
-    return
   if (operation.name == "TOOLCHAIN" or phase in ["download", "downloaded"]) and
       not operation.interactive:
     let current = epochTime()
@@ -175,15 +291,42 @@ proc report*(operation: Operation; phase, name, detail: string; cached = false) 
       operation.phase = phase
       operation.last = current
   case phase
-  of "check": operation.update("Source", name, stateWorking, detail)
-  of "checked": operation.update("Source", name, stateComplete)
-  of "build": operation.update("Compilation", name, stateWorking)
+  of "plan":
+    let seconds = case name
+      of "Source": 0.5
+      of "Compilation": 5.0
+      of "Execution": 1.0
+      of "Measurement": 0.2
+      else: 1.0
+    operation.plan(name, parseInt(detail), seconds)
+  of "check":
+    operation.startWork("Source")
+    operation.update("Source", name, stateWorking, detail)
+  of "checked":
+    operation.update("Source", name, stateComplete)
+    operation.finishWork("Source")
+  of "build":
+    operation.startWork("Compilation")
+    operation.update("Compilation", name, stateWorking)
   of "path": operation.update("Compilation", "path", stateComplete, detail, true)
   of "strategy": operation.update("Optimization", name, stateComplete, detail)
   of "tick":
-    inc operation.frame
     operation.render()
-  of "done": operation.update("Compilation", name, stateComplete)
+  of "done":
+    operation.update("Compilation", name, stateComplete)
+    operation.finishWork("Compilation")
+  of "run":
+    operation.startWork("Execution")
+    operation.update("Execution", name, stateWorking)
+  of "ran":
+    operation.update("Execution", name, stateComplete)
+    operation.finishWork("Execution")
+  of "sample":
+    operation.startWork("Measurement")
+    operation.update("Measurement", name, stateWorking)
+  of "sampled":
+    operation.update("Measurement", name, stateComplete)
+    operation.finishWork("Measurement")
   of "link":
     operation.completeStage("Compilation")
     operation.update("Linking", name, stateWorking, detail)
@@ -191,8 +334,10 @@ proc report*(operation: Operation; phase, name, detail: string; cached = false) 
   of "failed":
     operation.failWorking()
     operation.render()
-  of "reuse": operation.update("Compilation", name, stateComplete,
-    "project cache", true)
+  of "reuse":
+    operation.update("Compilation", name, stateComplete,
+      "project cache", true)
+    operation.finishWork("Compilation", cached = true)
   of "package": operation.update("Preparing", "metadata", stateComplete, detail)
   of "bundle": operation.update("Preparing", "source bundle", stateComplete, detail)
   of "upload": operation.update("Publishing", "registry", stateWorking, detail)
@@ -220,6 +365,12 @@ proc report*(operation: Operation; phase, name, detail: string; cached = false) 
     operation.completeStage("Installing")
     operation.update("Toolchain", name, stateComplete, detail)
   else: operation.update(phase.capitalizeAscii(), name, stateComplete, detail)
+  if operation.jsonOutput and phase != "tick":
+    let progress = operation.estimate()
+    echo $(%*{"event": phase, "name": name, "file": detail,
+      "cached": cached, "progress": {"known": progress.known,
+      "percent": progress.percent, "completed": progress.completed,
+      "total": progress.total, "remainingSeconds": progress.remaining}})
 
 proc reporter*(operation: Operation): BuildProgress =
   result = proc(phase, name, detail: string; cached: bool) =
@@ -233,10 +384,20 @@ proc finish*(operation: Operation; successful = true; summary = "") =
   else:
     operation.failWorking()
   operation.finished = true
+  operation.successful = successful
+  try:
+    operation.saveHistory()
+  except CatchableError:
+    discard
   if operation.jsonOutput:
+    let progress = operation.estimate()
     echo $(%*{"event": "complete", "operation": operation.name,
       "success": successful, "summary": summary,
-      "elapsed": epochTime() - operation.started})
+      "elapsed": epochTime() - operation.started,
+      "progress": {"known": progress.known,
+        "percent": if successful and not progress.known: 100 else: progress.percent,
+        "completed": progress.completed, "total": progress.total,
+        "remainingSeconds": 0.0}})
   else:
     operation.render(force = true, complete = true, successful = successful,
       summary = summary)

@@ -9,7 +9,7 @@ const manifest = JSON.parse(readFileSync(new URL('../../editors/textmate/package
 const rules = manifest.contributes.configurationDefaults['editor.tokenColorCustomizations'].textMateRules;
 for (const rule of rules) for (const scope of rule.scope) assert(scope.startsWith('source.foo '), `Color override leaks outside FOO: ${scope}`);
 for (const scope of Object.keys(manifest.contributes.configurationDefaults['editor.semanticTokenColorCustomizations'].rules)) assert(scope.endsWith(':foo'));
-const path = new URL('../../editors/textmate/grammars/foo.tmLanguage.json', import.meta.url);
+const path = new URL('../../editors/textmate/grammars/foo.json', import.meta.url);
 const raw = tm.parseRawGrammar(readFileSync(path, 'utf8'), path.pathname);
 await onig.loadWASM(readFileSync(require.resolve('vscode-oniguruma/release/onig.wasm')));
 const registry = new tm.Registry({

@@ -1,0 +1,40 @@
+use net as network.
+use testing as check.
+
+test "UDP unicast hop limit" {
+  constant socket is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(socket) fallback nothing. }
+  check.expect((network.unicast(socket, 32) try) is 32).
+  check.expect((network.unicast(socket, 0) fallback 999) is 999).
+  check.expect((network.unicast(socket, 256) fallback 999) is 999).
+}
+
+test "UDP traffic class" {
+  constant socket is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(socket) fallback nothing. }
+  check.expect((network.traffic(socket, 0) try) is 0).
+  check.expect((network.traffic(socket, 256) fallback 999) is 999).
+}
+
+test "UDP socket buffers" {
+  constant socket is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(socket) fallback nothing. }
+  constant receive is network.buffer(socket, "receive", 65536) try.
+  check.expect(receive is greater than 0).
+  check.expect((network.capacity(socket, "receive") try) is receive).
+  constant send is network.buffer(socket, "send", 65536) try.
+  check.expect(send is greater than 0).
+  check.expect((network.capacity(socket, "send") try) is send).
+  check.expect((network.buffer(socket, "send", 0) fallback 999) is 999).
+  check.expect((network.capacity(socket, "other") fallback 999) is 999).
+  check.expect((network.buffer(socket, "other", 1) fallback 999) is 999).
+}
+
+test "IPv6 UDP options" {
+  constant socket is network.bind("::1", 0) try.
+  after { network.dispose(socket) fallback nothing. }
+  check.expect((network.unicast(socket, 42) try) is 42).
+  check.expect((network.traffic(socket, 0) try) is 0).
+  constant size is network.buffer(socket, "receive", 32768) try.
+  check.expect((network.capacity(socket, "receive") try) is size).
+}

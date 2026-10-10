@@ -1,0 +1,97 @@
+{
+  "mode": "a",
+  "controlKind": "native",
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "cpu": "11th Gen Intel(R) Core(TM) i5-1145G7 @ 2.60GHz",
+    "node": "v24.11.1"
+  },
+  "operationMedianMs": {
+    "foo": 3.3861,
+    "control": 2.955
+  },
+  "processMedianMs": {
+    "foo": 146.5897,
+    "control": 181.72569999999996
+  },
+  "samples": {
+    "foo": [
+      {
+        "wallMs": 91.19920000000002,
+        "operationMs": 3.5428
+      },
+      {
+        "wallMs": 88.83809999999994,
+        "operationMs": 3.3861
+      },
+      {
+        "wallMs": 149.3472999999999,
+        "operationMs": 1.8833
+      },
+      {
+        "wallMs": 146.5897,
+        "operationMs": 1.7732
+      },
+      {
+        "wallMs": 207.3798999999999,
+        "operationMs": 5.6932
+      },
+      {
+        "wallMs": 170.7543999999998,
+        "operationMs": 2.0379
+      },
+      {
+        "wallMs": 166.97429999999986,
+        "operationMs": 4.0905
+      },
+      {
+        "wallMs": 130.47860000000037,
+        "operationMs": 3.4441
+      },
+      {
+        "wallMs": 136.39219999999978,
+        "operationMs": 2.011
+      }
+    ],
+    "control": [
+      {
+        "wallMs": 156.0254,
+        "operationMs": 4.9614
+      },
+      {
+        "wallMs": 125.13879999999995,
+        "operationMs": 4.0437
+      },
+      {
+        "wallMs": 211.15879999999993,
+        "operationMs": 2.2842
+      },
+      {
+        "wallMs": 124.37329999999997,
+        "operationMs": 2.452
+      },
+      {
+        "wallMs": 181.72569999999996,
+        "operationMs": 2.8332
+      },
+      {
+        "wallMs": 193.55729999999994,
+        "operationMs": 3.1543
+      },
+      {
+        "wallMs": 222.48639999999978,
+        "operationMs": 3.1203
+      },
+      {
+        "wallMs": 183.86050000000023,
+        "operationMs": 2.6787
+      },
+      {
+        "wallMs": 165.73950000000013,
+        "operationMs": 2.955
+      }
+    ]
+  }
+}

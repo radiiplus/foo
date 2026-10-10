@@ -63,6 +63,10 @@ registryFiles["indexes/index.json"] = $(%*{
   "shards": [{"path": "indexes/index-000001.jsonl"}],
 })
 registryFiles["indexes/index-000001.jsonl"] = $remoteEntry & "\n"
+registryFiles["registry/standard.json"] = $(%*{
+  "schema": "foo.standard-catalog/v1", "revision": "empty", "count": 0,
+  "entries": [], "packages": [],
+})
 registryFiles["packages/remote/1.0.0.json"] = $(%*{
   "schema": "foo.package/v1",
   "name": "remote",

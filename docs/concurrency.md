@@ -21,7 +21,7 @@ function worker {
 }
 
 constant handle is threads.spawn(worker) try.
-after { threads.close[threads.Thread](handle) fallback nothing. }
+after { threads.close[threads.thread](handle) fallback nothing. }
 
 display "Waiting for worker".
 threads.wait(handle) try.
@@ -34,7 +34,7 @@ and use `after` to guarantee that a successful lock is released.
 ```foo
 use thread as threads.
 
-function protect(mutex pointer to threads.Mutex)
+function protect(mutex pointer to threads.guard)
   giving failable nothing {
   threads.lock(mutex) try.
   after { threads.unlock(mutex) fallback nothing. }
@@ -67,6 +67,11 @@ Use `task.launch(scope, callback, argument)` for scoped work and call
 `task.submit(pool, callback, argument)` followed by `task.wait(pool)` for pooled
 work. Channel values are signed 64-bit integers; `task.send` and `task.receive`
 return booleans so the caller can handle a closed or unavailable channel.
+`task.cancel(scope)` and `task.halt(pool)` request cooperative
+cancellation. New work is rejected, queued pool callbacks are skipped, and a
+running callback can check `task.cancelled` and return. A scope or pool created
+inside a callback inherits cancellation from its parent task. Join or wait for
+callbacks to finish before using the data they may have accessed.
 
 Backend selection is a compile-time optimization decision, not a source-level
 fork (two different versions written by the programmer). A backend must

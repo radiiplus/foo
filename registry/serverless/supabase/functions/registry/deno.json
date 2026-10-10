@@ -3,6 +3,9 @@
     "lib": ["deno.window"],
     "strict": true
   },
+  "imports": {
+    "saxes": "npm:saxes@6.0.0"
+  },
   "fmt": {
     "lineWidth": 100,
     "semiColons": true,

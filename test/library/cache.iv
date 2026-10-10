@@ -1,0 +1,22 @@
+use arch as cpu.
+use "../../lib/memory.iv".
+use sequence as sequences.
+use testing as check.
+
+test "cache and alignment" {
+  constant owner is system.
+  constant original is reserve(owner, 16, 64) try.
+  check.expect(aligned(original, 64)).
+  copy(owner, original, "FOO") try.
+  constant grown is expand(owner, original, 32) try.
+  after { release(owner, grown) fallback nothing. }
+  check.expect(aligned(grown, 64)).
+  constant bytes is bytes(owner, grown, 3) try.
+  cpu.prefetch(bytes, 0).
+  cpu.prefetch(bytes, 3).
+  check.expect(bytes at 0 is 70).
+  constant writable is sequences.sized[byte](3) try.
+  after { sequences.release[byte](writable) fallback nothing. }
+  cpu.stage(writable, 1).
+  cpu.stage(writable, 3).
+}

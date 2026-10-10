@@ -1,3 +1,62 @@
 -- Declares zlib and gzip compression.
+use io as streams.
+use text as words.
 public use "compress" function pack(value text, format text) giving failable text.
 public use "compress" function unpack(value text, format text, limit unsigned 32) giving failable text.
+public use "compress" function header(length unsigned) giving failable text.
+public use "compress" function extent(value text) giving failable unsigned.
+
+-- Reads up to size bytes; an empty result means EOF only before any bytes arrive.
+function exact(source pointer to streams.stream, size unsigned) giving failable text {
+  dynamic result is streams.read(source, size) try.
+  after error { words.release(result) fallback nothing. }
+  while words.length(result) less than size and words.length(result) greater than 0 {
+    constant next is streams.read(source, size subtract words.length(result)) try.
+    after { words.release(next) fallback nothing. }
+    when words.length(next) is 0 { give fail(Error.Truncated). }
+    constant joined is words.concatenate(result, next) try.
+    words.release(result) fallback nothing.
+    set result to joined.
+  }
+  give result.
+}
+
+-- A stream is a sequence of four-byte little-endian lengths and independent
+-- gzip or zlib members. Each input chunk is compressed and released separately.
+public function encode(source pointer to streams.stream, destination pointer to streams.stream,
+    format text, chunk unsigned 32) giving failable nothing {
+  when chunk is 0 { give fail(Error.Size). }
+  while true {
+    constant content is streams.read(source, chunk) try.
+    after { words.release(content) fallback nothing. }
+    when words.length(content) is 0 { stop. }
+    constant compressed is pack(content, format) try.
+    after { words.release(compressed) fallback nothing. }
+    constant prefix is header(words.length(compressed)) try.
+    after { words.release(prefix) fallback nothing. }
+    streams.write(destination, prefix) try.
+    streams.write(destination, compressed) try.
+  }
+  give nothing.
+}
+
+-- Limits apply to each frame, so the stream can be arbitrarily long.
+public function decode(source pointer to streams.stream, destination pointer to streams.stream,
+    format text, frame unsigned 32, limit unsigned 32) giving failable nothing {
+  when frame is 0 { give fail(Error.Size). }
+  while true {
+    constant prefix is exact(source, 4) try.
+    after { words.release(prefix) fallback nothing. }
+    when words.length(prefix) is 0 { stop. }
+    when words.length(prefix) is not 4 { give fail(Error.Truncated). }
+    constant length is extent(prefix) try.
+    when length greater than frame { give fail(Error.Size). }
+    constant compressed is exact(source, length) try.
+    after { words.release(compressed) fallback nothing. }
+    when words.length(compressed) is not length { give fail(Error.Truncated). }
+    constant output is unpack(compressed, format, limit) try.
+    after { words.release(output) fallback nothing. }
+    streams.write(destination, output) try.
+  }
+  give nothing.
+}

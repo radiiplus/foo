@@ -1,0 +1,133 @@
+use bitmap as bits.
+use testing as check.
+
+function sample giving failable bits.bitmap {
+  constant empty is bits.create(130) try.
+  constant first is bits.put(empty, 0, true) try.
+  constant second is bits.put(first, 63, true) try.
+  constant third is bits.put(second, 64, true) try.
+  after {
+    bits.release(empty) fallback nothing.
+    bits.release(first) fallback nothing.
+    bits.release(second) fallback nothing.
+    bits.release(third) fallback nothing.
+  }
+  give bits.put(third, 129, true) try.
+}
+
+function outside(value bits.bitmap, index unsigned) giving failable boolean {
+  constant result is bits.toggle(value, index) try.
+  bits.release(result) try.
+  give false.
+}
+
+function mismatch(left bits.bitmap, right bits.bitmap) giving failable boolean {
+  constant result is bits.symmetric(left, right) try.
+  bits.release(result) try.
+  give false.
+}
+
+test "persistent bitmap toggle checks index" {
+  constant source is sample try.
+  after { bits.release(source) fallback nothing. }
+  constant cleared is bits.toggle(source, 63) try.
+  after { bits.release(cleared) fallback nothing. }
+  constant added is bits.toggle(cleared, 65) try.
+  after { bits.release(added) fallback nothing. }
+  check.number(bits.count(source), 4).
+  check.number(bits.count(cleared), 3).
+  check.number(bits.count(added), 4).
+  check.expect(bits.get(source, 63) try).
+  check.expect(not (bits.get(cleared, 63) try)).
+  check.expect(bits.get(added, 65) try).
+  check.expect(not (bits.get(source, 65) try)).
+  check.expect(outside(source, 130) fallback true).
+}
+
+test "bitmap complement clears unused tail bits" {
+  constant source is sample try.
+  after { bits.release(source) fallback nothing. }
+  constant flipped is bits.invert(source) try.
+  after { bits.release(flipped) fallback nothing. }
+  check.number(bits.count(flipped), 126).
+  check.expect(not (bits.get(flipped, 0) try)).
+  check.expect(bits.get(flipped, 1) try).
+  check.expect(not (bits.get(flipped, 63) try)).
+  check.expect(not (bits.get(flipped, 64) try)).
+  check.expect(bits.get(flipped, 128) try).
+  check.expect(not (bits.get(flipped, 129) try)).
+  check.number(flipped.words at 2, 1).
+  check.number(bits.count(source), 4).
+  constant restored is bits.invert(flipped) try.
+  after { bits.release(restored) fallback nothing. }
+  check.number(bits.count(restored), 4).
+  check.expect(bits.get(restored, 129) try).
+  constant empty is bits.create(0) try.
+  after { bits.release(empty) fallback nothing. }
+  constant blank is bits.invert(empty) try.
+  after { bits.release(blank) fallback nothing. }
+  check.number(bits.count(blank), 0).
+}
+
+test "bitmap symmetric difference checks shapes" {
+  constant left is sample try.
+  after { bits.release(left) fallback nothing. }
+  constant empty is bits.create(130) try.
+  after { bits.release(empty) fallback nothing. }
+  constant first is bits.put(empty, 0, true) try.
+  constant second is bits.put(first, 65, true) try.
+  constant right is bits.put(second, 129, true) try.
+  after {
+    bits.release(first) fallback nothing.
+    bits.release(second) fallback nothing.
+    bits.release(right) fallback nothing.
+  }
+  constant result is bits.symmetric(left, right) try.
+  after { bits.release(result) fallback nothing. }
+  check.number(bits.count(result), 3).
+  check.expect(bits.get(result, 63) try).
+  check.expect(bits.get(result, 64) try).
+  check.expect(bits.get(result, 65) try).
+  check.expect(not (bits.get(result, 0) try)).
+  check.expect(not (bits.get(result, 129) try)).
+  check.number(bits.count(left), 4).
+  check.number(bits.count(right), 3).
+  constant same is bits.symmetric(left, left) try.
+  after { bits.release(same) fallback nothing. }
+  check.number(bits.count(same), 0).
+  constant short is bits.create(64) try.
+  after { bits.release(short) fallback nothing. }
+  check.expect(mismatch(left, short) fallback true).
+}
+
+test "bitmap next finds inclusive set bits" {
+  constant value is sample try.
+  after { bits.release(value) fallback nothing. }
+  check.expect(bits.next(value, 0) is 0).
+  check.expect(bits.next(value, 1) is 63).
+  check.expect(bits.next(value, 63) is 63).
+  check.expect(bits.next(value, 64) is 64).
+  check.expect(bits.next(value, 65) is 129).
+  check.expect(bits.next(value, 129) is 129).
+  check.expect(bits.next(value, 130) is null).
+  check.expect(bits.next(value, 131) is null).
+  constant empty is bits.create(0) try.
+  after { bits.release(empty) fallback nothing. }
+  check.expect(bits.next(empty, 0) is null).
+}
+
+test "bitmap previous finds bits before boundary" {
+  constant value is sample try.
+  after { bits.release(value) fallback nothing. }
+  check.expect(bits.previous(value, 0) is null).
+  check.expect(bits.previous(value, 1) is 0).
+  check.expect(bits.previous(value, 63) is 0).
+  check.expect(bits.previous(value, 64) is 63).
+  check.expect(bits.previous(value, 65) is 64).
+  check.expect(bits.previous(value, 129) is 64).
+  check.expect(bits.previous(value, 130) is 129).
+  check.expect(bits.previous(value, 131) is null).
+  constant empty is bits.create(0) try.
+  after { bits.release(empty) fallback nothing. }
+  check.expect(bits.previous(empty, 0) is null).
+}

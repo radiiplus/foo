@@ -1,4 +1,4 @@
-import std/[json, os, osproc, sequtils, strutils, tables]
+import std/[json, os, osproc, sequtils, strtabs, strutils, tables]
 import ../../ir/[kind, node]
 import ../../ir/reach
 import ../../build/options as buildOptions
@@ -27,11 +27,23 @@ const
   runtimeService = staticRead("service.zig")
   serviceHeader = staticRead("../native/service.h")
   serviceSource = staticRead("../native/service.c")
+  vulkanSource = staticRead("../native/vulkan.c")
+  gpuSource = staticRead("../native/gpu.c")
+
+proc bundledVulkan(): string =
+  var directory = getAppDir()
+  for depth in 0 .. 3:
+    let root = directory / "vendor" / "vulkan"
+    if fileExists(root / "volk.c") and
+        fileExists(root / "include" / "vulkan" / "vulkan_core.h"):
+      return root
+    directory = parentDir(directory)
 
 proc sharedCacheDirectory*(): string =
   let configured = getEnv("ZIG_GLOBAL_CACHE_DIR")
   if configured.len > 0: absolutePath(configured)
-  else: getHomeDir() / ".foo" / "cache" / "zig" / toolchainManager.version
+  else: absolutePath(".artifacts" / "cache" / "zig" /
+    toolchainManager.version)
 
 proc stageEmbeds(module: Module; sourceFile, outDir: string) =
   let sourceDir = parentDir(absolutePath(sourceFile))
@@ -106,6 +118,16 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
       writeFile(fragment, escaped.code)
     let needsService = options.runtime != "none" and
       hosted(escaped.module, includeTask = false)
+    let usesGpu = escaped.module.externs.anyIt(it.abi == "runtime.gpu")
+    let usesVulkan = usesGpu or escaped.module.externs.anyIt(
+      it.abi == "runtime.vulkan")
+    var vulkanRoot = ""
+    if usesVulkan:
+      vulkanRoot = bundledVulkan()
+      if vulkanRoot.len == 0:
+        raise newException(IOError, "Vulkan needs the bundled headers and volk sources.")
+      writeFile(outDir / "vulkan.c", vulkanSource)
+      writeFile(outDir / "gpu.c", gpuSource)
     let heap = options.runtime != "none" and
       options.kind notin ["static", "shared"] and
       (options.target.len == 0 or options.target.contains("windows") or
@@ -131,6 +153,37 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
       let llvmRequired = fragment.len > 0 or needsService or iconScript.len > 0 or
         options.sources.len > 0 or options.sanitize.len > 0 or
         options.exports.len > 0 or options.script.len > 0
+      let msvc = options.target.contains("windows-msvc") or
+        (options.target.len == 0 and defined(windows))
+      let libc = if msvc: " -lucrt -lvcruntime" else: " -lc"
+      var libcConfig = ""
+      var libcHeaders: seq[string]
+      var libcLibraries: seq[string]
+      if msvc and defined(windows) and
+          (fragment.len > 0 or needsService or options.sources.len > 0):
+        let environment = newStringTable(modeCaseInsensitive)
+        for key, value in envPairs(): environment[key] = value
+        environment["ZIG_GLOBAL_CACHE_DIR"] = cache
+        let detected = execCmdEx(quoteShell(zigPath) & " libc",
+          env = environment, workingDir = outDir)
+        if detected.exitCode != 0:
+          raise newException(OSError, "Windows libc detection failed: " &
+            detected.output)
+        libcConfig = outDir / "libc.txt"
+        writeFile(libcConfig, detected.output)
+        for line in detected.output.splitLines():
+          if line.startsWith("include_dir="):
+            let includeDir = line[12 .. ^1]
+            libcHeaders.add(includeDir)
+            let sdk = parentDir(includeDir)
+            libcHeaders.add(sdk / "shared")
+            libcHeaders.add(sdk / "um")
+          elif line.startsWith("sys_include_dir="):
+            libcHeaders.add(line[16 .. ^1])
+          elif line.startsWith("crt_dir="):
+            libcLibraries.add(line[8 .. ^1])
+          elif line.startsWith("msvc_lib_dir="):
+            libcLibraries.add(line[13 .. ^1])
       let intensive = llvmRequired or mode == "release"
       let jobs = if options.jobs > 0: options.jobs else: buildOptions.jobLimit(intensive)
       if progress != nil:
@@ -154,6 +207,12 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
         " -j" & $jobs &
         " -femit-bin=" & quoteShell(artifactPath)
       if options.name.len > 0: command.add(" --name " & quoteShell(options.name))
+      if libcConfig.len > 0:
+        command.add(" --libc " & quoteShell(libcConfig))
+        for header in libcHeaders:
+          command.add(" -isystem " & quoteShell(header))
+        for library in libcLibraries:
+          command.add(" -L " & quoteShell(library))
       if options.exports.len > 0 or options.script.len > 0:
         command.add(" -flld -fllvm")
       if options.kind == "shared": command.add(" -dynamic")
@@ -176,9 +235,11 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
       if iconScript.len > 0: command.add(" " & quoteShell(iconScript))
       if options.target.len > 0:
         command.add(" -target " & quoteShell(options.target))
+      elif defined(windows):
+        command.add(" -target " & quoteShell(architecture() & "-windows-msvc"))
       if fragment.len > 0:
         command.add(" " & quoteShell(fragment))
-        if options.runtime != "none": command.add(" -lc")
+        if options.runtime != "none": command.add(libc)
       if options.target.contains("freestanding"): command.add(" -fno-entry")
       if options.threads:
         command.add(" -mcpu generic+atomics+bulk_memory --shared-memory")
@@ -193,14 +254,26 @@ proc build*(module: Module; mode: string; outDir: string; zigPath = "zig";
         command.add(" -I " & quoteShell(path))
       if needsService:
         let serviceFlags = if selective(options, fragment.len > 0):
-            resourceDefines(escaped.module) else: @[]
+            resourceDefines(escaped.module)
+          elif usesVulkan:
+            (if usesGpu: @["-DFOO_SERVICE_VULKAN", "-DFOO_SERVICE_GPU"]
+              else: @["-DFOO_SERVICE_VULKAN"])
+          else: @[]
+        let vectorFlag = if arch.architecture(options.target) == "x86_64":
+            " -DFOO_DISABLE_AVX512" else: ""
         command.add(" -I " & quoteShell(outDir) &
-          " -cflags -ffunction-sections -fdata-sections " &
+          (if usesVulkan: " -I " & quoteShell(vulkanRoot) &
+            " -I " & quoteShell(vulkanRoot / "include") else: "") &
+          " -cflags -ffunction-sections -fdata-sections -Wno-deprecated-declarations" &
+          vectorFlag & " " &
           serviceFlags.mapIt(quoteShell(it)).join(" ") & " -- " &
-          quoteShell(outDir / "service.c") & " -lc")
+          quoteShell(outDir / "service.c") & libc)
+        if usesVulkan:
+          command.add(" -cflags -I " & quoteShell(vulkanRoot / "include") &
+            " -- " & quoteShell(vulkanRoot / "volk.c"))
         for library in libraries(options.target):
           command.add(" -l" & quoteShell(library))
-      elif heap:
+      elif heap and not msvc:
         command.add(" -lc")
       if options.flags.len > 0 and options.sources.len > 0:
         command.add(" -cflags " &

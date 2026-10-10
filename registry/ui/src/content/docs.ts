@@ -1,5 +1,6 @@
 import overview from "../../../../docs/README.md?raw";
 import advanced from "../../../../docs/advanced.md?raw";
+import audit from "../../../../docs/audit.md?raw";
 import basics from "../../../../docs/basics.md?raw";
 import benchmarking from "../../../../docs/benchmarking.md?raw";
 import collections from "../../../../docs/collections.md?raw";
@@ -69,6 +70,7 @@ export const chapters: Chapter[] = [
   { id: "testing", title: "Testing", short: "Testing", description: "Write isolated tests, use assertions, filter runs, watch changes, and configure native fixtures.", group: "Build", source: testing },
   { id: "benchmarking", title: "Benchmarking", short: "Benchmarking", description: "Measure complete programs with warmups, repeated samples, and clear summary statistics.", group: "Build", source: benchmarking },
   { id: "performance", title: "Performance", short: "Performance", description: "Review current benchmark methodology, sequence behavior, runtime telemetry, focused results, and profiling decisions.", group: "Build", source: performance },
+  { id: "audit", title: "Optimization Audit", short: "Optimization audit", description: "Inspect the packed bitmap optimization, paired measurements, and the limits of each result.", group: "Build", source: audit },
   { id: "tuning", title: "Optimization Under the Hood", short: "Optimization", description: "Understand execution specialization, boundary and work elimination, fusion rules, adaptive paths, and measured evidence.", group: "Build", source: tuning },
   { id: "compiler", title: "The Compiler", short: "Compiler", description: "Follow source through checking, planning, speed improvements, and C or Zig code generation.", group: "Reference", source: compiler },
   { id: "diagnostics", title: "Diagnostics", short: "Diagnostics", description: "Read grouped colored errors and consume exact verbose, JSON, and editor diagnostics.", group: "Reference", source: diagnostics },
@@ -95,7 +97,7 @@ export function chapter(id: string) {
 
 export function link(href?: string) {
   if (!href) return href;
-  const file = href.match(/(?:^|\/)(README|intro|start|basics|variables|types|operators|flow|functions|expressions|foundations|language|collections|errors|modules|projects|memory|patterns|systems|concurrency|library|catalog|packages|testing|benchmarking|performance|tuning|compiler|diagnostics|platforms|status|reference|advanced|syntax)\.md(?:#(.*))?$/i);
+  const file = href.match(/(?:^|\/)(README|intro|start|basics|variables|types|operators|flow|functions|expressions|foundations|language|collections|errors|modules|projects|memory|patterns|systems|concurrency|library|catalog|packages|testing|benchmarking|performance|audit|tuning|compiler|diagnostics|platforms|status|reference|advanced|syntax)\.md(?:#(.*))?$/i);
   if (!file) return href;
   const ids: Record<string, string> = {
     README: "overview",

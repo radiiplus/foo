@@ -1,0 +1,46 @@
+use sequence as items.
+use testing as check.
+
+test "ordered binary search" {
+  constant empty is items.create[integer].
+  check.expect(items.lower[integer](empty, 2) is 0).
+  check.expect(items.upper[integer](empty, 2) is 0).
+  check.expect(items.search[integer](empty, 2) is null).
+
+  constant sorted is items.sized[integer](7) try.
+  after { items.release[integer](sorted) fallback nothing. }
+  set sorted at 0 to 1.
+  set sorted at 1 to 2.
+  set sorted at 2 to 2.
+  set sorted at 3 to 2.
+  set sorted at 4 to 5.
+  set sorted at 5 to 7.
+  set sorted at 6 to 9.
+  check.expect(items.lower[integer](sorted, 0) is 0).
+  check.expect(items.lower[integer](sorted, 2) is 1).
+  check.expect(items.upper[integer](sorted, 2) is 4).
+  check.expect(items.lower[integer](sorted, 6) is 5).
+  check.expect(items.upper[integer](sorted, 9) is 7).
+  check.expect(items.search[integer](sorted, 2) is 1).
+  check.expect(items.search[integer](sorted, 5) is 4).
+  check.expect(items.search[integer](sorted, 3) is null).
+  check.expect(items.search[integer](sorted, 10) is null).
+}
+
+test "unique ascending values owns its result" {
+  constant values is items.sized[integer](5) try.
+  after { items.release[integer](values) fallback nothing. }
+  set values at 0 to 1.
+  set values at 1 to 1.
+  set values at 2 to 3.
+  set values at 3 to 3.
+  set values at 4 to 5.
+  constant distinct is items.unique[integer](values) try.
+  after { items.release[integer](distinct) fallback nothing. }
+  check.number(items.length[integer](distinct), 3).
+  check.expect((distinct at 0) is 1).
+  check.expect((distinct at 1) is 3).
+  check.expect((distinct at 2) is 5).
+  set values at 0 to 9.
+  check.expect((distinct at 0) is 1).
+}

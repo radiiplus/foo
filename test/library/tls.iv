@@ -1,0 +1,51 @@
+use tls as secure.
+use testing as check.
+use text as words.
+use "../../lib/process.iv" as jobs.
+use "../../lib/codec.iv" as values.
+
+function port giving failable unsigned {
+  constant source is jobs.environment("FOO_TLS_TEST_PORT") try.
+  after { words.release(source) fallback nothing. }
+  give values.decode[unsigned](source) try.
+}
+
+function invalid giving failable boolean {
+  constant connection is secure.connect("localhost", 0) try.
+  secure.close(connection) try.
+  give false.
+}
+
+function untrusted giving failable boolean {
+  constant connection is secure.connect("localhost", port try) try.
+  secure.close(connection) try.
+  give false.
+}
+
+test "TLS validates connection arguments" {
+  when secure.available {
+    check.expect(invalid fallback true).
+  }
+}
+
+test "TLS loopback verifies the peer and transfers bytes" {
+  constant enabled is jobs.environment("FOO_TLS_TEST") fallback "".
+  after { words.release(enabled) fallback nothing. }
+  when enabled is "1" {
+    constant connection is secure.connect("localhost", port try) try.
+    after { secure.close(connection) fallback nothing. }
+    check.expect((secure.timeout(connection, "receive", 30000) try) greater than 0).
+    check.number(secure.send(connection, "ping") try, 4).
+    constant response is secure.receive(connection, 4) try.
+    after { words.release(response) fallback nothing. }
+    check.expect(response is "pong").
+  }
+}
+
+test "TLS rejects an untrusted peer" {
+  constant enabled is jobs.environment("FOO_TLS_REJECT") fallback "".
+  after { words.release(enabled) fallback nothing. }
+  when enabled is "1" {
+    check.expect(untrusted fallback true).
+  }
+}

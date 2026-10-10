@@ -1,0 +1,96 @@
+{
+  "mode": "a",
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "cpu": "11th Gen Intel(R) Core(TM) i5-1145G7 @ 2.60GHz",
+    "node": "v24.11.1"
+  },
+  "operationMedianMs": {
+    "foo": 1.4111,
+    "control": 117.4396
+  },
+  "processMedianMs": {
+    "foo": 75.21849999999995,
+    "control": 194.95310000000018
+  },
+  "samples": {
+    "foo": [
+      {
+        "wallMs": 67.93900000000008,
+        "operationMs": 1.2259
+      },
+      {
+        "wallMs": 108.58939999999984,
+        "operationMs": 1.817
+      },
+      {
+        "wallMs": 222.01080000000024,
+        "operationMs": 1.4395
+      },
+      {
+        "wallMs": 85.29220000000032,
+        "operationMs": 0.8851
+      },
+      {
+        "wallMs": 61.408600000000206,
+        "operationMs": 1.3512
+      },
+      {
+        "wallMs": 64.02129999999988,
+        "operationMs": 1.0006
+      },
+      {
+        "wallMs": 68.95990000000029,
+        "operationMs": 1.4111
+      },
+      {
+        "wallMs": 75.21849999999995,
+        "operationMs": 2.0551
+      },
+      {
+        "wallMs": 117.0967999999998,
+        "operationMs": 2.3827
+      }
+    ],
+    "control": [
+      {
+        "wallMs": 177.2911999999999,
+        "operationMs": 117.4396
+      },
+      {
+        "wallMs": 180.51689999999985,
+        "operationMs": 112.7205
+      },
+      {
+        "wallMs": 192.79140000000007,
+        "operationMs": 117.3988
+      },
+      {
+        "wallMs": 194.95310000000018,
+        "operationMs": 128.406
+      },
+      {
+        "wallMs": 173.10310000000027,
+        "operationMs": 108.3124
+      },
+      {
+        "wallMs": 320.48590000000013,
+        "operationMs": 229.6416
+      },
+      {
+        "wallMs": 265.9205999999999,
+        "operationMs": 189.5074
+      },
+      {
+        "wallMs": 200.57759999999962,
+        "operationMs": 100.6301
+      },
+      {
+        "wallMs": 278.39820000000054,
+        "operationMs": 154.0217
+      }
+    ]
+  }
+}

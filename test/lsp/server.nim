@@ -10,9 +10,9 @@ define Count as integer.
 function load(value integer default 1) giving failable integer { give value. }
 function checked giving failable integer { give load try. }
 function binary giving failable nothing {
-  constant content is files.readbytes("data.bin") try.
-  after { files.releasebytes(content) fallback nothing. }
-  files.writebytes("copy.bin", content) try.
+  constant content is files.load("data.bin") try.
+  after { files.release(content) fallback nothing. }
+  files.save("copy.bin", content) try.
   give nothing.
 }
 constant typed is input fallback "".

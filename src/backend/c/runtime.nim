@@ -26,21 +26,41 @@ proc member(typ: `Type`): string =
     else: "text"
   else: raise newException(ValueError, "Unsupported C runtime result type")
 
+proc castable(typ: `Type`): bool =
+  if typ == nil: return false
+  case typ.kind
+  of TypeKind.Int, TypeKind.Uint, TypeKind.Float: true
+  of TypeKind.ExternStruct:
+    if typ.fields.len == 0: return false
+    for field in typ.fields.values:
+      if not castable(field): return false
+    true
+  else: false
+
 proc supported(provider, operation: string): bool =
   let operations = {
-    "arch": @["count", "pause", "ticks"],
+    "arch": @["count", "tally", "combine", "pause", "ticks", "target", "prefetch", "stage"],
     "list": @["create", "push", "get", "length", "close"],
-    "memory": @["system", "arena", "allocate", "release", "expand", "copy",
-      "view", "close", "transfer", "clear", "compare", "identical"],
+    "memory": @["system", "arena", "allocate", "reserve", "aligned",
+      "release", "expand", "copy", "view", "bytes", "close", "transfer",
+      "clear", "compare", "identical"],
     "stream": @["input", "output", "report", "write", "read", "close", "print"],
     "testing": @["expect", "same", "number", "positive", "real", "point"],
     "system": @["cores", "host", "page"],
     "unicode": @["scan", "next", "release", "valid", "points", "wide", "narrow"],
-    "atomic": @["create", "release", "load", "store", "add", "swap", "replace"],
+    "atomic": @["create", "release", "load", "store", "add", "deduct", "swap", "replace", "compare"],
     "buffer": @["free", "words", "points"],
-    "crypto": @["hash", "random", "seal", "open", "key", "sign", "verify",
-      "password", "confirm"],
-    "compress": @["pack", "unpack"],
+    "binary": @["octet", "widen", "encode", "scan", "next", "fixed", "parse",
+      "zigzag", "unfold", "hex", "unpack", "base64", "restore"],
+    "checksum": @["compute", "begin", "update", "result", "close"],
+    "crypto": @["hash", "digest", "hex", "begin", "update",
+      "finalize", "result", "close", "auth", "absorb", "tag", "check",
+      "discard", "derive", "compare", "random", "seal", "open",
+      "key", "sign", "verify", "password", "confirm", "blake",
+      "fingerprint", "initiate", "append", "extract",
+      "render", "retire", "reproduce", "available", "wrap",
+      "unwrap", "protect", "shield", "reveal", "forget"],
+    "compress": @["pack", "unpack", "header", "extent"],
     "json": @["parse", "write", "field", "item", "quote", "kind", "size",
       "set", "append", "release", "stream", "feed", "next", "data", "close"],
     "http": @["client", "trust", "attach", "clear", "redirects", "reuse", "request", "status", "body", "release",
@@ -325,7 +345,32 @@ proc runtime*(externs: seq[Extern];
       namePrinter(declaration.name) & "(" &
       (if parameters.len > 0: parameters.join(", ") else: "void") & ")"
 
-    if provider in services:
+    if provider == "resource" and operation == "heap":
+      wrappers.add(signature & " { return foo_heap_bytes(); }")
+      continue
+    if provider == "text" and operation == "release":
+      modules.incl("service")
+      wrappers.add(signature & " { FOOResult local = foo_free(p0.data, p0.len); " &
+        "if (!local.error || strcmp(local.error, \"UnknownBuffer\") != 0) " &
+        "return (" & typePrinter(declaration.ret) & "){local.error, 0}; " &
+        "FooResult remote = foo_text_release((FooText){p0.data, p0.len}); " &
+        "return (" & typePrinter(declaration.ret) & "){foo_service_error(remote.error), 0}; }")
+      continue
+    if provider == "memory" and operation == "reinterpret":
+      if declaration.params.len != 3 or declaration.ret == nil or
+          declaration.ret.kind != TypeKind.Failable or
+          declaration.ret.elem.kind != TypeKind.Ptr or
+          not castable(declaration.ret.elem.elem):
+        raise newException(ValueError,
+          "memory.cast requires a scalar or scalar-only C record")
+      modules.incl("memory")
+      let target = typePrinter(declaration.ret.elem.elem)
+      wrappers.add(signature & " { FOOResult result = foo_memory_reinterpret(" &
+        "p0, p1, p2, sizeof(" & target & "), _Alignof(" & target & ")); " &
+        "return (" & typePrinter(declaration.ret) & "){result.error, (" &
+        typePrinter(declaration.ret.elem) & ")result.pointer}; }")
+      continue
+    if provider in services and provider != "testing":
       modules.incl("service")
       var prefix = ""
       var arguments: seq[string]
@@ -379,7 +424,7 @@ proc runtime*(externs: seq[Extern];
       modules.incl("json")
       modules.incl("codec")
       var serial = 0
-      if operation == "encode":
+      if operation in ["encode", "marshal"]:
         if declaration.params.len != 1 or declaration.ret == nil or
             declaration.ret.kind != TypeKind.Failable or
             declaration.ret.elem.kind != TypeKind.Slice:
@@ -391,7 +436,7 @@ proc runtime*(externs: seq[Extern];
           typePrinter(declaration.ret) & "){NULL, (" & typePrinter(declaration.ret.elem) &
           "){writer.data, writer.length}}; codec_failed: free(writer.data); return (" &
           typePrinter(declaration.ret) & "){codec_error, {0}}; }")
-      elif operation == "decode":
+      elif operation in ["decode", "unmarshal"]:
         if declaration.params.len != 1 or declaration.ret == nil or
             declaration.ret.kind != TypeKind.Failable:
           raise newException(ValueError, "codec.decode needs text and a failable concrete result")
@@ -410,8 +455,14 @@ proc runtime*(externs: seq[Extern];
     if provider == "sequence":
       if operation == "create":
         wrappers.add(signature & " { return (" & typePrinter(declaration.ret) & "){0}; }")
-      elif operation == "length":
+      elif operation in ["length", "extent"]:
         wrappers.add(signature & " { return p0.len; }")
+      elif operation == "view":
+        let sliceType = typePrinter(declaration.ret.elem)
+        wrappers.add(signature & " { if (p1 > p0.len || p2 > p0.len - p1) return (" &
+          typePrinter(declaration.ret) & "){\"Bounds\", {0}}; return (" &
+          typePrinter(declaration.ret) & "){0, (" & sliceType &
+          "){p0.data ? p0.data + p1 : 0, (size_t)p2}}; }")
       elif operation == "sized":
         let sliceType = typePrinter(declaration.ret.elem)
         let elementType = typePrinter(declaration.ret.elem.elem)
@@ -512,7 +563,10 @@ proc runtime*(externs: seq[Extern];
     for index, typ in declaration.params:
       if typ.kind == TypeKind.Optional:
         arguments.add("(FOONext){p" & $index & ".present, p" & $index & ".value}")
-      elif provider == "memory" and typ.kind == TypeKind.Slice:
+      elif provider == "arch" and operation in ["tally", "combine"] and
+          typ.kind == TypeKind.Slice:
+        arguments.add("(FOOText){(const uint8_t *)p" & $index & ".data, p" & $index & ".len}")
+      elif provider in ["arch", "binary", "memory", "crypto", "checksum"] and typ.kind == TypeKind.Slice:
         arguments.add("(FOOText){p" & $index & ".data, p" & $index & ".len}")
       else:
         arguments.add("p" & $index)
@@ -522,11 +576,18 @@ proc runtime*(externs: seq[Extern];
     let leave = if locked: "foo_leave();" else: ""
     var body: string
     if declaration.ret.kind == TypeKind.Failable:
+      let value = if declaration.ret.elem.kind == TypeKind.Slice:
+          let pointer = if declaration.ret.elem.constant:
+              "result.text.data"
+            else:
+              "(" & typePrinter(declaration.ret.elem.elem) & " *)result.text.data"
+          "(" & typePrinter(declaration.ret.elem) & "){" & pointer & ", result.text.len}"
+        elif declaration.ret.elem.kind == TypeKind.Ptr:
+          "(" & typePrinter(declaration.ret.elem) & ")result.pointer"
+        else:
+          "result." & member(declaration.ret.elem)
       body = "FOOResult result = " & call & "; " & leave & " return (" &
-        typePrinter(declaration.ret) & "){ result.error, " &
-        (if declaration.ret.elem.kind == TypeKind.Ptr:
-          "(" & typePrinter(declaration.ret.elem) & ")" else: "") &
-        "result." & member(declaration.ret.elem) & " };"
+        typePrinter(declaration.ret) & "){ result.error, " & value & " };"
     elif declaration.ret.kind == TypeKind.Optional:
       body = "FOONext result = " & call & "; return (" &
         typePrinter(declaration.ret) & "){result.present, result.value};"

@@ -1,0 +1,17 @@
+-- Portable unsigned integer encodings over owned byte sequences.
+-- Results from encode and fixed must be released with sequence.release[byte].
+public define decoded as record {
+  value of type unsigned.
+  next of type unsigned.
+}.
+-- Canonical unsigned LEB128; at most ten bytes for an unsigned value.
+public use "binary" function encode(value unsigned) giving failable sequence of byte.
+use "binary" function scan(source sequence of constant byte, offset unsigned) giving failable unsigned.
+use "binary" function next(source sequence of constant byte, offset unsigned) giving failable unsigned.
+public function decode(source sequence of constant byte, offset unsigned) giving failable decoded {
+  give decoded(scan(source, offset) try, next(source, offset) try).
+}
+
+-- Fixed-width encoding accepts 1..8 bytes and "little" or "big" order.
+public use "binary" function fixed(value unsigned, width unsigned, order text) giving failable sequence of byte.
+public use "binary" function parse(source sequence of constant byte, offset unsigned, width unsigned, order text) giving failable unsigned.

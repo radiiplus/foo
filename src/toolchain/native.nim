@@ -4,6 +4,29 @@ type Supply* = object
   headers*: seq[string]
   links*: seq[tuple[name: string, path: string]]
   runtime*: seq[string]
+  defines*: seq[string]
+
+when defined(windows):
+  import std/[os, strutils]
+
+  proc bundledSodium(): string =
+    var directory = getAppDir()
+    for depth in 0 .. 3:
+      let root = directory / "vendor" / "libsodium" / "windows-x64"
+      if fileExists(root / "include" / "sodium.h") and
+          fileExists(root / "libsodium.lib"):
+        return root
+      directory = parentDir(directory)
+
+  proc bundledZlib(): string =
+    var directory = getAppDir()
+    for depth in 0 .. 3:
+      let root = directory / "vendor" / "zlib" / "windows-x64"
+      if fileExists(root / "include" / "zlib.h") and
+          fileExists(root / "include" / "zconf.h") and
+          fileExists(root / "zlib.lib"):
+        return root
+      directory = parentDir(directory)
 
 when defined(linux):
   import std/[os, osproc, strutils]
@@ -72,6 +95,23 @@ when defined(linux):
 
 proc prepare*(libs, paths: seq[string]; compiler, target: string;
     progress: BuildProgress = nil): Supply =
+  when defined(windows) and defined(amd64):
+    let selected = target.toLowerAscii()
+    if "z" in libs and (selected.len == 0 or
+        (("windows" in selected or "win32" in selected) and
+         ("x86_64" in selected or "amd64" in selected))):
+      let root = bundledZlib()
+      if root.len > 0:
+        result.headers.add(root / "include")
+        result.links.add(("z", root / "zlib.lib"))
+    if "sodium" in libs and (selected.len == 0 or
+        (("windows" in selected or "win32" in selected) and
+         ("x86_64" in selected or "amd64" in selected))):
+      let root = bundledSodium()
+      if root.len > 0:
+        result.headers.add(root / "include")
+        result.links.add(("sodium", root / "libsodium.lib"))
+        result.defines.add("SODIUM_STATIC=1")
   when defined(linux):
     if target.len > 0 and (not target.contains("linux") or
         (defined(amd64) and not target.contains("x86_64")) or

@@ -1,0 +1,55 @@
+use simd as lanes.
+use sequence as items.
+use testing as check.
+
+function short(source sequence of constant decimal 32) giving failable boolean {
+  constant value is lanes.load(source, 3) try.
+  give false.
+}
+
+test "contiguous vector loads and stores" {
+  constant source is items.sized[decimal 32](6) try.
+  after { items.release[decimal 32](source) fallback nothing. }
+  set source at 1 to 3.0.
+  set source at 2 to 5.0.
+  set source at 3 to 7.0.
+  set source at 4 to 9.0.
+  constant value is lanes.load(source, 1) try.
+  check.expect(value at 0 is 3.0 and value at 3 is 9.0).
+  constant destination is items.sized[decimal 32](6) try.
+  after { items.release[decimal 32](destination) fallback nothing. }
+  lanes.store(destination, 2, value) try.
+  check.expect(destination at 1 is 0.0 and destination at 2 is 3.0).
+  check.expect(destination at 5 is 9.0).
+  check.expect(short(source) fallback true).
+
+  constant numbers is items.sized[unsigned 32](5) try.
+  after { items.release[unsigned 32](numbers) fallback nothing. }
+  set numbers at 0 to 11.
+  set numbers at 3 to 17.
+  constant batch is lanes.words(numbers, 0) try.
+  check.expect(batch at 0 is 11 and batch at 3 is 17).
+  constant output is items.sized[unsigned 32](5) try.
+  after { items.release[unsigned 32](output) fallback nothing. }
+  lanes.write(output, 1, batch) try.
+  check.expect(output at 1 is 11 and output at 4 is 17).
+}
+
+test "wide decimal and integer vector memory" {
+  constant wide is items.sized[decimal](3) try.
+  after { items.release[decimal](wide) fallback nothing. }
+  set wide at 0 to 1.25.
+  set wide at 1 to 2.5.
+  constant pair is lanes.pair(wide, 0) try.
+  lanes.place(wide, 1, pair) try.
+  check.expect(wide at 1 is 1.25 and wide at 2 is 2.5).
+  constant integers is items.sized[integer 32](5) try.
+  after { items.release[integer 32](integers) fallback nothing. }
+  set integers at 0 to 11.
+  set integers at 1 to 22.
+  set integers at 2 to 33.
+  set integers at 3 to 44.
+  constant group is lanes.signed(integers, 0) try.
+  lanes.assign(integers, 1, group) try.
+  check.expect(integers at 1 is 11 and integers at 4 is 44).
+}

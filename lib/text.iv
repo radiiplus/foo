@@ -21,14 +21,14 @@ public function starts(content text, prefix text) giving boolean {
   give true.
 }
 public function ends(content text, suffix text) giving boolean {
-  constant contentLength is length(content).
-  constant suffixLength is length(suffix).
-  when suffixLength greater than contentLength {
+  constant size is length(content).
+  constant span is length(suffix).
+  when span greater than size {
     give false.
   }
   dynamic index of type unsigned is 0.
-  while index less than suffixLength {
-    when content at (contentLength subtract suffixLength plus index) is not suffix at index {
+  while index less than span {
+    when content at (size subtract span plus index) is not suffix at index {
       give false.
     }
     increase index by 1.
@@ -39,17 +39,17 @@ public function contains(content text, value text) giving boolean {
   give find(content, value) is not null.
 }
 public function split(content text, separator text) giving failable sequence of text {
-  constant separatorLength is length(separator).
-  constant contentLength is length(content).
-  when separatorLength is 0 {
-    give fail(Error.EmptySeparator).
+  constant width is length(separator).
+  constant size is length(content).
+  when width is 0 {
+    give fail(Error.Separator).
   }
   dynamic count of type unsigned is 1.
   dynamic cursor of type unsigned is 0.
-  while cursor plus separatorLength less than or equal to contentLength {
+  while cursor plus width less than or equal to size {
     dynamic matches is true.
     dynamic index of type unsigned is 0.
-    while index less than separatorLength {
+    while index less than width {
       when content at (cursor plus index) is not separator at index {
         set matches to false.
         stop.
@@ -58,7 +58,7 @@ public function split(content text, separator text) giving failable sequence of 
     }
     when matches {
       set count to count plus 1.
-      set cursor to cursor plus separatorLength.
+      set cursor to cursor plus width.
     } otherwise {
       set cursor to cursor plus 1.
     }
@@ -72,11 +72,11 @@ public function split(content text, separator text) giving failable sequence of 
   }
   dynamic first of type unsigned is 0.
   set cursor to 0.
-  dynamic resultIndex of type unsigned is 0.
-  while cursor plus separatorLength less than or equal to contentLength {
+  dynamic position of type unsigned is 0.
+  while cursor plus width less than or equal to size {
     dynamic matches is true.
     dynamic index of type unsigned is 0.
-    while index less than separatorLength {
+    while index less than width {
       when content at (cursor plus index) is not separator at index {
         set matches to false.
         stop.
@@ -85,14 +85,14 @@ public function split(content text, separator text) giving failable sequence of 
     }
     when matches {
       constant part is slice(content, first, cursor) try.
-      set result at resultIndex to part.
-      set resultIndex to resultIndex plus 1.
-      set cursor to cursor plus separatorLength.
+      set result at position to part.
+      set position to position plus 1.
+      set cursor to cursor plus width.
       set first to cursor.
     } otherwise {
       set cursor to cursor plus 1.
     }
   }
-  set result at resultIndex to slice(content, first, contentLength) try.
+  set result at position to slice(content, first, size) try.
   give result.
 }

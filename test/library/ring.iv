@@ -1,0 +1,70 @@
+use ring as bytes.
+use testing as check.
+
+function invalid(size unsigned) giving failable boolean {
+  constant value is bytes.create(size) try.
+  bytes.close(value) try.
+  give false.
+}
+function closed(value pointer to bytes.ring) giving failable boolean {
+  bytes.close(value) try.
+  give false.
+}
+function cannot(value pointer to bytes.ring) giving failable boolean {
+  bytes.prepend(value, 1) try.
+  give false.
+}
+
+test "bounded byte ring wraps without growing" {
+  check.expect(invalid(0) fallback true).
+  constant value is bytes.create(3) try.
+  check.expect(bytes.capacity(value) try is 3).
+  check.expect(bytes.length(value) try is 0).
+  check.expect((bytes.pop(value) fallback 99) is 99).
+  check.expect(bytes.push(value, 1) try).
+  check.expect(bytes.push(value, 2) try).
+  check.expect(bytes.push(value, 3) try).
+  check.expect(not (bytes.push(value, 4) try)).
+  check.expect(bytes.length(value) try is 3).
+  check.expect(bytes.first(value) try is 1).
+  check.expect(bytes.pop(value) try is 1).
+  check.expect(bytes.push(value, 4) try).
+  check.expect(bytes.pop(value) try is 2).
+  check.expect(bytes.pop(value) try is 3).
+  check.expect(bytes.pop(value) try is 4).
+  check.expect(bytes.length(value) try is 0).
+  bytes.close(value) try.
+  check.expect((bytes.length(value) fallback 99) is 99).
+  check.expect(closed(value) fallback true).
+}
+
+test "single-slot byte ring" {
+  constant value is bytes.create(1) try.
+  after { bytes.close(value) fallback nothing. }
+  check.expect(bytes.push(value, 255) try).
+  check.expect(not (bytes.push(value, 0) try)).
+  check.expect(bytes.pop(value) try is 255).
+  check.expect(bytes.push(value, 0) try).
+  check.expect(bytes.pop(value) try is 0).
+}
+
+test "bounded byte deque uses both ends" {
+  constant value is bytes.create(3) try.
+  check.expect(bytes.prepend(value, 2) try).
+  check.expect(bytes.prepend(value, 1) try).
+  check.expect(bytes.push(value, 3) try).
+  check.expect(not (bytes.prepend(value, 0) try)).
+  check.expect(bytes.first(value) try is 1).
+  check.expect(bytes.last(value) try is 3).
+  check.expect(bytes.remove(value) try is 3).
+  check.expect(bytes.pop(value) try is 1).
+  check.expect(bytes.push(value, 4) try).
+  check.expect(bytes.prepend(value, 0) try).
+  check.expect(bytes.remove(value) try is 4).
+  check.expect(bytes.remove(value) try is 2).
+  check.expect(bytes.pop(value) try is 0).
+  check.expect((bytes.remove(value) fallback 99) is 99).
+  check.expect((bytes.last(value) fallback 99) is 99).
+  bytes.close(value) try.
+  check.expect(cannot(value) fallback true).
+}

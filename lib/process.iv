@@ -5,3 +5,36 @@ public use "process" function execute(program text, arguments sequence of text) 
 public use "process" function count giving unsigned.
 public use "process" function argument(index unsigned) giving failable text.
 public use "process" function environment(name text) giving failable text.
+-- Process identifiers are OS-assigned and may be reused after exit.
+public use "process" function id giving unsigned.
+public use "process" function parent giving failable unsigned.
+public define child as opaque.
+-- Launches directly; every argument is passed as one item without a shell.
+public use "process" function spawn(program text, arguments sequence of text) giving failable pointer to child.
+-- Launches with separate stdin, stdout, and stderr pipes.
+public use "process" function pipe(program text, arguments sequence of text) giving failable pointer to child.
+-- write may accept fewer bytes. Seal stdin after the last write.
+public use "process" function write(value pointer to child, content sequence of constant byte) giving failable unsigned.
+public use "process" function seal(value pointer to child) giving failable nothing.
+-- Read one bounded chunk from "output" or "error"; empty means EOF.
+public use "process" function read(value pointer to child, stream text, size unsigned) giving failable sequence of byte.
+public use "process" function release(content sequence of byte) giving failable nothing.
+public use "process" function identity(value pointer to child) giving failable unsigned.
+public use "process" function active(value pointer to child) giving failable boolean.
+-- Returns a cached exit status on repeated calls; a signal maps to 128 + signal on POSIX.
+public use "process" function wait(value pointer to child) giving failable unsigned.
+-- Waits up to milliseconds (0..4294967294), returning false on timeout.
+-- A completed child still exposes its cached exit status through wait.
+use "process" function observe(value pointer to child, milliseconds unsigned) giving failable boolean.
+public function poll(value pointer to child, milliseconds unsigned) giving failable boolean {
+  give observe(value, milliseconds) try.
+}
+public use "process" function kill(value pointer to child) giving failable nothing.
+-- Names: "kill" and "terminate" everywhere; "interrupt" and "hangup" on POSIX.
+public use "process" function signal(value pointer to child, name text) giving failable nothing.
+-- Closing an active child kills and reaps it. Serialize close with other child operations.
+public use "process" function close(value pointer to child) giving failable nothing.
+-- Terminates the current process immediately with an eight-bit status.
+public use "process" function exit(code unsigned 8) giving nothing.
+-- Terminates abnormally without running normal shutdown handlers.
+public use "process" function abort giving nothing.

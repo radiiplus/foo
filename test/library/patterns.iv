@@ -57,7 +57,7 @@ function next(index unsigned) giving Step {
 function finish giving Outcome[unsigned] {
   give ended.
 }
-function proceed(index unsigned) giving failable cursors.Step[unsigned, unsigned] {
+function proceed(index unsigned) giving failable cursors.step[unsigned, unsigned] {
   when index is less than 2 {
     give cursors.item[unsigned, unsigned](index, index plus 1).
   }
@@ -85,7 +85,7 @@ test "library abstractions compose" {
   constant Person(name, age) is person.
   check.same(name, "Ada").
   check.expect(age is 37).
-  constant codec is codecs.Codec[text](keep, keep).
+  constant codec is codecs.codec[text](keep, keep).
   constant encode is codec.encode.
   constant decode is codec.decode.
   check.same(encode("FOO") fallback "failed", "FOO").
@@ -95,23 +95,23 @@ test "library abstractions compose" {
   contracts.ensure(changed.value is 42).
   constant duration is clock.millis(1).
   check.number(duration.nanoseconds, 1000000).
-  constant elapsed is clock.elapsed(clock.Instant(10), clock.Instant(15)).
+  constant elapsed is clock.elapsed(clock.instant(10), clock.instant(15)).
   check.number(elapsed.nanoseconds, 5).
   check.every(4, bounded).
-  constant generator is check.Generator[unsigned](sample).
+  constant generator is check.generator[unsigned](sample).
   check.generate[unsigned](3, generator, positive).
-  constant participant is transactions.Participant(prepare, commit, rollback).
+  constant participant is transactions.participant(prepare, commit, rollback).
   transactions.execute(participant, work) fallback nothing.
   constant seed of type unsigned is 0.
   constant cursor is cursors.create[unsigned, unsigned](seed, proceed).
   constant first is cursors.next[unsigned, unsigned](cursor) fallback cursors.done[unsigned, unsigned](seed).
   check.expect(not first.finished and first.value is not null).
-  constant length is units.add[units.Length](units.meters(1.5), units.meters(2.0)).
+  constant length is units.add[units.length](units.meters(1.5), units.meters(2.0)).
   check.real(length.value, 3.5).
-  constant day is calendar.date(2024, 2, 29) fallback calendar.Date(1970, 1, 1).
+  constant day is calendar.date(2024, 2, 29) fallback calendar.civil(1970, 1, 1).
   check.expect(day.year is 2024 and day.day is 29).
-  constant zone is calendar.zone(60) fallback calendar.Zone(0).
-  constant moment is calendar.moment(day, 12, 30, 0, zone) fallback calendar.Moment(day, 0, 0, 0, calendar.Zone(0)).
+  constant zone is calendar.zone(60) fallback calendar.offset(0).
+  constant moment is calendar.moment(day, 12, 30, 0, zone) fallback calendar.stamp(day, 0, 0, 0, calendar.offset(0)).
   check.expect(moment.hour is 12 and moment.zone.minutes is 60).
   dynamic index of type unsigned is 0.
   dynamic running is true.

@@ -216,6 +216,25 @@ static int iteration(void) {
   return checksum != UINT64_C(499999500000);
 }
 
+static NOINLINE uint64_t *make_values(uint64_t seed) {
+  uint64_t *values = reserve(10000 * sizeof(*values));
+  if (!values) return NULL;
+  for (size_t index = 0; index < 10000; index++) values[index] = index + seed;
+  return values;
+}
+
+static int returned(void) {
+  uint64_t checksum = 0;
+  for (uint64_t seed = 0; seed < 128; seed++) {
+    uint64_t *values = make_values(seed);
+    if (!values) return 1;
+    for (size_t index = 0; index < 10000; index++) checksum += values[index];
+    dispose(values, 10000 * sizeof(*values));
+  }
+  sink = checksum;
+  return checksum != UINT64_C(6480640000);
+}
+
 static void report(void) {
   double average = metrics.growths ?
       (double)metrics.capacity_total / (double)metrics.growths : 0.0;
@@ -260,6 +279,7 @@ int main(int argc, char **argv) {
   else if (!strcmp(argv[1], "branch")) failed = branching();
   else if (!strcmp(argv[1], "growth")) failed = growth();
   else if (!strcmp(argv[1], "iteration")) failed = iteration();
+  else if (!strcmp(argv[1], "returned")) failed = returned();
   else if (!strcmp(argv[1], "lookup")) failed = lookup();
   else return 2;
   report();

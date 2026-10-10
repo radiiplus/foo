@@ -1,40 +1,43 @@
 -- Checks allocation contents, resizing, ownership and arena cleanup.
 use "../../lib/memory.iv".
 use arch as machine.
-use testing.
-function drop(allocator pointer to Allocator, buffer pointer to byte) giving failable text {
-  release(allocator, buffer) try.
+use testing as check.
+function drop(owner pointer to allocator, buffer pointer to byte) giving failable text {
+  release(owner, buffer) try.
   give "released".
 }
 start {
-  expect(machine.count(255) is 8).
+  check.expect(machine.count(255) is 8).
   machine.pause.
-  expect(machine.ticks greater than 0).
+  check.expect(machine.ticks greater than 0).
   constant allocator is system.
   constant buffer is allocate(allocator, 4) try.
-  expect(identical[byte](buffer, buffer)).
-  same(view(allocator, buffer, 4) try, "\0\0\0\0").
+  check.expect(identical[byte](buffer, buffer)).
+  check.same(view(allocator, buffer, 4) try, "\0\0\0\0").
   copy(allocator, buffer, "FOO!") try.
   constant grown is expand(allocator, buffer, 8) try.
-  same(view(allocator, grown, 8) try, "FOO!\0\0\0\0").
+  check.same(view(allocator, grown, 8) try, "FOO!\0\0\0\0").
   constant smaller is expand(allocator, grown, 2) try.
-  same(view(allocator, smaller, 2) try, "FO").
-  same(view(allocator, smaller, 3) fallback "bounds", "bounds").
+  check.same(view(allocator, smaller, 2) try, "FO").
+  constant binary is bytes(allocator, smaller, 2) try.
+  check.expect(binary at 0 is 70).
+  check.expect(binary at 1 is 79).
+  check.same(view(allocator, smaller, 3) fallback "bounds", "bounds").
   constant unchanged is expand(allocator, smaller, 18446744073709551615) fallback smaller.
-  same(view(allocator, unchanged, 2) try, "FO").
+  check.same(view(allocator, unchanged, 2) try, "FO").
   constant group is arena try.
-  same(view(group, smaller, 2) fallback "owner", "owner").
-  same(drop(group, smaller) fallback "owner", "owner").
-  same(view(allocator, smaller, 2) try, "FO").
+  check.same(view(group, smaller, 2) fallback "owner", "owner").
+  check.same(drop(group, smaller) fallback "owner", "owner").
+  check.same(view(allocator, smaller, 2) try, "FO").
   constant temporary is allocate(group, 8) try.
   copy(group, temporary, "arena") try.
   close(group) try.
-  same(view(group, temporary, 5) fallback "closed", "closed").
+  check.same(view(group, temporary, 5) fallback "closed", "closed").
   release(allocator, smaller) try.
-  same(drop(allocator, smaller) fallback "stale", "stale").
-  same(view(allocator, smaller, 0) fallback "released", "released").
+  check.same(drop(allocator, smaller) fallback "stale", "stale").
+  check.same(view(allocator, smaller, 0) fallback "released", "released").
   constant empty is allocate(allocator, 0) try.
-  same(view(allocator, empty, 0) try, "").
+  check.same(view(allocator, empty, 0) try, "").
   release(allocator, empty) try.
   give nothing.
 }

@@ -4,14 +4,18 @@ public use "testing" function number(actual unsigned, expected unsigned) giving 
 public use "testing" function positive(value unsigned) giving nothing.
 public use "testing" function real(actual decimal, expected decimal) giving nothing.
 public use "testing" function point(actual optional unsigned 32, expected unsigned 32) giving nothing.
+-- One-shot, current-thread file faults: "write", "sync", or "replace".
+-- For write, count is the maximum byte count before an injected failure or short store.
+public use "fs" function fault(operation text, count unsigned) giving failable nothing.
+public use "fs" function clear giving failable nothing.
 public function same[T](actual T, expected T) giving nothing where T is Equatable {
   expect(actual is expected).
 }
-public define Generator[T] as record {
+public define generator[T] as record {
   sample of type function taking (unsigned) giving T.
 }.
-public function generate[T](count unsigned, generator Generator[T], property function taking (T) giving boolean) giving nothing {
-  constant produce is generator.sample.
+public function generate[T](count unsigned, source generator[T], property function taking (T) giving boolean) giving nothing {
+  constant produce is source.sample.
   dynamic index of type unsigned is 0.
   while index less than count {
     expect(property(produce(index))).

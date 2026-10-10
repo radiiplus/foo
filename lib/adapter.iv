@@ -1,0 +1,34 @@
+-- Snapshots assigned network interface addresses.
+public define snapshot as opaque.
+use "net" function adapters giving failable pointer to snapshot.
+use "net" function census(value pointer to snapshot) giving failable unsigned.
+use "net" function caption(value pointer to snapshot, index unsigned) giving failable text.
+use "net" function origin(value pointer to snapshot, index unsigned) giving failable text.
+use "net" function medium(value pointer to snapshot, index unsigned) giving failable text.
+use "net" function slot(value pointer to snapshot, index unsigned) giving failable unsigned.
+use "net" function ceiling(value pointer to snapshot, index unsigned) giving failable unsigned.
+use "net" function retire(value pointer to snapshot) giving failable nothing.
+public function scan giving failable pointer to snapshot {
+  give adapters try.
+}
+public function count(value pointer to snapshot) giving failable unsigned {
+  give census(value) try.
+}
+public function name(value pointer to snapshot, index unsigned) giving failable text borrowing value {
+  give caption(value, index) try.
+}
+public function address(value pointer to snapshot, index unsigned) giving failable text borrowing value {
+  give origin(value, index) try.
+}
+public function family(value pointer to snapshot, index unsigned) giving failable text borrowing value {
+  give medium(value, index) try.
+}
+public function index(value pointer to snapshot, position unsigned) giving failable unsigned {
+  give slot(value, position) try.
+}
+public function mtu(value pointer to snapshot, index unsigned) giving failable unsigned {
+  give ceiling(value, index) try.
+}
+public function close(value pointer to snapshot) giving failable nothing {
+  retire(value) try.
+}

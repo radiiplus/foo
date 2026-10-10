@@ -1,0 +1,63 @@
+-- Exercises binary and incremental SHA-256 across both backends.
+use crypto as hashes.
+use file as files.
+use "../../lib/memory.iv".
+use sequence as sequences.
+use testing as check.
+use text as words.
+
+function late(state pointer to hashes.hasher, value sequence of constant byte) giving failable text {
+  hashes.update(state, value) try.
+  give "updated".
+}
+
+test "binary and streaming SHA-256" {
+  constant empty is sequences.create[byte].
+  constant blank is hashes.hex(empty) try.
+  after { words.release(blank) fallback nothing. }
+  check.same(blank, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").
+  constant sample is hashes.hash("abc") try.
+  after { words.release(sample) fallback nothing. }
+  check.same(sample, "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad").
+  files.directory(".artifacts/crypto") try.
+  constant path is ".artifacts/crypto/input.bin".
+  constant source is sequences.sized[byte](3) try.
+  after { sequences.release[byte](source) fallback nothing. }
+  set source at 0 to 97.
+  set source at 1 to 0.
+  set source at 2 to 98.
+  files.save(path, source) try.
+  after { files.remove(path) fallback nothing. }
+  constant payload is files.load(path) try.
+  after { sequences.release[byte](payload) fallback nothing. }
+  check.expect(sequences.length[byte](payload) is 3).
+
+  constant expected is "59b271ae1bbcb1d31d41929817f4b16fb439eb4f31520b5ad1d5ce98920a7138".
+  constant hex is hashes.hex(payload) try.
+  after { words.release(hex) fallback nothing. }
+  check.same(hex, expected).
+  constant raw is hashes.digest(payload) try.
+  after { sequences.release[byte](raw) fallback nothing. }
+  check.expect(sequences.length[byte](raw) is 32).
+
+  constant first is sequences.take[byte](payload, 2) try.
+  constant second is sequences.drop[byte](payload, 2) try.
+  after {
+    sequences.release[byte](first) fallback nothing.
+    sequences.release[byte](second) fallback nothing.
+  }
+  constant state is hashes.begin try.
+  after { hashes.close(state). }
+  hashes.update(state, first) try.
+  hashes.update(state, second) try.
+  constant streamed is hashes.finalize(state) try.
+  after { words.release(streamed) fallback nothing. }
+  check.same(streamed, expected).
+  constant repeat is hashes.finalize(state) try.
+  after { words.release(repeat) fallback nothing. }
+  check.same(repeat, expected).
+  constant result is hashes.result(state) try.
+  after { sequences.release[byte](result) fallback nothing. }
+  check.expect(compare(raw, result) is 0).
+  check.same(late(state, payload) fallback "finalized", "finalized").
+}

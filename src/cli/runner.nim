@@ -44,8 +44,9 @@ proc run*(entryFile = ""; root = getCurrentDir(); options = ProjectOptions()) =
     if response.exitCode != 0: raise newException(OSError, response.output)
 
 proc test*(root = getCurrentDir(); filter = ""; backend = "zig";
-    executor: TestExecutor = nil; progress: BuildProgress = nil): seq[TestResult] =
-  testRunner.runTests(root, filter, backend, executor, progress)
+    executor: TestExecutor = nil; progress: BuildProgress = nil;
+    mode = "dev"): seq[TestResult] =
+  testRunner.runTests(root, filter, backend, executor, progress, mode)
 
 proc fmt*(file: string): string =
   if not fileExists(file): raise newException(IOError, "File not found: " & file)

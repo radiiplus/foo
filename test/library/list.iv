@@ -2,7 +2,7 @@
 use "../../lib/list.iv".
 use "../../lib/memory.iv" as heap.
 use testing.
-function bounds(collection pointer to List) giving failable text {
+function bounds(collection pointer to list) giving failable text {
   constant item is get(collection, 10) try.
   give "unexpected".
 }

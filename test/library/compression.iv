@@ -1,0 +1,64 @@
+use compress as zip.
+use file as files.
+use io as streams.
+use testing as check.
+use text as words.
+
+function rejects(source pointer to streams.stream, destination pointer to streams.stream,
+    format text, frame unsigned 32, limit unsigned 32) giving failable boolean {
+  zip.decode(source, destination, format, frame, limit) try.
+  give false.
+}
+
+function roundtrip(format text) giving failable nothing {
+  files.directory(".artifacts/compression") try.
+  constant origin is files.temporary(".artifacts/compression", "source") try.
+  constant archive is files.temporary(".artifacts/compression", "encoded") try.
+  constant target is files.temporary(".artifacts/compression", "decoded") try.
+  after {
+    files.remove(origin) fallback nothing.
+    files.remove(archive) fallback nothing.
+    files.remove(target) fallback nothing.
+    words.release(origin) fallback nothing.
+    words.release(archive) fallback nothing.
+    words.release(target) fallback nothing.
+  }
+  constant content is "A small bounded stream can contain several independent blocks. 0123456789abcdefghijklmnopqrstuvwxyz".
+  files.write(origin, content) try.
+  constant source is files.open(origin, "read") try.
+  constant encoded is files.open(archive, "write") try.
+  zip.encode(source, encoded, format, 7) try.
+  streams.close(source) try.
+  streams.close(encoded) try.
+
+  constant compressed is files.open(archive, "read") try.
+  constant output is files.open(target, "write") try.
+  zip.decode(compressed, output, format, 128, 7) try.
+  streams.close(compressed) try.
+  streams.close(output) try.
+  constant actual is files.read(target) try.
+  after { words.release(actual) fallback nothing. }
+  check.same(actual, content).
+
+  constant narrow is files.open(archive, "read") try.
+  constant sink is files.open(target, "write") try.
+  check.expect(rejects(narrow, sink, format, 1, 7) fallback true).
+  streams.close(narrow) try.
+  streams.close(sink) try.
+
+  files.write(archive, "abc") try.
+  constant truncated is files.open(archive, "read") try.
+  constant empty is files.open(target, "write") try.
+  check.expect(rejects(truncated, empty, format, 128, 7) fallback true).
+  streams.close(truncated) try.
+  streams.close(empty) try.
+  give nothing.
+}
+
+test "bounded gzip block stream" {
+  roundtrip("gzip") try.
+}
+
+test "bounded zlib block stream" {
+  roundtrip("zlib") try.
+}

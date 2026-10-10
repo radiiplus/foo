@@ -5,6 +5,7 @@ import ../fmt/formatter as fooFormatter
 
 const
   defaultSource* = "https://raw.githubusercontent.com/radiiplus/foo.registry/main"
+  defaultFooSource* = "https://raw.githubusercontent.com/radiiplus/foo/main"
   defaultApi* = "https://arfoskacounswfvzjkfv.supabase.co/functions/v1/registry"
 
 type
@@ -13,6 +14,7 @@ type
     body*: string
   Registry* = object
     source*: string
+    fooSource*: string
     api*: string
   RegistryTransport* = proc(config: Registry; path, methodName, body, token: string): RegistryResponse {.closure.}
   RegistryBrowserOpener* = proc(url: string) {.closure.}
@@ -30,9 +32,13 @@ type
 
 var registryTransport*: RegistryTransport
 var registryBrowserOpener*: RegistryBrowserOpener
+var standardCache: JsonNode
+var standardCacheSource = ""
+var standardCacheUntil = 0.0
 
 proc setRegistryTransport*(transport: RegistryTransport) =
   registryTransport = transport
+  standardCache = nil
 
 proc setRegistryBrowserOpener*(opener: RegistryBrowserOpener) =
   registryBrowserOpener = opener
@@ -44,6 +50,7 @@ proc trimSlash(value: string): string =
 proc configuration*(root: string): Registry =
   result = Registry(
     source: getEnv("FOO_REGISTRY_URL", defaultSource),
+    fooSource: getEnv("FOO_SOURCE_URL", defaultFooSource),
     api: getEnv("FOO_REGISTRY_API", defaultApi),
   )
   let manifestPath = root / "project.json"
@@ -59,7 +66,9 @@ proc configuration*(root: string): Registry =
 proc request(config: Registry; path, methodName, body, token: string): RegistryResponse =
   if registryTransport != nil:
     return registryTransport(config, path, methodName, body, token)
-  let base = if path.startsWith("/auth/") or path in ["/publish", "/deprecate"]: config.api else: config.source
+  let base = if path.startsWith("/auth/") or path in ["/publish", "/deprecate"]: config.api
+    elif path == "registry/standard.json": config.fooSource
+    else: config.source
   let endpoint = trimSlash(base) & "/" & path.strip(chars = {'/'})
   when defined(windows):
     if methodName notin ["GET", "POST"]:
@@ -109,6 +118,20 @@ proc requireResponse(response: RegistryResponse; operation: string): JsonNode =
   try: parseJson(response.body)
   except CatchableError as error:
     raise newException(IOError, operation & " returned invalid JSON: " & error.msg)
+
+proc standardCatalog(config: Registry): JsonNode =
+  if standardCache != nil and standardCacheSource == config.fooSource and
+      epochTime() < standardCacheUntil: return standardCache
+  result = requireResponse(request(config, "registry/standard.json", "GET", "", ""),
+    "FOO standard catalog")
+  if result.getOrDefault("schema").getStr() != "foo.standard-catalog/v1" or
+      result.getOrDefault("entries").kind != JArray or
+      result.getOrDefault("packages").kind != JArray or
+      result["entries"].len != result["packages"].len:
+    raise newException(ValueError, "Invalid FOO standard catalog")
+  standardCache = result
+  standardCacheSource = config.fooSource
+  standardCacheUntil = epochTime() + 60
 
 proc validName(value: string): bool =
   var package = value
@@ -184,7 +207,17 @@ proc entries(config: Registry): tuple[revision: string, values: seq[JsonNode]] =
       let entry = parseJson(line)
       if entry.getOrDefault("schema").getStr() != "foo.entry/v1":
         raise newException(ValueError, "Invalid registry JSONL entry")
-      result.values.add(entry)
+      if entry.getOrDefault("kind").getStr() != "standard": result.values.add(entry)
+  let standard = standardCatalog(config)
+  for index in 0 ..< standard["entries"].len:
+    let entry = standard["entries"][index]
+    if entry.getOrDefault("schema").getStr() != "foo.entry/v1" or
+        entry.getOrDefault("kind").getStr() != "standard" or
+        entry.getOrDefault("name").getStr() !=
+          standard["packages"][index].getOrDefault("name").getStr():
+      raise newException(ValueError, "Invalid FOO standard catalog entry")
+    result.values.add(entry)
+  result.revision.add(":" & standard.getOrDefault("revision").getStr())
 
 proc search*(root, query: string; limit = 50): seq[JsonNode] =
   let needle = query.strip.toLowerAscii()
@@ -211,6 +244,12 @@ proc latestVersion*(root, name: string): string =
 
 proc release(config: Registry; name, version: string): JsonNode =
   ensureRelease(name, version)
+  if name.startsWith("lib/"):
+    let standard = standardCatalog(config)
+    for record in standard["packages"]:
+      if record.getOrDefault("name").getStr() == name and
+          record.getOrDefault("version").getStr() == version: return record
+    raise newException(IOError, "Package version not found: " & name & "@" & version)
   let entry = findEntry(config, name)
   var path = ""
   let versions = entry.getOrDefault("versions")
@@ -398,6 +437,19 @@ proc publish*(root: string; token = ""; progress: PublishProgress = nil): string
   if progress != nil: progress("package", packageName, "revision " & revision[0 .. 11])
   let source = bundledSource(root)
   let api = publicApi(source)
+  let iconNode = project.getOrDefault("icon")
+  var icon = ""
+  if iconNode != nil:
+    if iconNode.kind != JString: raise newException(ValueError, "project.json icon must be an SVG path")
+    let iconPath = iconNode.getStr().replace('\\', '/')
+    if iconPath.len == 0 or iconPath.startsWith("/") or ':' in iconPath or
+        not iconPath.endsWith(".svg") or
+        iconPath.split('/').anyIt(it.len == 0 or it == "." or it == ".."):
+      raise newException(ValueError, "project.json icon must be a relative SVG path")
+    let sourcePath = root / iconPath
+    if not fileExists(sourcePath): raise newException(ValueError, "Package icon not found: " & iconPath)
+    if getFileSize(sourcePath) > 64 * 1024: raise newException(ValueError, "Package icon exceeds 64 KiB")
+    icon = readFile(sourcePath)
   var exports = 0
   for module in api.getOrDefault("modules"):
     exports += module.getOrDefault("items").len
@@ -427,6 +479,7 @@ proc publish*(root: string; token = ""; progress: PublishProgress = nil): string
     "source": source,
     "api": api,
   }
+  if icon.len > 0: publication["icon"] = %icon
   let credential = if token.len > 0: token else: authToken()
   if credential.len == 0: raise newException(ValueError, "Run 'foo login' before publishing")
   if progress != nil: progress("upload", packageName, configuration(root).api)

@@ -1,0 +1,393 @@
+-- Dense row-major decimal tensors with explicit ownership.
+use sequence as items.
+
+public define tensor as record {
+  shape of type sequence of unsigned.
+  values of type sequence of decimal.
+}.
+
+function elements(shape sequence of unsigned) giving failable unsigned {
+  for each extent in shape {
+    when extent is 0 { give 0. }
+  }
+  dynamic count of type unsigned is 1.
+  for each extent in shape {
+    when count greater than (18446744073709551615 divide extent) {
+      give fail(Error.Size).
+    }
+    set count to count multiply extent.
+  }
+  give count.
+}
+
+public function create(shape sequence of unsigned) giving failable tensor {
+  constant count is elements(shape) try.
+  constant dimensions is items.copy[unsigned](shape) try.
+  after error { items.release[unsigned](dimensions) fallback nothing. }
+  give tensor(dimensions, items.sized[decimal](count) try).
+}
+
+public function build(shape sequence of unsigned, values sequence of decimal) giving failable tensor {
+  constant count is elements(shape) try.
+  when items.length[decimal](values) is not count {
+    give fail(Error.Shape).
+  }
+  constant dimensions is items.copy[unsigned](shape) try.
+  after error { items.release[unsigned](dimensions) fallback nothing. }
+  give tensor(dimensions, items.copy[decimal](values) try).
+}
+
+-- Changes shape without reordering values; the result owns both copies.
+public function reshape(value tensor, shape sequence of unsigned) giving failable tensor {
+  give build(shape, value.values) try.
+}
+
+public function release(value tensor) giving failable nothing {
+  items.release[decimal](value.values) try.
+  items.release[unsigned](value.shape) try.
+  give nothing.
+}
+
+public function rank(value tensor) giving unsigned {
+  give items.length[unsigned](value.shape).
+}
+
+public function get(value tensor, indices sequence of unsigned) giving failable decimal {
+  when items.length[unsigned](indices) is not rank(value) {
+    give fail(Error.Shape).
+  }
+  dynamic offset of type unsigned is 0.
+  dynamic axis of type unsigned is 0.
+  while axis less than rank(value) {
+    constant extent is value.shape at axis.
+    constant index is indices at axis.
+    when index greater than or equal to extent {
+      give fail(Error.Index).
+    }
+    set offset to offset multiply extent plus index.
+    increase axis by 1.
+  }
+  give value.values at offset.
+}
+
+public function add(left tensor, right tensor) giving failable tensor {
+  when rank(left) is not rank(right) {
+    give fail(Error.Shape).
+  }
+  dynamic axis of type unsigned is 0.
+  while axis less than rank(left) {
+    when (left.shape at axis) is not (right.shape at axis) {
+      give fail(Error.Shape).
+    }
+    increase axis by 1.
+  }
+  dynamic output is create(left.shape) try.
+  after error { release(output) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than items.length[decimal](output.values) {
+    set output.values at index to (left.values at index) plus (right.values at index).
+    increase index by 1.
+  }
+  give output.
+}
+
+-- Batched row-major matrix product. A singleton batch broadcasts to the other.
+public function product(left tensor, right tensor) giving failable tensor {
+  when rank(left) is not 3 or rank(right) is not 3 {
+    give fail(Error.Shape).
+  }
+  when (left.shape at 2) is not (right.shape at 1) {
+    give fail(Error.Shape).
+  }
+  constant first is left.shape at 0.
+  constant second is right.shape at 0.
+  when first is not second and first is not 1 and second is not 1 {
+    give fail(Error.Shape).
+  }
+  dynamic batches is first.
+  when first is 1 { set batches to second. }
+  constant rows is left.shape at 1.
+  constant shared is left.shape at 2.
+  constant columns is right.shape at 2.
+  constant shape is items.sized[unsigned](3) try.
+  after { items.release[unsigned](shape) fallback nothing. }
+  set shape at 0 to batches.
+  set shape at 1 to rows.
+  set shape at 2 to columns.
+  dynamic output is create(shape) try.
+  after error { release(output) fallback nothing. }
+  dynamic batch of type unsigned is 0.
+  while batch less than batches {
+    dynamic leftbatch is batch.
+    dynamic rightbatch is batch.
+    when first is 1 { set leftbatch to 0. }
+    when second is 1 { set rightbatch to 0. }
+    dynamic row of type unsigned is 0.
+    while row less than rows {
+      dynamic column of type unsigned is 0.
+      while column less than columns {
+        dynamic total of type decimal is 0.0.
+        dynamic inner of type unsigned is 0.
+        while inner less than shared {
+          constant a is (leftbatch multiply rows plus row) multiply shared plus inner.
+          constant b is (rightbatch multiply shared plus inner) multiply columns plus column.
+          set total to total plus (left.values at a) multiply (right.values at b).
+          increase inner by 1.
+        }
+        set output.values at ((batch multiply rows plus row) multiply columns plus column) to total.
+        increase column by 1.
+      }
+      increase row by 1.
+    }
+    increase batch by 1.
+  }
+  give output.
+}
+
+public function scale(value tensor, factor decimal) giving failable tensor {
+  dynamic output is create(value.shape) try.
+  after error { release(output) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than items.length[decimal](output.values) {
+    set output.values at index to (value.values at index) multiply factor.
+    increase index by 1.
+  }
+  give output.
+}
+
+-- Axes lists each source axis once, in the desired output order.
+public function permute(value tensor, axes sequence of unsigned) giving failable tensor {
+  constant dimensions is rank(value).
+  when items.length[unsigned](axes) is not dimensions { give fail(Error.Shape). }
+  dynamic shape is items.sized[unsigned](dimensions) try.
+  after { items.release[unsigned](shape) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than dimensions {
+    constant source is axes at index.
+    when source greater than or equal to dimensions { give fail(Error.Shape). }
+    dynamic earlier of type unsigned is 0.
+    while earlier less than index {
+      when axes at earlier is source { give fail(Error.Shape). }
+      increase earlier by 1.
+    }
+    set shape at index to value.shape at source.
+    increase index by 1.
+  }
+  dynamic output is create(shape) try.
+  after error { release(output) fallback nothing. }
+  when items.length[decimal](output.values) is 0 { give output. }
+  dynamic strides is items.sized[unsigned](dimensions) try.
+  after { items.release[unsigned](strides) fallback nothing. }
+  dynamic stride of type unsigned is 1.
+  dynamic axis is dimensions.
+  while axis greater than 0 {
+    set axis to axis subtract 1.
+    set strides at axis to stride.
+    set stride to stride multiply (value.shape at axis).
+  }
+  dynamic destination of type unsigned is 0.
+  while destination less than items.length[decimal](output.values) {
+    dynamic remaining is destination.
+    dynamic origin of type unsigned is 0.
+    dynamic current is dimensions.
+    while current greater than 0 {
+      set current to current subtract 1.
+      constant extent is shape at current.
+      constant coordinate is remaining remainder extent.
+      set remaining to remaining divide extent.
+      set origin to origin plus coordinate multiply (strides at (axes at current)).
+    }
+    set output.values at destination to value.values at origin.
+    increase destination by 1.
+  }
+  give output.
+}
+
+-- Copies a contiguous interval of one axis without changing the other axes.
+public function crop(value tensor, axis unsigned, offset unsigned, count unsigned) giving failable tensor {
+  when axis greater than or equal to rank(value) { give fail(Error.Shape). }
+  constant extent is value.shape at axis.
+  when offset greater than extent or count greater than extent subtract offset {
+    give fail(Error.Index).
+  }
+  dynamic shape is items.copy[unsigned](value.shape) try.
+  after { items.release[unsigned](shape) fallback nothing. }
+  set shape at axis to count.
+  dynamic output is create(shape) try.
+  after error { release(output) fallback nothing. }
+  when items.length[decimal](output.values) is 0 { give output. }
+  dynamic inner of type unsigned is 1.
+  dynamic index is rank(value).
+  while index greater than axis plus 1 {
+    set index to index subtract 1.
+    set inner to inner multiply (value.shape at index).
+  }
+  dynamic outer of type unsigned is 1.
+  set index to 0.
+  while index less than axis {
+    set outer to outer multiply (value.shape at index).
+    increase index by 1.
+  }
+  constant span is count multiply inner.
+  constant stride is extent multiply inner.
+  dynamic group of type unsigned is 0.
+  while group less than outer {
+    dynamic item of type unsigned is 0.
+    while item less than span {
+      constant source is group multiply stride plus offset multiply inner plus item.
+      set output.values at (group multiply span plus item) to value.values at source.
+      increase item by 1.
+    }
+    increase group by 1.
+  }
+  give output.
+}
+
+-- Joins tensors along one axis; all other extents must agree.
+public function concat(left tensor, right tensor, axis unsigned) giving failable tensor {
+  constant dimensions is rank(left).
+  when dimensions is 0 or rank(right) is not dimensions or axis greater than or equal to dimensions {
+    give fail(Error.Shape).
+  }
+  dynamic index of type unsigned is 0.
+  while index less than dimensions {
+    when index is not axis and (left.shape at index) is not (right.shape at index) {
+      give fail(Error.Shape).
+    }
+    increase index by 1.
+  }
+  constant first is left.shape at axis.
+  constant second is right.shape at axis.
+  when second greater than 18446744073709551615 subtract first { give fail(Error.Size). }
+  dynamic shape is items.copy[unsigned](left.shape) try.
+  after { items.release[unsigned](shape) fallback nothing. }
+  set shape at axis to first plus second.
+  dynamic output is create(shape) try.
+  after error { release(output) fallback nothing. }
+  when items.length[decimal](output.values) is 0 { give output. }
+  dynamic inner of type unsigned is 1.
+  set index to dimensions.
+  while index greater than axis plus 1 {
+    set index to index subtract 1.
+    set inner to inner multiply (left.shape at index).
+  }
+  dynamic outer of type unsigned is 1.
+  set index to 0.
+  while index less than axis {
+    set outer to outer multiply (left.shape at index).
+    increase index by 1.
+  }
+  constant prefix is first multiply inner.
+  constant suffix is second multiply inner.
+  constant span is prefix plus suffix.
+  dynamic group of type unsigned is 0.
+  while group less than outer {
+    dynamic item of type unsigned is 0.
+    while item less than prefix {
+      constant source is group multiply prefix plus item.
+      set output.values at (group multiply span plus item) to left.values at source.
+      increase item by 1.
+    }
+    set item to 0.
+    while item less than suffix {
+      constant source is group multiply suffix plus item.
+      set output.values at (group multiply span plus prefix plus item) to right.values at source.
+      increase item by 1.
+    }
+    increase group by 1.
+  }
+  give output.
+}
+
+-- Removes one axis by summing its values in source order.
+public function sum(value tensor, axis unsigned) giving failable tensor {
+  when axis greater than or equal to rank(value) { give fail(Error.Shape). }
+  constant shape is items.remove[unsigned](value.shape, axis) try.
+  after { items.release[unsigned](shape) fallback nothing. }
+  dynamic output is create(shape) try.
+  after error { release(output) fallback nothing. }
+  constant size is items.length[decimal](output.values).
+  when size is 0 { give output. }
+  dynamic inner of type unsigned is 1.
+  dynamic index is rank(value).
+  while index greater than axis plus 1 {
+    set index to index subtract 1.
+    set inner to inner multiply (value.shape at index).
+  }
+  constant extent is value.shape at axis.
+  dynamic target of type unsigned is 0.
+  while target less than size {
+    constant outer is target divide inner.
+    constant offset is target remainder inner.
+    dynamic sum of type decimal is 0.0.
+    dynamic coordinate of type unsigned is 0.
+    while coordinate less than extent {
+      constant source is (outer multiply extent plus coordinate) multiply inner plus offset.
+      set sum to sum plus (value.values at source).
+      increase coordinate by 1.
+    }
+    set output.values at target to sum.
+    increase target by 1.
+  }
+  give output.
+}
+
+-- Expands matching or singleton trailing axes into owned row-major storage.
+public function broadcast(value tensor, shape sequence of unsigned) giving failable tensor {
+  constant source is rank(value).
+  constant dimensions is items.length[unsigned](shape).
+  when source greater than dimensions { give fail(Error.Shape). }
+  constant prefix is dimensions subtract source.
+  dynamic axis of type unsigned is 0.
+  while axis less than source {
+    constant extent is value.shape at axis.
+    constant width is shape at (prefix plus axis).
+    when extent is not 1 and extent is not width {
+      give fail(Error.Shape).
+    }
+    increase axis by 1.
+  }
+  dynamic output is create(shape) try.
+  after error { release(output) fallback nothing. }
+  dynamic target of type unsigned is 0.
+  while target less than items.length[decimal](output.values) {
+    dynamic remaining is target.
+    dynamic origin of type unsigned is 0.
+    dynamic stride of type unsigned is 1.
+    dynamic current is dimensions.
+    while current greater than prefix {
+      set current to current subtract 1.
+      constant width is shape at current.
+      constant coordinate is remaining remainder width.
+      set remaining to remaining divide width.
+      constant extent is value.shape at (current subtract prefix).
+      when extent is not 1 {
+        set origin to origin plus coordinate multiply stride.
+      }
+      set stride to stride multiply extent.
+    }
+    set output.values at target to value.values at origin.
+    increase target by 1.
+  }
+  give output.
+}
+
+-- Multiplies tensors with identical shapes, without implicit broadcasting.
+public function hadamard(left tensor, right tensor) giving failable tensor {
+  when rank(left) is not rank(right) { give fail(Error.Shape). }
+  dynamic axis of type unsigned is 0.
+  while axis less than rank(left) {
+    when (left.shape at axis) is not (right.shape at axis) {
+      give fail(Error.Shape).
+    }
+    increase axis by 1.
+  }
+  dynamic output is create(left.shape) try.
+  after error { release(output) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than items.length[decimal](output.values) {
+    set output.values at index to (left.values at index) multiply (right.values at index).
+    increase index by 1.
+  }
+  give output.
+}

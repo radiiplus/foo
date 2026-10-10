@@ -35,6 +35,7 @@ export type PackageSummary = {
   name: string;
   version: string;
   description: string;
+  icon?: string;
   category: string;
   tags: string[];
   license: string;
@@ -91,17 +92,27 @@ type RegistryManifest = {
   shards: Array<{ path: string; count: number }>;
 };
 
-type Catalog = { manifest: RegistryManifest; entries: PackageSummary[] };
+type StandardCatalog = {
+  schema: "foo.standard-catalog/v1";
+  revision: string;
+  count: number;
+  entries: PackageSummary[];
+  packages: Package[];
+};
+type Catalog = { manifest: RegistryManifest; entries: PackageSummary[]; standard: Map<string, Package>; revision: string };
 
 const source = (import.meta.env.VITE_REGISTRY_URL ?? (import.meta.env.DEV
   ? "/registry-data"
   : "https://raw.githubusercontent.com/radiiplus/foo.registry/main")).replace(/\/$/, "");
+const fooSource = (import.meta.env.VITE_FOO_SOURCE_URL ?? (import.meta.env.DEV
+  ? "/foo-data"
+  : "https://raw.githubusercontent.com/radiiplus/foo/main")).replace(/\/$/, "");
 const catalogLifetime = 60_000;
 let catalogCache: { expires: number; value: Promise<Catalog> } | undefined;
 
 export async function health(signal?: AbortSignal): Promise<Health> {
   const catalog = await loadCatalog(signal);
-  return { service: "foo-registry-git", status: "ok", version: catalog.manifest.revision };
+  return { service: "foo-registry-git", status: "ok", version: catalog.revision };
 }
 
 export async function packages(query: Query = {}, signal?: AbortSignal) {
@@ -146,7 +157,9 @@ export async function item(name: string, signal?: AbortSignal, version?: string)
   const selectedVersion = version || entry.version;
   const selected = entry.versions.find((candidate) => candidate.version === selectedVersion);
   if (!selected) throw new Error(`Package version not found: ${name}@${selectedVersion}`);
-  const record = await fetchRegistryJson<Package>(selected.path, catalog.manifest.revision, signal);
+  const record = entry.kind === "standard" ? catalog.standard.get(name) :
+    await fetchRegistryJson<Package>(selected.path, catalog.manifest.revision, signal);
+  if (!record) throw new Error(`Standard module not found: ${name}`);
   if (record.name !== name || record.version !== selectedVersion) throw new Error(`Registry package identity mismatch: ${name}@${selectedVersion}`);
   const versions = entry.versions;
   const summary = normalizeSummary({ ...entry, ...record, path: selected.path, versions, exports: entry.exports });
@@ -163,29 +176,13 @@ export async function item(name: string, signal?: AbortSignal, version?: string)
 
 export async function standards(signal?: AbortSignal) {
   const catalog = await loadCatalog(signal);
-  try {
-    const reference = await fetchRegistryJson<{ schema: string; revision: string; count: number; packages: StandardPackage[] }>("indexes/standard.json", catalog.manifest.revision, signal);
-    if (reference.schema !== "foo.standard/v1" || reference.count !== reference.packages.length) {
-      throw new Error("Invalid standard library reference");
-    }
-    return reference.packages;
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    const entries = catalog.entries.filter((entry) => entry.kind === "standard").sort((left, right) => compare(left.name, right.name));
-    return Promise.all(entries.map((entry) => item(entry.name, signal).then(({ package: packageItem }) => ({
-      kind: packageItem.kind,
-      name: packageItem.name,
-      version: packageItem.version,
-      description: packageItem.description,
-      owner: packageItem.owner,
-      install: packageItem.install,
-      api: packageItem.api,
-    }))));
-  }
+  return [...catalog.standard.values()].sort((left, right) => compare(left.name, right.name))
+    .map(({ kind, name, version, description, owner, install, api }): StandardPackage =>
+      ({ kind, name, version, description, owner, install, api }));
 }
 
 export function standardIndex() {
-  return `${source}/indexes/standard.json`;
+  return `${fooSource}/registry/standard.json`;
 }
 
 async function loadCatalog(signal?: AbortSignal): Promise<Catalog> {
@@ -203,7 +200,10 @@ async function loadCatalog(signal?: AbortSignal): Promise<Catalog> {
 }
 
 async function readCatalog(): Promise<Catalog> {
-  const manifest = await fetchRegistryJson<RegistryManifest>("indexes/index.json");
+  const [manifest, standard] = await Promise.all([
+    fetchRegistryJson<RegistryManifest>("indexes/index.json"),
+    fetchFooCatalog(),
+  ]);
   if (manifest.schema !== "foo.registry/v1" || !Array.isArray(manifest.shards)) throw new Error("Invalid registry manifest");
   const batches = await Promise.all(manifest.shards.map(async (shard) => {
     if (!/^indexes\/index-\d{6}\.jsonl$/.test(shard.path)) throw new Error(`Invalid registry shard path: ${shard.path}`);
@@ -212,9 +212,26 @@ async function readCatalog(): Promise<Catalog> {
     if (entries.length !== shard.count) throw new Error(`Registry shard count mismatch: ${shard.path}`);
     return entries;
   }));
-  const entries = batches.flat();
-  if (entries.length !== manifest.count) throw new Error("Registry package count mismatch");
-  return { manifest, entries };
+  const published = batches.flat();
+  if (published.length !== manifest.count) throw new Error("Registry package count mismatch");
+  const entries = [...published.filter((entry) => entry.kind !== "standard"), ...standard.entries.map(normalizeSummary)];
+  if (new Set(entries.map((entry) => entry.name)).size !== entries.length) throw new Error("Duplicate registry package name");
+  return { manifest, entries, standard: new Map(standard.packages.map((record) => [record.name, record])),
+    revision: `${manifest.revision}:${standard.revision}` };
+}
+
+async function fetchFooCatalog(): Promise<StandardCatalog> {
+  const response = await fetch(`${fooSource}/registry/standard.json`, { headers: { accept: "application/json" } });
+  if (!response.ok) throw new Error("FOO standard catalog unavailable");
+  const catalog = await response.json() as StandardCatalog;
+  if (catalog.schema !== "foo.standard-catalog/v1" || !Array.isArray(catalog.entries) ||
+      !Array.isArray(catalog.packages) || catalog.count !== catalog.entries.length ||
+      catalog.count !== catalog.packages.length || catalog.entries.some((entry, index) =>
+        entry.kind !== "standard" || entry.name !== catalog.packages[index]?.name ||
+        entry.version !== catalog.packages[index]?.version)) {
+    throw new Error("Invalid FOO standard catalog");
+  }
+  return catalog;
 }
 
 function normalizeSummary(item: PackageSummary): PackageSummary {

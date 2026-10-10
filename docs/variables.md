@@ -1,7 +1,8 @@
 # Variables
 
-FOO has two value declarations: `constant` for a binding (a name connected to
-a value) that cannot change, and `dynamic` for one that can.
+Give a value a name when you want to use it again. Should that value change
+later? FOO makes the choice visible: `constant` keeps the binding fixed, and
+`dynamic` lets you update it.
 
 ## Constants
 

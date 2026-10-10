@@ -33,28 +33,28 @@ test("serves the publication health endpoint", async () => {
 });
 
 test("serves searchable Git-backed discovery endpoints", async () => {
-  const search = await json(`${baseUrl}/functions/v1/registry/search?q=websocket`);
+  const search = await json(`${baseUrl}/functions/v1/registry/search?q=lib%2Fjson`);
   assert.equal(search.schema, "foo.search/v1");
   assert.equal(search.total, 1);
-  assert.equal(search.packages[0]?.name, "foo-http");
+  assert.equal(search.packages[0]?.name, "lib/json");
   assert.ok(search.packages[0]?.description);
-  assert.ok(search.facets.categories.some((category: { name: string }) => category.name === "networking"));
+  assert.ok(search.facets.categories.some((category: { name: string }) => category.name === "standard library"));
 
-  const category = await json(`${baseUrl}/functions/v1/registry/category/${encodeURIComponent("developer tools")}`);
-  assert.deepEqual(category.packages.map((entry: { name: string }) => entry.name), ["foo-args", "foo-test"]);
-  const tag = await json(`${baseUrl}/functions/v1/registry/tag/http`);
-  assert.deepEqual(tag.packages.map((entry: { name: string }) => entry.name), ["foo-http", "lib/http"]);
+  const category = await json(`${baseUrl}/functions/v1/registry/category/${encodeURIComponent("standard library")}?limit=100`);
+  assert.ok(category.packages.some((entry: { name: string }) => entry.name === "lib/json"));
+  const tag = await json(`${baseUrl}/functions/v1/registry/tag/json`);
+  assert.deepEqual(tag.packages.map((entry: { name: string }) => entry.name), ["lib/json"]);
 
-  const detail = await json(`${baseUrl}/functions/v1/registry/package/foo-http?version=1.4.2`);
+  const detail = await json(`${baseUrl}/functions/v1/registry/package/lib%2Fjson`);
   assert.equal(detail.schema, "foo.package-response/v1");
-  assert.equal(detail.package.install, "foo add foo-http");
+  assert.equal(detail.package.install, "use json.");
   assert.ok(detail.package.readme.length > 0);
   assert.equal(detail.package.api.schema, "foo.api/v1");
   assert.ok(detail.package.api.modules[0]?.items.length > 0);
 
-  const resolution = await json(`${baseUrl}/functions/v1/registry/resolve/foo-http?version=1.4.2`);
+  const resolution = await json(`${baseUrl}/functions/v1/registry/resolve/lib%2Fjson`);
   assert.equal(resolution.schema, "foo.resolution/v1");
-  assert.deepEqual(resolution.packages.map((entry: { name: string }) => entry.name), ["foo-http", "foo-json"]);
+  assert.deepEqual(resolution.packages.map((entry: { name: string }) => entry.name), ["lib/json"]);
 });
 
 test("rejects unknown discovery routes", async () => {
@@ -100,12 +100,12 @@ test("publishes a validated package through the repository writer", async () => 
 });
 
 async function submission() {
-  const response = await fetch(`${baseUrl}/functions/v1/registry/package/foo-http?version=1.4.2`);
+  const response = await fetch(`${baseUrl}/functions/v1/registry/package/lib%2Fjson`);
   const detail = await response.json() as { package: Record<string, unknown> };
   const { owner: _owner, readme: _readme, source, api, kind: _kind, ...manifest } = detail.package;
   return {
     schema: "foo.publish/v1",
-    manifest,
+    manifest: { ...manifest, name: "foo-http", version: "1.4.2", category: "networking", install: "foo add foo-http" },
     documentation: Array.from({ length: 100 }, (_, index) => `Documentation line ${index + 1}.`),
     source,
     api,

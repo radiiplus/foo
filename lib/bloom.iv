@@ -1,0 +1,10 @@
+-- Owned bit-packed Bloom filter for binary keys. False positives are possible.
+-- The hash is noncryptographic; do not use this for hostile-input admission.
+public define bloom as opaque.
+-- Bits must be positive and rounds must be between 1 and 16.
+public use "bloom" function create(bits unsigned, rounds unsigned) giving failable pointer to bloom.
+public use "bloom" function add(value pointer to bloom, key sequence of constant byte) giving failable nothing.
+public use "bloom" function contains(value pointer to bloom, key sequence of constant byte) giving failable boolean.
+public use "bloom" function bits(value pointer to bloom) giving failable unsigned.
+public use "bloom" function rounds(value pointer to bloom) giving failable unsigned.
+public use "bloom" function close(value pointer to bloom) giving failable nothing.

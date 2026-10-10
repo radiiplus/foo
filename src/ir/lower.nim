@@ -1,6 +1,7 @@
 import std/[json, sequtils, sets, strutils, tables, unicode]
 import ../ast/node as ast
 import ../types/type as semantic
+import ../opt/gpu as gpuLower
 import ./[kind, node, valid, eval]
 
 type Type = node.Type
@@ -53,7 +54,8 @@ proc lowerAlias(alias: ast.Alias; aliases: Table[string, `Type`];
         fieldAttrs[field.name.text] = field.attributes
         if "volatile" in field.attributes: fields[field.name.text].volatile = true
     `Type`(kind: if record.layout == "packed": TypeKind.PackedStruct elif record.layout == "c": TypeKind.ExternStruct else: TypeKind.Struct,
-      name: alias.name.text, fields: fields, fieldAttrs: fieldAttrs)
+      name: alias.name.text, fields: fields, fieldAttrs: fieldAttrs,
+      attributes: alias.attributes)
   of "union":
     var fields = initOrderedTable[string, `Type`]()
     var fieldAttrs = initTable[string, seq[string]]()
@@ -517,22 +519,37 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
                 args.add(expression(argument, target.variants[name]))
             emit(Instruction(kind: InstrKind.Construct, dest: dest, field: name, args: args))
             return dest
-        if name in ["splat", "shuffle", "select", "reduce"]:
+        if name in ["splat", "shuffle", "permute", "gather", "scatter", "select", "reduce"]:
           if name == "splat":
             if expected == nil: raise newException(ValueError, "splat lowering needs an expected vector type")
             let dest = fresh(expected)
             emit(Instruction(kind: InstrKind.Splat, dest: dest, val: expression(call.args[0], expected.elem)))
             return dest
           let first = expression(call.args[0])
+          if name in ["gather", "scatter"]:
+            let indices = expression(call.args[1])
+            if name == "gather":
+              let target = `Type`(kind: TypeKind.Vector, width: indices.type.width,
+                elem: first.type.elem)
+              let dest = fresh(target)
+              emit(Instruction(kind: InstrKind.Gather, dest: dest, val: first,
+                val2: indices))
+              return dest
+            let values = expression(call.args[2])
+            let dest = fresh(first.type)
+            emit(Instruction(kind: InstrKind.Scatter, dest: dest, val: first,
+              val2: indices, args: @[values]))
+            return dest
           if name == "reduce":
             let dest = fresh(first.type.elem)
             let operation = if call.args.len > 1 and call.args[1].tag == "text": ast.Text(call.args[1]).value else: "add"
             emit(Instruction(kind: InstrKind.Reduce, dest: dest, val: first, reduceOp: operation.capitalizeAscii))
             return dest
-          if name == "shuffle":
-            let second = expression(call.args[1], first.type)
+          if name in ["shuffle", "permute"]:
+            let second = if name == "shuffle": expression(call.args[1], first.type) else: first
             var mask: seq[int]
-            for index in 2 ..< call.args.len: mask.add(if call.args[index].tag == "integer": parseInt(ast.Integer(call.args[index]).value) else: 0)
+            for index in (if name == "shuffle": 2 else: 1) ..< call.args.len:
+              mask.add(if call.args[index].tag == "integer": parseInt(ast.Integer(call.args[index]).value) else: 0)
             let dest = fresh(`Type`(kind: TypeKind.Vector, width: mask.len, elem: first.type.elem))
             emit(Instruction(kind: InstrKind.Shuffle, dest: dest, val: first, val2: second, mask: mask))
             return dest
@@ -1121,4 +1138,5 @@ proc lower*(program: ast.Program; typed: Table[pointer, semantic.Type] = initTab
         for item in external.name.text: symbol.add(toHex(item.ord, 2).toLowerAscii)
         result.native.add(NativeContract(id: symbol, stage: "@" & external.native.substrate,
           code: code, abi: "foo.native:1", effects: @["unknown"]))
+  discard gpuLower.apply(result)
   discard seal(result)

@@ -31,7 +31,10 @@ proc print*(value: Node; depth: int = 0): string
 proc printAttributes(attributes: seq[string]): string =
   for attribute in attributes:
     if attribute notin ["start", "interrupt", "naked", "noinline", "volatile",
-        "repr(C)"] and not attribute.startsWith("target_feature(\""):
+        "repr(C)"] and not attribute.startsWith("align(") and
+        not attribute.startsWith("target_feature(\"") and
+        not attribute.startsWith("borrows(") and
+        not attribute.startsWith("releases("):
       result.add("#[" & attribute & "] ")
 
 proc functionClauses(attributes: seq[string]): string =
@@ -42,6 +45,11 @@ proc functionClauses(attributes: seq[string]): string =
     if attribute.startsWith("target_feature(\"") and attribute.endsWith("\")"):
       result.add(" using feature " & attribute[15 ..< attribute.len - 1])
   if "noinline" in attributes: result.add(" keeping call")
+  for attribute in attributes:
+    if attribute.startsWith("borrows(") and attribute.endsWith(")"):
+      result.add(" borrowing " & attribute[8 ..< attribute.len - 1])
+    elif attribute.startsWith("releases(") and attribute.endsWith(")"):
+      result.add(" releasing " & attribute[9 ..< attribute.len - 1])
 
 proc printTypeParams(params: seq[TypeParam]): string =
   if params.len == 0: return ""
@@ -80,6 +88,7 @@ proc print*(value: Node; depth: int = 0): string =
     result = statements.join("\n")
   of "test": result = indent(depth) & "test " & text(TestBlock(value).name.value) & " " & printBlock(TestBlock(value).body, depth)
   of "eval": result = indent(depth) & "eval " & printBlock(EvalBlock(value).body, depth)
+  of "verify": result = indent(depth) & "verify " & print(Verify(value).condition) & "."
   of "reflect": result = "reflect[" & print(Reflect(value).`type`) & "]"
   of "embed":
     let item = Embed(value)
@@ -116,6 +125,9 @@ proc print*(value: Node; depth: int = 0): string =
     var body = print(item.body, depth)
     result = indent(depth) & printAttributes(item.attributes) & (if item.public: "public " else: "") & "define " & item.name.text &
       printTypeParams(item.typeParams) & " as " & body
+    for attribute in item.attributes:
+      if attribute.startsWith("align(") and attribute.endsWith(")"):
+        result.add(" aligned to " & attribute[6 ..< attribute.len - 1])
     if item.derives != nil:
       var traits: seq[string]
       for trait in item.derives.traits: traits.add(trait.text)

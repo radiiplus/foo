@@ -1,0 +1,13 @@
+use platform as host.
+use testing as check.
+
+test "host ABI and capability queries" {
+  check.expect((host.page try) greater than 0).
+  check.expect(host.width is 4 or host.width is 8).
+  check.expect(host.alignment greater than or equal to host.width).
+  check.expect(host.page try greater than or equal to host.alignment).
+  check.expect(host.supports("mapping")).
+  check.expect(host.supports("position")).
+  check.expect(host.supports("locking")).
+  check.expect(not host.supports("unknown")).
+}

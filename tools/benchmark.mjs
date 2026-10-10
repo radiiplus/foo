@@ -39,6 +39,19 @@ function metrics(output) {
   const line = output.split(/\r?\n/).find(item => item.startsWith("FOO_METRICS "));
   return line ? JSON.parse(line.slice(12)) : {};
 }
+function checkBudget(name, label, samples) {
+  const budget = catalog[name].metricBudget;
+  if (!budget) return;
+  if (samples.length === 0)
+    throw Error(`${name} ${label}: missing timed metric samples`);
+  for (const [index, sample] of samples.entries()) {
+    for (const [metric, maximum] of Object.entries(budget)) {
+      const actual = sample[metric];
+      if (!Number.isFinite(actual) || actual < 0 || actual > maximum)
+        throw Error(`${name} ${label} sample ${index + 1}: ${metric}=${actual ?? "missing"} exceeds budget ${maximum}`);
+    }
+  }
+}
 function execute(command, args, settings = {}) {
   const result = spawnSync(command, args, {
     cwd: root, encoding: "utf8", maxBuffer: 32 * 1024 * 1024,
@@ -49,7 +62,7 @@ function execute(command, args, settings = {}) {
 }
 
 if (process.argv.includes("--help")) {
-  console.log("Usage: node tools/benchmark.mjs [--backend c|zig] [--mode dev|release] [--warmup N] [--iterations N] [--output FILE]");
+  console.log("Usage: node tools/benchmark.mjs [--workload NAME] [--backend c|zig] [--mode dev|release] [--warmup N] [--iterations N] [--output FILE]");
   console.log("Measures FOO and handwritten C, Zig, and Rust controls, keeping raw samples and startup baselines.");
   process.exit(0);
 }
@@ -60,38 +73,42 @@ const baselineWarmup = Math.max(warmup, 5);
 const baselineIterations = Math.max(iterations, 21);
 const selectedBackend = option("--backend");
 const selectedMode = option("--mode");
+const selectedWorkload = option("--workload");
 if (selectedBackend && !["c", "zig"].includes(selectedBackend)) throw Error("--backend must be c or zig");
 if (selectedMode && !["dev", "release"].includes(selectedMode)) throw Error("--mode must be dev or release");
+if (selectedWorkload && !Object.hasOwn(catalog, selectedWorkload))
+  throw Error(`Unknown benchmark workload: ${selectedWorkload}`);
 const backends = selectedBackend ? [selectedBackend] : ["c", "zig"];
 const modes = selectedMode ? [selectedMode] : ["dev", "release"];
-const expected = Object.keys(catalog).sort();
+const expected = selectedWorkload ? [selectedWorkload] : Object.keys(catalog).sort();
 const measured = new Map(expected.map(name => [name, []]));
 
 function sample(command, args, warmupCount, iterationCount) {
   for (let index = 0; index < warmupCount; index++) execute(command, args);
   const samples = [];
-  let allocation = {};
+  const allocationSamples = [];
   for (let index = 0; index < iterationCount; index++) {
     const started = performance.now();
     const run = execute(command, args);
     samples.push(performance.now() - started);
-    allocation = metrics(run.stderr + run.stdout);
+    allocationSamples.push(metrics(run.stderr + run.stdout));
   }
-  return { ...summary(samples), allocation };
+  return { ...summary(samples), allocation: allocationSamples.at(-1), allocationSamples };
 }
 
 function foo(backend, mode) {
-  const run = execute(process.execPath, [resolve(root, "bin", "foo.mjs"), "benchmark",
-    "--backend", backend, "--mode", mode, "--warmup", String(warmup),
-    "--iterations", String(iterations), "--json"]);
-  const records = run.stdout.split(/\r?\n/).filter(Boolean).map(line => {
-    try { return JSON.parse(line); } catch { return null; }
-  }).filter(Boolean);
-  const events = records.filter(item => item.event === "benchmark");
-  const artifact = records.filter(item => item.event === "done" && item.file).at(-1)?.file;
-  const names = events.map(item => item.name).sort();
-  if (JSON.stringify(names) !== JSON.stringify(expected)) throw Error(`Expected ${expected.join(", ")}; received ${names.join(", ")} for FOO/${backend}/${mode}`);
-  for (const event of events) {
+  for (const name of expected) {
+    const run = execute(process.execPath, [resolve(root, "bin", "foo.mjs"), "benchmark",
+      `benchmark/${name}.iv`, "--backend", backend, "--mode", mode,
+      "--warmup", String(warmup), "--iterations", String(iterations), "--json"]);
+    const records = run.stdout.split(/\r?\n/).filter(Boolean).map(line => {
+      try { return JSON.parse(line); } catch { return null; }
+    }).filter(Boolean);
+    const events = records.filter(item => item.event === "benchmark");
+    const artifact = records.filter(item => item.event === "done" && item.file).at(-1)?.file;
+    if (events.length !== 1 || events[0].name !== name)
+      throw Error(`Expected ${name}; received ${events.map(item => item.name).join(", ")} for FOO/${backend}/${mode}`);
+    const event = events[0];
     let result = {
       implementation: "foo", backend, mode,
       minimumMs: event.minimumMs, medianMs: event.medianMs,
@@ -99,12 +116,14 @@ function foo(backend, mode) {
       maximumMs: event.maximumMs, samplesMs: event.samplesMs,
       compilationMs: event.compilationMs, compilationCached: event.cached,
       allocation: event.metrics || {}, optimization: event.optimization || {},
+      allocationSamples: event.metricsSamples || [],
     };
     if (event.name === "startup") {
       if (!artifact) throw Error(`Missing startup artifact for FOO/${backend}/${mode}`);
       const stable = sample(artifact, [], baselineWarmup, baselineIterations);
       result = { ...result, ...stable, baselineResampled: true };
     }
+    checkBudget(event.name, `foo/${backend}/${mode}`, result.allocationSamples);
     measured.get(event.name).push(result);
     console.log(`${event.name.padEnd(12)} foo/${backend.padEnd(3)} ${mode.padEnd(7)} median ${result.medianMs.toFixed(2)} ms`);
   }
@@ -148,6 +167,7 @@ function native(backend, mode) {
       compilationShared: true, baselineResampled: startup,
       optimization: { compilerControlled: true },
     };
+    checkBudget(name, `native/${backend}/${mode}`, result.allocationSamples);
     measured.get(name).push(result);
     console.log(`${name.padEnd(12)} native/${backend.padEnd(3)} ${mode.padEnd(7)} median ${result.medianMs.toFixed(2)} ms`);
   }
@@ -160,8 +180,8 @@ for (const mode of modes) {
 
 for (const mode of modes) for (const backend of new Set([...backends, "c", "zig", "rust"])) {
   for (const implementation of ["foo", "native"]) {
-    const baseline = measured.get("startup").find(item => item.mode === mode && item.backend === backend && item.implementation === implementation);
-    const runtime = measured.get("runtime").find(item => item.mode === mode && item.backend === backend && item.implementation === implementation);
+    const baseline = measured.get("startup")?.find(item => item.mode === mode && item.backend === backend && item.implementation === implementation);
+    const runtime = measured.get("runtime")?.find(item => item.mode === mode && item.backend === backend && item.implementation === implementation);
     if (!baseline || !runtime) continue;
     for (const results of measured.values()) for (const result of results) {
       if (result.mode === mode && result.backend === backend && result.implementation === implementation) {
@@ -188,6 +208,7 @@ for (const results of measured.values()) {
 const processors = cpus();
 const report = {
   schema: "foo.benchmark/v4", measuredAt: new Date().toISOString(),
+  ...(selectedWorkload ? { selection: selectedWorkload } : {}),
   compiler: packageInfo.version, warmup, iterations,
   baselineWarmup, baselineIterations,
   caution: "Startup-adjusted values and speed ratios are estimates. Compare raw samples and allocation/optimization evidence before attributing a difference to FOO. A workload result is not a language-wide speed claim.",
@@ -198,7 +219,8 @@ const report = {
   },
   workloads: expected.map(name => ({
     name, file: `benchmark/${name}.iv`, purpose: catalog[name].purpose,
-    work: catalog[name].work, results: measured.get(name),
+    work: catalog[name].work, metricBudget: catalog[name].metricBudget,
+    results: measured.get(name),
   })),
 };
 const output = resolve(option("--output") || resolve(root, "benchmark", "results.json"));

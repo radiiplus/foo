@@ -1,0 +1,9 @@
+-- Canonical lowercase hexadecimal encoding.
+use "binary" function hex(value sequence of constant byte) giving failable text.
+use "binary" function unpack(value text) giving failable sequence of byte.
+public function encode(value sequence of constant byte) giving failable text {
+  give hex(value) try.
+}
+public function decode(value text) giving failable sequence of byte {
+  give unpack(value) try.
+}

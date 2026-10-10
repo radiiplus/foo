@@ -19,6 +19,7 @@ type
     layout*: string
     value*: string
     borrows*: seq[int]
+    releases*: seq[int]
     generics*: seq[string]
     constraints*: seq[tuple[subject: string, trait: string]]
     labels*: seq[string]
@@ -55,7 +56,9 @@ proc typesEqual*(left, right: Type): bool =
   of "named", "record", "choice", "union", "opaque": left.name == right.name
   of "vector": left.length == right.length and typesEqual(left.elem, right.elem)
   of "function":
-    if left.params.len != right.params.len or left.abi != right.abi or not typesEqual(left.ret, right.ret): false
+    if left.params.len != right.params.len or left.abi != right.abi or
+        left.borrows != right.borrows or left.releases != right.releases or
+        not typesEqual(left.ret, right.ret): false
     else:
       for index in 0 ..< left.params.len:
         if not typesEqual(left.params[index], right.params[index]): return false

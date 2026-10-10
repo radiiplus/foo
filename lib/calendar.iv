@@ -1,18 +1,18 @@
 -- Provides validated Gregorian dates and fixed UTC offsets.
-public define Date as record {
+public define civil as record {
   year of type integer.
   month of type unsigned.
   day of type unsigned.
 }.
-public define Zone as record {
+public define offset as record {
   minutes of type integer.
 }.
-public define Moment as record {
-  date of type Date.
+public define stamp as record {
+  date of type civil.
   hour of type unsigned.
   minute of type unsigned.
   second of type unsigned.
-  zone of type Zone.
+  zone of type offset.
 }.
 public function leap(year integer) giving boolean {
   when year remainder 400 is 0 {
@@ -35,24 +35,24 @@ public function days(year integer, month unsigned) giving unsigned {
   }
   give 31.
 }
-public function date(year integer, month unsigned, day unsigned) giving failable Date {
+public function date(year integer, month unsigned, day unsigned) giving failable civil {
   when month less than 1 or month greater than 12 {
-    give fail(Error.InvalidDate).
+    give fail(Error.Date).
   }
   when day less than 1 or day greater than days(year, month) {
-    give fail(Error.InvalidDate).
+    give fail(Error.Date).
   }
-  give Date(year, month, day).
+  give civil(year, month, day).
 }
-public function zone(minutes integer) giving failable Zone {
+public function zone(minutes integer) giving failable offset {
   when minutes less than (0 subtract 1439) or minutes greater than 1439 {
-    give fail(Error.InvalidZone).
+    give fail(Error.Zone).
   }
-  give Zone(minutes).
+  give offset(minutes).
 }
-public function moment(date Date, hour unsigned, minute unsigned, second unsigned, zone Zone) giving failable Moment {
+public function moment(date civil, hour unsigned, minute unsigned, second unsigned, zone offset) giving failable stamp {
   when hour greater than 23 or minute greater than 59 or second greater than 59 {
-    give fail(Error.InvalidTime).
+    give fail(Error.Time).
   }
-  give Moment(date, hour, minute, second, zone).
+  give stamp(date, hour, minute, second, zone).
 }

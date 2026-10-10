@@ -1,5 +1,24 @@
 # Building Release Binaries
 
+## Source candidate
+
+Before assigning a new version, stage the current repository sources:
+
+```sh
+npm run source:pack
+```
+
+This writes `.artifacts/release-source/foo-source-candidate/` and a matching
+`.tar.gz` archive. The package includes compiler and backend sources, FOO
+libraries, build and packaging tools, tests, docs, installers, registry code,
+and vendored sources and headers. Generated output and ignored local files are
+excluded. `source.json` records each file's SHA-256, the current commit, the
+manifest version, and whether the worktree was dirty. The command refuses to
+overwrite an existing candidate; pass `--output=PATH` for another candidate.
+The candidate is for review and local builds, not a versioned publication.
+Update the release version in `package.json`, `package-lock.json`, and
+`project.json` and complete release checks before publishing.
+
 Use one command from the repository root:
 
 ```sh
@@ -17,8 +36,19 @@ operating system will run on another.
 | Linux ARM64 | Builds Linux ARM64 natively. |
 
 Output is staged under `release/foo-vVERSION/` using names such as
-`foo-vVERSION-windows-x64` and `foo-vVERSION-linux-x64`. The existing installer
-command consumes those directories:
+`foo-vVERSION-windows-x64` and `foo-vVERSION-linux-x64`.
+
+Package the VS Code extension in the same release directory before generating
+checksums:
+
+```text
+cd editors/textmate
+npx --yes @vscode/vsce@4.0.0 package --out ../../release/foo-vVERSION/foo.iv-EDITORVERSION.vsix
+cd ../..
+```
+
+Use the version in `editors/textmate/package.json` for `EDITORVERSION`.
+Then build the installers and checksums:
 
 ```sh
 npm run build:installers
@@ -31,7 +61,7 @@ both Linux TAR archives, the npm package, and `SHA256SUMS.txt`.
 
 Windows builds require Node.js, Nim 2.2.12, Clang, and `llvm-rc`. The resource
 compiler is included with standard LLVM installations and embeds
-`installers/assets/logo-installer.ico` in `foo.exe`.
+`installers/assets/installer.ico` in `foo.exe`.
 
 Linux and WSL builds require Node.js, Nim 2.2.12, Clang, and the OpenSSL
 development package. The Linux ARM64 cross-build uses FOO's pinned managed Zig

@@ -29,7 +29,7 @@ This page answers a practical question: **Which familiar language features exist
 ### ✅ What is in FOO v1
 *   **Collections:** Typed modules for sequences, maps, sets, queues, stacks, and mutable text-keyed tables. *(Note: No collection literal syntax).*
 *   **Transformations:** `map`, `filter`, `sort`, `find`, `dedup`, `reverse`, `take`, `drop`, `any`, `all`, `fold`, iteration, and checked `at` indexing. *(Note: No operator overloading).*
-*   **Reusable patterns:** `Codec[T]`, `Machine[S, E]`, `Cursor[T, S]`, `Participant`, typed monotonic and calendar time, dimensional quantities, application contracts, generated property checks, and explicit pointer identity are standard-library APIs rather than new syntax.
+*   **Reusable patterns:** `codec[T]`, `machine[S, E]`, `cursor[T, S]`, `participant`, typed monotonic and calendar time, dimensional quantities, application contracts, generated property checks, and explicit pointer identity are standard-library APIs rather than new syntax.
 *   **Ownership:** Scope arenas (groups of temporary memory released together), explicit `Allocator` values, tracked borrowed views, move/retention checks, and `after` cleanup blocks.
 *   **References:** Non-null `pointer to T`. Nullability is handled via `optional pointer to T`. Raw address manipulation requires unsafe/native access.
 *   **Safety:** Checked indexing/arithmetic, provenance-aware pointers (addresses whose origin is tracked), scope escape checks, and strict synchronization (worker coordination) rules. **Panics are fatal** (not recoverable with `fallback`).

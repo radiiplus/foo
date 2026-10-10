@@ -1,0 +1,61 @@
+use gpu as graphics.
+use sequence as items.
+use testing as check.
+
+function copy(source sequence of constant unsigned 32,
+  output sequence of unsigned 32) giving nothing for gpu {
+  constant index is graphics.index.
+  set output at index to source at index.
+}
+
+function stage(device pointer to graphics.device) giving failable pointer to graphics.kernel {
+  give graphics.prepare(device, "copy") try.
+}
+
+test "borrowed coherent device memory" {
+  when graphics.available {
+    constant device is graphics.open try.
+    after { graphics.close(device) fallback nothing. }
+    check.expect(graphics.supports(device, "mapping") try).
+    constant buffer is graphics.reserve(device, 4) try.
+    after { graphics.dispose(buffer) fallback nothing. }
+    constant writable is graphics.edit(buffer) try.
+    set writable at 0 to 7.
+    set writable at 3 to 9.
+    constant readable is graphics.view(buffer) try.
+    check.expect(readable at 0 is 7).
+    check.expect(readable at 3 is 9).
+    constant copy is items.sized[byte](4) try.
+    after { items.release[byte](copy) fallback nothing. }
+    graphics.download(buffer, copy) try.
+    check.expect(copy at 0 is 7 and copy at 3 is 9).
+  }
+}
+
+test "unsigned GPU buffer kernel" {
+  when graphics.available {
+    constant device is graphics.open try.
+    after { graphics.close(device) fallback nothing. }
+    constant source is graphics.reserve(device, 16) try.
+    after { graphics.dispose(source) fallback nothing. }
+    constant output is graphics.reserve(device, 16) try.
+    after { graphics.dispose(output) fallback nothing. }
+    constant values is items.sized[unsigned 32](4) try.
+    after { items.release[unsigned 32](values) fallback nothing. }
+    set values at 0 to 9.
+    set values at 1 to 14.
+    set values at 2 to 22.
+    set values at 3 to 31.
+    graphics.push(source, values) try.
+    constant kernel is stage(device) try.
+    after { graphics.discard(kernel) fallback nothing. }
+    graphics.bind(kernel, 0, source) try.
+    graphics.bind(kernel, 1, output) try.
+    graphics.launch(kernel, 4) try.
+    graphics.finish(device) try.
+    constant copied is items.sized[unsigned 32](4) try.
+    after { items.release[unsigned 32](copied) fallback nothing. }
+    graphics.pull(output, copied) try.
+    check.expect(copied at 0 is 9 and copied at 3 is 31).
+  }
+}

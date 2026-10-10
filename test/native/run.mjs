@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { availableParallelism, homedir, totalmem } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { spawn } from "node:child_process";
@@ -14,10 +14,26 @@ if (existsSync(toolchains)) {
 }
 candidates.push(executable);
 const compiler = candidates.find(candidate => candidate && (candidate === executable || existsSync(candidate))) ?? executable;
+const suites = ["syntax", "engine", "build", "cli", "package"]
+  .map(name => join(root, "test", "suites", `${name}.nim`));
+const grouped = new Set();
+for (const suite of suites) {
+  const source = readFileSync(suite, "utf8");
+  for (const match of source.matchAll(/^import \.\.\/([a-z/]+) as [a-z]+$/gm)) {
+    const file = join(root, "test", `${match[1]}.nim`);
+    if (!existsSync(file) || grouped.has(file)) throw Error(`Invalid suite import: ${file}`);
+    grouped.add(file);
+  }
+}
 const files = readdirSync(join(root, "test"), { recursive: true, withFileTypes: true })
   .filter(entry => entry.isFile() && entry.name.endsWith(".nim"))
   .map(entry => join(entry.parentPath, entry.name))
+  .filter(file => !grouped.has(file))
   .sort();
+const serial = new Set(["backend/c/threads.nim", "backend/c/wasi.nim"]);
+const indexed = files.map((file, index) => ({ file, index }));
+const parallel = indexed.filter(({ file }) => !serial.has(relative(join(root, "test"), file).replaceAll("\\", "/")));
+const isolated = indexed.filter(({ file }) => serial.has(relative(join(root, "test"), file).replaceAll("\\", "/")));
 const base = join(root, ".artifacts", "native-tests");
 const run = `run-${process.pid}-${Date.now()}`;
 const output = join(base, run);
@@ -33,10 +49,10 @@ const jobs = Math.min(files.length,
   Number.isFinite(requested) && requested > 0 ? requested : automatic);
 const selectedTimeout = Number.parseInt(process.env.FOO_TEST_TIMEOUT ?? "", 10);
 const timeout = Number.isFinite(selectedTimeout) && selectedTimeout > 0
-  ? selectedTimeout : 300000;
+  ? selectedTimeout : 600000;
 const results = [];
 
-console.log(`Running ${files.length} native tests with ${jobs} jobs.`);
+console.log(`Running ${files.length} native suites (${grouped.size} modules grouped) with ${jobs} jobs.`);
 
 function execute(file) {
   const name = relative(join(root, "test"), file).replaceAll("\\", "/");
@@ -46,42 +62,51 @@ function execute(file) {
   const temp = join(temporary, id);
   mkdirSync(cache, { recursive: true });
   mkdirSync(temp, { recursive: true });
-  const args = ["c", "-r", "--hints:off", "--warnings:off", `--path:${root}`, `--nimcache:${cache}`, `--out:${binary}`];
+  const args = ["c", "--hints:off", "--warnings:off", `--path:${root}`, `--nimcache:${cache}`, `--out:${binary}`];
   if (process.platform === "win32") args.push("--cc:clang");
   args.push(file);
   const started = performance.now();
   const environment = { ...process.env, TEMP: temp, TMP: temp, TMPDIR: temp,
     FOOTESTID: `${run}-${id}` };
   return new Promise(resolveResult => {
-    const child = spawn(compiler, args, { cwd: root, env: environment,
-      windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     let failure;
     let timedOut = false;
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", chunk => { stdout += chunk; });
-    child.stderr.on("data", chunk => { stderr += chunk; });
-    child.on("error", error => { failure = error.message; });
+    let active;
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill();
+      active?.kill();
     }, timeout);
-    child.on("close", code => {
+    function finish(code) {
       clearTimeout(timer);
       const error = timedOut ? `Timed out after ${timeout} ms` : failure;
       resolveResult({ file: name, passed: code === 0 && !error, code,
         elapsed: performance.now() - started, stdout, stderr, error });
-    });
+    }
+    function launch(command, parameters, next) {
+      const child = spawn(command, parameters, { cwd: root, env: environment,
+        windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+      active = child;
+      child.stdout.setEncoding("utf8");
+      child.stderr.setEncoding("utf8");
+      child.stdout.on("data", chunk => { stdout += chunk; });
+      child.stderr.on("data", chunk => { stderr += chunk; });
+      child.on("error", error => { failure = error.message; });
+      child.on("close", code => {
+        if (timedOut || failure || code !== 0 || !next) finish(code);
+        else next();
+      });
+    }
+    launch(compiler, args, () => launch(binary, [], null));
   });
 }
 
 let next = 0;
 async function worker() {
-  while (next < files.length) {
-    const index = next++;
-    const result = await execute(files[index]);
+  while (next < parallel.length) {
+    const { file, index } = parallel[next++];
+    const result = await execute(file);
     results[index] = result;
     console.log(`${result.passed ? "PASS" : "FAIL"} ${result.file} (${Math.round(result.elapsed)} ms)`);
     if (!result.passed)
@@ -89,6 +114,13 @@ async function worker() {
   }
 }
 await Promise.all(Array.from({ length: jobs }, () => worker()));
+for (const { file, index } of isolated) {
+  const result = await execute(file);
+  results[index] = result;
+  console.log(`${result.passed ? "PASS" : "FAIL"} ${result.file} (${Math.round(result.elapsed)} ms)`);
+  if (!result.passed)
+    process.stderr.write(result.stderr || result.stdout || result.error || "Unknown native test failure\n");
+}
 
 const report = JSON.stringify(results, null, 2) + "\n";
 writeFileSync(join(output, "results.json"), report);

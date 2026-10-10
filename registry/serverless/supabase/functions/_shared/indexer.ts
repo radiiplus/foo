@@ -112,6 +112,7 @@ function fromRelease(release: PackageRecord, versions: VersionSummary[]): IndexE
     name: release.name,
     version: release.version,
     description: release.description,
+    ...(release.icon === undefined ? {} : { icon: release.icon }),
     category: release.category,
     tags: release.tags,
     license: release.license,

@@ -1,0 +1,208 @@
+-- Canonical, independently owned byte-oriented packing formats.
+use binary as wire.
+use sequence as items.
+use "binary" function octet(value unsigned) giving failable byte.
+use "binary" function widen(value byte) giving unsigned.
+
+-- Packs zero/one flags least-significant bit first, eight per byte.
+public function bits(flags sequence of constant byte) giving failable sequence of byte {
+  constant length is items.extent[byte](flags).
+  dynamic index of type unsigned is 0.
+  while index less than length {
+    when flags at index greater than 1 { give fail(Error.InvalidEncoding). }
+    increase index by 1.
+  }
+  dynamic size is length divide 8.
+  when length remainder 8 is not 0 { increase size by 1. }
+  dynamic output is items.sized[byte](size) try.
+  after error { items.release[byte](output) fallback nothing. }
+  dynamic mask of type unsigned is 1.
+  dynamic current of type unsigned is 0.
+  dynamic cursor of type unsigned is 0.
+  set index to 0.
+  while index less than length {
+    when flags at index is 1 { set current to current plus mask. }
+    increase index by 1.
+    when index remainder 8 is 0 {
+      set output at cursor to octet(current) try.
+      increase cursor by 1.
+      set current to 0.
+      set mask to 1.
+    } otherwise {
+      set mask to mask multiply 2.
+    }
+  }
+  when length remainder 8 is not 0 { set output at cursor to octet(current) try. }
+  give output.
+}
+
+-- Requires exactly the bytes needed by count and zero unused high bits.
+public function expand(source sequence of constant byte, count unsigned) giving failable sequence of byte {
+  dynamic size is count divide 8.
+  constant extra is count remainder 8.
+  when extra is not 0 { increase size by 1. }
+  when items.extent[byte](source) is not size { give fail(Error.InvalidEncoding). }
+  when extra is not 0 {
+    dynamic threshold of type unsigned is 1.
+    dynamic index of type unsigned is 0.
+    while index less than extra {
+      set threshold to threshold multiply 2.
+      increase index by 1.
+    }
+    when widen(source at (size subtract 1)) greater than or equal to threshold {
+      give fail(Error.InvalidEncoding).
+    }
+  }
+  dynamic output is items.sized[byte](count) try.
+  after error { items.release[byte](output) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic mask of type unsigned is 1.
+  while index less than count {
+    constant symbol is widen(source at (index divide 8)).
+    set output at index to octet((symbol divide mask) remainder 2) try.
+    increase index by 1.
+    when index remainder 8 is 0 { set mask to 1. }
+    otherwise { set mask to mask multiply 2. }
+  }
+  give output.
+}
+
+function span(source sequence of constant byte, offset unsigned) giving unsigned {
+  constant extent is items.extent[byte](source).
+  constant symbol is source at offset.
+  dynamic count of type unsigned is 1.
+  while count less than 255 and count less than extent subtract offset {
+    when source at (offset plus count) is not symbol { give count. }
+    increase count by 1.
+  }
+  give count.
+}
+
+-- Encodes maximal (count, byte) runs with count 1..255.
+public function runs(source sequence of constant byte) giving failable sequence of byte {
+  constant extent is items.extent[byte](source).
+  dynamic index of type unsigned is 0.
+  dynamic groups of type unsigned is 0.
+  while index less than extent {
+    increase groups by 1.
+    set index to index plus span(source, index).
+  }
+  when groups greater than 18446744073709551615 divide 2 { give fail(Error.Size). }
+  dynamic output is items.sized[byte](groups multiply 2) try.
+  after error { items.release[byte](output) fallback nothing. }
+  set index to 0.
+  dynamic cursor of type unsigned is 0.
+  while index less than extent {
+    constant count is span(source, index).
+    set output at cursor to octet(count) try.
+    set output at (cursor plus 1) to source at index.
+    set cursor to cursor plus 2.
+    set index to index plus count.
+  }
+  give output.
+}
+
+-- Rejects zero counts, partial pairs, and nonmaximal adjacent equal runs.
+public function unroll(source sequence of constant byte, limit unsigned) giving failable sequence of byte {
+  constant extent is items.extent[byte](source).
+  when extent remainder 2 is not 0 { give fail(Error.InvalidEncoding). }
+  dynamic index of type unsigned is 0.
+  dynamic total of type unsigned is 0.
+  while index less than extent {
+    constant count is widen(source at index).
+    when count is 0 { give fail(Error.InvalidEncoding). }
+    when index greater than 0 {
+      when source at (index plus 1) is source at (index subtract 1) and source at (index subtract 2) is not 255 {
+        give fail(Error.InvalidEncoding).
+      }
+    }
+    when count greater than limit subtract total { give fail(Error.Size). }
+    set total to total plus count.
+    set index to index plus 2.
+  }
+  dynamic output is items.sized[byte](total) try.
+  after error { items.release[byte](output) fallback nothing. }
+  set index to 0.
+  dynamic cursor of type unsigned is 0.
+  while index less than extent {
+    constant count is widen(source at index).
+    dynamic offset of type unsigned is 0.
+    while offset less than count {
+      set output at (cursor plus offset) to source at (index plus 1).
+      increase offset by 1.
+    }
+    set cursor to cursor plus count.
+    set index to index plus 2.
+  }
+  give output.
+}
+
+-- Encodes ascending unsigned values as canonical LEB128 differences from zero.
+public function deltas(values sequence of constant unsigned) giving failable sequence of byte {
+  constant count is items.extent[unsigned](values).
+  dynamic index of type unsigned is 0.
+  dynamic previous of type unsigned is 0.
+  dynamic size of type unsigned is 0.
+  while index less than count {
+    constant value is values at index.
+    when index greater than 0 and value less than previous { give fail(Error.InvalidEncoding). }
+    dynamic difference is value subtract previous.
+    dynamic width of type unsigned is 1.
+    while difference greater than or equal to 128 {
+      set difference to difference divide 128.
+      increase width by 1.
+    }
+    when width greater than 18446744073709551615 subtract size { give fail(Error.Size). }
+    set size to size plus width.
+    set previous to value.
+    increase index by 1.
+  }
+  dynamic output is items.sized[byte](size) try.
+  after error { items.release[byte](output) fallback nothing. }
+  set previous to 0.
+  set index to 0.
+  dynamic cursor of type unsigned is 0.
+  while index less than count {
+    constant value is values at index.
+    dynamic difference is value subtract previous.
+    while difference greater than or equal to 128 {
+      set output at cursor to octet((difference remainder 128) plus 128) try.
+      set difference to difference divide 128.
+      increase cursor by 1.
+    }
+    set output at cursor to octet(difference) try.
+    increase cursor by 1.
+    set previous to value.
+    increase index by 1.
+  }
+  give output.
+}
+
+-- Limits decoded items and rejects noncanonical varints or sum overflow.
+public function restore(source sequence of constant byte, limit unsigned) giving failable sequence of unsigned {
+  constant extent is items.extent[byte](source).
+  dynamic cursor of type unsigned is 0.
+  dynamic count of type unsigned is 0.
+  dynamic total of type unsigned is 0.
+  while cursor less than extent {
+    when count greater than or equal to limit { give fail(Error.Size). }
+    constant part is wire.decode(source, cursor) try.
+    when part.value greater than 18446744073709551615 subtract total { give fail(Error.InvalidEncoding). }
+    set total to total plus part.value.
+    set cursor to part.next.
+    increase count by 1.
+  }
+  dynamic output is items.sized[unsigned](count) try.
+  after error { items.release[unsigned](output) fallback nothing. }
+  set cursor to 0.
+  set count to 0.
+  set total to 0.
+  while cursor less than extent {
+    constant part is wire.decode(source, cursor) try.
+    set total to total plus part.value.
+    set output at count to total.
+    set cursor to part.next.
+    increase count by 1.
+  }
+  give output.
+}

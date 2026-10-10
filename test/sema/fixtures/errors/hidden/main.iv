@@ -3,6 +3,6 @@
   use secret.
   
   start {
-    constant x is hiddenvalue.
+    constant x is concealed.
     give nothing.
   }

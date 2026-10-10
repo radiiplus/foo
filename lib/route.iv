@@ -1,0 +1,38 @@
+-- Snapshots routes; a blank gateway identifies an on-link route.
+public define snapshot as opaque.
+use "net" function routes giving failable pointer to snapshot.
+use "net" function tally(value pointer to snapshot) giving failable unsigned.
+use "net" function target(value pointer to snapshot, index unsigned) giving failable text.
+use "net" function via(value pointer to snapshot, index unsigned) giving failable text.
+use "net" function protocol(value pointer to snapshot, index unsigned) giving failable text.
+use "net" function mask(value pointer to snapshot, index unsigned) giving failable unsigned.
+use "net" function ordinal(value pointer to snapshot, index unsigned) giving failable unsigned.
+use "net" function cost(value pointer to snapshot, index unsigned) giving failable unsigned.
+use "net" function dismiss(value pointer to snapshot) giving failable nothing.
+public function scan giving failable pointer to snapshot {
+  give routes try.
+}
+public function count(value pointer to snapshot) giving failable unsigned {
+  give tally(value) try.
+}
+public function destination(value pointer to snapshot, index unsigned) giving failable text borrowing value {
+  give target(value, index) try.
+}
+public function gateway(value pointer to snapshot, index unsigned) giving failable text borrowing value {
+  give via(value, index) try.
+}
+public function family(value pointer to snapshot, index unsigned) giving failable text borrowing value {
+  give protocol(value, index) try.
+}
+public function prefix(value pointer to snapshot, index unsigned) giving failable unsigned {
+  give mask(value, index) try.
+}
+public function index(value pointer to snapshot, position unsigned) giving failable unsigned {
+  give ordinal(value, position) try.
+}
+public function metric(value pointer to snapshot, index unsigned) giving failable unsigned {
+  give cost(value, index) try.
+}
+public function close(value pointer to snapshot) giving failable nothing {
+  dismiss(value) try.
+}

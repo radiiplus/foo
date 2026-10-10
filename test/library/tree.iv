@@ -1,0 +1,40 @@
+use tree as ordered.
+use testing as check.
+
+test "persistent ordered tree" {
+  constant empty is ordered.create[integer].
+  constant first is ordered.insert[integer](empty, 8) try.
+  constant second is ordered.insert[integer](first, 2) try.
+  constant third is ordered.insert[integer](second, 13) try.
+  constant fourth is ordered.insert[integer](third, 5) try.
+  constant duplicate is ordered.insert[integer](fourth, 5) try.
+  constant removed is ordered.remove[integer](fourth, 8) try.
+  after {
+    ordered.release[integer](first) fallback nothing.
+    ordered.release[integer](second) fallback nothing.
+    ordered.release[integer](third) fallback nothing.
+    ordered.release[integer](fourth) fallback nothing.
+    ordered.release[integer](duplicate) fallback nothing.
+    ordered.release[integer](removed) fallback nothing.
+  }
+  check.expect(ordered.length[integer](empty) is 0).
+  check.expect(not ordered.contains[integer](empty, 8)).
+  check.expect((ordered.find[integer](empty, 8) fallback 44) is 44).
+  check.expect(ordered.length[integer](fourth) is 4).
+  check.expect(ordered.length[integer](duplicate) is 4).
+  check.expect(ordered.nth[integer](fourth, 0) try is 2).
+  check.expect(ordered.nth[integer](fourth, 1) try is 5).
+  check.expect(ordered.nth[integer](fourth, 2) try is 8).
+  check.expect(ordered.nth[integer](fourth, 3) try is 13).
+  check.expect(ordered.rank[integer](fourth, 7) is 2).
+  check.expect(ordered.lower[integer](fourth, 7) try is 8).
+  check.expect(ordered.find[integer](fourth, 5) try is 5).
+  check.expect((ordered.find[integer](fourth, 6) fallback 44) is 44).
+  check.expect((ordered.nth[integer](fourth, 4) fallback 44) is 44).
+  check.expect(ordered.length[integer](ordered.remove[integer](fourth, 6) fallback empty) is 0).
+  check.expect(ordered.contains[integer](fourth, 8)).
+  check.expect(not ordered.contains[integer](removed, 8)).
+  check.expect(ordered.length[integer](removed) is 3).
+  check.expect(ordered.nth[integer](removed, 2) try is 13).
+  check.expect(ordered.contains[integer](first, 8)).
+}

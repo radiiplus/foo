@@ -1,0 +1,89 @@
+-- Persistent packed ordered search tree. Midpoint search is logarithmic;
+-- immutable insertion and removal copy storage in linear time.
+use sequence as items.
+
+public define tree[T] as record {
+  values of type sequence of T.
+}.
+
+public function create[T] giving tree[T] {
+  give tree[T](items.create[T]).
+}
+public function length[T](value tree[T]) giving unsigned {
+  give items.length[T](value.values).
+}
+public function rank[T](value tree[T], item T) giving unsigned where T is Ord {
+  dynamic left of type unsigned is 0.
+  dynamic right is length[T](value).
+  while left less than right {
+    constant middle is left plus (right subtract left) divide 2.
+    when (value.values at middle) less than item {
+      set left to middle plus 1.
+    } otherwise {
+      set right to middle.
+    }
+  }
+  give left.
+}
+public function contains[T](value tree[T], item T) giving boolean where T is Ord {
+  constant index is rank[T](value, item).
+  give index less than length[T](value) and (value.values at index) is item.
+}
+public function nth[T](value tree[T], index unsigned) giving failable T {
+  when index greater than or equal to length[T](value) { give fail(Error.Bounds). }
+  give value.values at index.
+}
+public function find[T](value tree[T], item T) giving failable T where T is Ord {
+  constant index is rank[T](value, item).
+  when index greater than or equal to length[T](value) or (value.values at index) is not item {
+    give fail(Error.Missing).
+  }
+  give value.values at index.
+}
+public function lower[T](value tree[T], item T) giving failable T where T is Ord {
+  give nth[T](value, rank[T](value, item)) try.
+}
+public function insert[T](value tree[T], item T) giving failable tree[T] where T is Ord {
+  constant count is length[T](value).
+  constant index is rank[T](value, item).
+  when index less than count and (value.values at index) is item {
+    give tree[T](items.copy[T](value.values) try).
+  }
+  when count is 18446744073709551615 { give fail(Error.Bounds). }
+  dynamic result is items.sized[T](count plus 1) try.
+  after error { items.release[T](result) fallback nothing. }
+  dynamic cursor of type unsigned is 0.
+  while cursor less than index {
+    set result at cursor to value.values at cursor.
+    increase cursor by 1.
+  }
+  set result at index to item.
+  while cursor less than count {
+    set result at (cursor plus 1) to value.values at cursor.
+    increase cursor by 1.
+  }
+  give tree[T](result).
+}
+public function remove[T](value tree[T], item T) giving failable tree[T] where T is Ord {
+  constant count is length[T](value).
+  constant index is rank[T](value, item).
+  when index greater than or equal to count or (value.values at index) is not item {
+    give fail(Error.Missing).
+  }
+  dynamic result is items.sized[T](count subtract 1) try.
+  after error { items.release[T](result) fallback nothing. }
+  dynamic cursor of type unsigned is 0.
+  while cursor less than index {
+    set result at cursor to value.values at cursor.
+    increase cursor by 1.
+  }
+  while cursor plus 1 less than count {
+    set result at cursor to value.values at (cursor plus 1).
+    increase cursor by 1.
+  }
+  give tree[T](result).
+}
+public function release[T](value tree[T]) giving failable nothing {
+  items.release[T](value.values) try.
+  give nothing.
+}

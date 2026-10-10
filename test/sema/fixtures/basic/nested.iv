@@ -3,6 +3,6 @@
   use "./sub/module".
   
   start {
-    constant result is nestedadd(1, 2).
+    constant result is combine(1, 2).
     give nothing.
   }

@@ -130,76 +130,44 @@ export default function Downloads() {
   const checksums = assets.find((asset) => asset.name === "SHA256SUMS.txt");
 
   return (
-    <div className="min-h-full bg-[#080808]">
-      <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col px-5 py-5 sm:px-8 sm:py-6">
-        <header className="border-b border-[#292929] pb-4">
-          <div className="mb-2 flex items-center gap-2 font-mono text-[9px] tracking-[0.14em] text-[#60D5DF] uppercase">
-            {error ? "Release service unavailable" : "Stable release"}
-          </div>
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-normal text-[#f5f5f5] sm:text-3xl">Download FOO</h1>
-              <p className="mt-2 max-w-xl text-xs leading-5 text-[#858585]">Native installers and portable archives from the latest published compiler release.</p>
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-x-4 gap-y-1 font-mono text-[9px] text-[#666] sm:block sm:text-right">
-              <div>PUBLISHED <span className="ml-2 text-[#d8d8d8]">{version ?? (error ? "UNAVAILABLE" : "CHECKING")}</span></div>
-            </div>
-          </div>
-        </header>
+    <div className="registry-downloads">
+      <header className="registry-downloads-head">
+        <div><p className="registry-kicker">{error ? "Release service unavailable" : "Stable release"}</p><h1>Download FOO</h1><p>Native installers and portable archives from the latest published compiler release.</p></div>
+        <span className="registry-download-version">{version ? `Version ${version}` : error ? "Release unavailable" : "Checking release"}</span>
+      </header>
 
-        <section className="divide-y divide-[#262626]" aria-label="Platform downloads">
+        <section className="registry-platform-grid" aria-label="Platform downloads">
           {platforms.map((platform) => {
             const available = platform.assets.flatMap((definition) => {
               const asset = assets.find((candidate) => definition.matches(candidate.name.toLowerCase()));
               return asset ? [{ ...definition, asset }] : [];
             });
             return (
-              <div key={platform.name} className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-                <div className="flex min-w-0 gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-md border border-[#2b2b2b] bg-[#111] text-[#a8a8a8]">
-                    <Laptop size={16} />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-sm font-semibold text-[#ededed]">{platform.name}</h2>
-                      {platform.name === "Windows x64" && <span className="rounded border border-[#285A5E] bg-[#102124] px-1.5 py-0.5 font-mono text-[8px] text-[#60D5DF] uppercase">Recommended</span>}
-                    </div>
-                    <p className="mt-1 text-[11px] leading-4 text-[#707070]">{platform.detail}</p>
-                    <p className="mt-1 max-w-xl text-[11px] leading-4 text-[#929292]">{platform.note}</p>
-                    {platform.warning && (
-                      <p className="mt-1.5 flex max-w-xl items-start gap-1.5 text-[10px] leading-4 text-[#c8ad73]" role="note">
-                        <AlertTriangle className="mt-0.5 shrink-0" size={11} />
-                        <span>{platform.warning}</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 md:justify-end">
+              <article key={platform.name} className="registry-platform-card">
+                <div className="registry-platform-identity"><span className="registry-result-icon"><Laptop size={17} /></span><div><h2>{platform.name}</h2><p>{platform.detail}</p></div>{platform.name === "Windows x64" && <span className="registry-platform-recommended">Recommended</span>}</div>
+                <p className="registry-platform-note">{platform.note}</p>
+                {platform.warning && <p className="registry-platform-warning" role="note"><AlertTriangle size={13} /><span>{platform.warning}</span></p>}
+                <div className="registry-platform-actions">
                   {available.map(({ label, icon: Icon, asset }) => (
-                    <a key={asset.name} className="inline-flex h-8 items-center gap-2 rounded-md border border-[#303030] bg-[#111] px-3 text-[11px] text-[#cfcfcf] no-underline hover:border-[#596a25] hover:bg-[#14170e] hover:text-white" href={asset.browser_download_url}>
-                      <Icon size={13} className="text-[#60D5DF]" /> {label}
-                    </a>
+                    <a key={asset.name} href={asset.browser_download_url}><Icon size={14} />{label}<Download size={13} /></a>
                   ))}
-                  {release && available.length === 0 && <span className="flex h-8 items-center font-mono text-[9px] text-[#555]">Not included in {release.tag_name}</span>}
-                  {!release && !error && <span className="flex h-8 items-center font-mono text-[9px] text-[#555]">Checking assets...</span>}
+                  {release && available.length === 0 && <span>Not included in {release.tag_name}</span>}
+                  {!release && !error && <span>Checking assets...</span>}
                 </div>
-              </div>
+              </article>
             );
           })}
         </section>
 
-        <section className="mt-3 border-t border-[#292929] pt-3">
-          <h2 className="text-sm font-semibold text-[#ededed]">Release files</h2>
-          <div className="mt-2 grid gap-px overflow-hidden rounded-md border border-[#292929] bg-[#292929] sm:grid-cols-2 lg:grid-cols-4">
+        <section className="registry-download-extras">
+          <h2>Release files</h2>
+          <div className="registry-download-file-grid">
             <ReleaseFile asset={npmAsset} icon={Terminal} title="npm package" />
             <ReleaseFile asset={extension} icon={Puzzle} title="VS Code extension" />
             <ReleaseFile asset={checksums} icon={CheckCircle2} title="SHA-256 checksums" />
-            <a className="flex min-h-14 items-center gap-3 bg-[#0e0e0e] px-4 text-[#aaa] no-underline hover:bg-[#131313] hover:text-white" href={release?.html_url ?? "https://github.com/radiiplus/foo/releases"} target="_blank" rel="noreferrer">
-              <ExternalLink size={15} className="text-[#60D5DF]" /><span><strong className="block text-xs font-medium">Release notes</strong><small className="mt-1 block font-mono text-[9px] text-[#5f5f5f]">GitHub release</small></span>
-            </a>
+            <a className="registry-download-file" href={release?.html_url ?? "https://github.com/radiiplus/foo/releases"} target="_blank" rel="noreferrer"><ExternalLink size={16} /><span><strong>Release notes</strong><small>GitHub release</small></span></a>
           </div>
         </section>
-      </div>
     </div>
   );
 }
@@ -207,14 +175,14 @@ export default function Downloads() {
 function ReleaseFile({ asset, icon: Icon, title }: { asset?: GitHubAsset; icon: LucideIcon; title: string }) {
   if (!asset) {
     return (
-      <span className="flex min-h-14 items-center gap-3 bg-[#0e0e0e] px-4 text-[#555]">
-        <Icon size={15} /><span><strong className="block text-xs font-medium">{title}</strong><small className="mt-1 block font-mono text-[9px]">Not available</small></span>
+      <span className="registry-download-file unavailable">
+        <Icon size={16} /><span><strong>{title}</strong><small>Not available</small></span>
       </span>
     );
   }
   return (
-    <a className="flex min-h-14 items-center gap-3 bg-[#0e0e0e] px-4 text-[#aaa] no-underline hover:bg-[#131313] hover:text-white" href={asset.browser_download_url}>
-      <Icon size={15} className="text-[#60D5DF]" /><span><strong className="block text-xs font-medium">{title}</strong><small className="mt-1 block font-mono text-[9px] text-[#5f5f5f]">{asset.name}</small></span>
+    <a className="registry-download-file" href={asset.browser_download_url}>
+      <Icon size={16} /><span><strong>{title}</strong><small>{asset.name}</small></span>
     </a>
   );
 }

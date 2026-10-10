@@ -1,0 +1,28 @@
+use codec as serializers.
+use sequence as items.
+use testing as check.
+
+define Entry as record {
+  id of type unsigned.
+  active of type boolean.
+}.
+
+function invalid(source sequence of constant byte, limit unsigned) giving failable boolean {
+  constant value is serializers.unpack[Entry](source, limit) try.
+  give false.
+}
+
+test "specialized framed record round trip" {
+  constant source is Entry(42, true).
+  constant encoded is serializers.pack[Entry](source) try.
+  after { items.release[byte](encoded) fallback nothing. }
+  constant decoded is serializers.unpack[Entry](encoded, 256) try.
+  check.expect(decoded.id is 42 and decoded.active).
+  check.expect(invalid(encoded, 1) fallback true).
+  constant extended is items.append[byte](encoded, 0) try.
+  after { items.release[byte](extended) fallback nothing. }
+  check.expect(invalid(extended, 256) fallback true).
+  constant empty is items.sized[byte](0) try.
+  after { items.release[byte](empty) fallback nothing. }
+  check.expect(invalid(empty, 256) fallback true).
+}

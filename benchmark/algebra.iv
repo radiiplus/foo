@@ -1,0 +1,39 @@
+use bitmap as bits.
+use sequence as items.
+use time as clock.
+use binary as wire.
+use file as files.
+
+constant size of type unsigned is 30000.
+constant first is items.sized[unsigned](size) try.
+constant second is items.sized[unsigned](size) try.
+dynamic index of type unsigned is 0.
+while index less than size {
+  set first at index to index multiply 1234567891234.
+  set second at index to index multiply 9876543212345.
+  increase index by 1.
+}
+constant left is bits.bitmap(size multiply 64, first).
+constant right is bits.bitmap(size multiply 64, second).
+dynamic checksum of type unsigned is 0.
+constant started is clock.current try.
+set index to 0.
+while index less than 2 {
+  constant merged is bits.merge(left, right) try.
+  constant common is bits.intersect(left, right) try.
+  constant removed is bits.difference(left, right) try.
+  set checksum to checksum plus bits.count(merged).
+  set checksum to checksum plus bits.count(common).
+  set checksum to checksum plus bits.count(removed).
+  bits.release(merged) try.
+  bits.release(common) try.
+  bits.release(removed) try.
+  increase index by 1.
+}
+constant elapsed is (clock.current try) subtract started.
+when checksum is not 4162660 { give fail(Error.Invalid). }
+constant encoded is wire.fixed(elapsed, 8, "big") try.
+files.save(".artifacts/algebra.bin", encoded) try.
+items.release[byte](encoded) try.
+bits.release(left) try.
+bits.release(right) try.

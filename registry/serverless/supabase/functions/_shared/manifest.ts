@@ -1,4 +1,5 @@
 import { registryOwner, type GitHubIdentity, type RegistryOwner } from "./identity.ts";
+import { icon } from "./icon.ts";
 
 export type Dependency = {
   name: string;
@@ -13,6 +14,7 @@ export type PackageRecord = {
   name: string;
   version: string;
   description: string;
+  icon?: string;
   category: string;
   tags: string[];
   license: string;
@@ -59,7 +61,7 @@ export async function publication(value: unknown, identity: GitHubIdentity): Pro
   if (!object(value) || value.schema !== "foo.publish/v1" || !object(value.manifest) || !Array.isArray(value.documentation) || !object(value.source) || !object(value.api)) {
     throw new TypeError("Invalid publication schema");
   }
-  if (Object.keys(value).some((key) => !["schema", "manifest", "documentation", "source", "api"].includes(key))) {
+  if (Object.keys(value).some((key) => !["schema", "manifest", "documentation", "source", "api", "icon"].includes(key))) {
     throw new TypeError("Unknown publication fields");
   }
   if (value.documentation.length < 100) throw new TypeError("Documentation must contain at least 100 lines");
@@ -99,6 +101,7 @@ export async function publication(value: unknown, identity: GitHubIdentity): Pro
   dependencies.sort((left, right) => compare(left.name, right.name) || compare(left.kind, right.kind));
   const source = await sourceBundle(value.source);
   const api = publicApi(value.api, source);
+  const image = icon(value.icon);
   const owner = await registryOwner(identity);
 
   return {
@@ -107,6 +110,7 @@ export async function publication(value: unknown, identity: GitHubIdentity): Pro
     name,
     version,
     description,
+    ...(image === undefined ? {} : { icon: image }),
     category,
     tags: tokens(manifest.tags, "tags"),
     license: text(manifest.license, "license"),

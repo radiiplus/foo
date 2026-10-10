@@ -420,7 +420,8 @@ proc validate*(module: Module): seq[ValidationError] =
         let view = source != nil and target != nil and source.kind == TypeKind.Slice and
           target.kind == TypeKind.Slice and target.constant and same(source.elem, target.elem)
         if not widened and not lifted and not view and not same(source, target):
-          fail("Conversion is not a lossless widening or wrapper injection")
+          fail("Conversion from " & label(source) & " to " & label(target) &
+            " is not a lossless widening or wrapper injection")
       if instruction.kind == InstrKind.Index:
         let source = instruction.val.`type`
         let destination = instruction.dest.`type`

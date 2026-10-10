@@ -1,0 +1,73 @@
+use file as files.
+use sequence as sequences.
+use "../../lib/resource.iv" as usage.
+use testing as check.
+
+function outside(value pointer to files.mapping) giving failable boolean {
+  files.persist(value, 2, 2) try.
+  give false.
+}
+
+test "read-only file mappings" {
+  constant path is ".artifacts/mapping-data.bin".
+  files.write(path, "abcdef") try.
+  after { files.remove(path) fallback nothing. }
+
+  constant whole is files.map(path, 0, 0) try.
+  check.expect(usage.mapped is 6).
+  constant bytes is files.view(whole) try.
+  check.expect(sequences.extent[byte](bytes) is 6).
+  check.expect(bytes at 0 is 97).
+  check.expect(bytes at 5 is 102).
+  files.unmap(whole) try.
+  check.expect(usage.mapped is 0).
+
+  constant middle is files.map(path, 2, 3) try.
+  check.expect(usage.mapped is 3).
+  constant portion is files.view(middle) try.
+  check.expect(sequences.extent[byte](portion) is 3).
+  check.expect(portion at 0 is 99).
+  check.expect(portion at 2 is 101).
+  files.unmap(middle) try.
+  check.expect(usage.mapped is 0).
+
+  constant tail is files.map(path, 4, 0) try.
+  constant ending is files.view(tail) try.
+  check.expect(sequences.extent[byte](ending) is 2).
+  check.expect(ending at 0 is 101).
+  files.unmap(tail) try.
+}
+
+test "writable file mappings" {
+  constant path is ".artifacts/mapping-writable.bin".
+  files.write(path, "abcdef") try.
+  after { files.remove(path) fallback nothing. }
+  constant mapping is files.edit(path, 1, 3) try.
+  constant bytes is files.mutable(mapping) try.
+  set bytes at 0 to 88.
+  set bytes at 2 to 90.
+  files.persist(mapping) try.
+  files.unmap(mapping) try.
+  constant content is files.load(path) try.
+  after { files.release(content) fallback nothing. }
+  check.expect(content at 0 is 97).
+  check.expect(content at 1 is 88).
+  check.expect(content at 3 is 90).
+  check.expect(content at 5 is 102).
+}
+
+test "durable mapped range checks" {
+  constant path is ".artifacts/mapping-range.bin".
+  files.write(path, "abcd") try.
+  after { files.remove(path) fallback nothing. }
+  constant mapping is files.edit(path, 1, 2) try.
+  constant bytes is files.mutable(mapping) try.
+  set bytes at 0 to 88.
+  files.persist(mapping, 0, 1) try.
+  files.persist(mapping, 2, 0) try.
+  check.expect(outside(mapping) fallback true).
+  files.unmap(mapping) try.
+  constant content is files.load(path) try.
+  after { files.release(content) fallback nothing. }
+  check.expect(content at 1 is 88).
+}

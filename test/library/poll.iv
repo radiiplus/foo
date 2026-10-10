@@ -1,0 +1,90 @@
+use net as network.
+use "../../lib/process.iv" as jobs.
+use poll as events.
+use sequence as items.
+use text as words.
+use testing as check.
+
+function closed(value pointer to events.watcher) giving failable unsigned {
+  give events.wait(value, 0) try.
+}
+function duplicate(value pointer to events.watcher) giving failable boolean {
+  events.deadline(value, 33, 100) try.
+  give false.
+}
+
+test "TCP listener and connection readiness" {
+  constant watcher is events.create try.
+  after { events.close(watcher) fallback nothing. }
+  constant listener is network.listen("127.0.0.1", 0) try.
+  after { network.close(listener) fallback nothing. }
+  events.tcp(watcher, listener, "receive", 11) try.
+  check.number(events.wait(watcher, 0) try, 0).
+  constant client is network.connect("127.0.0.1", network.port(listener) try) try.
+  after { network.close(client) fallback nothing. }
+  check.number(events.wait(watcher, 1000) try, 11).
+  constant server is network.accept(listener) try.
+  after { network.close(server) fallback nothing. }
+  events.remove(watcher, 11) try.
+  events.tcp(watcher, server, "receive", 12) try.
+  check.number(events.wait(watcher, 0) try, 0).
+  check.number(network.send(client, "x") try, 1).
+  check.number(events.wait(watcher, 1000) try, 12).
+  constant received is network.receive(server, 1) try.
+  check.same(received, "x").
+  words.release(received) try.
+  events.remove(watcher, 12) try.
+  check.number(events.wait(watcher, 0) try, 0).
+}
+
+test "UDP packet readiness" {
+  constant watcher is events.create try.
+  after { events.close(watcher) fallback nothing. }
+  constant receiver is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(receiver) fallback nothing. }
+  constant sender is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(sender) fallback nothing. }
+  events.udp(watcher, receiver, "receive", 21) try.
+  check.number(events.wait(watcher, 0) try, 0).
+  constant content is items.sized[byte](1) try.
+  after { items.release[byte](content) fallback nothing. }
+  set content at 0 to 42.
+  check.number(network.transmit(sender, "127.0.0.1", network.local(receiver) try, content) try, 1).
+  check.number(events.wait(watcher, 1000) try, 21).
+  constant packet is network.capture(receiver, 1) try.
+  check.expect((network.payload(packet) try) at 0 is 42).
+  network.discard(packet) try.
+  events.remove(watcher, 21) try.
+}
+
+test "one-shot deadlines and registration checks" {
+  constant watcher is events.create try.
+  check.number(events.wait(watcher, 0) try, 0).
+  events.deadline(watcher, 31, 0) try.
+  check.number(events.wait(watcher, 0) try, 31).
+  check.number(events.wait(watcher, 0) try, 0).
+  events.deadline(watcher, 32, 20) try.
+  check.number(events.wait(watcher, 1000) try, 32).
+  events.deadline(watcher, 33, 100) try.
+  check.expect(duplicate(watcher) fallback true).
+  events.remove(watcher, 33) try.
+  check.number(events.wait(watcher, 0) try, 0).
+  events.close(watcher) try.
+  check.number(closed(watcher) fallback 999, 999).
+}
+
+test "child exit readiness" {
+  constant arguments is items.sized[text](2) try.
+  after { items.release[text](arguments) fallback nothing. }
+  set arguments at 0 to "-e".
+  set arguments at 1 to "setTimeout(process.exit,40,4)".
+  constant spawned is jobs.spawn("node", arguments) try.
+  after { jobs.close(spawned) fallback nothing. }
+  constant watcher is events.create try.
+  after { events.close(watcher) fallback nothing. }
+  events.child(watcher, spawned, 41) try.
+  check.number(events.wait(watcher, 5000) try, 41).
+  check.number(jobs.wait(spawned) try, 4).
+  events.remove(watcher, 41) try.
+  check.number(events.wait(watcher, 0) try, 0).
+}

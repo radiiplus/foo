@@ -1,0 +1,28 @@
+use checksum as checks.
+use sequence as sequences.
+use testing as check.
+
+test "CRC32C direct and incremental" {
+  constant empty is sequences.create[byte].
+  check.expect(checks.compute(empty) is 0).
+  constant digits is sequences.sized[byte](9) try.
+  after { sequences.release[byte](digits) fallback nothing. }
+  set digits at 0 to 49.
+  set digits at 1 to 50.
+  set digits at 2 to 51.
+  set digits at 3 to 52.
+  set digits at 4 to 53.
+  set digits at 5 to 54.
+  set digits at 6 to 55.
+  set digits at 7 to 56.
+  set digits at 8 to 57.
+  check.expect(checks.compute(digits) is 3808858755).
+  constant state is checks.begin try.
+  after { checks.close(state). }
+  constant first is sequences.view[byte](digits, 0, 4) try.
+  constant last is sequences.view[byte](digits, 4, 5) try.
+  checks.update(state, first).
+  checks.update(state, last).
+  check.expect(checks.result(state) is 3808858755).
+  check.expect(checks.result(state) is checks.compute(digits)).
+}

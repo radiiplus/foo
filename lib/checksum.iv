@@ -1,0 +1,7 @@
+-- Computes CRC32C for corruption detection; it is not a cryptographic digest.
+public define state as opaque.
+public use "checksum" function compute(value sequence of constant byte) giving unsigned 32.
+public use "checksum" function begin giving failable pointer to state.
+public use "checksum" function update(state pointer to state, value sequence of constant byte) giving nothing.
+public use "checksum" function result(state pointer to state) giving unsigned 32.
+public use "checksum" function close(state pointer to state) giving nothing.

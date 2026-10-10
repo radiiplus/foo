@@ -1,0 +1,104 @@
+use sequence as items.
+use testing as check.
+
+dynamic calls of type unsigned is 0.
+function even(value integer) giving boolean {
+  increase calls by 1.
+  give value remainder 2 is 0.
+}
+function positive(value integer) giving boolean {
+  give value greater than 0.
+}
+function negative(value integer) giving boolean {
+  give value less than 0.
+}
+
+test "stable scalable sequence ordering" {
+  constant source is items.sized[unsigned](513) try.
+  after { items.release[unsigned](source) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than 513 {
+    set source at index to (512 subtract index) divide 3.
+    increase index by 1.
+  }
+  constant sorted is items.sort[unsigned](source) try.
+  after { items.release[unsigned](sorted) fallback nothing. }
+  check.expect(items.length[unsigned](sorted) is 513).
+  check.expect(source at 0 is 170).
+  check.expect(sorted at 0 is 0).
+  check.expect(sorted at 512 is 170).
+  set index to 1.
+  while index less than 513 {
+    check.expect((sorted at index) greater than or equal to (sorted at (index subtract 1))).
+    increase index by 1.
+  }
+  constant empty is items.create[unsigned].
+  constant blank is items.sort[unsigned](empty) try.
+  check.expect(items.length[unsigned](blank) is 0).
+  items.release[unsigned](blank) try.
+}
+
+test "stable merge of sorted independent sequences" {
+  constant left is items.sized[integer](4) try.
+  after { items.release[integer](left) fallback nothing. }
+  set left at 0 to 1.
+  set left at 1 to 3.
+  set left at 2 to 3.
+  set left at 3 to 7.
+  constant right is items.sized[integer](3) try.
+  after { items.release[integer](right) fallback nothing. }
+  set right at 0 to 0.
+  set right at 1 to 3.
+  set right at 2 to 4.
+  constant result is items.merge[integer](left, right) try.
+  after { items.release[integer](result) fallback nothing. }
+  check.expect(items.length[integer](result) is 7).
+  check.expect(result at 0 is 0 and result at 1 is 1).
+  check.expect(result at 2 is 3 and result at 3 is 3 and result at 4 is 3).
+  check.expect(result at 5 is 4 and result at 6 is 7).
+  set result at 0 to 99.
+  check.expect(left at 0 is 1 and right at 0 is 0).
+  constant blank is items.create[integer].
+  constant copied is items.merge[integer](blank, left) try.
+  check.expect(items.length[integer](copied) is 4).
+  items.release[integer](copied) try.
+}
+
+test "stable partition evaluates predicate once" {
+  constant source is items.sized[integer](6) try.
+  after { items.release[integer](source) fallback nothing. }
+  set source at 0 to 5.
+  set source at 1 to 2.
+  set source at 2 to 5.
+  set source at 3 to 4.
+  set source at 4 to 3.
+  set source at 5 to 2.
+  set calls to 0.
+  constant divided is items.partition[integer](source, even) try.
+  after {
+    items.release[integer](divided.kept) fallback nothing.
+    items.release[integer](divided.rest) fallback nothing.
+  }
+  check.expect(calls is 6).
+  check.expect(items.length[integer](divided.kept) is 3).
+  check.expect(items.length[integer](divided.rest) is 3).
+  check.expect(divided.kept at 0 is 2 and divided.kept at 1 is 4 and divided.kept at 2 is 2).
+  check.expect(divided.rest at 0 is 5 and divided.rest at 1 is 5 and divided.rest at 2 is 3).
+  check.expect(source at 0 is 5 and source at 5 is 2).
+  constant accepted is items.partition[integer](source, positive) try.
+  check.expect(items.length[integer](accepted.kept) is 6).
+  check.expect(items.length[integer](accepted.rest) is 0).
+  items.release[integer](accepted.kept) try.
+  items.release[integer](accepted.rest) try.
+  constant rejected is items.partition[integer](source, negative) try.
+  check.expect(items.length[integer](rejected.kept) is 0).
+  check.expect(items.length[integer](rejected.rest) is 6).
+  items.release[integer](rejected.kept) try.
+  items.release[integer](rejected.rest) try.
+  constant empty is items.create[integer].
+  constant blank is items.partition[integer](empty, even) try.
+  check.expect(items.length[integer](blank.kept) is 0).
+  check.expect(items.length[integer](blank.rest) is 0).
+  items.release[integer](blank.kept) try.
+  items.release[integer](blank.rest) try.
+}

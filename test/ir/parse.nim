@@ -23,6 +23,28 @@ doAssert restored.name == "sample"
 doAssert restored.version == 1
 doAssert restored.funcs.len == 1
 
+let decimal = `Type`(kind: TypeKind.Float, width: 64)
+let lanes = `Type`(kind: TypeKind.Vector, width: 4, elem: decimal)
+let offsets = `Type`(kind: TypeKind.Vector, width: 4,
+  elem: `Type`(kind: TypeKind.Uint, width: 64))
+let base = Value(kind: ValueKind.Reg, name: "source", `type`: lanes)
+let indices = Value(kind: ValueKind.Reg, name: "indices", `type`: offsets)
+let values = Value(kind: ValueKind.Reg, name: "values", `type`: lanes)
+let gathered = Value(kind: ValueKind.Reg, name: "gathered", `type`: lanes)
+let scattered = Value(kind: ValueKind.Reg, name: "scattered", `type`: lanes)
+let vectors = Module(name: "vectors", version: 1, stage: "@foo", funcs: @[
+  Function(name: "lanes", params: @[base, indices, values], ret: lanes,
+    blocks: @[Block(label: "entry", instrs: @[
+      Instruction(kind: InstrKind.Gather, dest: gathered, val: base,
+        val2: indices),
+      Instruction(kind: InstrKind.Scatter, dest: scattered, val: gathered,
+        val2: indices, args: @[values])],
+      term: Instruction(kind: InstrKind.Return, value: scattered))])])
+let restoredVectors = decode(encode(vectors))
+doAssert restoredVectors.funcs[0].blocks[0].instrs[0].kind == InstrKind.Gather
+doAssert restoredVectors.funcs[0].blocks[0].instrs[1].kind == InstrKind.Scatter
+doAssert restoredVectors.funcs[0].blocks[0].instrs[1].args[0].name == "values"
+
 let memory = `Type`(kind: TypeKind.Memory)
 let unit = `Type`(kind: TypeKind.Void)
 let rich = Module(name: "pkg", version: 1, stage: "@foo", unitPackage: "pkg",

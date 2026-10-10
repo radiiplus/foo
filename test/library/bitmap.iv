@@ -1,0 +1,147 @@
+use bitmap as bits.
+use arch as cpu.
+use testing as check.
+
+function mismatched(left bits.bitmap, right bits.bitmap) giving failable boolean {
+  constant result is bits.merge(left, right) try.
+  bits.release(result) try.
+  give false.
+}
+
+test "persistent bits across words" {
+  constant empty is bits.create(130) try.
+  constant first is bits.put(empty, 0, true) try.
+  constant edge is bits.put(first, 63, true) try.
+  constant second is bits.put(edge, 64, true) try.
+  constant end is bits.put(second, 129, true) try.
+  constant cleared is bits.put(end, 63, false) try.
+  after {
+    bits.release(empty) fallback nothing.
+    bits.release(first) fallback nothing.
+    bits.release(edge) fallback nothing.
+    bits.release(second) fallback nothing.
+    bits.release(end) fallback nothing.
+    bits.release(cleared) fallback nothing.
+  }
+  check.expect(bits.count(empty) is 0).
+  check.expect(bits.count(end) is 4).
+  check.expect(bits.get(end, 63) try).
+  check.expect(bits.get(end, 64) try).
+  check.expect(bits.get(end, 129) try).
+  check.expect(bits.count(cleared) is 3).
+  check.expect(not (bits.get(cleared, 63) try)).
+  check.expect(bits.get(edge, 63) try).
+  check.expect(bits.get(end, 130) fallback false is false).
+}
+
+test "bitmap algebra rank and select" {
+  constant zero is bits.create(0) try.
+  constant empty is bits.create(130) try.
+  constant first is bits.put(empty, 0, true) try.
+  constant second is bits.put(first, 63, true) try.
+  constant third is bits.put(second, 64, true) try.
+  constant left is bits.put(third, 129, true) try.
+  constant base is bits.put(empty, 0, true) try.
+  constant branch is bits.put(base, 64, true) try.
+  constant right is bits.put(branch, 65, true) try.
+  constant joined is bits.merge(left, right) try.
+  constant common is bits.intersect(left, right) try.
+  constant removed is bits.difference(left, right) try.
+  constant short is bits.create(8) try.
+  after {
+    bits.release(zero) fallback nothing.
+    bits.release(empty) fallback nothing.
+    bits.release(first) fallback nothing.
+    bits.release(second) fallback nothing.
+    bits.release(third) fallback nothing.
+    bits.release(left) fallback nothing.
+    bits.release(base) fallback nothing.
+    bits.release(branch) fallback nothing.
+    bits.release(right) fallback nothing.
+    bits.release(joined) fallback nothing.
+    bits.release(common) fallback nothing.
+    bits.release(removed) fallback nothing.
+    bits.release(short) fallback nothing.
+  }
+  check.number(bits.count(joined), 5).
+  check.number(bits.count(common), 2).
+  check.number(bits.count(removed), 2).
+  check.expect(bits.get(joined, 65) try).
+  check.expect(not (bits.get(common, 63) try)).
+  check.expect(bits.get(removed, 63) try).
+  check.expect(bits.get(removed, 129) try).
+  check.number(bits.count(left), 4).
+  check.number(bits.count(right), 3).
+  check.number(bits.rank(left, 0) try, 0).
+  check.number(bits.rank(left, 1) try, 1).
+  check.number(bits.rank(left, 63) try, 1).
+  check.number(bits.rank(left, 64) try, 2).
+  check.number(bits.rank(left, 65) try, 3).
+  check.number(bits.rank(left, 130) try, 4).
+  check.number(bits.rank(left, 131) fallback 999, 999).
+  check.expect(bits.select(left, 0) is 0).
+  check.expect(bits.select(left, 1) is 63).
+  check.expect(bits.select(left, 2) is 64).
+  check.expect(bits.select(left, 3) is 129).
+  check.expect(bits.select(left, 4) is null).
+  check.expect(bits.select(empty, 0) is null).
+  check.number(bits.rank(zero, 0) try, 0).
+  check.expect(bits.select(zero, 0) is null).
+  check.expect(mismatched(left, short) fallback true).
+}
+
+test "dense words count all 64 positions" {
+  constant value is bits.create(64) try.
+  after { bits.release(value) fallback nothing. }
+  set value.words at 0 to 18446744073709551615.
+  check.number(bits.count(value), 64).
+  check.number(bits.rank(value, 64) try, 64).
+  check.expect(bits.select(value, 63) is 63).
+}
+
+test "packed bitmap algebra preserves words and ownership" {
+  constant left is bits.create(130) try.
+  constant right is bits.create(130) try.
+  after {
+    bits.release(left) fallback nothing.
+    bits.release(right) fallback nothing.
+  }
+  set left.words at 0 to 10.
+  set left.words at 1 to 18446744073709551615.
+  set left.words at 2 to 2.
+  set right.words at 0 to 12.
+  set right.words at 1 to 1.
+  set right.words at 2 to 1.
+  constant merged is bits.merge(left, right) try.
+  constant common is bits.intersect(left, right) try.
+  constant removed is bits.difference(left, right) try.
+  constant changed is bits.symmetric(left, right) try.
+  after {
+    bits.release(merged) fallback nothing.
+    bits.release(common) fallback nothing.
+    bits.release(removed) fallback nothing.
+    bits.release(changed) fallback nothing.
+  }
+  check.number(merged.words at 0, 14).
+  check.number(common.words at 0, 8).
+  check.number(removed.words at 0, 2).
+  check.number(changed.words at 0, 6).
+  check.number(common.words at 1, 1).
+  check.number(removed.words at 1, 18446744073709551614).
+  check.number(merged.words at 2, 3).
+  check.number(common.words at 2, 0).
+  check.number(left.words at 0, 10).
+  check.number(right.words at 0, 12).
+  set merged.words at 0 to 0.
+  check.number(left.words at 0, 10).
+  check.number(right.words at 0, 12).
+  constant empty is bits.create(0) try.
+  after { bits.release(empty) fallback nothing. }
+  constant blank is bits.merge(empty, empty) try.
+  after { bits.release(blank) fallback nothing. }
+  check.number(bits.count(blank), 0).
+  constant first of type sequence of constant unsigned is left.words.
+  constant second of type sequence of constant unsigned is right.words.
+  check.expect(not cpu.combine(first, second, blank.words, 0)).
+  check.expect(not cpu.combine(first, second, merged.words, 4)).
+}

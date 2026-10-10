@@ -2,7 +2,11 @@
 use io as io.
 use file as files.
 use net as network.
-use process as process.
+use dns as names.
+use adapter as devices.
+use route as paths.
+use "../../lib/process.iv" as process.
+use "../../lib/resource.iv" as usage.
 use thread as tasks.
 use task as jobs.
 use time as clock.
@@ -12,13 +16,23 @@ use log as log.
 use testing as check.
 extern "C" function verify giving nothing.
 dynamic count of type integer is 0.
-function work giving nothing {
+function pulse giving nothing {
   set count to count plus 1.
   give nothing.
 }
-function scopedwork(value integer) giving nothing for c {
+function accumulate(value integer) giving nothing for c {
   set count to count plus value.
   give nothing.
+}
+function probe giving failable nothing {
+  constant answers is names.query("localhost", "a") try.
+  after { names.close(answers) fallback nothing. }
+  check.expect((names.count(answers) try) is greater than 0).
+  check.expect(words.length(names.name(answers, 0) try) is greater than 0).
+  check.expect(words.length(names.data(answers, 0) try) is greater than 0).
+  check.expect(words.length(names.kind(answers, 0) try) is greater than 0).
+  constant ttl is names.ttl(answers, 0) try.
+  check.expect(ttl is less than 18446744073709551615).
 }
 start {
   constant joined is words.concatenate("FO", "O") try.
@@ -50,9 +64,9 @@ start {
   }
   files.write(path, "FOO" plus newline plus "44") try.
   check.expect(files.exists(path) try).
-  constant filekind is files.kind(path) try.
-  after { words.release(filekind) fallback nothing. }
-  check.same(filekind, "file").
+  constant category is files.kind(path) try.
+  after { words.release(category) fallback nothing. }
+  check.same(category, "file").
   constant working is files.working try.
   after { words.release(working) fallback nothing. }
   check.expect(words.length(working) is greater than 0).
@@ -97,15 +111,15 @@ start {
   constant stored is files.read(published) try.
   after { words.release(stored) fallback nothing. }
   check.same(stored, "stable").
-  constant bytes is files.readbytes(published) try.
+  constant bytes is files.load(published) try.
   check.expect(items.length[byte](bytes) is 6).
   constant copied is files.join(".artifacts/service", "copied.bin") try.
   after { words.release(copied) fallback nothing. }
   files.copy(published, copied) try.
-  files.releasebytes(bytes) try.
-  constant copiedtext is files.read(copied) try.
-  after { words.release(copiedtext) fallback nothing. }
-  check.same(copiedtext, "stable").
+  files.release(bytes) try.
+  constant actual is files.read(copied) try.
+  after { words.release(actual) fallback nothing. }
+  check.same(actual, "stable").
   files.remove(copied) try.
   check.expect(not (files.exists(copied) try)).
   files.remove(published) try.
@@ -114,11 +128,11 @@ start {
   check.same(missing, "missing").
   check.expect(process.count is greater than 0).
   check.expect((process.run("exit 7") try) is 7).
-  constant noarguments is items.create[text].
-  constant firstargument is items.append[text](noarguments, "-e") try.
-  constant arguments is items.append[text](firstargument, "process.exit(0)") try.
+  constant empty is items.create[text].
+  constant flag is items.append[text](empty, "-e") try.
+  constant arguments is items.append[text](flag, "process.exit(0)") try.
   after {
-    items.release[text](firstargument) fallback nothing.
+    items.release[text](flag) fallback nothing.
     items.release[text](arguments) fallback nothing.
   }
   check.expect((process.execute("node", arguments) try) is 0).
@@ -131,17 +145,20 @@ start {
   constant before is clock.current try.
   clock.sleep(1000000) try.
   check.expect((clock.current try) is greater than before).
-  constant task is tasks.spawn(work) try.
+  constant threads is usage.threads.
+  constant task is tasks.spawn(pulse) try.
+  check.expect(usage.threads is threads plus 1).
   tasks.wait(task) try.
+  check.expect(usage.threads is threads).
   check.expect(count is 1).
   constant executor is jobs.executor try.
   constant scope is jobs.scope try.
   check.expect(jobs.backend greater than or equal to 0).
-  check.expect(jobs.launch(scope, scopedwork, 2)).
+  check.expect(jobs.launch(scope, accumulate, 2)).
   jobs.join(scope).
   check.expect(count is 3).
   check.expect(jobs.label("foo-test")).
-  clock.measure(work) try.
+  clock.measure(pulse) try.
   check.expect(count is 4).
   constant mutex is tasks.mutex try.
   constant condition is tasks.condition try.
@@ -159,8 +176,8 @@ start {
   after {
     network.close(client) fallback nothing.
   }
-  network.nodelay(client, true) try.
-  network.keepalive(client, true) try.
+  network.latency(client, true) try.
+  network.probe(client, true) try.
   constant server is network.accept(listener) try.
   after {
     network.close(server) fallback nothing.
@@ -172,6 +189,61 @@ start {
     words.release(received) fallback nothing.
   }
   check.same(received, "44").
+  constant loopback is network.ipv4("127.0.0.1") try.
+  constant rendered4 is network.numeric4(loopback) try.
+  after { words.release(rendered4) fallback nothing. }
+  check.same(rendered4, "127.0.0.1").
+  constant loopback6 is network.ipv6("::1") try.
+  constant rendered6 is network.numeric6(loopback6) try.
+  after { words.release(rendered6) fallback nothing. }
+  check.same(rendered6, "::1").
+  constant resolved is network.resolve("localhost", 1234, "ipv4") try.
+  check.same(resolved.host, "127.0.0.1").
+  check.expect(resolved.port is 1234).
+  words.release(resolved.host) try.
+  probe fallback nothing.
+  constant adapters is devices.scan try.
+  after { devices.close(adapters) fallback nothing. }
+  when (devices.count(adapters) try) is greater than 0 {
+    check.expect(words.length(devices.name(adapters, 0) try) is greater than 0).
+    check.expect(words.length(devices.address(adapters, 0) try) is greater than 0).
+    check.expect((devices.mtu(adapters, 0) try) is greater than 0).
+  }
+  constant routes is paths.scan try.
+  after { paths.close(routes) fallback nothing. }
+  when (paths.count(routes) try) is greater than 0 {
+    check.expect(words.length(paths.destination(routes, 0) try) is greater than 0).
+    check.expect((paths.prefix(routes, 0) try) is less than 129).
+  }
+  constant receiver is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(receiver) fallback nothing. }
+  constant sender is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(sender) fallback nothing. }
+  network.broadcast(sender, true) try.
+  network.broadcast(sender, false) try.
+  constant message is items.sized[byte](3) try.
+  after { items.release[byte](message) fallback nothing. }
+  set message at 0 to 0.
+  set message at 1 to 42.
+  set message at 2 to 255.
+  constant target is network.address("127.0.0.1", network.local(receiver) try).
+  check.expect((network.send4(sender, network.socket4(loopback, target.port), message) try) is 3).
+  constant packet is network.capture(receiver, 3) try.
+  after { network.discard(packet) fallback nothing. }
+  constant payload is network.payload(packet) try.
+  check.expect(items.extent[byte](payload) is 3).
+  check.expect(payload at 0 is 0).
+  check.expect(payload at 1 is 42).
+  check.expect(payload at 2 is 255).
+  check.same(network.sender(packet) try, "127.0.0.1").
+  check.expect((network.origin(packet) try) is (network.local(sender) try)).
+  constant typed is network.sender4(packet) try.
+  check.expect(typed.ip.bits is loopback.bits).
+  check.expect(typed.port is (network.local(sender) try)).
+  network.connect4(sender, network.socket4(loopback, target.port)) try.
+  check.expect((network.emit(sender, message) try) is 3).
+  constant connected is network.capture(receiver, 3) try.
+  after { network.discard(connected) fallback nothing. }
+  check.expect((network.sender4(connected) try).ip.bits is loopback.bits).
   log.message("services passed") try.
-  verify.
 }

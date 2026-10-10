@@ -45,7 +45,7 @@ proc newChecker*(diag: Engine): Checker =
       "character", "text", "nothing"]:
     result.typeDefs[name] = primitive(name)
   result.typeDefs["Error"] = primitive("Error")
-  result.typeDefs["Allocator"] = semantic.Type(kind: "opaque", name: "Allocator")
+  result.typeDefs["allocator"] = semantic.Type(kind: "opaque", name: "allocator")
 
 proc annotation(checker: Checker; node: ast.`Type`): semantic.Type
 proc infer(checker: Checker; node: ast.Expression; environment: Environment;
@@ -81,7 +81,9 @@ proc accepts(checker: Checker; value: semantic.Type; trait: string): bool =
     var derives = false
     if alias.derives != nil:
       for derived in alias.derives.traits:
-        if derived.text == trait: derives = true
+        if derived.text == trait or
+            (trait == "Equatable" and derived.text in ["Hash", "Ord"]):
+          derives = true
     if not derives: return false
     if value.kind == "record":
       for field in value.fields.values:
@@ -125,6 +127,21 @@ proc defineAlias(checker: Checker; alias: ast.Alias) =
   if checker.typeDefs.hasKey(alias.name.text) and
       checker.typeDefs[alias.name.text].kind != "named": return
   checker.defining.incl(alias.name.text)
+  var recordAlignment = 0
+  for attribute in alias.attributes:
+    if attribute.startsWith("align("):
+      var valid = attribute.endsWith(")") and recordAlignment == 0
+      if valid:
+        try:
+          recordAlignment = parseInt(attribute[6 ..< attribute.len - 1])
+          valid = recordAlignment > 0 and recordAlignment <= 4096 and
+            (recordAlignment and (recordAlignment - 1)) == 0
+        except ValueError: valid = false
+      if not valid or alias.body == nil or alias.body.tag != "record" or
+          ast.Record(alias.body).layout != "c" or
+          ast.Record(alias.body).fields.len == 0:
+        checker.diag.emit(Code.Invalid, alias.span,
+          "aligned to requires one power-of-two byte value up to 4096 on a nonempty c record")
   let shell = if alias.body != nil and alias.body.tag == "record":
     semantic.Type(kind: "record", name: alias.name.text,
       fields: initOrderedTable[string, semantic.Type]())
@@ -304,6 +321,8 @@ proc signature(checker: Checker; node: ast.Node): semantic.Type =
   var returnType: semantic.Type
   var abi = ""
   var generics: seq[string]
+  var borrows: seq[int]
+  var releases: seq[int]
   var constraints: seq[tuple[subject: string, trait: string]]
   let savedParameters = checker.parameters
   checker.parameters = initTable[string, semantic.Type]()
@@ -322,6 +341,29 @@ proc signature(checker: Checker; node: ast.Node): semantic.Type =
       if parameter.variadic: variadic = true
     returnType = if function.returnType == nil: unknown() else: checker.annotation(function.returnType)
     abi = function.abi
+    for attribute in function.attributes:
+      if attribute.startsWith("borrows(") and attribute.endsWith(")"):
+        let parameter = attribute[8 ..< attribute.len - 1]
+        let index = labels.find(parameter)
+        if index < 0:
+          checker.diag.emit(Code.Invalid, function.span,
+            "Borrow relationship names an unknown parameter '" & parameter & "'")
+        elif index in borrows:
+          checker.diag.emit(Code.Invalid, function.span,
+            "Borrow relationship repeats parameter '" & parameter & "'")
+        else:
+          borrows.add(index)
+      elif attribute.startsWith("releases(") and attribute.endsWith(")"):
+        let parameter = attribute[9 ..< attribute.len - 1]
+        let index = labels.find(parameter)
+        if index < 0:
+          checker.diag.emit(Code.Invalid, function.span,
+            "Release relationship names an unknown parameter '" & parameter & "'")
+        elif index in releases:
+          checker.diag.emit(Code.Invalid, function.span,
+            "Release relationship repeats parameter '" & parameter & "'")
+        else:
+          releases.add(index)
     for constraint in function.constraints: constraints.add((constraint.subject.text, constraint.trait.text))
   else:
     let function = ast.ExternFunction(node)
@@ -340,9 +382,20 @@ proc signature(checker: Checker; node: ast.Node): semantic.Type =
   semantic.Type(kind: "function", params: params, ret: returnType,
     abi: abi, generics: generics, constraints: constraints,
     labels: labels, defaults: defaults, variadic: variadic,
-    borrows: if node.tag == "extern-function" and
-      ((abi == "runtime.memory" and ast.ExternFunction(node).symbol in
-        ["transfer", "clear", "compare", "identical"]) or abi in ["runtime", "runtime.table"]):
+    releases: releases,
+    borrows: if node.tag == "function": borrows
+    elif node.tag == "extern-function" and
+      ((abi == "runtime.memory" and
+        (if ast.ExternFunction(node).symbol.len > 0:
+          ast.ExternFunction(node).symbol else: ast.ExternFunction(node).name.text) in
+        ["transfer", "clear", "compare", "identical", "aligned", "bytes", "view"]) or
+        (abi == "runtime.arch" and
+          (if ast.ExternFunction(node).symbol.len > 0:
+            ast.ExternFunction(node).symbol else: ast.ExternFunction(node).name.text) in
+        ["prefetch", "stage"]) or
+        (abi == "runtime.fs" and ast.ExternFunction(node).name.text == "borrow") or
+        (abi == "runtime.sequence" and ast.ExternFunction(node).name.text == "view") or
+        abi in ["runtime", "runtime.table"]):
         toSeq(0 ..< params.len) else: @[])
 
 proc clone(node: ast.Expression;
@@ -700,6 +753,46 @@ proc vector(checker: Checker; name: string; args: seq[ast.Expression];
     if args.len != 1: checker.diag.emit(Code.Invalid, at, "splat expects exactly one scalar value")
     if args.len > 0: discard checker.infer(args[0], environment, expected.elem)
     return expected
+  if name == "permute":
+    if args.len < 2:
+      checker.diag.emit(Code.Invalid, at, "permute expects a vector followed by lane indices")
+      return unknown()
+    let input = checker.infer(args[0], environment)
+    if input.kind != "vector":
+      checker.diag.emit(Code.Invalid, at, "permute expects a vector")
+      return unknown()
+    for index in args[1 .. ^1]:
+      if index.tag != "integer":
+        checker.diag.emit(Code.Invalid, index.span, "permute lane indices must be integer literals")
+      else:
+        try:
+          let lane = parseInt(ast.Integer(index).value)
+          if lane < 0 or lane >= input.length:
+            checker.diag.emit(Code.Invalid, index.span, "permute lane is outside the input vector")
+        except ValueError:
+          checker.diag.emit(Code.Invalid, index.span, "permute lane indices must be integer literals")
+    return semantic.Type(kind: "vector", length: args.len - 1, elem: input.elem)
+  if name in ["gather", "scatter"]:
+    let count = if name == "gather": 2 else: 3
+    if args.len != count:
+      checker.diag.emit(Code.Invalid, at, name & " expects " & $count & " vectors")
+      return unknown()
+    let input = checker.infer(args[0], environment)
+    let indices = checker.infer(args[1], environment)
+    if input.kind != "vector" or indices.kind != "vector" or
+        indices.elem.kind != "primitive" or
+        indices.elem.name notin ["integer", "unsigned"]:
+      checker.diag.emit(Code.Invalid, at,
+        name & " requires a data vector and a vector of integer indices")
+      return unknown()
+    if name == "scatter":
+      let values = checker.infer(args[2], environment)
+      if values.kind != "vector" or values.length != indices.length or
+          not canCoerce(values.elem, input.elem).ok:
+        checker.diag.emit(Code.Invalid, at,
+          "scatter values must match the index count and data element type")
+      return input
+    return semantic.Type(kind: "vector", length: indices.length, elem: input.elem)
   if name == "shuffle":
     if args.len < 3:
       checker.diag.emit(Code.Invalid, at, "shuffle expects two vectors followed by lane indices")
@@ -832,7 +925,7 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
       discard checker.infer(call.args[0], environment, checker.typeDefs["Error"])
       result = semantic.Type(kind: "error", elem: primitive("never"))
     elif call.callee.tag == "name" and ast.Name(call.callee).text in
-        ["splat", "shuffle", "select", "reduce"]:
+        ["splat", "shuffle", "permute", "gather", "scatter", "select", "reduce"]:
       result = checker.vector(ast.Name(call.callee).text, call.args, environment, expected, node.span)
     elif call.callee.tag == "name" and
         checker.typeDefs.hasKey(ast.Name(call.callee).text):
@@ -1068,7 +1161,7 @@ proc infer(checker: Checker; node: ast.Expression; environment: Environment;
       except ValueError: discard
     if allocation.owner != nil:
       let owner = checker.infer(allocation.owner, environment)
-      var valid = canCoerce(owner, checker.typeDefs["Allocator"]).ok
+      var valid = canCoerce(owner, checker.typeDefs["allocator"]).ok
       for allocator in checker.allocators:
         if canCoerce(owner, allocator).ok: valid = true
       if not valid:
@@ -1154,7 +1247,7 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
         checker.diag.emit(Code.Duplicate, node.span,
           "Repeated constraint '" & key & "'")
       seen.incl(key)
-    if function.abi.len > 0 and function.abi notin ["c", "runtime"]:
+    if function.abi.len > 0 and function.abi notin ["c", "runtime", "gpu"]:
       checker.diag.emit(Code.Invalid, node.span,
         "unsupported function ABI '" & function.abi &
         "'; expected 'c' or 'runtime'")
@@ -1187,7 +1280,10 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
     if function.guard != nil:
       checker.boolean(checker.infer(function.guard, local), function.guard.span)
     checker.checkBlock(function.body, local)
-    checkEscape(function.body, local, checker.diag, checker.types)
+    checkEscape(function.body, local, checker.diag, checker.types,
+      function.params.mapIt(it.name.text), functionType.borrows)
+    checkBorrowInvalidation(function.body, local, checker.diag, checker.types,
+      function.params.mapIt(it.name.text), functionType.releases)
     if functionType.ret.kind == "unknown":
       functionType.ret = if checker.returns.len > 0: checker.defaultType(checker.returns[0], node.span) else: primitive("nothing")
       for returned in checker.returns:
@@ -1331,6 +1427,8 @@ proc statement(checker: Checker; node: ast.Statement; environment: Environment) 
       elem: primitive("nothing"))
     checker.returns = @[]
     checker.checkBlock(ast.TestBlock(node).body, environment.child)
+    checkBorrowInvalidation(ast.TestBlock(node).body, environment,
+      checker.diag, checker.types)
     checker.propagates = savedPropagates
     checker.resultType = savedResult
     checker.returns = savedReturns

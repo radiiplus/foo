@@ -1,0 +1,113 @@
+use "../../lib/binary.iv" as wire.
+use "../../lib/zigzag.iv" as signed.
+use "../../lib/hex.iv" as hexadecimal.
+use "../../lib/base64.iv" as radix.
+use "../../lib/memory.iv" as mem.
+use sequence as items.
+use testing as check.
+use text as words.
+
+function malformed(value text) giving failable boolean {
+  constant bytes is hexadecimal.decode(value) try.
+  items.release[byte](bytes) try.
+  give false.
+}
+function incorrect(value text) giving failable boolean {
+  constant bytes is radix.decode(value) try.
+  items.release[byte](bytes) try.
+  give false.
+}
+
+test "signed zigzag variable integers" {
+  constant minus is signed.encode(0 subtract 1) try.
+  constant positive is signed.encode(64) try.
+  constant negative is signed.encode(0 subtract 64) try.
+  after {
+    items.release[byte](minus) fallback nothing.
+    items.release[byte](positive) fallback nothing.
+    items.release[byte](negative) fallback nothing.
+  }
+  check.expect(items.length[byte](minus) is 1 and minus at 0 is 1).
+  check.expect(items.length[byte](positive) is 2 and positive at 0 is 128 and positive at 1 is 1).
+  check.expect(items.length[byte](negative) is 1 and negative at 0 is 127).
+  check.expect((signed.decode(minus, 0) try).value is 0 subtract 1).
+  check.expect((signed.decode(positive, 0) try).value is 64).
+  check.expect((signed.decode(negative, 0) try).value is 0 subtract 64).
+  constant maximum is wire.encode(18446744073709551615) try.
+  after { items.release[byte](maximum) fallback nothing. }
+  constant minimum is signed.decode(maximum, 0) try.
+  check.expect(minimum.value less than 0 and minimum.next is 10).
+  constant roundtrip is signed.encode(minimum.value) try.
+  after { items.release[byte](roundtrip) fallback nothing. }
+  check.expect(mem.compare(roundtrip, maximum) is 0).
+  constant largest is signed.encode(9223372036854775807) try.
+  after { items.release[byte](largest) fallback nothing. }
+  check.expect(items.length[byte](largest) is 10).
+  check.expect((signed.decode(largest, 0) try).value is 9223372036854775807).
+  constant malformed is items.sized[byte](2) try.
+  after { items.release[byte](malformed) fallback nothing. }
+  set malformed at 0 to 128.
+  set malformed at 1 to 0.
+  check.expect((signed.decode(malformed, 0) fallback signed.decoded(7, 7)).value is 7).
+}
+
+test "canonical lowercase hex bytes" {
+  constant bytes is items.sized[byte](4) try.
+  after { items.release[byte](bytes) fallback nothing. }
+  set bytes at 0 to 0.
+  set bytes at 1 to 15.
+  set bytes at 2 to 16.
+  set bytes at 3 to 255.
+  constant encoded is hexadecimal.encode(bytes) try.
+  check.same(encoded, "000f10ff").
+  constant decoded is hexadecimal.decode(encoded) try.
+  after { items.release[byte](decoded) fallback nothing. }
+  check.expect(mem.compare(bytes, decoded) is 0).
+  check.expect(malformed("00FF") fallback true).
+  check.expect(malformed("f") fallback true).
+  check.expect(malformed("00 0") fallback true).
+  constant empty is hexadecimal.decode("") try.
+  check.expect(items.length[byte](empty) is 0).
+  words.release(encoded) try.
+}
+
+test "canonical unpadded Base64url bytes" {
+  constant bytes is items.sized[byte](3) try.
+  after { items.release[byte](bytes) fallback nothing. }
+  set bytes at 0 to 251.
+  set bytes at 1 to 255.
+  set bytes at 2 to 255.
+  constant encoded is radix.encode(bytes) try.
+  after { words.release(encoded) fallback nothing. }
+  check.same(encoded, "-___").
+  constant decoded is radix.decode(encoded) try.
+  after { items.release[byte](decoded) fallback nothing. }
+  check.expect(mem.compare(bytes, decoded) is 0).
+  constant single is radix.decode("Zg") try.
+  after { items.release[byte](single) fallback nothing. }
+  check.expect(items.length[byte](single) is 1 and single at 0 is 102).
+  constant pair is radix.decode("Zm8") try.
+  after { items.release[byte](pair) fallback nothing. }
+  check.expect(items.length[byte](pair) is 2 and pair at 1 is 111).
+  check.expect(incorrect("Zg==") fallback true).
+  check.expect(incorrect("Zh") fallback true).
+  check.expect(incorrect("Zm9") fallback true).
+  check.expect(incorrect("A") fallback true).
+  check.expect(incorrect("+///") fallback true).
+  constant empty is radix.decode("") try.
+  check.expect(items.length[byte](empty) is 0).
+  constant bulk is items.sized[byte](257) try.
+  after { items.release[byte](bulk) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than 257 {
+    set bulk at index to 251.
+    increase index by 1.
+  }
+  set bulk at 0 to 0.
+  set bulk at 256 to 0.
+  constant volume is radix.encode(bulk) try.
+  after { words.release(volume) fallback nothing. }
+  constant restored is radix.decode(volume) try.
+  after { items.release[byte](restored) fallback nothing. }
+  check.expect(mem.compare(bulk, restored) is 0).
+}

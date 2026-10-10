@@ -1,63 +1,88 @@
-# Chapter 2: Getting Started (Your First FOO Project)
+# Getting Started
 
-Welcome to your first day writing FOO! Today, we are going to set up your computer, create a brand new project, and write some actual code. 
-
-In many ecosystems, getting started means fighting with package managers, version conflicts, and messy environment setups. FOO completely eliminates that headache. It is distributed as a standalone, native application. You just install it, and it works.
-
-Let’s get building!
+In a few minutes, you can run a FOO program that prints a message. This chapter
+takes you from checking the installation to editing that first line.
 
 ---
 
-## 1. The Magic Setup
+## Check the installation
 
-First, head over to the official FOO Releases page and download the installer for your operating system (Windows, macOS, or Linux). Linux PCs use `foo-amd64.deb`, while ARM64 Linux systems use `foo-arm64.deb`. Run the installer, and within seconds, the `foo` command will be available in your terminal.
+Download the package for your platform from the [FOO releases](https://github.com/radiiplus/foo/releases).
+Windows has an installer; Debian and Ubuntu have x64 and ARM64 packages. See
+[Platforms](platforms.md) for the supported targets.
 
-For Ubuntu running through Termux/proot on an ARM64 Android device, open the Ubuntu session and confirm `uname -m` prints `aarch64`. Install the ARM package there with `sudo apt install ./foo-arm64.deb`. This package is built for Ubuntu's glibc environment (the standard runtime used by most Linux distributions) and will not run directly in Termux's Android environment.
-
-Once it's installed, open your terminal (Command Prompt/PowerShell on Windows, or Terminal on Mac/Linux) and type this magic command:
+Open a terminal and check the installed toolchain:
 
 ```sh
 foo doctor
 ```
 
-**Why this is useful:** `foo doctor` checks the toolchain for the current project. The Debian installer provisions (downloads and configures) the pinned Zig backend (the exact supported Zig code generator) automatically, and `foo run` or `foo build` retries that managed installation on first use when setup happened offline. On Debian and Ubuntu, the C backend also provisions missing dependencies for the bundled `crypto`, `compress`, and `http` modules. `foo doctor` verifies these dependencies and reports what still needs attention. Clang is optional unless a project imports C headers.
-
-### Uninstalling FOO
-
-On Windows, uninstall FOO from **Settings > Apps > Installed apps** or use the
-**Uninstall FOO** shortcut in the FOO Start Menu group. On Ubuntu and Debian,
-run `sudo apt remove foo`. The uninstallers remove the compiler and its
-installer-managed backend without deleting projects or `~/.foo` user data.
+`foo doctor` reports whether the tools needed to build a project are ready.
 
 ---
 
-## 2. Creating Your First Project
+## Create a project
 
-Let’s create a dedicated folder for our new app. FOO has a built-in **Scaffolding** tool (a command that instantly generates a clean, perfectly organized folder structure for you).
+Create a project named `hello`:
 
 ```sh
-foo new my-first-app
-cd my-first-app
+foo new hello
+cd hello
 ```
 
-The generated project is ready for application code, tests, and benchmarks:
+The program you will edit is in `src/main.iv`.
+
+---
+
+## Write one statement
+
+Open `src/main.iv` and replace its contents with:
+
+```foo
+display "Hello, vibes!".
+```
+
+`display` prints a line. The quoted text is the message. The final period ends
+the statement. That is a complete FOO program; functions and named values come
+in later lessons.
+
+---
+
+## Run it
+
+From the project folder, run:
+
+```sh
+foo run
+```
+
+You should see:
+```text
+Hello, vibes!
+```
+
+Change the text in `src/main.iv` and run `foo run` again. You can now move on to
+[FOO Basics](basics.md), or explore what the project generated.
+
+## Explore your project
+
+The generated project has separate places for application code, tests, and
+benchmarks:
 
 ```text
-my-first-app/
-├─ src/
-│  └─ main.iv
-├─ test/
-│  └─ main.iv
-├─ benchmark/
-│  └─ main.iv
-├─ project.json
-└─ .gitignore
+hello/
+|-- src/
+|   `-- main.iv
+|-- test/
+|   `-- main.iv
+|-- benchmark/
+|   `-- main.iv
+|-- project.json
+`-- .gitignore
 ```
 
-The `.iv` extension marks FOO source. Put the application in `src/`, correctness
-checks in `test/`, and performance scenarios in `benchmark/`.
-
-Open `project.json`. The important starting fields are deliberately explicit:
+The `.iv` extension marks FOO source. `project.json` names the entry file and
+output directory:
 
 ```json
 {
@@ -71,60 +96,24 @@ Open `project.json`. The important starting fields are deliberately explicit:
 }
 ```
 
-`entry` is what plain `foo run` starts. You do not need to search the source
-tree or rely on a guessed filename. `build.output` receives finished products;
-`.artifacts/` remains private compiler workspace. The generated `.ico` becomes
-the icon of Windows executables, while the `.svg` is available for desktop and
-release packaging.
+`foo run` checks the project, builds a native executable through the selected C
+or Zig backend, and runs it. Use `foo run --explain` when you want to see the
+chosen build path and cache reuse.
 
----
+### Installation details
 
-## 3. Writing Your First Sentences
+The Debian installer provisions the pinned Zig backend. `foo run` and
+`foo build` can retry that setup after an offline installation. On Debian and Ubuntu,
+the C backend also provisions dependencies for the bundled `crypto`, `compress`,
+and `http` modules. Clang is optional unless a project imports C headers.
 
-Open `src/main.iv` in your favorite code editor. Let’s write a program that greets the user.
+For Ubuntu through Termux/proot on ARM64 Android, check that `uname -m` prints
+`aarch64` inside Ubuntu and install `foo-arm64.deb` there. The package targets
+Ubuntu's glibc environment and does not run directly in Termux.
 
-FOO uses a small sentence-like grammar. The parser does not guess arbitrary
-English: parameters have declared types, calls use parentheses, and a period
-ends each simple statement.
-
-Type this out:
-
-```foo
-function greet(name text) {
-  display "Hello, " plus name plus "!".
-}
-
-constant name is "vibes".
-greet(name).
-```
-
-### Read the example
-*   **`name text`**: FOO is strictly **Typed** (meaning it keeps strict track of what kind of data is stored in a variable, preventing math errors on text), without repeating `of type` in parameter lists.
-*   **`plus`**: Instead of forcing you to use the `+` symbol for everything, FOO lets you use the English word `plus` to glue text together.
-*   **Implicit completion**: A function that gives nothing can simply end; use `give` when returning a value.
-*   **The Period (`.`)**: Notice how every action ends with a period? FOO reads your code like a book. A period tells the parser, *"This specific thought is complete."*
-
----
-
-## 4. Running Your App
-
-Now for the best part. In your terminal, simply type:
-
-```sh
-foo run
-```
-
-**What happens underneath:** 
-FOO checks the project, lowers it through the selected C or Zig backend, reuses
-compatible cached work, builds a native executable, and runs it. A release build
-may select target-specific runtime paths; development builds favor compilation
-latency (build delay) and portable behavior. Use `foo run --explain` to see the selected path
-and reason.
-
-You should see:
-```text
-Hello, vibes!
-```
+On Windows, uninstall FOO from **Settings > Apps > Installed apps**. On Ubuntu
+and Debian, run `sudo apt remove foo`. Uninstalling leaves projects and `~/.foo`
+user data in place.
 
 ### Adding another runnable program
 
@@ -153,19 +142,21 @@ path stays in `project.json`, so nobody has to remember it.
 
 ---
 
-## 5. Growing Your App: Adding a Second File
+## Add a second file
 
-As your app grows, you’ll want to split your code into multiple files to keep things organized. FOO handles this beautifully using **Namespaces** (invisible walls that keep the code in one file from accidentally messing up the code in another file).
+When an operation is useful in more than one file, put it in its own module.
+The module controls which names other files can see.
 
 Create a new file named `math.iv` and add this:
 
 <!-- snippet: project math src/math.iv -->
 ```foo
-public function add(left integer, right integer) giving integer {
+public function add(left integer, right integer) {
   give left plus right.
 }
 ```
-*Notice the word `public`? This is the only way to let other files see this function. If you leave `public` off, the function becomes private and completely invisible to the rest of your app. This prevents messy "spaghetti code" (where everything is tangled together and hard to track).*
+`public` makes `add` available to other modules. Without it, the function stays
+private to `math.iv`. FOO infers the result type from `give` here.
 
 Now, go back to `src/main.iv` and use it. This fragment depends on the
 `math.iv` file created immediately above:
@@ -180,9 +171,10 @@ when total is 30 { display "Total calculated". }
 
 ---
 
-## 6. The World's Most Helpful Error Messages
+## Find a type error
 
-Everyone makes typos. When you make a mistake in FOO, the compiler doesn't just crash and give you a confusing wall of red text. It acts like a helpful teacher.
+What if you give an integer name a text value? The compiler points to the
+mismatch before you run the program.
 
 Try this deliberately invalid declaration:
 
@@ -204,18 +196,19 @@ Server Path** to the `foo` executable.
 
 ---
 
-## 7. Your Daily Cheat Sheet
+## Commands to keep nearby
 
-Here are the commands you will use every single day as a FOO programmer:
+These commands cover the usual edit, check, and run cycle:
 
 *   **`foo check`**: Parses and type-checks the project without running it.
-*   **`foo build`**: The Factory. It compiles your code into a final, standalone, highly-optimized application file that you can share with others.
-*   **`foo run`**: The Quick Test. Builds the app and immediately runs it so you can see the results.
+*   **`foo build`**: Builds an application without running it.
+*   **`foo run`**: Builds and runs the application.
 *   **`foo test`**: Runs the checks under `test/` and any test blocks in the project.
 *   **`foo benchmark`**: Builds each program under `benchmark/` once, warms it up, and reports repeated timings.
-*   **`foo watch`**: The Tireless Assistant. It sits in the background, and every single time you hit "Save" in your code editor, it automatically re-checks and re-builds your app instantly.
+*   **`foo watch`**: Rechecks and rebuilds when project files change.
 *   **`foo fmt`**: Rewrites source using the canonical FOO formatting rules.
 
 ---
 
-You are now officially a FOO programmer! In the next chapter, we will dive deeper into the **Language** itself, exploring how FOO handles decisions, loops, and data.
+Continue with [FOO Basics](basics.md) for values, decisions, loops, and more
+small programs.

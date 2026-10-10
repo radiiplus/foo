@@ -1,0 +1,180 @@
+use matrix as grid.
+use tensor as cells.
+use sequence as items.
+use testing as check.
+
+function incompatible(value cells.tensor, shape sequence of unsigned) giving failable boolean {
+  constant result is cells.reshape(value, shape) try.
+  cells.release(result) try.
+  give false.
+}
+
+function misplaced(value cells.tensor, axes sequence of unsigned) giving failable boolean {
+  constant result is cells.permute(value, axes) try.
+  cells.release(result) try.
+  give false.
+}
+
+function mismatch(left cells.tensor, right cells.tensor) giving failable boolean {
+  constant result is cells.product(left, right) try.
+  cells.release(result) try.
+  give false.
+}
+
+test "batched tensor matrix product with singleton broadcast" {
+  dynamic initial is items.sized[unsigned](3) try.
+  after { items.release[unsigned](initial) fallback nothing. }
+  set initial at 0 to 1.
+  set initial at 1 to 2.
+  set initial at 2 to 2.
+  dynamic left is cells.create(initial) try.
+  after { cells.release(left) fallback nothing. }
+  set left.values at 0 to 1.0.
+  set left.values at 1 to 2.0.
+  set left.values at 2 to 3.0.
+  set left.values at 3 to 4.0.
+  dynamic target is items.sized[unsigned](3) try.
+  after { items.release[unsigned](target) fallback nothing. }
+  set target at 0 to 2.
+  set target at 1 to 2.
+  set target at 2 to 1.
+  dynamic right is cells.create(target) try.
+  after { cells.release(right) fallback nothing. }
+  set right.values at 0 to 5.0.
+  set right.values at 1 to 6.0.
+  set right.values at 2 to 7.0.
+  set right.values at 3 to 8.0.
+  constant result is cells.product(left, right) try.
+  after { cells.release(result) fallback nothing. }
+  check.number(result.shape at 0, 2).
+  check.number(result.shape at 1, 2).
+  check.number(result.shape at 2, 1).
+  check.real(result.values at 0, 17.0).
+  check.real(result.values at 1, 39.0).
+  check.real(result.values at 2, 23.0).
+  check.real(result.values at 3, 53.0).
+  set left.values at 0 to 99.0.
+  check.real(result.values at 0, 17.0).
+  set target at 1 to 3.
+  constant invalid is cells.create(target) try.
+  after { cells.release(invalid) fallback nothing. }
+  check.expect(mismatch(left, invalid) fallback true).
+}
+
+test "rectangular matrix transpose" {
+  dynamic source is grid.create(2, 3) try.
+  after { grid.release(source) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic amount of type decimal is 1.0.
+  while index less than 6 {
+    set source.values at index to amount.
+    increase index by 1.
+    set amount to amount plus 1.0.
+  }
+  dynamic turned is grid.transpose(source) try.
+  after { grid.release(turned) fallback nothing. }
+  check.number(turned.rows, 3).
+  check.number(turned.columns, 2).
+  check.real(grid.get(turned, 0, 1) try, 4.0).
+  check.real(grid.get(turned, 2, 0) try, 3.0).
+  constant restored is grid.transpose(turned) try.
+  after { grid.release(restored) fallback nothing. }
+  check.real(grid.get(restored, 1, 2) try, 6.0).
+  set turned.values at 0 to 99.0.
+  check.real(grid.get(source, 0, 0) try, 1.0).
+  constant empty is grid.create(0, 3) try.
+  after { grid.release(empty) fallback nothing. }
+  constant exchanged is grid.transpose(empty) try.
+  after { grid.release(exchanged) fallback nothing. }
+  check.number(exchanged.rows, 3).
+  check.number(exchanged.columns, 0).
+}
+
+test "tensor reshape and axis permutation" {
+  dynamic initial is items.sized[unsigned](2) try.
+  after { items.release[unsigned](initial) fallback nothing. }
+  set initial at 0 to 2.
+  set initial at 1 to 3.
+  dynamic values is items.sized[decimal](6) try.
+  after { items.release[decimal](values) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic amount of type decimal is 1.0.
+  while index less than 6 {
+    set values at index to amount.
+    increase index by 1.
+    set amount to amount plus 1.0.
+  }
+  constant source is cells.build(initial, values) try.
+  after { cells.release(source) fallback nothing. }
+  dynamic target is items.sized[unsigned](2) try.
+  after { items.release[unsigned](target) fallback nothing. }
+  set target at 0 to 3.
+  set target at 1 to 2.
+  dynamic changed is cells.reshape(source, target) try.
+  after { cells.release(changed) fallback nothing. }
+  dynamic axes is items.sized[unsigned](2) try.
+  after { items.release[unsigned](axes) fallback nothing. }
+  set axes at 0 to 1.
+  set axes at 1 to 0.
+  constant turned is cells.permute(source, axes) try.
+  after { cells.release(turned) fallback nothing. }
+  dynamic coordinates is items.sized[unsigned](2) try.
+  after { items.release[unsigned](coordinates) fallback nothing. }
+  set coordinates at 0 to 1.
+  set coordinates at 1 to 0.
+  check.real(cells.get(changed, coordinates) try, 3.0).
+  check.real(cells.get(turned, coordinates) try, 2.0).
+  set coordinates at 0 to 2.
+  set coordinates at 1 to 1.
+  check.real(cells.get(turned, coordinates) try, 6.0).
+  set changed.values at 0 to 99.0.
+  check.real(source.values at 0, 1.0).
+  check.real(turned.values at 0, 1.0).
+  set target at 0 to 4.
+  check.number(changed.shape at 0, 3).
+  check.expect(incompatible(source, target) fallback true).
+  set axes at 0 to 0.
+  check.number(turned.shape at 0, 3).
+  check.expect(misplaced(source, axes) fallback true).
+  set axes at 0 to 2.
+  check.expect(misplaced(source, axes) fallback true).
+
+  constant dimensions is items.sized[unsigned](0) try.
+  after { items.release[unsigned](dimensions) fallback nothing. }
+  constant scalar is cells.create(dimensions) try.
+  after { cells.release(scalar) fallback nothing. }
+  constant duplicate is cells.permute(scalar, dimensions) try.
+  after { cells.release(duplicate) fallback nothing. }
+  check.number(cells.rank(duplicate), 0).
+  check.number(items.length[decimal](duplicate.values), 1).
+  check.expect(misplaced(source, dimensions) fallback true).
+
+  dynamic vacant is items.sized[unsigned](2) try.
+  after { items.release[unsigned](vacant) fallback nothing. }
+  set vacant at 0 to 0.
+  set vacant at 1 to 3.
+  constant zero is cells.create(vacant) try.
+  after { cells.release(zero) fallback nothing. }
+  set axes at 0 to 1.
+  constant rotated is cells.permute(zero, axes) try.
+  after { cells.release(rotated) fallback nothing. }
+  check.number(rotated.shape at 0, 3).
+  check.number(rotated.shape at 1, 0).
+  check.number(items.length[decimal](rotated.values), 0).
+
+  dynamic huge is items.sized[unsigned](3) try.
+  after { items.release[unsigned](huge) fallback nothing. }
+  set huge at 0 to 18446744073709551615.
+  set huge at 1 to 18446744073709551615.
+  set huge at 2 to 0.
+  constant wide is cells.create(huge) try.
+  after { cells.release(wide) fallback nothing. }
+  dynamic indices is items.sized[unsigned](3) try.
+  after { items.release[unsigned](indices) fallback nothing. }
+  set indices at 0 to 2.
+  set indices at 1 to 0.
+  set indices at 2 to 1.
+  constant permuted is cells.permute(wide, indices) try.
+  after { cells.release(permuted) fallback nothing. }
+  check.number(items.length[decimal](permuted.values), 0).
+}

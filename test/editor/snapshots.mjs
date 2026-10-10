@@ -14,7 +14,7 @@ const override = process.argv.find(value => value.startsWith('--cases='));
 const directory = override ? resolve(override.slice(8)) : resolve(root, '../../test/editor/cases');
 const provenance = JSON.parse(readFileSync(join(directory, 'sources.json'), 'utf8'));
 await onig.loadWASM(readFileSync(require.resolve('vscode-oniguruma/release/onig.wasm')));
-const path = join(root, 'grammars/foo.tmLanguage.json');
+const path = join(root, 'grammars/foo.json');
 const registry = new tm.Registry({
   onigLib: Promise.resolve({ createOnigScanner: patterns => new onig.OnigScanner(patterns), createOnigString: text => new onig.OnigString(text) }),
   loadGrammar: async scope => scope === 'source.foo' ? tm.parseRawGrammar(readFileSync(path, 'utf8'), path) : null,

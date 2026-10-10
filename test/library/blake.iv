@@ -1,0 +1,37 @@
+use "../../lib/blake.iv" as hashes.
+use "../../lib/crypto.iv" as secrets.
+use sequence as items.
+use testing as check.
+use text as words.
+
+test "BLAKE3 direct and streaming binary hashing" {
+  constant empty is items.create[byte].
+  constant expected is "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262".
+  constant blank is hashes.hex(empty) try.
+  after { words.release(blank) fallback nothing. }
+  check.same(blank, expected).
+  constant data is items.sized[byte](4097) try.
+  after { items.release[byte](data) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than 4097 {
+    set data at index to 97.
+    increase index by 1.
+  }
+  constant whole is hashes.digest(data) try.
+  after { items.release[byte](whole) fallback nothing. }
+  check.expect(items.length[byte](whole) is 32).
+  constant first is items.view[byte](data, 0, 1024) try.
+  constant second is items.view[byte](data, 1024, 3073) try.
+  constant state is hashes.begin try.
+  after { hashes.close(state). }
+  hashes.update(state, first) try.
+  hashes.update(state, second) try.
+  constant streamed is hashes.result(state) try.
+  after { items.release[byte](streamed) fallback nothing. }
+  check.expect(secrets.compare(whole, streamed)).
+  constant direct is hashes.hex(data) try.
+  after { words.release(direct) fallback nothing. }
+  constant incremental is hashes.finalize(state) try.
+  after { words.release(incremental) fallback nothing. }
+  check.same(incremental, direct).
+}

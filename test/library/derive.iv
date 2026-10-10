@@ -1,0 +1,27 @@
+use sequence as items.
+use testing as check.
+
+define Key as record {
+  code of type unsigned.
+} derives Hash.
+
+define Rank as record {
+  priority of type integer.
+  code of type unsigned.
+} derives Ord.
+
+test "Hash and Ord derives imply structural equality" {
+  check.expect(Key(7) is Key(7)).
+  check.expect(Key(7) is not Key(8)).
+  constant low is Rank(1, 9).
+  constant high is Rank(2, 1).
+  check.expect(low is Rank(1, 9)).
+  check.expect(low is less than high).
+  constant values is items.sized[Rank](2) try.
+  after { items.release[Rank](values) fallback nothing. }
+  set values at 0 to high.
+  set values at 1 to low.
+  constant sorted is items.sort[Rank](values) try.
+  after { items.release[Rank](sorted) fallback nothing. }
+  check.expect(sorted at 0 is low and sorted at 1 is high).
+}

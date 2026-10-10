@@ -71,7 +71,7 @@ as `account.owner` and pass it explicitly.
 
 ## Typed time
 
-The `time` module supplies `Instant` and `Duration` records. Constructors name
+The `time` module supplies `instant` and `duration` records. Constructors name
 the unit at the boundary, so a raw count is not accidentally passed as a
 duration.
 
@@ -89,15 +89,16 @@ when elapsed.nanoseconds greater than 0 { display "The clock advanced". }
 
 Use `clock.nanos`, `clock.millis`, or `clock.seconds` to construct a duration.
 `clock.elapsed` panics if the second instant is earlier because unsigned
-subtraction is checked. Use `calendar.Date`, `calendar.Zone`, and
-`calendar.Moment` for civil time with a fixed UTC offset. Named political time
-zones require an external versioned time-zone database. An `Instant` remains a
-monotonic measurement point (a clock value that does not move backward) rather
-than a calendar timestamp.
+subtraction is checked. Use `calendar.civil`, `calendar.offset`, and
+`calendar.stamp` for civil time with a fixed UTC offset. Named political time
+zones require an external versioned time-zone database. An `instant` remains a
+monotonic measurement point rather than a calendar timestamp. Use `clock.utc`
+for a persisted UTC/POSIX `stamp`; wall time can change when the host clock is
+corrected.
 
 ## Explicit codecs
 
-`Codec[T]` groups the two directions of a text conversion. The application
+`codec[T]` groups the two directions of a text conversion. The application
 still decides field names, versions, limits, and validation.
 
 ```foo
@@ -116,7 +117,7 @@ function decode(source text) giving failable Token {
   give Token(source).
 }
 
-constant codec is codecs.Codec[Token](encode, decode).
+constant codec is codecs.codec[Token](encode, decode).
 constant token is codec.decode("abc") try.
 constant stored is codec.encode(token) try.
 display stored.
@@ -137,7 +138,7 @@ constant restored is codecs.decode[Token](stored) try.
 ```
 
 The generated path is type-specific and does not use runtime reflection. Use an
-explicit `Codec[T]` when field names, versions, validation, or the wire format
+explicit `codec[T]` when field names, versions, validation, or the wire format
 differ from the standard representation. Generated codecs currently cover
 booleans, integers, decimals, text, optional values, sequences, choices, and
 nested records composed from those values.
@@ -174,12 +175,12 @@ Custom types cannot participate in `for each` yet. Use a cursor with a `next`
 function that returns a closed step choice.
 
 ```foo
-define Step as choice {
+define step as choice {
   item(unsigned).
   done.
 }.
 
-function next(index unsigned) giving Step {
+function next(index unsigned) giving step {
   when index less than 3 { give item(index). }
   give done.
 }
@@ -203,7 +204,7 @@ The three parts are always visible:
 2. Extract an item only in the `item(value)` case.
 3. Stop in the `done` case.
 
-Add a failure variant or make `next` return `failable Step` when reading can
+Add a failure variant or make `next` return `failable step` when reading can
 fail. A resource-backed cursor also needs an immediate `after` cleanup.
 
 ## Capabilities as values
@@ -299,7 +300,7 @@ test "generated indexes stay in range" {
 
 This is deterministic enumeration (the same range is checked in the same
 order), not automatic generation for every value of a type. For varied typed
-inputs, wrap an index-to-value function in `Generator[T]` and call `generate`.
+inputs, wrap an index-to-value function in `generator[T]` and call `generate`.
 The index is reproducible, so a failing value can be recreated.
 
 ## Pointer identity
@@ -386,9 +387,9 @@ The current abstractions intentionally stop at these boundaries:
 | --- | --- |
 | Iteration | Custom cursors use `iterator.next`; `for each` accepts compiler-supported collections. |
 | Reuse | Records compose other records; there is no inheritance or implicit record subtyping. |
-| Time zones | `calendar.Zone` is a fixed UTC offset; named zones need an external versioned database. |
+| Time zones | `calendar.offset` is a fixed UTC offset; named zones need an external versioned database. |
 | Transactions | `transaction.execute` coordinates one process; durable and distributed recovery is application policy. |
-| Units | `Quantity[D]` checks `add` and `difference` within one dimension; multiplication, division, and conversion are explicit functions. |
+| Units | `measure[D]` checks `add` and `difference` within one dimension; multiplication, division, and conversion are explicit functions. |
 | Source generation | Build tasks may emit checked FOO source; syntax macros and compiler plugins are not language features. |
 
 Do not invent extra syntax at these boundaries. Use explicit records and
@@ -397,7 +398,7 @@ functions so ownership, failure, and external policy remain visible.
 ## Check yourself
 
 1. Add an `Email` record with a validating `create` function.
-2. Define a `Codec[Email]` that rejects empty text.
+2. Define a `codec[Email]` that rejects empty text.
 3. Create a state machine that rejects a value greater than ten.
 4. Replace a real clock dependency with a `Clock` record in a test.
 5. Write a property callback that succeeds for indexes below fifty.

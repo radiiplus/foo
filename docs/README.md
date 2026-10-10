@@ -1,10 +1,12 @@
 # The FOO Book
 
-FOO is a compiled systems language (a language translated before it runs and
-suited to low-level software) with sentence-like source code, explicit failure
-handling (errors are visible in the program's types), controlled memory, and C
-and Zig native backends (code generators that produce programs for the target
-machine).
+How much code does it take to make a FOO program? The first example below is
+one line. Run it, change the message, then follow the lessons as your program
+needs names, decisions, functions, and access to the system.
+
+FOO is a compiled systems language with sentence-like source code. It builds
+native programs through C or Zig and makes failures and memory ownership
+explicit when those details matter.
 
 This book has two layers:
 
@@ -91,6 +93,10 @@ surface of the current language.
 32. **[Reference](reference.md)** - Look up commands, vocabulary, and core types quickly.
 33. **[Advanced](advanced.md)** - Use allocators, protocol controls, native code, and hardware tuning.
 34. **[Syntax Guide](syntax.md)** - Look up complete sentence forms.
+
+Proposed systems design work is tracked separately from the current language:
+see the [systems capability audit](capabilities.md) and the
+[hardware and parallel computation goal](hardware.md).
 
 ## How to read an example
 

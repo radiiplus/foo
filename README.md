@@ -15,10 +15,9 @@
   <a href="https://marketplace.visualstudio.com/items?itemName=radiiplus.foo-iv">VS Code</a>
 </p>
 
-FOO is designed for readable application and systems code without giving up
-native compilation. Its language, compiler, standard library, package tooling,
-tests, benchmarks, editor integration, and release workflow are developed in
-this repository.
+Start with one line that prints a message. As your program grows, FOO lets you
+name values, handle failures, and work with memory and the system while keeping
+the source readable. The compiler builds native programs through C or Zig.
 
 > [!NOTE]
 > FOO is under active development. Review the [feature status](docs/status.md)
@@ -27,8 +26,8 @@ this repository.
 
 ## First program
 
-FOO permits executable statements at the top level, so a small program does
-not need a wrapper function or an I/O import:
+What does the first program look like? One statement, with no wrapper function
+or I/O import:
 
 <!-- highlight:hello -->
 <img src="assets/readme/hello.svg" alt="FOO source that displays Hello, world!">
@@ -123,23 +122,12 @@ workspace. Both the entry file and product directory can be changed in
 
 ## Language at a glance
 
-Functions declare parameter and result types without repeating `of type`:
-
-<!-- highlight:greet -->
-<img src="assets/readme/greet.svg" alt="FOO source defining and calling a typed greeting function">
-
-<details>
-<summary>Copy the FOO source</summary>
+Give a value a name, then use it in a sentence:
 
 ```foo
-function greet(name text) giving text {
-  give "Hello, " plus name plus "!".
-}
-
-display greet("vibes").
+constant name is "vibes".
+display "Hello, " plus name plus "!".
 ```
-
-</details>
 
 Failures remain visible in ordinary control flow. Postfix `try` propagates a
 failure to the caller, while `fallback` supplies a local alternative:

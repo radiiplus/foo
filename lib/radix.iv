@@ -1,0 +1,141 @@
+-- Stable least-significant-byte radix ordering for unsigned 64-bit values.
+use sequence as items.
+
+function distribute(source sequence of constant unsigned, destination sequence of unsigned,
+    counts sequence of unsigned, factor unsigned) giving nothing {
+  dynamic bucket of type unsigned is 0.
+  while bucket less than 256 {
+    set counts at bucket to 0.
+    increase bucket by 1.
+  }
+  for each value in source {
+    constant digit is (value divide factor) remainder 256.
+    set counts at digit to (counts at digit) plus 1.
+  }
+  dynamic offset of type unsigned is 0.
+  set bucket to 0.
+  while bucket less than 256 {
+    constant amount is counts at bucket.
+    set counts at bucket to offset.
+    set offset to offset plus amount.
+    increase bucket by 1.
+  }
+  for each value in source {
+    constant digit is (value divide factor) remainder 256.
+    constant index is counts at digit.
+    set destination at index to value.
+    set counts at digit to index plus 1.
+  }
+}
+
+-- Returns an independent sorted sequence; release it with sequence.release[unsigned].
+public function sort(values sequence of constant unsigned) giving failable sequence of unsigned {
+  constant size is items.extent[unsigned](values).
+  dynamic result is items.sized[unsigned](size) try.
+  after error { items.release[unsigned](result) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic maximum of type unsigned is 0.
+  while index less than size {
+    constant value is values at index.
+    set result at index to value.
+    when value greater than maximum { set maximum to value. }
+    increase index by 1.
+  }
+  when size less than 2 or maximum is 0 { give result. }
+  constant scratch is items.sized[unsigned](size) try.
+  after { items.release[unsigned](scratch) fallback nothing. }
+  constant counts is items.sized[unsigned](256) try.
+  after { items.release[unsigned](counts) fallback nothing. }
+  dynamic factor of type unsigned is 1.
+  dynamic pass of type unsigned is 0.
+  while pass less than 8 and factor less than or equal to maximum {
+    when pass remainder 2 is 0 {
+      distribute(result, scratch, counts, factor).
+    } otherwise {
+      distribute(scratch, result, counts, factor).
+    }
+    when pass less than 7 { set factor to factor multiply 256. }
+    increase pass by 1.
+  }
+  when pass remainder 2 is 1 {
+    set index to 0.
+    while index less than size {
+      set result at index to scratch at index.
+      increase index by 1.
+    }
+  }
+  give result.
+}
+
+function digit(value integer, factor integer, high boolean) giving integer {
+  dynamic quotient is value divide factor.
+  when value less than 0 and (value remainder factor) is not 0 {
+    set quotient to quotient subtract 1.
+  }
+  dynamic result is quotient remainder 256.
+  when result less than 0 { set result to result plus 256. }
+  when high {
+    when result greater than or equal to 128 {
+      set result to result subtract 128.
+    } otherwise {
+      set result to result plus 128.
+    }
+  }
+  give result.
+}
+
+function spread(source sequence of constant integer, destination sequence of integer,
+    counts sequence of unsigned, factor integer, high boolean) giving nothing {
+  dynamic bucket of type unsigned is 0.
+  while bucket less than 256 {
+    set counts at bucket to 0.
+    increase bucket by 1.
+  }
+  for each value in source {
+    constant key is digit(value, factor, high).
+    set counts at key to (counts at key) plus 1.
+  }
+  dynamic offset of type unsigned is 0.
+  set bucket to 0.
+  while bucket less than 256 {
+    constant amount is counts at bucket.
+    set counts at bucket to offset.
+    set offset to offset plus amount.
+    increase bucket by 1.
+  }
+  for each value in source {
+    constant key is digit(value, factor, high).
+    constant index is counts at key.
+    set destination at index to value.
+    set counts at key to index plus 1.
+  }
+}
+
+-- Stable ascending order for signed 64-bit integers, including both limits.
+public function signed(values sequence of constant integer) giving failable sequence of integer {
+  constant size is items.extent[integer](values).
+  constant result is items.sized[integer](size) try.
+  after error { items.release[integer](result) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than size {
+    set result at index to values at index.
+    increase index by 1.
+  }
+  when size less than 2 { give result. }
+  constant scratch is items.sized[integer](size) try.
+  after { items.release[integer](scratch) fallback nothing. }
+  constant counts is items.sized[unsigned](256) try.
+  after { items.release[unsigned](counts) fallback nothing. }
+  dynamic factor of type integer is 1.
+  dynamic pass of type unsigned is 0.
+  while pass less than 8 {
+    when pass remainder 2 is 0 {
+      spread(result, scratch, counts, factor, pass is 7).
+    } otherwise {
+      spread(scratch, result, counts, factor, pass is 7).
+    }
+    when pass less than 7 { set factor to factor multiply 256. }
+    increase pass by 1.
+  }
+  give result.
+}

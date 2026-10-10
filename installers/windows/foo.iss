@@ -36,10 +36,10 @@ ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\bin\foo.exe
 UninstallDisplayName=FOO
 Uninstallable=yes
-SetupIconFile=..\assets\logo-installer.ico
+SetupIconFile=..\assets\installer.ico
 WizardStyle=modern
 WizardSizePercent=110
-WizardSmallImageFile=..\assets\logo-installer.png
+WizardSmallImageFile=..\assets\installer.png
 ChangesEnvironment=yes
 
 [Languages]

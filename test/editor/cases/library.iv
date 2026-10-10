@@ -5,6 +5,10 @@ public use "sequence" function append[T](items sequence of T, value T) giving fa
 public use "sequence" function remove[T](items sequence of T, index unsigned) giving failable sequence of T.
 public use "sequence" function copy[T](items sequence of T) giving failable sequence of T.
 public use "sequence" function length[T](items sequence of T) giving unsigned.
+-- Reads the length of a borrowed, read-only sequence without copying it.
+public use "sequence" function extent[T](items sequence of constant T) giving unsigned.
+-- The returned view borrows items; keep the owner alive while using it.
+public use "sequence" function view[T](items sequence of constant T, offset unsigned, count unsigned) giving failable sequence of constant T.
 public use "sequence" function release[T](items sequence of T) giving failable nothing.
 public use "sequence" function sized[T](length unsigned) giving failable sequence of T.
 use "sequence" function compact[T](items sequence of T, length unsigned) giving failable sequence of T.
@@ -18,22 +22,234 @@ public function find[T](items sequence of T, value T) giving optional unsigned w
   }
   give null.
 }
+-- These operations require values sorted in ascending order under Ord.
+public function lower[T](values sequence of constant T, target T) giving unsigned where T is Ord {
+  dynamic left of type unsigned is 0.
+  dynamic right is extent[T](values).
+  while left less than right {
+    constant middle is left plus (right subtract left) divide 2.
+    when (values at middle) less than target {
+      set left to middle plus 1.
+    } otherwise {
+      set right to middle.
+    }
+  }
+  give left.
+}
+public function upper[T](values sequence of constant T, target T) giving unsigned where T is Ord {
+  dynamic left of type unsigned is 0.
+  dynamic right is extent[T](values).
+  while left less than right {
+    constant middle is left plus (right subtract left) divide 2.
+    when target less than (values at middle) {
+      set right to middle.
+    } otherwise {
+      set left to middle plus 1.
+    }
+  }
+  give left.
+}
+public function search[T](values sequence of constant T, target T) giving optional unsigned where T is Ord {
+  constant index is lower[T](values, target).
+  when index less than extent[T](values) and (values at index) is target {
+    give index.
+  }
+  give null.
+}
+-- Removes adjacent duplicates from ascending input into independent storage.
+public function unique[T](values sequence of constant T) giving failable sequence of T where T is Ord {
+  constant length is extent[T](values).
+  constant result is sized[T](length) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic count of type unsigned is 0.
+  for each value in values {
+    when count is 0 or not ((result at (count subtract 1)) is value) {
+      set result at count to value.
+      increase count by 1.
+    }
+  }
+  give compact[T](result, count) try.
+}
+-- Merges two ascending inputs into one independently owned stable result.
+public function merge[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {
+  constant first is extent[T](left).
+  constant second is extent[T](right).
+  when second greater than 18446744073709551615 subtract first {
+    give fail(Error.Bounds).
+  }
+  constant result is sized[T](first plus second) try.
+  dynamic a of type unsigned is 0.
+  dynamic b of type unsigned is 0.
+  dynamic cursor of type unsigned is 0.
+  while a less than first and b less than second {
+    when (right at b) less than (left at a) {
+      set result at cursor to right at b.
+      increase b by 1.
+    } otherwise {
+      set result at cursor to left at a.
+      increase a by 1.
+    }
+    increase cursor by 1.
+  }
+  while a less than first {
+    set result at cursor to left at a.
+    increase a by 1.
+    increase cursor by 1.
+  }
+  while b less than second {
+    set result at cursor to right at b.
+    increase b by 1.
+    increase cursor by 1.
+  }
+  give result.
+}
+-- Advances past every copy of the current value in an ascending sequence.
+function advance[T](values sequence of constant T, index unsigned) giving unsigned where T is Ord {
+  constant value is values at index.
+  dynamic cursor is index plus 1.
+  while cursor less than extent[T](values) and (values at cursor) is value {
+    increase cursor by 1.
+  }
+  give cursor.
+}
+-- Returns the ascending union of two ascending sequences without duplicates.
+public function unite[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {
+  constant first is extent[T](left).
+  constant second is extent[T](right).
+  when second greater than 18446744073709551615 subtract first {
+    give fail(Error.Bounds).
+  }
+  constant result is sized[T](first plus second) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic a of type unsigned is 0.
+  dynamic b of type unsigned is 0.
+  dynamic count of type unsigned is 0.
+  while a less than first and b less than second {
+    when (left at a) less than (right at b) {
+      set result at count to left at a.
+      set a to advance[T](left, a).
+    } otherwise when (right at b) less than (left at a) {
+      set result at count to right at b.
+      set b to advance[T](right, b).
+    } otherwise {
+      set result at count to left at a.
+      set a to advance[T](left, a).
+      set b to advance[T](right, b).
+    }
+    increase count by 1.
+  }
+  while a less than first {
+    set result at count to left at a.
+    increase count by 1.
+    set a to advance[T](left, a).
+  }
+  while b less than second {
+    set result at count to right at b.
+    increase count by 1.
+    set b to advance[T](right, b).
+  }
+  give compact[T](result, count) try.
+}
+-- Returns the ascending values shared by two ascending sequences.
+public function intersect[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {
+  constant first is extent[T](left).
+  constant second is extent[T](right).
+  dynamic capacity is first.
+  when second less than first { set capacity to second. }
+  constant result is sized[T](capacity) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic a of type unsigned is 0.
+  dynamic b of type unsigned is 0.
+  dynamic count of type unsigned is 0.
+  while a less than first and b less than second {
+    when (left at a) less than (right at b) {
+      set a to advance[T](left, a).
+    } otherwise when (right at b) less than (left at a) {
+      set b to advance[T](right, b).
+    } otherwise {
+      set result at count to left at a.
+      increase count by 1.
+      set a to advance[T](left, a).
+      set b to advance[T](right, b).
+    }
+  }
+  give compact[T](result, count) try.
+}
+-- Returns ascending values from left that do not appear in right.
+public function difference[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {
+  constant first is extent[T](left).
+  constant second is extent[T](right).
+  constant result is sized[T](first) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic a of type unsigned is 0.
+  dynamic b of type unsigned is 0.
+  dynamic count of type unsigned is 0.
+  while a less than first and b less than second {
+    when (left at a) less than (right at b) {
+      set result at count to left at a.
+      increase count by 1.
+      set a to advance[T](left, a).
+    } otherwise when (right at b) less than (left at a) {
+      set b to advance[T](right, b).
+    } otherwise {
+      set a to advance[T](left, a).
+      set b to advance[T](right, b).
+    }
+  }
+  while a less than first {
+    set result at count to left at a.
+    increase count by 1.
+    set a to advance[T](left, a).
+  }
+  give compact[T](result, count) try.
+}
 public function sort[T](items sequence of T) giving failable sequence of T where T is Ord {
   dynamic result is copy[T](items) try.
-  dynamic index of type unsigned is 1.
-  while index less than length[T](result) {
-    constant value is result at index.
-    dynamic cursor is index.
-    while cursor greater than 0 {
-      when result at (cursor subtract 1) greater than value {
-        set result at cursor to result at (cursor subtract 1).
-        set cursor to cursor subtract 1.
-      } otherwise {
-        stop.
+  after error { release[T](result) fallback nothing. }
+  constant size is length[T](result).
+  when size less than 2 { give result. }
+  constant scratch is sized[T](size) try.
+  after { release[T](scratch) fallback nothing. }
+  dynamic width of type unsigned is 1.
+  while width less than size {
+    dynamic origin of type unsigned is 0.
+    while origin less than size {
+      dynamic middle is size.
+      when width less than size subtract origin { set middle to origin plus width. }
+      dynamic end is size.
+      when width less than size subtract middle { set end to middle plus width. }
+      dynamic left is origin.
+      dynamic right is middle.
+      dynamic cursor is origin.
+      while left less than middle and right less than end {
+        when (result at right) less than (result at left) {
+          set scratch at cursor to result at right.
+          increase right by 1.
+        } otherwise {
+          set scratch at cursor to result at left.
+          increase left by 1.
+        }
+        increase cursor by 1.
       }
+      while left less than middle {
+        set scratch at cursor to result at left.
+        increase left by 1.
+        increase cursor by 1.
+      }
+      while right less than end {
+        set scratch at cursor to result at right.
+        increase right by 1.
+        increase cursor by 1.
+      }
+      set origin to end.
     }
-    set result at cursor to value.
-    set index to index plus 1.
+    dynamic index of type unsigned is 0.
+    while index less than size {
+      set result at index to scratch at index.
+      increase index by 1.
+    }
+    when width greater than size divide 2 { set width to size. }
+    otherwise { set width to width multiply 2. }
   }
   give result.
 }
@@ -50,6 +266,42 @@ public function filter[T](items sequence of T, predicate function taking (T) giv
     }
   }
   give compact[T](result, count) try.
+}
+public define division[T] as record {
+  kept of type sequence of T.
+  rest of type sequence of T.
+}.
+-- Evaluates the predicate once per item and preserves order in each result.
+public function partition[T](items sequence of T, predicate function taking (T) giving boolean) giving failable division[T] {
+  constant size is length[T](items).
+  constant flags is sized[boolean](size) try.
+  after { release[boolean](flags) fallback nothing. }
+  dynamic count of type unsigned is 0.
+  dynamic index of type unsigned is 0.
+  while index less than size {
+    constant selected is predicate(items at index).
+    set flags at index to selected.
+    when selected { increase count by 1. }
+    increase index by 1.
+  }
+  constant kept is sized[T](count) try.
+  after error { release[T](kept) fallback nothing. }
+  constant rest is sized[T](size subtract count) try.
+  after error { release[T](rest) fallback nothing. }
+  dynamic yes of type unsigned is 0.
+  dynamic no of type unsigned is 0.
+  set index to 0.
+  while index less than size {
+    when flags at index {
+      set kept at yes to items at index.
+      increase yes by 1.
+    } otherwise {
+      set rest at no to items at index.
+      increase no by 1.
+    }
+    increase index by 1.
+  }
+  give division[T](kept, rest).
 }
 public function map[T, U](items sequence of T, transform function taking (T) giving U) giving failable sequence of U {
   dynamic result is sized[U](length[T](items)) try.
@@ -167,14 +419,14 @@ public function starts(content text, prefix text) giving boolean {
   give true.
 }
 public function ends(content text, suffix text) giving boolean {
-  constant contentLength is length(content).
-  constant suffixLength is length(suffix).
-  when suffixLength greater than contentLength {
+  constant size is length(content).
+  constant span is length(suffix).
+  when span greater than size {
     give false.
   }
   dynamic index of type unsigned is 0.
-  while index less than suffixLength {
-    when content at (contentLength subtract suffixLength plus index) is not suffix at index {
+  while index less than span {
+    when content at (size subtract span plus index) is not suffix at index {
       give false.
     }
     increase index by 1.
@@ -185,17 +437,17 @@ public function contains(content text, value text) giving boolean {
   give find(content, value) is not null.
 }
 public function split(content text, separator text) giving failable sequence of text {
-  constant separatorLength is length(separator).
-  constant contentLength is length(content).
-  when separatorLength is 0 {
-    give fail(Error.EmptySeparator).
+  constant width is length(separator).
+  constant size is length(content).
+  when width is 0 {
+    give fail(Error.Separator).
   }
   dynamic count of type unsigned is 1.
   dynamic cursor of type unsigned is 0.
-  while cursor plus separatorLength less than or equal to contentLength {
+  while cursor plus width less than or equal to size {
     dynamic matches is true.
     dynamic index of type unsigned is 0.
-    while index less than separatorLength {
+    while index less than width {
       when content at (cursor plus index) is not separator at index {
         set matches to false.
         stop.
@@ -204,7 +456,7 @@ public function split(content text, separator text) giving failable sequence of 
     }
     when matches {
       set count to count plus 1.
-      set cursor to cursor plus separatorLength.
+      set cursor to cursor plus width.
     } otherwise {
       set cursor to cursor plus 1.
     }
@@ -218,11 +470,11 @@ public function split(content text, separator text) giving failable sequence of 
   }
   dynamic first of type unsigned is 0.
   set cursor to 0.
-  dynamic resultIndex of type unsigned is 0.
-  while cursor plus separatorLength less than or equal to contentLength {
+  dynamic position of type unsigned is 0.
+  while cursor plus width less than or equal to size {
     dynamic matches is true.
     dynamic index of type unsigned is 0.
-    while index less than separatorLength {
+    while index less than width {
       when content at (cursor plus index) is not separator at index {
         set matches to false.
         stop.
@@ -231,15 +483,15 @@ public function split(content text, separator text) giving failable sequence of 
     }
     when matches {
       constant part is slice(content, first, cursor) try.
-      set result at resultIndex to part.
-      set resultIndex to resultIndex plus 1.
-      set cursor to cursor plus separatorLength.
+      set result at position to part.
+      set position to position plus 1.
+      set cursor to cursor plus width.
       set first to cursor.
     } otherwise {
       set cursor to cursor plus 1.
     }
   }
-  set result at resultIndex to slice(content, first, contentLength) try.
+  set result at position to slice(content, first, size) try.
   give result.
 }
 
@@ -432,7 +684,11 @@ start {
 use io as io.
 use file as files.
 use net as network.
-use process as process.
+use dns as names.
+use adapter as devices.
+use route as paths.
+use "../../lib/process.iv" as process.
+use "../../lib/resource.iv" as usage.
 use thread as tasks.
 use task as jobs.
 use time as clock.
@@ -442,13 +698,23 @@ use log as log.
 use testing as check.
 extern "C" function verify giving nothing.
 dynamic count of type integer is 0.
-function work giving nothing {
+function pulse giving nothing {
   set count to count plus 1.
   give nothing.
 }
-function scopedwork(value integer) giving nothing for c {
+function accumulate(value integer) giving nothing for c {
   set count to count plus value.
   give nothing.
+}
+function probe giving failable nothing {
+  constant answers is names.query("localhost", "a") try.
+  after { names.close(answers) fallback nothing. }
+  check.expect((names.count(answers) try) is greater than 0).
+  check.expect(words.length(names.name(answers, 0) try) is greater than 0).
+  check.expect(words.length(names.data(answers, 0) try) is greater than 0).
+  check.expect(words.length(names.kind(answers, 0) try) is greater than 0).
+  constant ttl is names.ttl(answers, 0) try.
+  check.expect(ttl is less than 18446744073709551615).
 }
 start {
   constant joined is words.concatenate("FO", "O") try.
@@ -480,9 +746,9 @@ start {
   }
   files.write(path, "FOO" plus newline plus "44") try.
   check.expect(files.exists(path) try).
-  constant filekind is files.kind(path) try.
-  after { words.release(filekind) fallback nothing. }
-  check.same(filekind, "file").
+  constant category is files.kind(path) try.
+  after { words.release(category) fallback nothing. }
+  check.same(category, "file").
   constant working is files.working try.
   after { words.release(working) fallback nothing. }
   check.expect(words.length(working) is greater than 0).
@@ -527,15 +793,15 @@ start {
   constant stored is files.read(published) try.
   after { words.release(stored) fallback nothing. }
   check.same(stored, "stable").
-  constant bytes is files.readbytes(published) try.
+  constant bytes is files.load(published) try.
   check.expect(items.length[byte](bytes) is 6).
   constant copied is files.join(".artifacts/service", "copied.bin") try.
   after { words.release(copied) fallback nothing. }
   files.copy(published, copied) try.
-  files.releasebytes(bytes) try.
-  constant copiedtext is files.read(copied) try.
-  after { words.release(copiedtext) fallback nothing. }
-  check.same(copiedtext, "stable").
+  files.release(bytes) try.
+  constant actual is files.read(copied) try.
+  after { words.release(actual) fallback nothing. }
+  check.same(actual, "stable").
   files.remove(copied) try.
   check.expect(not (files.exists(copied) try)).
   files.remove(published) try.
@@ -544,11 +810,11 @@ start {
   check.same(missing, "missing").
   check.expect(process.count is greater than 0).
   check.expect((process.run("exit 7") try) is 7).
-  constant noarguments is items.create[text].
-  constant firstargument is items.append[text](noarguments, "-e") try.
-  constant arguments is items.append[text](firstargument, "process.exit(0)") try.
+  constant empty is items.create[text].
+  constant flag is items.append[text](empty, "-e") try.
+  constant arguments is items.append[text](flag, "process.exit(0)") try.
   after {
-    items.release[text](firstargument) fallback nothing.
+    items.release[text](flag) fallback nothing.
     items.release[text](arguments) fallback nothing.
   }
   check.expect((process.execute("node", arguments) try) is 0).
@@ -561,17 +827,20 @@ start {
   constant before is clock.current try.
   clock.sleep(1000000) try.
   check.expect((clock.current try) is greater than before).
-  constant task is tasks.spawn(work) try.
+  constant threads is usage.threads.
+  constant task is tasks.spawn(pulse) try.
+  check.expect(usage.threads is threads plus 1).
   tasks.wait(task) try.
+  check.expect(usage.threads is threads).
   check.expect(count is 1).
   constant executor is jobs.executor try.
   constant scope is jobs.scope try.
   check.expect(jobs.backend greater than or equal to 0).
-  check.expect(jobs.launch(scope, scopedwork, 2)).
+  check.expect(jobs.launch(scope, accumulate, 2)).
   jobs.join(scope).
   check.expect(count is 3).
   check.expect(jobs.label("foo-test")).
-  clock.measure(work) try.
+  clock.measure(pulse) try.
   check.expect(count is 4).
   constant mutex is tasks.mutex try.
   constant condition is tasks.condition try.
@@ -589,8 +858,8 @@ start {
   after {
     network.close(client) fallback nothing.
   }
-  network.nodelay(client, true) try.
-  network.keepalive(client, true) try.
+  network.latency(client, true) try.
+  network.probe(client, true) try.
   constant server is network.accept(listener) try.
   after {
     network.close(server) fallback nothing.
@@ -602,6 +871,61 @@ start {
     words.release(received) fallback nothing.
   }
   check.same(received, "44").
+  constant loopback is network.ipv4("127.0.0.1") try.
+  constant rendered4 is network.numeric4(loopback) try.
+  after { words.release(rendered4) fallback nothing. }
+  check.same(rendered4, "127.0.0.1").
+  constant loopback6 is network.ipv6("::1") try.
+  constant rendered6 is network.numeric6(loopback6) try.
+  after { words.release(rendered6) fallback nothing. }
+  check.same(rendered6, "::1").
+  constant resolved is network.resolve("localhost", 1234, "ipv4") try.
+  check.same(resolved.host, "127.0.0.1").
+  check.expect(resolved.port is 1234).
+  words.release(resolved.host) try.
+  probe fallback nothing.
+  constant adapters is devices.scan try.
+  after { devices.close(adapters) fallback nothing. }
+  when (devices.count(adapters) try) is greater than 0 {
+    check.expect(words.length(devices.name(adapters, 0) try) is greater than 0).
+    check.expect(words.length(devices.address(adapters, 0) try) is greater than 0).
+    check.expect((devices.mtu(adapters, 0) try) is greater than 0).
+  }
+  constant routes is paths.scan try.
+  after { paths.close(routes) fallback nothing. }
+  when (paths.count(routes) try) is greater than 0 {
+    check.expect(words.length(paths.destination(routes, 0) try) is greater than 0).
+    check.expect((paths.prefix(routes, 0) try) is less than 129).
+  }
+  constant receiver is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(receiver) fallback nothing. }
+  constant sender is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(sender) fallback nothing. }
+  network.broadcast(sender, true) try.
+  network.broadcast(sender, false) try.
+  constant message is items.sized[byte](3) try.
+  after { items.release[byte](message) fallback nothing. }
+  set message at 0 to 0.
+  set message at 1 to 42.
+  set message at 2 to 255.
+  constant target is network.address("127.0.0.1", network.local(receiver) try).
+  check.expect((network.send4(sender, network.socket4(loopback, target.port), message) try) is 3).
+  constant packet is network.capture(receiver, 3) try.
+  after { network.discard(packet) fallback nothing. }
+  constant payload is network.payload(packet) try.
+  check.expect(items.extent[byte](payload) is 3).
+  check.expect(payload at 0 is 0).
+  check.expect(payload at 1 is 42).
+  check.expect(payload at 2 is 255).
+  check.same(network.sender(packet) try, "127.0.0.1").
+  check.expect((network.origin(packet) try) is (network.local(sender) try)).
+  constant typed is network.sender4(packet) try.
+  check.expect(typed.ip.bits is loopback.bits).
+  check.expect(typed.port is (network.local(sender) try)).
+  network.connect4(sender, network.socket4(loopback, target.port)) try.
+  check.expect((network.emit(sender, message) try) is 3).
+  constant connected is network.capture(receiver, 3) try.
+  after { network.discard(connected) fallback nothing. }
+  check.expect((network.sender4(connected) try).ip.bits is loopback.bits).
   log.message("services passed") try.
-  verify.
 }

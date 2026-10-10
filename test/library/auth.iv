@@ -1,0 +1,184 @@
+use "../../lib/crypto.iv" as hashes.
+use sequence as items.
+use testing as check.
+
+function late(state pointer to hashes.authenticator, bytes sequence of constant byte) giving failable boolean {
+  hashes.absorb(state, bytes) try.
+  give false.
+}
+function oversized(secret sequence of constant byte, salt sequence of constant byte,
+    context sequence of constant byte) giving failable boolean {
+  constant value is hashes.derive(secret, salt, context, 8161) try.
+  items.release[byte](value) try.
+  give false.
+}
+
+test "streaming HMAC-SHA256 follows RFC 4231" {
+  constant key is items.sized[byte](20) try.
+  after { items.release[byte](key) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than 20 {
+    set key at index to 11.
+    increase index by 1.
+  }
+  constant message is items.sized[byte](8) try.
+  after { items.release[byte](message) fallback nothing. }
+  set message at 0 to 72.
+  set message at 1 to 105.
+  set message at 2 to 32.
+  set message at 3 to 84.
+  set message at 4 to 104.
+  set message at 5 to 101.
+  set message at 6 to 114.
+  set message at 7 to 101.
+  constant expected is items.sized[byte](32) try.
+  after { items.release[byte](expected) fallback nothing. }
+  set expected at 0 to 176.
+  set expected at 1 to 52.
+  set expected at 2 to 76.
+  set expected at 3 to 97.
+  set expected at 4 to 216.
+  set expected at 5 to 219.
+  set expected at 6 to 56.
+  set expected at 7 to 83.
+  set expected at 8 to 92.
+  set expected at 9 to 168.
+  set expected at 10 to 175.
+  set expected at 11 to 206.
+  set expected at 12 to 175.
+  set expected at 13 to 11.
+  set expected at 14 to 241.
+  set expected at 15 to 43.
+  set expected at 16 to 136.
+  set expected at 17 to 29.
+  set expected at 18 to 194.
+  set expected at 19 to 0.
+  set expected at 20 to 201.
+  set expected at 21 to 131.
+  set expected at 22 to 61.
+  set expected at 23 to 167.
+  set expected at 24 to 38.
+  set expected at 25 to 233.
+  set expected at 26 to 55.
+  set expected at 27 to 108.
+  set expected at 28 to 46.
+  set expected at 29 to 50.
+  set expected at 30 to 207.
+  set expected at 31 to 247.
+  constant first is items.view[byte](message, 0, 3) try.
+  constant second is items.view[byte](message, 3, 5) try.
+  constant state is hashes.auth(key) try.
+  after { hashes.discard(state). }
+  hashes.absorb(state, first) try.
+  hashes.absorb(state, second) try.
+  constant actual is hashes.tag(state) try.
+  after { items.release[byte](actual) fallback nothing. }
+  check.expect(items.length[byte](actual) is 32).
+  check.expect(hashes.compare(actual, expected)).
+  check.expect(hashes.check(state, expected) try).
+  check.expect(late(state, message) fallback true).
+  set expected at 31 to 0.
+  check.expect(not (hashes.check(state, expected) try)).
+  check.expect(not hashes.compare(actual, expected)).
+  constant empty is items.create[byte].
+  check.expect(hashes.compare(empty, empty)).
+  check.expect(not hashes.compare(empty, actual)).
+}
+
+test "HKDF-SHA256 follows RFC 5869" {
+  constant secret is items.sized[byte](22) try.
+  after { items.release[byte](secret) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than 22 {
+    set secret at index to 11.
+    increase index by 1.
+  }
+  constant salt is items.sized[byte](13) try.
+  after { items.release[byte](salt) fallback nothing. }
+  set salt at 0 to 0.
+  set salt at 1 to 1.
+  set salt at 2 to 2.
+  set salt at 3 to 3.
+  set salt at 4 to 4.
+  set salt at 5 to 5.
+  set salt at 6 to 6.
+  set salt at 7 to 7.
+  set salt at 8 to 8.
+  set salt at 9 to 9.
+  set salt at 10 to 10.
+  set salt at 11 to 11.
+  set salt at 12 to 12.
+  constant context is items.sized[byte](10) try.
+  after { items.release[byte](context) fallback nothing. }
+  set context at 0 to 240.
+  set context at 1 to 241.
+  set context at 2 to 242.
+  set context at 3 to 243.
+  set context at 4 to 244.
+  set context at 5 to 245.
+  set context at 6 to 246.
+  set context at 7 to 247.
+  set context at 8 to 248.
+  set context at 9 to 249.
+  constant expected is items.sized[byte](42) try.
+  after { items.release[byte](expected) fallback nothing. }
+  set expected at 0 to 60.
+  set expected at 1 to 178.
+  set expected at 2 to 95.
+  set expected at 3 to 37.
+  set expected at 4 to 250.
+  set expected at 5 to 172.
+  set expected at 6 to 213.
+  set expected at 7 to 122.
+  set expected at 8 to 144.
+  set expected at 9 to 67.
+  set expected at 10 to 79.
+  set expected at 11 to 100.
+  set expected at 12 to 208.
+  set expected at 13 to 54.
+  set expected at 14 to 47.
+  set expected at 15 to 42.
+  set expected at 16 to 45.
+  set expected at 17 to 45.
+  set expected at 18 to 10.
+  set expected at 19 to 144.
+  set expected at 20 to 207.
+  set expected at 21 to 26.
+  set expected at 22 to 90.
+  set expected at 23 to 76.
+  set expected at 24 to 93.
+  set expected at 25 to 176.
+  set expected at 26 to 45.
+  set expected at 27 to 86.
+  set expected at 28 to 236.
+  set expected at 29 to 196.
+  set expected at 30 to 197.
+  set expected at 31 to 191.
+  set expected at 32 to 52.
+  set expected at 33 to 0.
+  set expected at 34 to 114.
+  set expected at 35 to 8.
+  set expected at 36 to 213.
+  set expected at 37 to 184.
+  set expected at 38 to 135.
+  set expected at 39 to 24.
+  set expected at 40 to 88.
+  set expected at 41 to 101.
+  constant actual is hashes.derive(secret, salt, context, 42) try.
+  after { items.release[byte](actual) fallback nothing. }
+  check.expect(hashes.compare(actual, expected)).
+  check.expect(oversized(secret, salt, context) fallback true).
+  constant empty is items.create[byte].
+  constant unsalted is hashes.derive(secret, empty, empty, 42) try.
+  after { items.release[byte](unsalted) fallback nothing. }
+  check.expect(items.length[byte](unsalted) is 42).
+  check.expect(unsalted at 0 is 141 and unsalted at 1 is 164 and unsalted at 2 is 231).
+  check.expect(unsalted at 31 is 45 and unsalted at 32 is 157).
+  check.expect(unsalted at 39 is 26 and unsalted at 40 is 150 and unsalted at 41 is 200).
+  constant maximum is hashes.derive(secret, salt, context, 8160) try.
+  check.expect(items.length[byte](maximum) is 8160).
+  items.release[byte](maximum) try.
+  constant blank is hashes.derive(empty, empty, empty, 0) try.
+  check.expect(items.length[byte](blank) is 0).
+  items.release[byte](blank) try.
+}

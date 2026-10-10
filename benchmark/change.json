@@ -1,0 +1,97 @@
+{
+  "mode": "a",
+  "controlKind": "foo",
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "cpu": "11th Gen Intel(R) Core(TM) i5-1145G7 @ 2.60GHz",
+    "node": "v24.11.1"
+  },
+  "operationMedianMs": {
+    "foo": 3.3027,
+    "control": 3.2273
+  },
+  "processMedianMs": {
+    "foo": 231.29899999999998,
+    "control": 211.40909999999985
+  },
+  "samples": {
+    "foo": [
+      {
+        "wallMs": 353.7581,
+        "operationMs": 3.6727
+      },
+      {
+        "wallMs": 183.09939999999983,
+        "operationMs": 2.6917
+      },
+      {
+        "wallMs": 189.1155000000001,
+        "operationMs": 3.8882
+      },
+      {
+        "wallMs": 212.85689999999977,
+        "operationMs": 2.7932
+      },
+      {
+        "wallMs": 163.89609999999993,
+        "operationMs": 3.2259
+      },
+      {
+        "wallMs": 678.375,
+        "operationMs": 2.8546
+      },
+      {
+        "wallMs": 306.5512999999996,
+        "operationMs": 3.3027
+      },
+      {
+        "wallMs": 252.3757000000005,
+        "operationMs": 4.2368
+      },
+      {
+        "wallMs": 231.29899999999998,
+        "operationMs": 3.4635
+      }
+    ],
+    "control": [
+      {
+        "wallMs": 134.68410000000017,
+        "operationMs": 1.8685
+      },
+      {
+        "wallMs": 150.0829000000001,
+        "operationMs": 3.2559
+      },
+      {
+        "wallMs": 158.55950000000007,
+        "operationMs": 17.8018
+      },
+      {
+        "wallMs": 211.40909999999985,
+        "operationMs": 11.238
+      },
+      {
+        "wallMs": 185.76529999999957,
+        "operationMs": 2.1656
+      },
+      {
+        "wallMs": 426.59900000000016,
+        "operationMs": 3.2273
+      },
+      {
+        "wallMs": 359.28539999999975,
+        "operationMs": 2.6635
+      },
+      {
+        "wallMs": 234.01290000000063,
+        "operationMs": 3.1595
+      },
+      {
+        "wallMs": 267.1090000000004,
+        "operationMs": 3.4753
+      }
+    ]
+  }
+}

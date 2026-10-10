@@ -1,0 +1,57 @@
+use net as network.
+use testing as check.
+
+function rejected(socket pointer to network.datagram, index unsigned) giving failable boolean {
+  network.egress(socket, index) try.
+  give false.
+}
+
+test "TCP socket buffer capacities" {
+  constant listener is network.listen("127.0.0.1", 0) try.
+  after { network.close(listener) fallback nothing. }
+  constant client is network.connect("127.0.0.1", network.port(listener) try) try.
+  after { network.close(client) fallback nothing. }
+  constant send is network.provision(client, "send", 65536) try.
+  check.expect(send greater than 0).
+  check.number(network.allocation(client, "send") try, send).
+  constant receive is network.provision(client, "receive", 65536) try.
+  check.expect(receive greater than 0).
+  check.number(network.allocation(client, "receive") try, receive).
+  check.number(network.provision(client, "send", 0) fallback 999, 999).
+  check.number(network.provision(client, "send", 2147483648) fallback 999, 999).
+  check.number(network.provision(client, "other", 1) fallback 999, 999).
+  check.number(network.allocation(client, "other") fallback 999, 999).
+}
+
+test "IPv4 TCP hop limit and traffic class" {
+  constant listener is network.listen("127.0.0.1", 0) try.
+  after { network.close(listener) fallback nothing. }
+  constant client is network.connect("127.0.0.1", network.port(listener) try) try.
+  after { network.close(client) fallback nothing. }
+  check.number(network.lifetime(client, 32) try, 32).
+  check.number(network.lifetime(client, 0) fallback 999, 999).
+  check.number(network.lifetime(client, 256) fallback 999, 999).
+  check.number(network.priority(client, 0) try, 0).
+  check.expect((network.priority(client, 16) try) less than or equal to 255).
+  check.number(network.priority(client, 256) fallback 999, 999).
+}
+
+test "IPv6 TCP options" {
+  constant loopback is network.ipv6("::1") try.
+  constant listener is network.serve6(network.socket6(loopback, 0)) try.
+  after { network.close(listener) fallback nothing. }
+  constant client is network.dial6(network.socket6(loopback, network.port(listener) try)) try.
+  after { network.close(client) fallback nothing. }
+  check.number(network.lifetime(client, 42) try, 42).
+  check.number(network.priority(client, 0) try, 0).
+  constant receive is network.provision(client, "receive", 32768) try.
+  check.number(network.allocation(client, "receive") try, receive).
+}
+
+test "IPv4 UDP interface selection validates the adapter index" {
+  constant socket is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(socket) fallback nothing. }
+  network.egress(socket, 0) try.
+  check.expect((network.local(socket) try) greater than 0).
+  check.expect(rejected(socket, 4294967296) fallback true).
+}

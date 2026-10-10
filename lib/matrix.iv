@@ -1,0 +1,175 @@
+-- Dense row-major decimal matrices with explicit ownership.
+use sequence as items.
+
+public define matrix as record {
+  rows of type unsigned.
+  columns of type unsigned.
+  values of type sequence of decimal.
+}.
+
+public function create(rows unsigned, columns unsigned) giving failable matrix {
+  when columns is not 0 and rows greater than (18446744073709551615 divide columns) {
+    give fail(Error.Size).
+  }
+  give matrix(rows, columns, items.sized[decimal](rows multiply columns) try).
+}
+
+public function release(value matrix) giving failable nothing {
+  items.release[decimal](value.values) try.
+  give nothing.
+}
+
+public function get(value matrix, row unsigned, column unsigned) giving failable decimal {
+  when row greater than or equal to value.rows or column greater than or equal to value.columns {
+    give fail(Error.Index).
+  }
+  give value.values at (row multiply value.columns plus column).
+}
+
+public function add(left matrix, right matrix) giving failable matrix {
+  when left.rows is not right.rows or left.columns is not right.columns {
+    give fail(Error.Shape).
+  }
+  dynamic output is create(left.rows, left.columns) try.
+  after error { release(output) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than items.length[decimal](output.values) {
+    set output.values at index to (left.values at index) plus (right.values at index).
+    increase index by 1.
+  }
+  give output.
+}
+
+public function product(left matrix, right matrix) giving failable matrix {
+  when left.columns is not right.rows {
+    give fail(Error.Shape).
+  }
+  dynamic output is create(left.rows, right.columns) try.
+  after error { release(output) fallback nothing. }
+  dynamic row of type unsigned is 0.
+  while row less than left.rows {
+    dynamic column of type unsigned is 0.
+    while column less than right.columns {
+      dynamic sum of type decimal is 0.0.
+      dynamic inner of type unsigned is 0.
+      while inner less than left.columns {
+        set sum to sum plus ((left.values at (row multiply left.columns plus inner)) multiply (right.values at (inner multiply right.columns plus column))).
+        increase inner by 1.
+      }
+      set output.values at (row multiply right.columns plus column) to sum.
+      increase column by 1.
+    }
+    increase row by 1.
+  }
+  give output.
+}
+
+-- Returns an independently owned matrix with rows and columns exchanged.
+public function transpose(value matrix) giving failable matrix {
+  dynamic output is create(value.columns, value.rows) try.
+  after error { release(output) fallback nothing. }
+  dynamic row of type unsigned is 0.
+  while row less than value.rows {
+    dynamic column of type unsigned is 0.
+    while column less than value.columns {
+      set output.values at (column multiply value.rows plus row) to value.values at (row multiply value.columns plus column).
+      increase column by 1.
+    }
+    increase row by 1.
+  }
+  give output.
+}
+
+-- Copies a checked rectangular region into independently owned storage.
+public function crop(value matrix, row unsigned, column unsigned, rows unsigned, columns unsigned) giving failable matrix {
+  when row greater than value.rows or rows greater than value.rows subtract row or column greater than value.columns or columns greater than value.columns subtract column {
+    give fail(Error.Index).
+  }
+  dynamic output is create(rows, columns) try.
+  after error { release(output) fallback nothing. }
+  dynamic vertical of type unsigned is 0.
+  while vertical less than rows {
+    dynamic horizontal of type unsigned is 0.
+    while horizontal less than columns {
+      constant source is (row plus vertical) multiply value.columns plus column plus horizontal.
+      set output.values at (vertical multiply columns plus horizontal) to value.values at source.
+      increase horizontal by 1.
+    }
+    increase vertical by 1.
+  }
+  give output.
+}
+
+public function bias(value matrix, columns sequence of decimal) giving failable matrix {
+  when items.length[decimal](columns) is not value.columns {
+    give fail(Error.Shape).
+  }
+  dynamic output is create(value.rows, value.columns) try.
+  after error { release(output) fallback nothing. }
+  dynamic row of type unsigned is 0.
+  while row less than value.rows {
+    dynamic column of type unsigned is 0.
+    while column less than value.columns {
+      constant index is row multiply value.columns plus column.
+      set output.values at index to (value.values at index) plus (columns at column).
+      increase column by 1.
+    }
+    increase row by 1.
+  }
+  give output.
+}
+
+-- Sums each row, returning one independently owned value per row.
+function horizontal(value matrix) giving failable sequence of decimal {
+  constant output is items.sized[decimal](value.rows) try.
+  dynamic row of type unsigned is 0.
+  while row less than value.rows {
+    dynamic sum of type decimal is 0.0.
+    dynamic column of type unsigned is 0.
+    while column less than value.columns {
+      set sum to sum plus (value.values at (row multiply value.columns plus column)).
+      increase column by 1.
+    }
+    set output at row to sum.
+    increase row by 1.
+  }
+  give output.
+}
+
+-- Sums each column, returning one independently owned value per column.
+function vertical(value matrix) giving failable sequence of decimal {
+  constant output is items.sized[decimal](value.columns) try.
+  dynamic column of type unsigned is 0.
+  while column less than value.columns {
+    dynamic sum of type decimal is 0.0.
+    dynamic row of type unsigned is 0.
+    while row less than value.rows {
+      set sum to sum plus (value.values at (row multiply value.columns plus column)).
+      increase row by 1.
+    }
+    set output at column to sum.
+    increase column by 1.
+  }
+  give output.
+}
+
+public function sum(value matrix, axis text) giving failable sequence of decimal {
+  when axis is "row" { give horizontal(value) try. }
+  when axis is "column" { give vertical(value) try. }
+  give fail(Error.Shape).
+}
+
+-- Multiplies matching cells into independently owned storage.
+public function hadamard(left matrix, right matrix) giving failable matrix {
+  when left.rows is not right.rows or left.columns is not right.columns {
+    give fail(Error.Shape).
+  }
+  dynamic output is create(left.rows, left.columns) try.
+  after error { release(output) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than items.length[decimal](output.values) {
+    set output.values at index to (left.values at index) multiply (right.values at index).
+    increase index by 1.
+  }
+  give output.
+}

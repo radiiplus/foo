@@ -1,0 +1,14 @@
+use time as clock.
+use testing as check.
+
+test "distinct monotonic and UTC clocks" {
+  constant before is clock.now try.
+  constant first is clock.utc try.
+  check.expect(first.nanoseconds greater than 1577836800000000000).
+  clock.wait(clock.millis(1)) try.
+  constant last is clock.utc try.
+  check.expect(last.nanoseconds greater than or equal to first.nanoseconds).
+  check.expect((clock.between(first, last) try).nanoseconds less than 10000000000).
+  check.expect((clock.between(clock.stamp(2), clock.stamp(1)) fallback clock.duration(99)).nanoseconds is 99).
+  check.expect((clock.elapsed(before, clock.now try)).nanoseconds greater than 0).
+}

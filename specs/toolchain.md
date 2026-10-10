@@ -75,6 +75,10 @@ receipt is published only after its probes succeed. Failure leaves previous
 valid levels available. Builds check `requires` before project tasks and native
 compilation. Missing levels report the exact installation command.
 
+Windows x64 distributions include the pinned libsodium 1.0.22 static library
+and headers for C crypto builds. The dependency is linked statically, so
+applications do not need a separate libsodium installation or DLL.
+
 For native Debian and Ubuntu C builds, FOO probes the headers and libraries
 required by the imported `crypto`, `compress`, and `http` modules. If missing,
 it downloads the matching apt development packages into the user toolchain

@@ -1,0 +1,11 @@
+-- Loads a native shared library and invokes symbols with an explicit C ABI.
+-- The caller must know the exported signature; the operating system cannot verify it.
+public define library as opaque.
+public define unary as opaque.
+public use "dylib" function open(path text) giving failable pointer to library.
+public use "dylib" function lookup(owner pointer to library, name text) giving failable pointer to unary.
+-- The selected symbol must have the signature uint64_t function(uint64_t).
+public use "dylib" function call(symbol pointer to unary, argument unsigned) giving failable unsigned.
+public use "dylib" function discard(symbol pointer to unary) giving failable nothing.
+-- Closing the library invalidates all its symbols.
+public use "dylib" function close(owner pointer to library) giving failable nothing.

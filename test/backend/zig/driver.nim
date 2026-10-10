@@ -22,8 +22,10 @@ let ioResult = build(ioModule, "dev", ioOutput, options = Native(name: "io"))
 doAssert ioResult.success
 doAssert fileExists(ioOutput / "service.h")
 doAssert fileExists(ioOutput / "service.c")
-doAssert readFile(ioOutput / "library.zig").contains(
-  ".{ \"fs\", \"io\", \"net\", \"process\", \"thread\", \"time\", \"text\" }")
+let providers = readFile(ioOutput / "library.zig")
+doAssert providers.contains("inline for (.{")
+for name in ["fs", "io", "net", "process", "resource", "thread", "time", "text"]:
+  doAssert providers.contains("\"" & name & "\"")
 
 let unusedOutput = output & "-unused"
 if dirExists(unusedOutput): removeDir(unusedOutput)

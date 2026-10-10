@@ -1,0 +1,9 @@
+-- Canonical unpadded URL-safe Base64 encoding.
+use "binary" function base64(value sequence of constant byte) giving failable text.
+use "binary" function restore(value text) giving failable sequence of byte.
+public function encode(value sequence of constant byte) giving failable text {
+  give base64(value) try.
+}
+public function decode(value text) giving failable sequence of byte {
+  give restore(value) try.
+}

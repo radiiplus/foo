@@ -1,8 +1,8 @@
 # Operators
 
-FOO uses words for arithmetic, comparison, and Boolean logic. The words make
-an expression readable, but the compiler still applies precise precedence
-rules.
+Want to add two values? Write `8 plus 2`. FOO uses words for arithmetic,
+comparisons, and Boolean logic, while applying precise rules when an
+expression combines several operations.
 
 ## Arithmetic
 

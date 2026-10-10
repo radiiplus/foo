@@ -1,8 +1,8 @@
 # Expressions and English Grammar
 
-FOO uses English words where they make intent clearer, but every sentence has
-one precise parse (one structural reading) and one checked type. This chapter separates syntax that runs
-today from ideas still being designed.
+How can code read like a sentence without leaving its meaning open to guesswork?
+FOO gives each expression one precise structure and a checked type. This
+chapter shows the forms accepted today and calls out ideas still in design.
 
 ## Naming rule
 

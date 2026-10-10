@@ -56,5 +56,5 @@ writeFileSync(target, `${parts.join("\n")}\n`, "utf8");
 
 const data = resolve(import.meta.dirname, "../public/benchmark");
 mkdirSync(data, { recursive: true });
-copyFileSync(resolve(root, "benchmark/branch-allocator.json"),
-  resolve(data, "branch-allocator.json"));
+copyFileSync(resolve(root, "benchmark/branch.json"),
+  resolve(data, "branch.json"));

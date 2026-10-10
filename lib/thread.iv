@@ -1,13 +1,13 @@
 -- Runs function-valued tasks and coordinates shared work with locks and conditions.
-public define Thread as opaque.
-public define Mutex as opaque.
-public define Condition as opaque.
-public use "thread" function spawn(task function giving nothing) giving failable pointer to Thread.
-public use "thread" function wait(task pointer to Thread) giving failable nothing.
-public use "thread" function mutex giving failable pointer to Mutex.
-public use "thread" function lock(mutex pointer to Mutex) giving failable nothing.
-public use "thread" function unlock(mutex pointer to Mutex) giving failable nothing.
-public use "thread" function condition giving failable pointer to Condition.
-public use "thread" function signal(condition pointer to Condition) giving failable nothing.
-public use "thread" function pause(condition pointer to Condition, mutex pointer to Mutex) giving failable nothing.
+public define thread as opaque.
+public define guard as opaque.
+public define event as opaque.
+public use "thread" function spawn(task function giving nothing) giving failable pointer to thread.
+public use "thread" function wait(task pointer to thread) giving failable nothing.
+public use "thread" function mutex giving failable pointer to guard.
+public use "thread" function lock(mutex pointer to guard) giving failable nothing.
+public use "thread" function unlock(mutex pointer to guard) giving failable nothing.
+public use "thread" function condition giving failable pointer to event.
+public use "thread" function signal(condition pointer to event) giving failable nothing.
+public use "thread" function pause(condition pointer to event, mutex pointer to guard) giving failable nothing.
 public use "thread" function close[T](resource pointer to T) giving failable nothing.

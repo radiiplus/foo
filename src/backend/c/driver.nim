@@ -21,6 +21,8 @@ type Result* = object
 const
   serviceHeader = staticRead("../native/service.h")
   serviceSource = staticRead("../native/service.c")
+  vulkanSource = staticRead("../native/vulkan.c")
+  gpuSource = staticRead("../native/gpu.c")
 
 proc dependencies*(text: string): seq[string] =
   var body = text.replace("\\\r\n", " ").replace("\\\n", " ")
@@ -32,9 +34,17 @@ proc dependencies*(text: string): seq[string] =
 
 proc diagnose*(output: string; libs: openArray[string]): string =
   let lower = output.toLowerAscii()
+  let sodiumHint = when defined(windows):
+      "C crypto needs the bundled libsodium headers and static library. Reinstall FOO or provide explicit include and library paths."
+    else:
+      "C crypto requires libsodium development files. Install libsodium-dev on Debian/Ubuntu, or provide its include and library paths."
+  let zlibHint = when defined(windows):
+      "C compression needs the bundled zlib headers and static library. Reinstall FOO or provide explicit include and library paths."
+    else:
+      "C compression requires zlib development files. Install zlib1g-dev on Debian/Ubuntu, or provide its include and library paths."
   let rules = [
-    ("sodium", "sodium.h", "C crypto requires libsodium development files. Install libsodium-dev on Debian/Ubuntu, or provide its include and library paths."),
-    ("z", "zlib.h", "C compression requires zlib development files. Install zlib1g-dev on Debian/Ubuntu, or provide its include and library paths."),
+    ("sodium", "sodium.h", sodiumHint),
+    ("z", "zlib.h", zlibHint),
     ("curl", "curl/curl.h", "C HTTP requires libcurl development files. Install libcurl4-openssl-dev on Debian/Ubuntu, or provide its include and library paths.")
   ]
   for rule in rules:
@@ -95,6 +105,23 @@ proc local(target: string): bool =
     else: true
   platform and architecture
 
+proc bundledBlake3(): string =
+  var directory = getAppDir()
+  for depth in 0 .. 3:
+    let root = directory / "vendor" / "blake3" / "c"
+    if fileExists(root / "blake3.h") and fileExists(root / "blake3.c"):
+      return root
+    directory = parentDir(directory)
+
+proc bundledVulkan(): string =
+  var directory = getAppDir()
+  for depth in 0 .. 3:
+    let root = directory / "vendor" / "vulkan"
+    if fileExists(root / "volk.c") and
+        fileExists(root / "include" / "vulkan" / "vulkan_core.h"):
+      return root
+    directory = parentDir(directory)
+
 proc build*(module: Module; mode: string; outDir: string;
     options = Native(); sourceFile = "main.iv";
     progress: BuildProgress = nil): Result =
@@ -131,6 +158,17 @@ proc build*(module: Module; mode: string; outDir: string;
       writeFile(escapePath, escaped.code)
       inputs.add(escapePath)
     let needsService = options.runtime != "none" and hosted(escaped.module)
+    let usesGpu = escaped.module.externs.anyIt(it.abi == "runtime.gpu")
+    let usesVulkan = usesGpu or escaped.module.externs.anyIt(
+      it.abi == "runtime.vulkan")
+    var vulkanRoot = ""
+    if usesVulkan:
+      vulkanRoot = bundledVulkan()
+      if vulkanRoot.len == 0:
+        raise newException(IOError, "Vulkan needs the bundled headers and volk sources.")
+      writeFile(outDir / "vulkan.c", vulkanSource)
+      writeFile(outDir / "gpu.c", gpuSource)
+      inputs.add(vulkanRoot / "volk.c")
     if needsService:
       writeFile(outDir / "service.h", serviceHeader)
       let servicePath = outDir / "service.c"
@@ -139,6 +177,21 @@ proc build*(module: Module; mode: string; outDir: string;
     else:
       for path in [outDir / "service.h", outDir / "service.c"]:
         if fileExists(path): removeFile(path)
+    let usesCrypto = "sodium" in generated.libraries
+    var blake3Root = ""
+    if usesCrypto:
+      blake3Root = bundledBlake3()
+      if blake3Root.len == 0:
+        raise newException(IOError, "C crypto needs the bundled BLAKE3 C sources.")
+      for name in ["blake3.c", "blake3_dispatch.c", "blake3_portable.c"]:
+        inputs.add(blake3Root / name)
+      let target = options.target.toLowerAscii()
+      let x64 = if target.len > 0: target.contains("x86_64") or target.contains("amd64")
+        else: defined(amd64)
+      let aarch64 = if target.len > 0: target.contains("aarch64") or target.contains("arm64")
+        else: defined(arm64)
+      if x64: inputs.add(blake3Root / "blake3_sse2.c")
+      if aarch64: inputs.add(blake3Root / "blake3_neon.c")
     inputs.add(options.sources)
     let artifactPath = outDir / artifact(options)
     if options.compile:
@@ -169,9 +222,22 @@ proc build*(module: Module; mode: string; outDir: string;
         common.add(if options.sanitize == "c":
           "-fsanitize=undefined" else: "-fsanitize=thread")
       if needsService: common.add(@["-I", outDir])
+      if usesVulkan:
+        common.add(@["-I", vulkanRoot, "-I", vulkanRoot / "include"])
+      if usesCrypto:
+        common.add(@["-I", blake3Root, "-DBLAKE3_NO_SSE41",
+          "-DBLAKE3_NO_AVX2", "-DBLAKE3_NO_AVX512"])
+        let target = options.target.toLowerAscii()
+        if (target.len > 0 and not (target.contains("x86_64") or
+            target.contains("amd64"))) or (target.len == 0 and not defined(amd64)):
+          common.add("-DBLAKE3_NO_SSE2")
       for path in supply.headers: common.add(@["-I", path])
+      for value in supply.defines: common.add("-D" & value)
       if needsService and selective(options, escaped.code.len > 0):
         common.add(resourceDefines(escaped.module))
+      elif needsService and usesVulkan:
+        common.add("-DFOO_SERVICE_VULKAN")
+        if usesGpu: common.add("-DFOO_SERVICE_GPU")
       for path in options.includePaths: common.add(@["-I", path])
       proc addLinkOptions(command: var string) =
         if options.target.len > 0 and (options.compiler.len == 0 or managed(compiler)) and

@@ -1,0 +1,99 @@
+use metric as meters.
+use sequence as items.
+use testing as check.
+use text as words.
+
+function invalid(bounds sequence of unsigned) giving failable boolean {
+  constant value is meters.create("invalid", "histogram", bounds) try.
+  meters.close(value) try.
+  give false.
+}
+function closed(value pointer to meters.meter) giving failable boolean {
+  meters.add(value, 1) try.
+  give false.
+}
+function denied(value pointer to meters.meter) giving failable boolean {
+  meters.set(value, 1) try.
+  give false.
+}
+function overflow(value pointer to meters.meter) giving failable boolean {
+  meters.add(value, 18446744073709551615) try.
+  give false.
+}
+function exceed(value pointer to meters.meter) giving failable boolean {
+  meters.observe(value, 18446744073709551615) try.
+  give false.
+}
+
+test "counter gauge and bounded histogram" {
+  constant empty is items.create[unsigned].
+  constant counter is meters.create("requests", "counter", empty) try.
+  check.expect(meters.value(counter) try is 0).
+  meters.add(counter, 4) try.
+  check.expect(meters.value(counter) try is 4).
+  check.expect(overflow(counter) fallback true).
+  check.expect(meters.value(counter) try is 4).
+  check.expect(denied(counter) fallback true).
+  constant name is meters.name(counter) try.
+  check.expect(name is "requests").
+  words.release(name) try.
+  meters.close(counter) try.
+  check.expect(closed(counter) fallback true).
+
+  constant gauge is meters.create("queue", "gauge", empty) try.
+  meters.set(gauge, 2) try.
+  meters.add(gauge, 3) try.
+  check.expect(meters.value(gauge) try is 5).
+  meters.close(gauge) try.
+
+  constant bounds is items.sized[unsigned](2) try.
+  after { items.release[unsigned](bounds) fallback nothing. }
+  set bounds at 0 to 10.
+  set bounds at 1 to 20.
+  constant histogram is meters.create("latency", "histogram", bounds) try.
+  meters.observe(histogram, 10) try.
+  meters.observe(histogram, 11) try.
+  meters.observe(histogram, 99) try.
+  check.expect(exceed(histogram) fallback true).
+  check.expect(meters.count(histogram) try is 3).
+  check.expect(meters.sum(histogram) try is 120).
+  check.expect(meters.bucket(histogram, 0) try is 1).
+  check.expect(meters.bucket(histogram, 1) try is 1).
+  check.expect(meters.bucket(histogram, 2) try is 1).
+  check.expect((meters.bucket(histogram, 3) fallback 99) is 99).
+  meters.close(histogram) try.
+
+  set bounds at 1 to 10.
+  check.expect(invalid(bounds) fallback true).
+}
+
+test "owned metric JSON snapshots" {
+  constant empty is items.create[unsigned].
+  constant counter is meters.create("requests", "counter", empty) try.
+  meters.add(counter, 4) try.
+  constant before is meters.export(counter) try.
+  after { words.release(before) fallback nothing. }
+  check.same(before, "{\"name\":\"requests\",\"kind\":\"counter\",\"value\":4}").
+  meters.add(counter, 1) try.
+  constant later is meters.export(counter) try.
+  after { words.release(later) fallback nothing. }
+  check.same(later, "{\"name\":\"requests\",\"kind\":\"counter\",\"value\":5}").
+  check.same(before, "{\"name\":\"requests\",\"kind\":\"counter\",\"value\":4}").
+  meters.close(counter) try.
+
+  constant bounds is items.sized[unsigned](1) try.
+  after { items.release[unsigned](bounds) fallback nothing. }
+  set bounds at 0 to 10.
+  constant histogram is meters.create("latency", "histogram", bounds) try.
+  meters.observe(histogram, 11) try.
+  constant exported is meters.export(histogram) try.
+  after { words.release(exported) fallback nothing. }
+  check.same(exported, "{\"name\":\"latency\",\"kind\":\"histogram\",\"count\":1,\"sum\":11,\"bounds\":[10],\"buckets\":[0,1]}").
+  meters.close(histogram) try.
+
+  constant quoted is meters.create("a\"b", "counter", empty) try.
+  constant escaped is meters.export(quoted) try.
+  after { words.release(escaped) fallback nothing. }
+  check.same(escaped, "{\"name\":\"a\\\"b\",\"kind\":\"counter\",\"value\":0}").
+  meters.close(quoted) try.
+}

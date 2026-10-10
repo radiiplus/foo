@@ -2,13 +2,13 @@
 
   use c "native.h".
 
-  function foo_callback(value integer 32) giving integer 32 for c {
+  function callback(value integer 32) giving integer 32 for c {
     give value plus 7.
   }
 
   start {
-    constant callback is get_c_callback.
-    constant from_c of type integer 32 is callback(5).
-    verify_callbacks(foo_callback, from_c).
+    constant routine is get_c_callback.
+    constant received of type integer 32 is routine(5).
+    verify_callbacks(callback, received).
     give nothing.
   }

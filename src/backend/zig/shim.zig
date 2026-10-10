@@ -362,29 +362,58 @@ pub fn receive(channel_handle: *TaskChannel, out: *i64) bool {
     return true;
 }
 
-const ScopedCall = struct { func: *const fn (i64) callconv(.c) void, arg: i64 };
+threadlocal var current_scope: ?*TaskScope = null;
+var task_work: std.atomic.Value(u64) = .init(0);
+var task_pending: std.atomic.Value(u64) = .init(0);
+pub fn resourceTasks() u64 { return task_work.load(.acquire); }
+pub fn resourcePending() u64 { return task_pending.load(.acquire); }
+const ScopedCall = struct { func: *const fn (i64) callconv(.c) void, arg: i64, scope: *TaskScope };
+
+fn cancelRequested(scope_handle: ?*TaskScope) bool {
+    var current = scope_handle;
+    while (current) |scope_handle_value| : (current = scope_handle_value.parent) {
+        if (scope_handle_value.cancelled.load(.acquire)) return true;
+    }
+    return false;
+}
 
 fn run_scoped(call: ScopedCall) void {
-    call.func(call.arg);
+    _ = task_pending.fetchSub(1, .acq_rel);
+    defer _ = task_work.fetchSub(1, .acq_rel);
+    const previous = current_scope;
+    current_scope = call.scope;
+    defer current_scope = previous;
+    if (!cancelRequested(current_scope)) call.func(call.arg);
 }
 
 pub const TaskScope = struct {
     lock: std.atomic.Value(u8) = .init(0),
+    cancelled: std.atomic.Value(bool) = .init(false),
+    parent: ?*TaskScope = null,
     threads: [128]?std.Thread = [_]?std.Thread{null} ** 128,
 };
 
 pub fn task_scope_init() Error!*TaskScope {
     const handle = global_arena.allocator().create(TaskScope) catch return Error.OutOfMemory;
-    handle.* = .{};
+    handle.* = .{ .parent = current_scope };
     return handle;
 }
 
 pub fn task_scope_spawn(scope_handle: *TaskScope, func: *const fn (i64) callconv(.c) void, argument: i64) bool {
     task_lock(&scope_handle.lock);
     defer task_unlock(&scope_handle.lock);
+    if (cancelRequested(scope_handle)) return false;
     for (&scope_handle.threads) |*slot| {
         if (slot.* == null) {
-            slot.* = std.Thread.spawn(.{}, run_scoped, .{ScopedCall{ .func = func, .arg = argument }}) catch return false;
+            _ = task_work.fetchAdd(1, .release);
+            _ = task_pending.fetchAdd(1, .release);
+            slot.* = std.Thread.spawn(.{}, run_scoped, .{ScopedCall{
+                .func = func, .arg = argument, .scope = scope_handle,
+            }}) catch {
+                _ = task_pending.fetchSub(1, .acq_rel);
+                _ = task_work.fetchSub(1, .acq_rel);
+                return false;
+            };
             return true;
         }
     }
@@ -416,6 +445,15 @@ pub fn launch(scope_handle: *TaskScope, callback: *const fn (i64) callconv(.c) v
 pub fn join(scope_handle: *TaskScope) void {
     task_scope_join(scope_handle);
 }
+pub fn cancel(scope_handle: *TaskScope) Error!void {
+    scope_handle.cancelled.store(true, .release);
+}
+pub fn interrupt(pool_handle: *TaskPool) Error!void {
+    pool_handle.cancelled.store(true, .release);
+}
+pub fn cancelled() bool {
+    return cancelRequested(current_scope);
+}
 
 pub const TaskPool = TaskScope;
 pub fn task_pool_init() Error!*TaskPool {
@@ -437,17 +475,12 @@ pub fn wait(pool_handle: *TaskPool) void {
     task_pool_join(pool_handle);
 }
 
-pub fn task_set_affinity(index: usize) bool {
-    const count = std.Thread.getCpuCount() catch return false;
-    return index < count;
-}
-
 pub fn task_set_thread_name(name_ptr: [*:0]const u8) bool {
     _ = name_ptr;
     return true;
 }
 pub fn affinity(cpu: u64) bool {
-    return task_set_affinity(cpu);
+    return @import("service.zig").call("task", "affinity", bool, .{cpu});
 }
 pub fn label(name_value: []const u8) bool {
     _ = name_value;

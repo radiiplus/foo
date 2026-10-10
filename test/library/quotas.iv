@@ -1,0 +1,16 @@
+use limit as quotas.
+use testing as check.
+
+test "process limit query and unchanged soft update" {
+  check.expect(not quotas.available("unknown")).
+  check.expect((quotas.soft("unknown") fallback 123) is 123).
+  when quotas.available("files") {
+    constant soft is quotas.soft("files") try.
+    constant hard is quotas.hard("files") try.
+    check.expect(soft less than or equal to hard).
+    quotas.set("files", soft) try.
+    check.expect(quotas.soft("files") try is soft).
+  } otherwise {
+    check.expect((quotas.soft("files") fallback 123) is 123).
+  }
+}

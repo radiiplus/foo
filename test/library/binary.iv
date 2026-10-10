@@ -1,0 +1,63 @@
+use binary as wire.
+use sequence as items.
+use testing as check.
+
+test "canonical variable integers" {
+  constant empty is items.create[byte].
+  constant zero is wire.encode(0) try.
+  constant edge is wire.encode(128) try.
+  constant maximum is wire.encode(18446744073709551615) try.
+  after {
+    items.release[byte](zero) fallback nothing.
+    items.release[byte](edge) fallback nothing.
+    items.release[byte](maximum) fallback nothing.
+  }
+  check.expect(items.length[byte](zero) is 1 and zero at 0 is 0).
+  check.expect(items.length[byte](edge) is 2 and edge at 0 is 128 and edge at 1 is 1).
+  constant parsed is wire.decode(edge, 0) try.
+  check.expect(parsed.value is 128 and parsed.next is 2).
+  constant largest is wire.decode(maximum, 0) try.
+  check.expect(largest.value is 18446744073709551615 and largest.next is 10).
+  constant shifted is items.sized[byte](3) try.
+  after { items.release[byte](shifted) fallback nothing. }
+  set shifted at 0 to 99.
+  set shifted at 1 to 128.
+  set shifted at 2 to 1.
+  constant following is wire.decode(shifted, 1) try.
+  check.expect(following.value is 128 and following.next is 3).
+  check.expect((wire.decode(empty, 0) fallback wire.decoded(7, 7)).value is 7).
+  constant bad is items.sized[byte](2) try.
+  after { items.release[byte](bad) fallback nothing. }
+  set bad at 0 to 128.
+  set bad at 1 to 0.
+  check.expect((wire.decode(bad, 0) fallback wire.decoded(7, 7)).value is 7).
+  constant overflow is items.sized[byte](10) try.
+  after { items.release[byte](overflow) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than 9 {
+    set overflow at index to 255.
+    increase index by 1.
+  }
+  set overflow at 9 to 2.
+  check.expect((wire.decode(overflow, 0) fallback wire.decoded(7, 7)).value is 7).
+}
+
+test "fixed endian integers" {
+  constant little is wire.fixed(4660, 2, "little") try.
+  constant big is wire.fixed(4660, 2, "big") try.
+  after {
+    items.release[byte](little) fallback nothing.
+    items.release[byte](big) fallback nothing.
+  }
+  check.expect(little at 0 is 52 and little at 1 is 18).
+  check.expect(big at 0 is 18 and big at 1 is 52).
+  check.expect(wire.parse(little, 0, 2, "little") try is 4660).
+  check.expect(wire.parse(big, 0, 2, "big") try is 4660).
+  constant full is wire.fixed(18446744073709551615, 8, "little") try.
+  after { items.release[byte](full) fallback nothing. }
+  check.expect(wire.parse(full, 0, 8, "little") try is 18446744073709551615).
+  constant misplaced is wire.parse(big, 1, 2, "big") fallback 99.
+  check.expect(misplaced is 99).
+  constant invalid is wire.fixed(256, 1, "big") fallback items.create[byte].
+  check.expect(items.length[byte](invalid) is 0).
+}

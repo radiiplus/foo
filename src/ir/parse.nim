@@ -246,7 +246,9 @@ proc typeFromJson(node: JsonNode; types: Table[string, `Type`]): `Type` =
     of "trace": TypeKind.Trace
     else: raise newException(ValueError, "Unknown type kind '" & kind & "'")
   result = `Type`(kind: resultKind, name: node.jsonString("name"),
-    width: node.jsonInt("bits"), abi: node.jsonString("abi"),
+    width: (if resultKind in {TypeKind.Array, TypeKind.Vector}:
+      node.jsonInt("width") else: node.jsonInt("bits")),
+    abi: node.jsonString("abi"),
     volatile: node.jsonBool("volatile"), constant: node.jsonBool("constant"))
   if node.hasKey("attributes"):
     for attribute in node["attributes"]: result.attributes.add(attribute.getStr)

@@ -1,30 +1,30 @@
 -- Stores typed values in last-in, first-out order.
 use sequence as items.
-public define Stack[T] as record {
+public define stack[T] as record {
   values of type sequence of T.
 }.
-public function create[T] giving Stack[T] {
-  give Stack[T](items.create[T]).
+public function create[T] giving stack[T] {
+  give stack[T](items.create[T]).
 }
-public function length[T](collection Stack[T]) giving unsigned {
+public function length[T](collection stack[T]) giving unsigned {
   give items.length[T](collection.values).
 }
-public function push[T](collection Stack[T], value T) giving failable Stack[T] {
-  give Stack[T](items.append[T](collection.values, value) try).
+public function push[T](collection stack[T], value T) giving failable stack[T] {
+  give stack[T](items.append[T](collection.values, value) try).
 }
-public function top[T](collection Stack[T]) giving failable T {
+public function top[T](collection stack[T]) giving failable T {
   when length[T](collection) is 0 {
-    give fail(Error.EmptyCollection).
+    give fail(Error.Empty).
   }
   give collection.values at (length[T](collection) subtract 1).
 }
-public function remove[T](collection Stack[T]) giving failable Stack[T] {
+public function remove[T](collection stack[T]) giving failable stack[T] {
   when length[T](collection) is 0 {
-    give fail(Error.EmptyCollection).
+    give fail(Error.Empty).
   }
-  give Stack[T](items.remove[T](collection.values, length[T](collection) subtract 1) try).
+  give stack[T](items.remove[T](collection.values, length[T](collection) subtract 1) try).
 }
-public function release[T](collection Stack[T]) giving failable nothing {
+public function release[T](collection stack[T]) giving failable nothing {
   items.release[T](collection.values) try.
   give nothing.
 }

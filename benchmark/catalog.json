@@ -46,5 +46,16 @@
   "runtime": {
     "purpose": "Standard runtime and one hosted query baseline",
     "work": "Runtime initialization, one core-count query, validation, and shutdown"
+  },
+  "returned": {
+    "purpose": "Owned sequence return and caller release cost",
+    "work": "128 function returns of independently owned 10,000-element unsigned sequences, full checksums, and releases",
+    "metricBudget": {
+      "allocations": 128,
+      "allocatedBytes": 10240000,
+      "bytesCopied": 0,
+      "peakBytes": 80000,
+      "liveBytes": 0
+    }
   }
 }

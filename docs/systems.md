@@ -14,8 +14,8 @@ failable value and therefore need postfix `try` or a deliberate `fallback`.
 
 ### Reading a File
 `file.read` reads an entire file into `text`. Use it when the file is expected
-to contain UTF-8. For arbitrary binary data, `readbytes` returns a length-aware
-`sequence of byte`; release that owned result with `releasebytes`.
+to contain UTF-8. For arbitrary binary data, `load` returns a length-aware
+`sequence of byte`; release that owned result with `file.release`.
 ```foo
 use file.
 
@@ -38,9 +38,9 @@ Binary files use the same high-level shape without hex encoding:
 ```foo
 use file.
 
-constant content is file.readbytes("input.bin") try.
-after { file.releasebytes(content) fallback nothing. }
-file.writebytes("copy.bin", content) try.
+constant content is file.load("input.bin") try.
+after { file.release(content) fallback nothing. }
+file.save("copy.bin", content) try.
 display "Copied bytes".
 ```
 
@@ -82,6 +82,13 @@ physically removes a file; a missing path fails. If `replace` fails, inspect the
 destination before retrying: the atomic rename may have completed before the
 directory durability request failed.
 
+`file.temporary(directory, prefix)` exclusively creates an empty file in the
+destination directory and returns its owned path. `file.metadata(path)` returns
+a snapshot of type, size, read-only status, and file times; `file.walk(path)` yields
+relative paths recursively without descending through links. In tests,
+`testing.fault` can inject a one-shot partial write or a sync or replace error
+for the current thread; `testing.clear` removes a pending fault.
+
 ---
 
 ## 2. Networking (The `net` Module)
@@ -110,6 +117,35 @@ constant response is network.receive(socket, 1024) try.
 display response.
 ```
 
+`net.address(host, port)` groups an endpoint for `dial`, `serve`, and UDP
+`deliver`. `net.resolve(host, port, family)` resolves the first numeric address;
+`family` is `"any"`, `"ipv4"`, or `"ipv6"`. Release the returned endpoint's
+owned `host` with `text.release` when finished.
+
+For datagrams, `net.bind(host, port)` opens a UDP socket and `net.local` reads
+its assigned port. `deliver` accepts a read-only byte sequence. `capture`
+returns a packet with borrowed `payload` bytes and `sender` text plus a
+`origin` port; `discard` releases the packet and invalidates both views.
+`dispose` closes the socket. A zero-length packet is valid. Receiving a packet
+larger than the requested size fails and consumes that packet.
+
+`ipv4` and `ipv6` parse numeric addresses into fixed-width values; `socket4`
+and `socket6` pair them with ports. `scoped6` also sets the IPv6 interface scope.
+Use `dial4`/`dial6` or `serve4`/`serve6` for typed TCP endpoints, and
+`send4`/`send6` for typed UDP destinations. `sender4` and `sender6` extract a
+typed endpoint from a received packet; the wrong address family fails.
+`connect4` and `connect6` associate a bound UDP socket with one peer, after
+which `emit` sends whole datagrams to that peer. `capture` still
+returns its sender. `broadcast`, `join4`/`leave4`, `join6`/`leave6`, and the
+multicast interface, hop, and loop controls configure UDP delivery.
+
+`dns.query(host, kind)` queries A, AAAA, CNAME, NS, PTR, MX, SRV, or TXT records.
+TXT character strings within a record are concatenated into text of at most
+511 bytes; longer records are omitted. `dns.count/name/data/kind/ttl` inspect the owned result; names and data borrow
+it until `dns.close`. `adapter.scan` and `route.scan` return owned snapshots of
+interface addresses, indices, MTUs, and routing entries. Close each snapshot
+with its module's `close`.
+
 ---
 
 ## 3. Running Programs (The `process` Module)
@@ -118,21 +154,28 @@ Sometimes you need to run an external command, like a database tool or a system
 utility. Prefer direct execution so arguments never become shell syntax.
 
 ```foo
-use process.
+use process as jobs.
 use sequence as sequences.
 use text.
 
 constant empty is sequences.create[text].
 constant arguments is sequences.append[text](empty, "example.com") try.
 after { sequences.release[text](arguments) fallback nothing. }
-constant status is process.execute("ping", arguments) try.
+constant status is jobs.execute("ping", arguments) try.
 
-when process.count greater than 0 {
-  constant first is process.argument(0) try.
+when jobs.count greater than 0 {
+  constant first is jobs.argument(0) try.
   after { text.release(first) fallback nothing. }
   display first.
 }
 ```
+
+`jobs.pipe` launches a child with separate standard input, output, and error
+pipes. `jobs.write` accepts binary bytes and reports how many were accepted;
+`jobs.seal` signals end of input. Read at most 16 MiB per `jobs.read` call from
+`"output"` or `"error"`, then free each returned byte sequence with
+`jobs.release`. Drain both output streams when the child can write to both,
+and close its handle with `jobs.close` after waiting or when abandoning it.
 
 Use `process.run` only when shell interpretation is intentional.
 

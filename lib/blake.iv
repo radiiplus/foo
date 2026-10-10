@@ -1,0 +1,30 @@
+-- BLAKE3 digests arbitrary bytes and supports incremental input.
+public define hasher as opaque.
+use "crypto" function blake(value sequence of constant byte) giving failable sequence of byte.
+use "crypto" function fingerprint(value sequence of constant byte) giving failable text.
+use "crypto" function initiate giving failable pointer to hasher.
+use "crypto" function append(state pointer to hasher, value sequence of constant byte) giving failable nothing.
+use "crypto" function extract(state pointer to hasher) giving failable sequence of byte.
+use "crypto" function render(state pointer to hasher) giving failable text.
+use "crypto" function retire(state pointer to hasher) giving nothing.
+public function digest(value sequence of constant byte) giving failable sequence of byte {
+  give blake(value) try.
+}
+public function hex(value sequence of constant byte) giving failable text {
+  give fingerprint(value) try.
+}
+public function begin giving failable pointer to hasher {
+  give initiate try.
+}
+public function update(state pointer to hasher, value sequence of constant byte) giving failable nothing {
+  append(state, value) try.
+}
+public function result(state pointer to hasher) giving failable sequence of byte {
+  give extract(state) try.
+}
+public function finalize(state pointer to hasher) giving failable text {
+  give render(state) try.
+}
+public function close(state pointer to hasher) giving nothing releasing state {
+  retire(state).
+}

@@ -1,0 +1,123 @@
+use matrix as grid.
+use tensor as cells.
+use sequence as items.
+use testing as check.
+
+function invalid(value cells.tensor, axis unsigned) giving failable boolean {
+  constant result is cells.sum(value, axis) try.
+  cells.release(result) try.
+  give false.
+}
+
+test "matrix row sums preserve rectangular shape" {
+  dynamic source is grid.create(2, 3) try.
+  after { grid.release(source) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic amount of type decimal is 1.0.
+  while index less than 6 {
+    set source.values at index to amount.
+    increase index by 1.
+    set amount to amount plus 1.0.
+  }
+  constant result is grid.sum(source, "row") try.
+  after { items.release[decimal](result) fallback nothing. }
+  check.number(items.length[decimal](result), 2).
+  check.real(result at 0, 6.0).
+  check.real(result at 1, 15.0).
+  set result at 0 to 99.0.
+  check.real(source.values at 0, 1.0).
+  constant empty is grid.create(2, 0) try.
+  after { grid.release(empty) fallback nothing. }
+  constant zero is grid.sum(empty, "row") try.
+  after { items.release[decimal](zero) fallback nothing. }
+  check.number(items.length[decimal](zero), 2).
+  check.real(zero at 0, 0.0).
+  check.real(zero at 1, 0.0).
+}
+
+test "matrix column sums preserve rectangular shape" {
+  dynamic source is grid.create(2, 3) try.
+  after { grid.release(source) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic amount of type decimal is 1.0.
+  while index less than 6 {
+    set source.values at index to amount.
+    increase index by 1.
+    set amount to amount plus 1.0.
+  }
+  constant result is grid.sum(source, "column") try.
+  after { items.release[decimal](result) fallback nothing. }
+  check.number(items.length[decimal](result), 3).
+  check.real(result at 0, 5.0).
+  check.real(result at 1, 7.0).
+  check.real(result at 2, 9.0).
+  set result at 0 to 99.0.
+  check.real(source.values at 0, 1.0).
+  constant empty is grid.create(0, 3) try.
+  after { grid.release(empty) fallback nothing. }
+  constant zero is grid.sum(empty, "column") try.
+  after { items.release[decimal](zero) fallback nothing. }
+  check.number(items.length[decimal](zero), 3).
+  check.real(zero at 0, 0.0).
+  check.real(zero at 2, 0.0).
+}
+
+test "tensor axis sums remove the chosen dimension" {
+  dynamic shape is items.sized[unsigned](3) try.
+  after { items.release[unsigned](shape) fallback nothing. }
+  set shape at 0 to 2.
+  set shape at 1 to 2.
+  set shape at 2 to 3.
+  dynamic source is cells.create(shape) try.
+  after { cells.release(source) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic amount of type decimal is 1.0.
+  while index less than 12 {
+    set source.values at index to amount.
+    increase index by 1.
+    set amount to amount plus 1.0.
+  }
+  dynamic middle is cells.sum(source, 1) try.
+  after { cells.release(middle) fallback nothing. }
+  check.number(cells.rank(middle), 2).
+  check.number(middle.shape at 0, 2).
+  check.number(middle.shape at 1, 3).
+  check.real(middle.values at 0, 5.0).
+  check.real(middle.values at 2, 9.0).
+  check.real(middle.values at 3, 17.0).
+  check.real(middle.values at 5, 21.0).
+  set middle.values at 0 to 99.0.
+  check.real(source.values at 0, 1.0).
+  constant last is cells.sum(source, 2) try.
+  after { cells.release(last) fallback nothing. }
+  check.number(last.shape at 0, 2).
+  check.number(last.shape at 1, 2).
+  check.real(last.values at 0, 6.0).
+  check.real(last.values at 3, 33.0).
+  constant first is cells.sum(source, 0) try.
+  after { cells.release(first) fallback nothing. }
+  check.real(first.values at 0, 8.0).
+  check.real(first.values at 5, 18.0).
+  check.expect(invalid(source, 3) fallback true).
+
+  dynamic dimensions is items.sized[unsigned](1) try.
+  after { items.release[unsigned](dimensions) fallback nothing. }
+  set dimensions at 0 to 3.
+  dynamic series is cells.create(dimensions) try.
+  after { cells.release(series) fallback nothing. }
+  set series.values at 0 to 2.0.
+  set series.values at 1 to 3.0.
+  set series.values at 2 to 4.0.
+  constant scalar is cells.sum(series, 0) try.
+  after { cells.release(scalar) fallback nothing. }
+  check.number(cells.rank(scalar), 0).
+  check.real(scalar.values at 0, 9.0).
+
+  set dimensions at 0 to 0.
+  constant blank is cells.create(dimensions) try.
+  after { cells.release(blank) fallback nothing. }
+  constant zero is cells.sum(blank, 0) try.
+  after { cells.release(zero) fallback nothing. }
+  check.number(cells.rank(zero), 0).
+  check.real(zero.values at 0, 0.0).
+}

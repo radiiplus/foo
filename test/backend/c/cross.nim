@@ -1,4 +1,4 @@
-import std/[os, strutils]
+import std/[os, osproc]
 import ../../../src/backend/c/driver
 import ../../../src/ir/node
 import ../../../src/ir/kind
@@ -43,5 +43,16 @@ for platform in [
   let bytes = readFile(result.artifact)
   doAssert bytes[0 .. 3] == "\x7fELF"
   doAssert ord(bytes[18]) + ord(bytes[19]) * 256 == platform.machine
+
+let service = output & "-service.o"
+let source = "src" / "backend" / "native" / "service.c"
+let checked = execCmdEx(quoteShell(compiler) &
+  " cc -target aarch64-linux-musl -std=c11 -DFOO_SERVICE_SELECTIVE" &
+  " -I " & quoteShell("src" / "backend" / "native") &
+  " -c " & quoteShell(source) & " -o " & quoteShell(service))
+doAssert checked.exitCode == 0, checked.output
+let artifact = readFile(service)
+doAssert artifact[0 .. 3] == "\x7fELF"
+doAssert ord(artifact[18]) + ord(artifact[19]) * 256 == 183
 
 echo "C cross-target parity: ok"

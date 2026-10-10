@@ -142,8 +142,9 @@ FOO uses a build planner (the component that orders build work) and two cache
 levels. The project cache reuses a whole
 artifact (generated build output) only when the project, backend, target, CPU,
 options, and compiler
-inputs still match. Zig's shared cache can reuse lower-level backend work across
-projects. A changed input invalidates the affected cache identity; FOO does not
+inputs still match. Zig's project-local cache reuses lower-level backend work;
+set `FOO_CACHE_HOME` or `ZIG_GLOBAL_CACHE_DIR` to share it across projects.
+A changed input invalidates the affected cache identity; FOO does not
 claim source-file incremental linking (rejoining only changed compiled pieces)
 where the backend cannot provide it.
 

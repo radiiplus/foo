@@ -85,6 +85,9 @@ proc printInstr(instruction: Instruction): string =
     var mask: seq[string]
     for lane in instruction.mask: mask.add($lane)
     dest & "shuffle " & valueStr(instruction.val) & ", " & valueStr(instruction.val2) & ", " & mask.join(", ")
+  of InstrKind.Gather: dest & "gather " & valueStr(instruction.val) & ", " & valueStr(instruction.val2)
+  of InstrKind.Scatter: dest & "scatter " & valueStr(instruction.val) & ", " &
+    valueStr(instruction.val2) & ", " & valueStr(instruction.args[0])
   of InstrKind.Select: dest & "select " & valueStr(instruction.cond) & ", " & valueStr(instruction.val) & ", " & valueStr(instruction.val2)
   of InstrKind.Reduce: dest & "reduce " & instruction.reduceOp.toLowerAscii & ", " & valueStr(instruction.val)
   else: dest & operations[instruction.kind.ord]
@@ -129,6 +132,8 @@ proc encode*(module: Module): string =
     if value.name.len > 0: definition["name"] = %value.name
     if value.kind in {TypeKind.Int, TypeKind.Uint, TypeKind.Float}:
       definition["bits"] = %(if value.width > 0: value.width elif value.kind == TypeKind.Float: 64 else: 32)
+    if value.kind in {TypeKind.Array, TypeKind.Vector}:
+      definition["width"] = %value.width
     if value.kind in {TypeKind.Int, TypeKind.Uint}: definition["signed"] = %(value.kind == TypeKind.Int)
     if value.kind == TypeKind.ExternStruct: definition["layout"] = %"c"
     if value.abi.len > 0: definition["abi"] = %value.abi

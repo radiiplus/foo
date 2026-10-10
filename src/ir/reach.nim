@@ -17,7 +17,7 @@ proc reach*(input: Module; library = false): Module =
   var roots = initHashSet[string]()
   for fn in result.funcs:
     if fn.name == "main" or "start" in fn.attributes or
-        "interrupt" in fn.attributes or fn.abi.len > 0 or
+        "interrupt" in fn.attributes or (fn.abi.len > 0 and fn.abi != "gpu") or
         (library and fn.public):
       roots.incl(fn.name)
       pending.add(fn.name)

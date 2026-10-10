@@ -1,26 +1,26 @@
 -- Defines explicit, state-carrying iteration for user-defined sources.
-public define Step[T, S] as record {
+public define step[T, S] as record {
   finished of type boolean.
   value of type optional T.
   state of type S.
 }.
-public define Cursor[T, S] as record {
+public define cursor[T, S] as record {
   state of type S.
-  pull of type function taking (S) giving failable Step[T, S].
+  pull of type function taking (S) giving failable step[T, S].
 }.
-public function create[T, S](state S, pull function taking (S) giving failable Step[T, S]) giving Cursor[T, S] {
-  give Cursor[T, S](state, pull).
+public function create[T, S](state S, pull function taking (S) giving failable step[T, S]) giving cursor[T, S] {
+  give cursor[T, S](state, pull).
 }
-public function next[T, S](cursor Cursor[T, S]) giving failable Step[T, S] {
-  constant pull is cursor.pull.
-  give pull(cursor.state) try.
+public function next[T, S](source cursor[T, S]) giving failable step[T, S] {
+  constant pull is source.pull.
+  give pull(source.state) try.
 }
-public function item[T, S](value T, state S) giving Step[T, S] {
-  give Step[T, S](false, value, state).
+public function item[T, S](value T, state S) giving step[T, S] {
+  give step[T, S](false, value, state).
 }
-public function done[T, S](state S) giving Step[T, S] {
-  give Step[T, S](true, null, state).
+public function done[T, S](state S) giving step[T, S] {
+  give step[T, S](true, null, state).
 }
-public function move[T, S](cursor Cursor[T, S], state S) giving Cursor[T, S] {
-  give Cursor[T, S](state, cursor.pull).
+public function move[T, S](source cursor[T, S], state S) giving cursor[T, S] {
+  give cursor[T, S](state, source.pull).
 }

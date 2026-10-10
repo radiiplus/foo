@@ -24,6 +24,7 @@ GITHUB_TOKEN
 GITHUB_REPOSITORY=radiiplus/foo.registry
 GITHUB_BRANCH=main
 REGISTRY_SOURCE=https://raw.githubusercontent.com/radiiplus/foo.registry/main
+FOO_SOURCE=https://raw.githubusercontent.com/radiiplus/foo/main
 ```
 
 `GITHUB_TOKEN` is the server credential for the registry repository and requires repository Contents write permission. It is never supplied by a publishing user.
@@ -62,6 +63,7 @@ The deploy script uses Supabase's server-side bundler, so deployment does not re
     "dependencies": []
   },
   "documentation": ["At least 100 non-empty lines"],
+  "icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path d=\"M 0 0 L 24 24\"/></svg>",
   "source": {
     "format": "foo.source/v1",
     "digest": "server-recomputed-sha256",
@@ -89,6 +91,6 @@ Unscoped names have one owner. When another publisher already owns the same pack
 
 ## Discovery
 
-`GET /search`, `/package/:name`, `/category/:category`, `/tag/:tag`, and `/resolve/:package` read only the generated Git index and canonical package records. Responses include schema identifiers, the registry revision, complete metadata, deterministic ordering, pagination, and category/tag facets. No discovery state is stored by the function.
+`GET /search`, `/package/:name`, `/category/:category`, `/tag/:tag`, and `/resolve/:package` merge the community Git index with FOO's generated standard catalog. Bundled `lib/*` modules are read from FOO; published packages remain in `foo.registry`. Responses include schema identifiers, both source revisions, complete metadata, deterministic ordering, pagination, and category/tag facets. The function caches the merged catalog for one minute.
 
 The registry repository must contain an initial commit before deployment. Apply the Patch 1 foundation files to `radiiplus/foo.registry` first.

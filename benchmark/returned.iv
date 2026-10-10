@@ -1,0 +1,31 @@
+-- Audits the cost of returning an owned sequence to a caller.
+use sequence as items.
+use testing as check.
+
+function make(seed unsigned) giving failable sequence of unsigned {
+  constant values is items.sized[unsigned](10`000) try.
+  dynamic index of type unsigned is 0.
+  while index less than 10`000 {
+    set values at index to index plus seed.
+    increase index by 1.
+  }
+  give values.
+}
+
+function consume(seed unsigned) giving failable unsigned {
+  constant values is make(seed) try.
+  after { items.release[unsigned](values) fallback nothing. }
+  dynamic checksum of type unsigned is 0.
+  for each value in values {
+    set checksum to checksum plus value.
+  }
+  give checksum.
+}
+
+dynamic checksum of type unsigned is 0.
+dynamic seed of type unsigned is 0.
+while seed less than 128 {
+  set checksum to checksum plus consume(seed) try.
+  increase seed by 1.
+}
+check.number(checksum, 6`480`640`000).

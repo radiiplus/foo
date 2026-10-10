@@ -11,5 +11,8 @@
   "devDependencies": {
     "deno": "^2.9.6",
     "supabase": "^2.117.0"
+  },
+  "dependencies": {
+    "saxes": "6.0.0"
   }
 }

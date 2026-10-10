@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, test } from "node:test";
@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 import { createLocalDeprecator, createLocalPublisher } from "../local.ts";
 import { handleRequest } from "../serverless/supabase/functions/_shared/handler.ts";
 import { registryOwner } from "../serverless/supabase/functions/_shared/identity.ts";
+import { buildIndexes } from "../serverless/supabase/functions/_shared/indexer.ts";
 
 process.env.OWNERSHIP_SECRET = "test-ownership-secret-with-at-least-32-characters";
 
@@ -23,6 +24,9 @@ test("an authenticated publication creates a registry commit", async () => {
   const repository = await mkdtemp(join(tmpdir(), "foo-publication-"));
   temporary.push(repository);
   await cp(resolve("repository"), repository, { recursive: true });
+  const empty = await buildIndexes([]);
+  await mkdir(join(repository, "indexes"), { recursive: true });
+  for (const [path, content] of empty.files) await writeFile(join(repository, ...path.split("/")), content);
   await git(repository, "init", "-b", "main");
   await git(repository, "config", "user.name", "foo-registry-test");
   await git(repository, "config", "user.email", "foo-registry-test@example.invalid");
@@ -34,7 +38,7 @@ test("an authenticated publication creates a registry commit", async () => {
   const publishRequest = new Request("http://localhost/functions/v1/registry/publish", {
     method: "POST",
     headers: { authorization: "Bearer valid-github-token", "content-type": "application/json" },
-    body: JSON.stringify(submission("foo-lines", "Documentation")),
+    body: JSON.stringify({ ...submission("foo-lines", "Documentation"), icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#123456" d="M 0 0 L 24 24"/></svg>' }),
   });
   const response = await handleRequest(publishRequest, createLocalPublisher(repository), async (incoming) => {
     assert.equal(incoming.headers.get("authorization"), "Bearer valid-github-token");
@@ -53,11 +57,14 @@ test("an authenticated publication creates a registry commit", async () => {
   assert.equal(stored.revision, "0123456789abcdef0123456789abcdef01234567");
   assert.equal(stored.readme.length, 100);
   assert.equal(stored.kind, "package");
+  assert.equal(stored.icon, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#123456" d="M 0 0 L 24 24"></path></svg>');
   assert.equal(stored.api.modules[0].items[0].name, "answer");
   assert.match(await readFile(join(repository, "packages", "foo-lines", "1.0.0", "README.md"), "utf8"), /Documentation line 100/);
   assert.equal(await readFile(join(repository, "packages", "foo-lines", "1.0.0", "source", "src", "main.iv"), "utf8"), "public constant answer is 42.\n");
   const manifest = JSON.parse(await readFile(join(repository, "indexes", "index.json"), "utf8"));
   assert.equal(manifest.count, foundation.count + 1);
+  const shard = await readFile(join(repository, manifest.shards[0].path), "utf8");
+  assert.match(shard, /"icon":"<svg xmlns=/);
 
   const duplicate = await handleRequest(request(submission("foo-lines", "Documentation")), createLocalPublisher(repository), async () => ({ id: 152736140, login: "radiiplus" }));
   assert.equal(duplicate.status, 409);
@@ -87,6 +94,22 @@ test("an authenticated publication creates a registry commit", async () => {
   const deprecated = JSON.parse(await readFile(join(repository, "packages", "foo-lines", "1.0.0.json"), "utf8"));
   assert.equal(deprecated.deprecated, "Use 1.1.0 instead.");
   assert.equal(await git(repository, "log", "-1", "--pretty=%s"), "deprecate foo-lines@1.0.0");
+});
+
+test("publication rejects executable and external SVG content", async () => {
+  for (const svg of [
+    '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><path d="M0 0"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://example.com/a"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><path style="fill:url(https://example.com/a)" d="M0 0"/></svg>',
+    '<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject><p>unsafe</p></foreignObject></svg>',
+  ]) {
+    const response = await handleRequest(request({ ...submission("foo-icon", "Documentation"), icon: svg }),
+      async () => { throw new Error("Invalid icon reached publisher"); }, async () => ({ id: 1, login: "user" }));
+    assert.equal(response.status, 400, svg);
+    assert.match((await response.json() as { error: string }).error, /Icon/);
+  }
 });
 
 test("publication rejects owner fields and short documentation", async () => {

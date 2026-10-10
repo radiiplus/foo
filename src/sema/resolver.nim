@@ -139,7 +139,7 @@ proc expression(resolver: Resolver; node: ast.Expression; target: Scope;
   of "call":
     let call = ast.Call(node)
     for typ in call.types: resolver.resolveType(typ, target, moduleName)
-    if call.callee.tag != "name" or ast.Name(call.callee).text notin ["splat", "shuffle", "select", "reduce", "fail"]:
+    if call.callee.tag != "name" or ast.Name(call.callee).text notin ["splat", "shuffle", "permute", "gather", "scatter", "select", "reduce", "fail"]:
       resolver.expression(call.callee, target, moduleName)
     for argument in call.args: resolver.expression(argument, target, moduleName)
   of "sequence-value":
@@ -204,7 +204,10 @@ proc declare(resolver: Resolver; node: ast.Statement; target: Scope;
   of "function":
     let declaration = ast.Function(node)
     for attribute in declaration.attributes:
-      if attribute notin ["start", "interrupt", "naked", "noinline"] and not attribute.startsWith("target_feature(\""):
+      if attribute notin ["start", "interrupt", "naked", "noinline"] and
+          not attribute.startsWith("target_feature(\"") and
+          not attribute.startsWith("borrows(") and
+          not attribute.startsWith("releases("):
         resolver.diag.emit(Code.Invalid, node.span,
           "unknown function option '" & attribute & "'")
     if "start" in declaration.attributes and declaration.params.len > 0:

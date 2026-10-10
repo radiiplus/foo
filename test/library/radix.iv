@@ -1,0 +1,111 @@
+use radix as digits.
+use sequence as items.
+use testing as check.
+
+test "stable unsigned radix order" {
+  constant empty is items.create[unsigned].
+  constant blank is digits.sort(empty) try.
+  check.expect(items.length[unsigned](blank) is 0).
+  items.release[unsigned](blank) try.
+
+  constant source is items.sized[unsigned](9) try.
+  after { items.release[unsigned](source) fallback nothing. }
+  set source at 0 to 256.
+  set source at 1 to 18446744073709551615.
+  set source at 2 to 1.
+  set source at 3 to 9223372036854775808.
+  set source at 4 to 255.
+  set source at 5 to 0.
+  set source at 6 to 256.
+  set source at 7 to 65536.
+  set source at 8 to 2.
+  constant sorted is digits.sort(source) try.
+  after { items.release[unsigned](sorted) fallback nothing. }
+  check.expect(sorted at 0 is 0).
+  check.expect(sorted at 1 is 1).
+  check.expect(sorted at 2 is 2).
+  check.expect(sorted at 3 is 255).
+  check.expect(sorted at 4 is 256 and sorted at 5 is 256).
+  check.expect(sorted at 6 is 65536).
+  check.expect(sorted at 7 is 9223372036854775808).
+  check.expect(sorted at 8 is 18446744073709551615).
+  check.expect(source at 0 is 256 and source at 1 is 18446744073709551615).
+}
+
+test "signed radix order includes limits and negative byte boundaries" {
+  constant empty is items.create[integer].
+  constant blank is digits.signed(empty) try.
+  check.expect(items.length[integer](blank) is 0).
+  items.release[integer](blank) try.
+  constant source is items.sized[integer](12) try.
+  after { items.release[integer](source) fallback nothing. }
+  set source at 0 to 256.
+  set source at 1 to (0 subtract 9223372036854775807) subtract 1.
+  set source at 2 to 0 subtract 257.
+  set source at 3 to 9223372036854775807.
+  set source at 4 to 0 subtract 1.
+  set source at 5 to 0.
+  set source at 6 to 0 subtract 256.
+  set source at 7 to 255.
+  set source at 8 to 0 subtract 257.
+  set source at 9 to 1.
+  set source at 10 to 0 subtract 65537.
+  set source at 11 to 65536.
+  constant sorted is digits.signed(source) try.
+  after { items.release[integer](sorted) fallback nothing. }
+  constant reference is items.sort[integer](source) try.
+  after { items.release[integer](reference) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than 12 {
+    check.expect(sorted at index is reference at index).
+    increase index by 1.
+  }
+  check.expect(sorted at 0 is (0 subtract 9223372036854775807) subtract 1).
+  check.expect(sorted at 1 is 0 subtract 65537).
+  check.expect(sorted at 2 is 0 subtract 257 and sorted at 3 is 0 subtract 257).
+  check.expect(sorted at 11 is 9223372036854775807).
+  check.expect(source at 0 is 256).
+
+  constant many is items.sized[integer](513) try.
+  after { items.release[integer](many) fallback nothing. }
+  dynamic value of type integer is 256.
+  set index to 0.
+  while index less than 513 {
+    set many at index to value.
+    set value to value subtract 1.
+    increase index by 1.
+  }
+  constant ordered is digits.signed(many) try.
+  after { items.release[integer](ordered) fallback nothing. }
+  check.expect(ordered at 0 is 0 subtract 256).
+  check.expect(ordered at 512 is 256).
+  set index to 1.
+  while index less than 513 {
+    check.expect((ordered at index) greater than or equal to (ordered at (index subtract 1))).
+    increase index by 1.
+  }
+}
+
+test "unsigned radix stops after the highest occupied byte" {
+  constant source is items.sized[unsigned](8) try.
+  after { items.release[unsigned](source) fallback nothing. }
+  set source at 0 to 1000000.
+  set source at 1 to 256.
+  set source at 2 to 0.
+  set source at 3 to 65536.
+  set source at 4 to 255.
+  set source at 5 to 1.
+  set source at 6 to 65535.
+  set source at 7 to 0.
+  constant sorted is digits.sort(source) try.
+  after { items.release[unsigned](sorted) fallback nothing. }
+  check.expect(sorted at 0 is 0 and sorted at 1 is 0).
+  check.expect(sorted at 2 is 1 and sorted at 3 is 255).
+  check.expect(sorted at 4 is 256 and sorted at 5 is 65535).
+  check.expect(sorted at 6 is 65536 and sorted at 7 is 1000000).
+  constant zeros is items.sized[unsigned](3) try.
+  after { items.release[unsigned](zeros) fallback nothing. }
+  constant same is digits.sort(zeros) try.
+  after { items.release[unsigned](same) fallback nothing. }
+  check.expect(same at 0 is 0 and same at 2 is 0).
+}

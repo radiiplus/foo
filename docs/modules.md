@@ -67,7 +67,7 @@ use map as maps.
 use core.
 
 public define Store as record {
-  values of type maps.Map[text, core.Reference].
+  values of type maps.dictionary[text, core.Reference].
 }.
 ```
 

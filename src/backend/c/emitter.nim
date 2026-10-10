@@ -162,8 +162,15 @@ proc getImpl(types: Types; value: `Type`; ignoreAtomic: bool): string =
         (if fields.len > 0: fields.join(" ") else: "uint8_t empty;") & " } payload;"
     else:
       var fields: seq[string]
+      var first = true
+      var alignment = 0
+      for attribute in value.attributes:
+        if attribute.startsWith("align(") and attribute.endsWith(")"):
+          alignment = parseInt(attribute[6 ..< attribute.len - 1])
       for fieldName, fieldType in value.fields:
-        fields.add(types.get(fieldType) & " " & name(fieldName) & ";")
+        fields.add((if first and alignment > 0: "_Alignas(" & $alignment & ") " else: "") &
+          types.get(fieldType) & " " & name(fieldName) & ";")
+        first = false
       body = if fields.len > 0: fields.join(" ") else: "uint8_t empty;"
     types.declarations.add(tag & " " & id & " { " & body & " };")
     return id
@@ -745,6 +752,23 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
          else: state.value(instruction.val2)) & ".lane[" &
         $(if lane < width: lane else: lane - width) & "];")
     return statements.join("\n")
+  of InstrKind.Gather, InstrKind.Scatter:
+    let input = state.value(instruction.val)
+    let indices = state.value(instruction.val2)
+    let output = state.value(instruction.dest)
+    let width = $instruction.val.type.width
+    let count = $instruction.val2.type.width
+    let signed = instruction.val2.type.elem.kind == TypeKind.Int
+    let guard = (if signed: indices & ".lane[k] < 0 || " else: "") &
+      "(uint64_t)" & indices & ".lane[k] >= " & width
+    if instruction.kind == InstrKind.Gather:
+      return "for (size_t k = 0; k < " & count & "; k++) { if (" &
+        guard & ") foo_panic(\"IndexOutOfBounds\"); " & output &
+        ".lane[k] = " & input & ".lane[" & indices & ".lane[k]]; }"
+    let values = state.value(instruction.args[0])
+    return d & input & "; for (size_t k = 0; k < " & count &
+      "; k++) { if (" & guard & ") foo_panic(\"IndexOutOfBounds\"); " &
+      output & ".lane[" & indices & ".lane[k]] = " & values & ".lane[k]; }"
   of InstrKind.Reduce:
     let output = state.value(instruction.dest)
     let lane = state.value(instruction.val) & ".lane[k]"

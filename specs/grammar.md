@@ -315,6 +315,8 @@ checks do not alter parsing. Removed spellings are listed in
 `define Name as c record { ... }.` and the corresponding union declaration
 select C layout. The older `#[repr(C)]` spelling remains input-compatible during
 migration but is not canonical output.
+`define Name as c record { ... } aligned to N.` raises its byte alignment to a
+power of two. `N` must be at most 4096.
 `extern "C" function name(...) giving Type.` declares a C symbol. Native function
 headers use the ordinary function signature followed by an opaque native body;
 the `function` keyword distinguishes them from an unnamed native block.

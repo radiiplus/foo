@@ -16,9 +16,9 @@ doAssert resourceDefines(Module(name: "mixed", externs: @[
   Extern(name: "pool", abi: "runtime")])) == @[
     "-DFOO_SERVICE_SELECTIVE", "-DFOO_SERVICE_NET",
     "-DFOO_SERVICE_THREAD", "-DFOO_SERVICE_TASK"]
-doAssert libraries("windows") == @["ws2_32"]
-doAssert libraries("macos") == @[]
-doAssert libraries("linux") == @["pthread"]
+doAssert libraries("windows") == @["ws2_32", "dnsapi", "iphlpapi"]
+doAssert libraries("macos") == @["resolv"]
+doAssert libraries("linux") == @["pthread", "resolv", "dl"]
 doAssert selective(Native(kind: "exe"), false)
 doAssert not selective(Native(kind: "static"), false)
 doAssert not selective(Native(kind: "exe", sources: @["native.c"]), false)

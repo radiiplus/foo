@@ -193,6 +193,21 @@ fn iteration() !bool {
     sink = checksum;
     return checksum != 499_999_500_000;
 }
+noinline fn makeValues(seed: u64) ![]u64 {
+    const values = try reserve(u64, 10_000);
+    for (values, 0..) |*value, index| value.* = index + seed;
+    return values;
+}
+fn returned() !bool {
+    var checksum: u64 = 0;
+    for (0..128) |seed| {
+        const values = try makeValues(seed);
+        for (values) |value| checksum += value;
+        dispose(u64, values);
+    }
+    sink = checksum;
+    return checksum != 6_480_640_000;
+}
 fn report() void {
     const average: f64 = if (metrics.growths == 0) 0 else @as(f64, @floatFromInt(metrics.capacity_total)) / @as(f64, @floatFromInt(metrics.growths));
     const factor: f64 = if (metrics.requested == 0) 0 else @as(f64, @floatFromInt(metrics.capacity_total)) / @as(f64, @floatFromInt(metrics.requested));
@@ -218,6 +233,7 @@ pub fn main(process: std.process.Init.Minimal) !u8 {
         else if (std.mem.eql(u8, name, "branch")) try branching()
         else if (std.mem.eql(u8, name, "growth")) try growth()
         else if (std.mem.eql(u8, name, "iteration")) try iteration()
+        else if (std.mem.eql(u8, name, "returned")) try returned()
         else if (std.mem.eql(u8, name, "lookup")) try lookup()
         else return 2;
     report();

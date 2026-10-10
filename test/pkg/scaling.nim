@@ -60,6 +60,10 @@ files["indexes/index.json"] = $(%*{
   "shards": [{"path": "indexes/index-000001.jsonl"}],
 })
 files["indexes/index-000001.jsonl"] = $appEntry & "\n" & $coreEntry & "\n"
+files["registry/standard.json"] = $(%*{
+  "schema": "foo.standard-catalog/v1", "revision": "empty", "count": 0,
+  "entries": [], "packages": [],
+})
 files["packages/foo-app/1.0.0.json"] = $appRecord
 files["packages/foo-core/1.0.0.json"] = $coreOne
 files["packages/foo-core/1.2.0.json"] = $coreNext

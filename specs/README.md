@@ -1,7 +1,7 @@
 # FOO
 Version: 1.
 
-FOO is a systems language with sentence-like declarations, explicit effects and file-based namespaces. Source files use `.iv`; the command is `foo`. A period ends a simple statement. Public names use meaningful single words where their meaning remains clear.
+FOO is a systems language with sentence-like declarations, explicit effects and file-based namespaces. Source files use `.iv`; the command is `foo`. A period ends a simple statement. FOO file stems, variables, types, and functions use one meaningful word. Names do not join words with capitals, underscores, or spelling them together. Types begin with a capital letter; other names use lowercase. Foreign ABI symbols retain their platform-defined spelling.
 
 These documents define FOO v1 conformance. A specification requirement is not a claim that every compiler release supports it. A release must identify unsupported constructs and reject them clearly.
 

@@ -139,6 +139,11 @@ for path in paths:
           if not packageScripts.hasKey(words[2]):
             failures.add(location & ": unknown npm script: " & command)
           continue
+        if words.len >= 2 and words[0] == "node" and
+            words[1] == "tools/benchmark.mjs":
+          if not fileExists(repository / words[1]):
+            failures.add(location & ": missing benchmark script: " & command)
+          continue
         if not command.startsWith("foo "):
           failures.add(location & ": unsupported shell example: " & command)
           continue

@@ -3,7 +3,7 @@ import ../build/files
 import ../pkg/semver
 
 const
-  defaultIcon = staticRead("../../installers/assets/logo-installer.ico")
+  defaultIcon = staticRead("../../installers/assets/installer.ico")
   defaultVector = staticRead("../../assets/dark.svg")
 
 proc validName(name: string): bool =

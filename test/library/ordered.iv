@@ -1,0 +1,86 @@
+use sequence as items.
+use testing as check.
+
+test "sorted union collapses repeats and owns its result" {
+  constant left is items.sized[integer](5) try.
+  after { items.release[integer](left) fallback nothing. }
+  set left at 0 to 0 subtract 2.
+  set left at 1 to 0 subtract 2.
+  set left at 2 to 1.
+  set left at 3 to 3.
+  set left at 4 to 3.
+  constant right is items.sized[integer](5) try.
+  after { items.release[integer](right) fallback nothing. }
+  set right at 0 to 0 subtract 2.
+  set right at 1 to 0.
+  set right at 2 to 0.
+  set right at 3 to 3.
+  set right at 4 to 5.
+  constant result is items.unite[integer](left, right) try.
+  after { items.release[integer](result) fallback nothing. }
+  check.expect(items.length[integer](result) is 5).
+  check.expect(result at 0 is 0 subtract 2 and result at 1 is 0).
+  check.expect(result at 2 is 1 and result at 3 is 3 and result at 4 is 5).
+  set result at 0 to 99.
+  check.expect(left at 0 is 0 subtract 2 and right at 0 is 0 subtract 2).
+  constant empty is items.create[integer].
+  constant only is items.unite[integer](empty, left) try.
+  check.expect(items.length[integer](only) is 3).
+  check.expect(only at 0 is 0 subtract 2 and only at 1 is 1 and only at 2 is 3).
+  items.release[integer](only) try.
+}
+
+test "sorted intersection keeps distinct shared values" {
+  constant left is items.sized[integer](5) try.
+  after { items.release[integer](left) fallback nothing. }
+  set left at 0 to 0 subtract 2.
+  set left at 1 to 0 subtract 2.
+  set left at 2 to 1.
+  set left at 3 to 3.
+  set left at 4 to 3.
+  constant right is items.sized[integer](5) try.
+  after { items.release[integer](right) fallback nothing. }
+  set right at 0 to 0 subtract 2.
+  set right at 1 to 0 subtract 2.
+  set right at 2 to 0.
+  set right at 3 to 3.
+  set right at 4 to 5.
+  constant result is items.intersect[integer](left, right) try.
+  after { items.release[integer](result) fallback nothing. }
+  check.expect(items.length[integer](result) is 2).
+  check.expect(result at 0 is 0 subtract 2 and result at 1 is 3).
+  set result at 0 to 99.
+  check.expect(left at 0 is 0 subtract 2 and right at 0 is 0 subtract 2).
+  constant empty is items.create[integer].
+  constant none is items.intersect[integer](left, empty) try.
+  check.expect(items.length[integer](none) is 0).
+  items.release[integer](none) try.
+}
+
+test "sorted difference removes matching values" {
+  constant left is items.sized[integer](6) try.
+  after { items.release[integer](left) fallback nothing. }
+  set left at 0 to 0 subtract 2.
+  set left at 1 to 0 subtract 2.
+  set left at 2 to 1.
+  set left at 3 to 3.
+  set left at 4 to 3.
+  set left at 5 to 7.
+  constant right is items.sized[integer](4) try.
+  after { items.release[integer](right) fallback nothing. }
+  set right at 0 to 0 subtract 2.
+  set right at 1 to 0.
+  set right at 2 to 3.
+  set right at 3 to 3.
+  constant result is items.difference[integer](left, right) try.
+  after { items.release[integer](result) fallback nothing. }
+  check.expect(items.length[integer](result) is 2).
+  check.expect(result at 0 is 1 and result at 1 is 7).
+  set result at 0 to 99.
+  check.expect(left at 2 is 1).
+  constant empty is items.create[integer].
+  constant all is items.difference[integer](left, empty) try.
+  check.expect(items.length[integer](all) is 4).
+  check.expect(all at 0 is 0 subtract 2 and all at 1 is 1 and all at 2 is 3 and all at 3 is 7).
+  items.release[integer](all) try.
+}

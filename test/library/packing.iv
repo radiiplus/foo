@@ -1,0 +1,150 @@
+use packing as pack.
+use sequence as items.
+use testing as check.
+
+function invalid(source sequence of constant byte) giving failable boolean {
+  constant result is pack.bits(source) try.
+  items.release[byte](result) try.
+  give false.
+}
+function truncated(source sequence of constant byte, count unsigned) giving failable boolean {
+  constant result is pack.expand(source, count) try.
+  items.release[byte](result) try.
+  give false.
+}
+function malformed(source sequence of constant byte, limit unsigned) giving failable boolean {
+  constant result is pack.unroll(source, limit) try.
+  items.release[byte](result) try.
+  give false.
+}
+function unordered(source sequence of constant unsigned) giving failable boolean {
+  constant result is pack.deltas(source) try.
+  items.release[byte](result) try.
+  give false.
+}
+function damaged(source sequence of constant byte, limit unsigned) giving failable boolean {
+  constant result is pack.restore(source, limit) try.
+  items.release[unsigned](result) try.
+  give false.
+}
+
+test "canonical bit-packed flags" {
+  dynamic flags is items.sized[byte](10) try.
+  after { items.release[byte](flags) fallback nothing. }
+  set flags at 0 to 1.
+  set flags at 2 to 1.
+  set flags at 3 to 1.
+  set flags at 7 to 1.
+  set flags at 8 to 1.
+  constant encoded is pack.bits(flags) try.
+  after { items.release[byte](encoded) fallback nothing. }
+  check.number(items.length[byte](encoded), 2).
+  check.same(encoded at 0, 141).
+  check.same(encoded at 1, 1).
+  dynamic decoded is pack.expand(encoded, 10) try.
+  after { items.release[byte](decoded) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than 10 {
+    check.same(decoded at index, flags at index).
+    increase index by 1.
+  }
+  set decoded at 0 to 0.
+  check.same(flags at 0, 1).
+  set flags at 1 to 2.
+  check.expect(invalid(flags) fallback true).
+  check.expect(truncated(encoded, 8) fallback true).
+  dynamic tail is items.sized[byte](2) try.
+  after { items.release[byte](tail) fallback nothing. }
+  set tail at 0 to 141.
+  set tail at 1 to 128.
+  check.expect(truncated(tail, 10) fallback true).
+  constant empty is items.create[byte].
+  constant zero is pack.bits(empty) try.
+  after { items.release[byte](zero) fallback nothing. }
+  check.number(items.length[byte](zero), 0).
+  constant restored is pack.expand(zero, 0) try.
+  after { items.release[byte](restored) fallback nothing. }
+  check.number(items.length[byte](restored), 0).
+}
+
+test "canonical byte runs and output limits" {
+  dynamic source is items.sized[byte](302) try.
+  after { items.release[byte](source) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than 300 {
+    set source at index to 7.
+    increase index by 1.
+  }
+  set source at 300 to 9.
+  set source at 301 to 9.
+  constant encoded is pack.runs(source) try.
+  after { items.release[byte](encoded) fallback nothing. }
+  check.number(items.length[byte](encoded), 6).
+  check.same(encoded at 0, 255).
+  check.same(encoded at 2, 45).
+  check.same(encoded at 4, 2).
+  constant decoded is pack.unroll(encoded, 302) try.
+  after { items.release[byte](decoded) fallback nothing. }
+  check.number(items.length[byte](decoded), 302).
+  check.same(decoded at 254, 7).
+  check.same(decoded at 255, 7).
+  check.same(decoded at 300, 9).
+  check.expect(malformed(encoded, 301) fallback true).
+  dynamic invalid is items.sized[byte](4) try.
+  after { items.release[byte](invalid) fallback nothing. }
+  set invalid at 0 to 1.
+  set invalid at 1 to 7.
+  set invalid at 2 to 1.
+  set invalid at 3 to 7.
+  check.expect(malformed(invalid, 10) fallback true).
+  set invalid at 0 to 0.
+  check.expect(malformed(invalid, 10) fallback true).
+  constant partial is items.sized[byte](1) try.
+  after { items.release[byte](partial) fallback nothing. }
+  set partial at 0 to 1.
+  check.expect(malformed(partial, 10) fallback true).
+}
+
+test "sorted unsigned deltas and malformed streams" {
+  dynamic values is items.sized[unsigned](5) try.
+  after { items.release[unsigned](values) fallback nothing. }
+  set values at 0 to 0.
+  set values at 1 to 1.
+  set values at 2 to 128.
+  set values at 3 to 128.
+  set values at 4 to 18446744073709551615.
+  constant encoded is pack.deltas(values) try.
+  after { items.release[byte](encoded) fallback nothing. }
+  dynamic decoded is pack.restore(encoded, 5) try.
+  after { items.release[unsigned](decoded) fallback nothing. }
+  check.number(items.length[unsigned](decoded), 5).
+  dynamic index of type unsigned is 0.
+  while index less than 5 {
+    check.number(decoded at index, values at index).
+    increase index by 1.
+  }
+  set decoded at 0 to 99.
+  check.number(values at 0, 0).
+  check.expect(damaged(encoded, 4) fallback true).
+  set values at 3 to 127.
+  check.expect(unordered(values) fallback true).
+  dynamic malformed is items.sized[byte](2) try.
+  after { items.release[byte](malformed) fallback nothing. }
+  set malformed at 0 to 128.
+  set malformed at 1 to 0.
+  check.expect(damaged(malformed, 2) fallback true).
+  dynamic overflow is items.sized[byte](11) try.
+  after { items.release[byte](overflow) fallback nothing. }
+  set index to 0.
+  while index less than 9 {
+    set overflow at index to 255.
+    increase index by 1.
+  }
+  set overflow at 9 to 1.
+  set overflow at 10 to 1.
+  check.expect(damaged(overflow, 2) fallback true).
+  constant empty is items.create[byte].
+  constant restored is pack.restore(empty, 0) try.
+  after { items.release[unsigned](restored) fallback nothing. }
+  check.number(items.length[unsigned](restored), 0).
+}

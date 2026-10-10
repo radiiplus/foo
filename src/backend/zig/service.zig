@@ -51,6 +51,7 @@ fn argument(comptime T: type, value: anytype) T {
     return switch (@typeInfo(T)) {
         .bool => value,
         .int => @intCast(value),
+        .float => @floatCast(value),
         .optional, .pointer => @ptrCast(@constCast(value)),
         else => @compileError("Unsupported service argument"),
     };

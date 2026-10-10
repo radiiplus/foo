@@ -1,0 +1,8 @@
+-- Runtime properties of the host ABI and virtual-memory page layout.
+public use "platform" function page giving failable unsigned.
+public use "platform" function width giving unsigned.
+public use "platform" function alignment giving unsigned.
+public use "platform" function little giving boolean.
+-- Unknown capabilities return false. Availability describes this runtime,
+-- while an individual OS operation can still fail for a specific resource.
+public use "platform" function supports(feature text) giving boolean.

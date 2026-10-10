@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createServer as createNodeServer } from "node:http";
 import type { IncomingMessage } from "node:http";
@@ -9,7 +10,10 @@ import { handleDiscovery } from "./serverless/supabase/functions/_shared/catalog
 
 const defaultPort = 54321;
 const defaultHost = "127.0.0.1";
-const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "repository");
+const fooRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const siblingRepository = resolve(fooRoot, "..", "foo.registry");
+const repositoryRoot = resolve(process.env.REGISTRY_LOCAL_REPOSITORY ??
+  (existsSync(resolve(siblingRepository, "indexes", "index.json")) ? siblingRepository : resolve(fooRoot, "registry", "repository")));
 
 export function createServer() {
   return createNodeServer(async (incoming, outgoing) => {
@@ -39,6 +43,10 @@ export function createServer() {
 
 async function repositoryFetch(input: string | URL | Request) {
   const url = new URL(input instanceof Request ? input.url : input);
+  if (url.pathname.endsWith("/registry/standard.json")) {
+    return new Response(await readFile(resolve(fooRoot, "registry", "standard.json")),
+      { status: 200, headers: { "content-type": "application/json" } });
+  }
   const match = decodeURIComponent(url.pathname).match(/\/(indexes|packages)\/(.+)$/);
   if (!match) return new Response("Not found", { status: 404 });
   const target = resolve(repositoryRoot, match[1], match[2]);

@@ -14,11 +14,15 @@ let withStarts = discoverTests(root, includeStarts = true)
 doAssert withStarts.len == 2
 
 var called = 0
+var events: seq[string]
 let results = runTests(root, "addition", executor = proc(suite: TestSuite): TestResult =
   called.inc
-  TestResult(suite: suite, passed: true, output: "ok"))
+  TestResult(suite: suite, passed: true, output: "ok"),
+  progress = proc(phase, name, detail: string; cached: bool) =
+    events.add(phase & ":" & name & ":" & detail))
 doAssert called == 1
 doAssert results.len == 1 and results[0].passed and results[0].output == "ok"
+doAssert events == @["plan:Execution:1", "run:addition:", "ran:addition:"]
 let watcher = watchTests(root, executor = proc(suite: TestSuite): TestResult =
   TestResult(suite: suite, passed: true))
 doAssert watcher.poll().len == 1

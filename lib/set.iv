@@ -1,15 +1,15 @@
 -- Keeps each typed value once using equality-based membership.
 use sequence as items.
-public define Set[T] as record {
+public define members[T] as record {
   values of type sequence of T.
 }.
-public function create[T] giving Set[T] {
-  give Set[T](items.create[T]).
+public function create[T] giving members[T] {
+  give members[T](items.create[T]).
 }
-public function length[T](collection Set[T]) giving unsigned {
+public function length[T](collection members[T]) giving unsigned {
   give items.length[T](collection.values).
 }
-public function contains[T](collection Set[T], value T) giving boolean where T is Equatable {
+public function contains[T](collection members[T], value T) giving boolean where T is Equatable {
   for each item in collection.values {
     when item is value {
       give true.
@@ -17,23 +17,106 @@ public function contains[T](collection Set[T], value T) giving boolean where T i
   }
   give false.
 }
-public function insert[T](collection Set[T], value T) giving failable Set[T] where T is Equatable {
+public function insert[T](collection members[T], value T) giving failable members[T] where T is Equatable {
   when contains[T](collection, value) {
-    give Set[T](items.copy[T](collection.values) try).
+    give members[T](items.copy[T](collection.values) try).
   }
-  give Set[T](items.append[T](collection.values, value) try).
+  give members[T](items.append[T](collection.values, value) try).
 }
-public function remove[T](collection Set[T], value T) giving failable Set[T] where T is Equatable {
+public function remove[T](collection members[T], value T) giving failable members[T] where T is Equatable {
   dynamic index of type unsigned is 0.
   for each item in collection.values {
     when item is value {
-      give Set[T](items.remove[T](collection.values, index) try).
+      give members[T](items.remove[T](collection.values, index) try).
     }
     set index to index plus 1.
   }
-  give Set[T](items.copy[T](collection.values) try).
+  give members[T](items.copy[T](collection.values) try).
 }
-public function release[T](collection Set[T]) giving failable nothing {
+-- Copies members that are present (or absent) in the other collection.
+function filtered[T](source members[T], other members[T], matching boolean) giving failable members[T] where T is Equatable {
+  dynamic count of type unsigned is 0.
+  for each item in source.values {
+    when contains[T](other, item) is matching { increase count by 1. }
+  }
+  constant values is items.sized[T](count) try.
+  dynamic index of type unsigned is 0.
+  for each item in source.values {
+    when contains[T](other, item) is matching {
+      set values at index to item.
+      increase index by 1.
+    }
+  }
+  give members[T](values).
+}
+-- Keeps left's order, then adds members found only in right.
+public function unite[T](left members[T], right members[T]) giving failable members[T] where T is Equatable {
+  dynamic count is length[T](left).
+  for each item in right.values {
+    when not contains[T](left, item) {
+      when count is 18446744073709551615 { give fail(Error.Bounds). }
+      increase count by 1.
+    }
+  }
+  constant values is items.sized[T](count) try.
+  dynamic index of type unsigned is 0.
+  for each item in left.values {
+    set values at index to item.
+    increase index by 1.
+  }
+  for each item in right.values {
+    when not contains[T](left, item) {
+      set values at index to item.
+      increase index by 1.
+    }
+  }
+  give members[T](values).
+}
+public function intersect[T](left members[T], right members[T]) giving failable members[T] where T is Equatable {
+  give filtered[T](left, right, true) try.
+}
+public function difference[T](left members[T], right members[T]) giving failable members[T] where T is Equatable {
+  give filtered[T](left, right, false) try.
+}
+-- Keeps left-only members followed by right-only members.
+public function symmetric[T](left members[T], right members[T]) giving failable members[T] where T is Equatable {
+  dynamic count of type unsigned is 0.
+  for each item in left.values {
+    when not contains[T](right, item) {
+      when count is 18446744073709551615 { give fail(Error.Bounds). }
+      increase count by 1.
+    }
+  }
+  for each item in right.values {
+    when not contains[T](left, item) {
+      when count is 18446744073709551615 { give fail(Error.Bounds). }
+      increase count by 1.
+    }
+  }
+  constant values is items.sized[T](count) try.
+  dynamic index of type unsigned is 0.
+  for each item in left.values {
+    when not contains[T](right, item) {
+      set values at index to item.
+      increase index by 1.
+    }
+  }
+  for each item in right.values {
+    when not contains[T](left, item) {
+      set values at index to item.
+      increase index by 1.
+    }
+  }
+  give members[T](values).
+}
+-- Checks inclusion without allocating another collection.
+public function subset[T](left members[T], right members[T]) giving boolean where T is Equatable {
+  for each item in left.values {
+    when not contains[T](right, item) { give false. }
+  }
+  give true.
+}
+public function release[T](collection members[T]) giving failable nothing {
   items.release[T](collection.values) try.
   give nothing.
 }

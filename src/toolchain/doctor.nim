@@ -29,8 +29,12 @@ proc header(name, path, library, compiler, hint: string;
         detail: path & " provisioned in FOO cache"))
       return
     let zig = splitFile(compiler).name.toLowerAscii() == "zig"
+    let artifact = getTempDir() / ("foo-header-" & $getCurrentProcessId() & ".o")
+    defer:
+      if fileExists(artifact): removeFile(artifact)
     let command = quoteShell(compiler) & (if zig: " cc" else: "") &
-      " -x c - -fsyntax-only"
+      (if zig: " -x c - -c -o " & quoteShell(artifact)
+        else: " -x c - -fsyntax-only")
     let checked = execCmdEx(command, input = "#include <" & path & ">\n")
     result.add(Component(name: name, ready: checked.exitCode == 0,
       required: false, detail: if checked.exitCode == 0:

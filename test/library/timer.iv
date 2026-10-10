@@ -1,0 +1,31 @@
+use timer as clocks.
+use time as time.
+use testing as check.
+
+function closed(value pointer to clocks.alarm) giving failable boolean {
+  clocks.wait(value) try.
+  give false.
+}
+
+test "monotonic timer expiry and rearm" {
+  constant alarm is clocks.create try.
+  check.expect((clocks.wait(alarm) try) is false).
+  constant before is time.current try.
+  clocks.arm(alarm, 5000000) try.
+  check.expect(clocks.wait(alarm) try).
+  check.expect((time.current try) greater than or equal to before plus 5000000).
+  clocks.arm(alarm, 0) try.
+  check.expect(clocks.wait(alarm) try).
+  clocks.close(alarm) try.
+  check.expect(closed(alarm) fallback true).
+}
+
+test "cancelled timer does not fire" {
+  constant alarm is clocks.create try.
+  clocks.arm(alarm, 1000000000) try.
+  clocks.cancel(alarm) try.
+  check.expect((clocks.wait(alarm) try) is false).
+  clocks.arm(alarm, 0) try.
+  check.expect(clocks.wait(alarm) try).
+  clocks.close(alarm) try.
+}

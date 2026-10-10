@@ -1,28 +1,28 @@
 -- Keeps values from unrelated physical dimensions in distinct generic types.
-public define Quantity[D] as record {
+public define measure[D] as record {
   value of type decimal.
 }.
-public define Length as opaque.
-public define Mass as opaque.
-public define Temperature as opaque.
-public function quantity[D](value decimal) giving Quantity[D] {
-  give Quantity[D](value).
+public define length as opaque.
+public define mass as opaque.
+public define temperature as opaque.
+public function quantity[D](value decimal) giving measure[D] {
+  give measure[D](value).
 }
-public function add[D](left Quantity[D], right Quantity[D]) giving Quantity[D] {
-  give Quantity[D](left.value plus right.value).
+public function add[D](left measure[D], right measure[D]) giving measure[D] {
+  give measure[D](left.value plus right.value).
 }
-public function difference[D](left Quantity[D], right Quantity[D]) giving Quantity[D] {
-  give Quantity[D](left.value subtract right.value).
+public function difference[D](left measure[D], right measure[D]) giving measure[D] {
+  give measure[D](left.value subtract right.value).
 }
-public function scale[D](value Quantity[D], factor decimal) giving Quantity[D] {
-  give Quantity[D](value.value multiply factor).
+public function scale[D](value measure[D], factor decimal) giving measure[D] {
+  give measure[D](value.value multiply factor).
 }
-public function meters(value decimal) giving Quantity[Length] {
-  give Quantity[Length](value).
+public function meters(value decimal) giving measure[length] {
+  give measure[length](value).
 }
-public function kilograms(value decimal) giving Quantity[Mass] {
-  give Quantity[Mass](value).
+public function kilograms(value decimal) giving measure[mass] {
+  give measure[mass](value).
 }
-public function celsius(value decimal) giving Quantity[Temperature] {
-  give Quantity[Temperature](value).
+public function celsius(value decimal) giving measure[temperature] {
+  give measure[temperature](value).
 }

@@ -1,0 +1,39 @@
+use bloom as filters.
+use sequence as items.
+use testing as check.
+
+function invalid(bits unsigned, rounds unsigned) giving failable boolean {
+  constant value is filters.create(bits, rounds) try.
+  filters.close(value) try.
+  give false.
+}
+function closed(value pointer to filters.bloom, key sequence of constant byte) giving failable boolean {
+  filters.add(value, key) try.
+  give false.
+}
+
+test "binary Bloom membership" {
+  check.expect(invalid(0, 4) fallback true).
+  check.expect(invalid(128, 0) fallback true).
+  check.expect(invalid(128, 17) fallback true).
+  constant value is filters.create(1024, 4) try.
+  check.expect(filters.bits(value) try is 1024).
+  check.expect(filters.rounds(value) try is 4).
+  constant key is items.sized[byte](3) try.
+  after { items.release[byte](key) fallback nothing. }
+  set key at 0 to 0.
+  set key at 1 to 255.
+  set key at 2 to 1.
+  constant empty is items.create[byte].
+  check.expect(not (filters.contains(value, empty) try)).
+  check.expect(not (filters.contains(value, key) try)).
+  filters.add(value, key) try.
+  check.expect(filters.contains(value, key) try).
+  filters.add(value, key) try.
+  check.expect(filters.contains(value, key) try).
+  filters.add(value, empty) try.
+  check.expect(filters.contains(value, empty) try).
+  filters.close(value) try.
+  check.expect(closed(value, key) fallback true).
+  check.expect((filters.bits(value) fallback 99) is 99).
+}

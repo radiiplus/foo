@@ -1,27 +1,27 @@
 -- Declares HTTP clients and servers.
-public define Client as opaque.
-public define Response as opaque.
-public define Server as opaque.
-public define Peer as opaque.
-public use "http" function client giving failable pointer to Client.
-public use "http" function trust(value pointer to Client, certificate text) giving failable nothing.
+public define session as opaque.
+public define response as opaque.
+public define server as opaque.
+public define peer as opaque.
+public use "http" function client giving failable pointer to session.
+public use "http" function trust(value pointer to session, certificate text) giving failable nothing.
 -- Advanced client controls. Attached headers persist until clear is called.
-public use "http" function attach(value pointer to Client, name text, content text) giving failable nothing.
-public use "http" function clear(value pointer to Client) giving nothing.
-public use "http" function redirects(value pointer to Client, limit unsigned 16) giving failable nothing.
-public use "http" function reuse(value pointer to Client, enabled boolean) giving nothing.
-public use "http" function request(value pointer to Client, url text, method text, content text, limit unsigned 32) giving failable pointer to Response.
-public use "http" function status(value pointer to Response) giving unsigned 16.
-public use "http" function body(value pointer to Response) giving failable text.
-public use "http" function release(value pointer to Response) giving nothing.
-public use "http" function close(value pointer to Client) giving nothing.
-public use "http" function listen(host text, port unsigned 16) giving failable pointer to Server.
-public use "http" function port(value pointer to Server) giving unsigned 16.
-public use "http" function shutdown(value pointer to Server) giving nothing.
-public use "http" function accept(value pointer to Server) giving failable pointer to Peer.
-public use "http" function receive(value pointer to Peer) giving failable text.
-public use "http" function method(value pointer to Peer) giving failable text.
-public use "http" function header(value pointer to Peer, name text) giving failable text.
-public use "http" function read(value pointer to Peer, limit unsigned 32) giving failable text.
-public use "http" function reply(value pointer to Peer, status unsigned 16, content text, reuse boolean) giving failable nothing.
-public use "http" function disconnect(value pointer to Peer) giving nothing.
+public use "http" function attach(value pointer to session, name text, content text) giving failable nothing.
+public use "http" function clear(value pointer to session) giving nothing.
+public use "http" function redirects(value pointer to session, limit unsigned 16) giving failable nothing.
+public use "http" function reuse(value pointer to session, enabled boolean) giving nothing.
+public use "http" function request(value pointer to session, url text, method text, content text, limit unsigned 32) giving failable pointer to response.
+public use "http" function status(value pointer to response) giving unsigned 16.
+public use "http" function body(value pointer to response) giving failable text.
+public use "http" function release(value pointer to response) giving nothing.
+public use "http" function close(value pointer to session) giving nothing.
+public use "http" function listen(host text, port unsigned 16) giving failable pointer to server.
+public use "http" function port(value pointer to server) giving unsigned 16.
+public use "http" function shutdown(value pointer to server) giving nothing.
+public use "http" function accept(value pointer to server) giving failable pointer to peer.
+public use "http" function receive(value pointer to peer) giving failable text.
+public use "http" function method(value pointer to peer) giving failable text.
+public use "http" function header(value pointer to peer, name text) giving failable text.
+public use "http" function read(value pointer to peer, limit unsigned 32) giving failable text.
+public use "http" function reply(value pointer to peer, status unsigned 16, content text, reuse boolean) giving failable nothing.
+public use "http" function disconnect(value pointer to peer) giving nothing.

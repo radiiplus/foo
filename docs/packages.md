@@ -20,6 +20,12 @@ scenario under `benchmark/`. Before publication, set the repository URL and
 package metadata in `project.json`, write at least 100 non-empty lines of
 documentation, and commit every source change.
 
+To display a package icon in the registry, add `"icon": "assets/icon.svg"` to
+`project.json` and commit that SVG. The path stays inside the package and the
+file must be at most 64 KiB. Publication accepts basic vector shapes and paint
+attributes, then displays the validated icon as an image in registry listings
+and package details. Scripts, links, styles, and external resources are rejected.
+
 ## Authentication and publication
 
 ```sh
@@ -148,3 +154,11 @@ available), provide mirrors, and carry platform compatibility;
 installation still verifies the canonical bundle digest. Owners can deprecate a
 version with `foo deprecate package@version message`; the source remains
 available so existing lockfiles never break.
+
+Bundled `lib/*` modules are maintained in the FOO repository. Its generated
+`registry/standard.json` contains their searchable public API and source
+digests. The registry website, API, and `foo search` merge that catalog with
+community packages from `foo.registry`; standard modules are not separately
+published into the community repository. Regenerate the standard catalog with
+`npm run registry:standard` after changing `lib/*.iv` and verify it with
+`npm run registry:standard:check` before publishing FOO source changes.

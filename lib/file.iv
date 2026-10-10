@@ -1,25 +1,115 @@
 -- Opens files, transfers their contents, creates directories, and joins paths.
 use io as streams.
-public use "fs" function open(path text, mode text) giving failable pointer to streams.Stream.
+public define mapping as opaque.
+public define cursor as opaque.
+public define walker as opaque.
+public define details as opaque.
+public use "fs" function open(path text, mode text) giving failable pointer to streams.stream.
 public use "fs" function read(path text) giving failable text.
 public use "fs" function write(path text, content text) giving failable nothing.
-public use "fs" function readbytes(path text) giving failable sequence of byte.
-public use "fs" function writebytes(path text, content sequence of byte) giving failable nothing.
-public use "fs" function releasebytes(content sequence of byte) giving failable nothing.
+public use "fs" function load(path text) giving failable sequence of byte.
+public use "fs" function save(path text, content sequence of byte) giving failable nothing.
+public use "fs" function release(content sequence of byte) giving failable nothing.
 public use "fs" function directory(path text) giving failable nothing.
+-- Scan returns names in host order. next returns empty text at end.
+-- Release nonempty names with text.release and close the cursor with finish.
+public use "fs" function scan(path text) giving failable pointer to cursor.
+public use "fs" function next(cursor pointer to cursor) giving failable text.
+public use "fs" function finish(cursor pointer to cursor) giving failable nothing.
 public use "fs" function join(left text, right text) giving failable text.
 public use "fs" function exists(path text) giving failable boolean.
 public use "fs" function kind(path text) giving failable text.
+-- Metadata is a snapshot. Timestamps are UTC nanoseconds since 1970.
+public use "fs" function metadata(path text) giving failable pointer to details.
+use "fs" function measure(value pointer to details) giving failable unsigned.
+use "fs" function timestamp(value pointer to details, field text) giving failable unsigned.
+use "fs" function classify(value pointer to details) giving failable text.
+public function extent(value pointer to details) giving failable unsigned {
+  give measure(value) try.
+}
+public function modified(value pointer to details) giving failable unsigned {
+  give timestamp(value, "modified") try.
+}
+public function accessed(value pointer to details) giving failable unsigned {
+  give timestamp(value, "accessed") try.
+}
+public function changed(value pointer to details) giving failable unsigned {
+  give timestamp(value, "changed") try.
+}
+public function category(value pointer to details) giving failable text borrowing value {
+  give classify(value) try.
+}
+use "fs" function restricted(value pointer to details) giving failable boolean.
+-- Reports the inverse of the read-only attribute or mode bits, not an access check.
+public function writable(value pointer to details) giving failable boolean {
+  give not (restricted(value) try).
+}
+use "fs" function retire(value pointer to details) giving failable nothing.
+public function dismiss(value pointer to details) giving failable nothing {
+  retire(value) try.
+}
+-- Creates an exclusive empty file and returns its owned path. Release the path and remove the file.
+public use "fs" function temporary(directory text, prefix text) giving failable text.
+-- Depth-first relative paths. Directory entries are returned before their children.
+-- Links are returned but never traversed. Release each nonempty result with text.release.
+public use "fs" function walk(path text) giving failable pointer to walker.
+use "fs" function traverse(cursor pointer to walker) giving failable text.
+use "fs" function cease(cursor pointer to walker) giving failable nothing.
+public function visit(source pointer to walker) giving failable text {
+  give traverse(source) try.
+}
+public function halt(source pointer to walker) giving failable nothing {
+  cease(source) try.
+}
+-- Available bytes for this process and the filesystem allocation unit.
+public use "fs" function free(path text) giving failable unsigned.
+public use "fs" function block(path text) giving failable unsigned.
 public use "fs" function copy(source text, destination text) giving failable nothing.
 public use "fs" function working giving failable text.
 public use "fs" function remove(path text) giving failable nothing.
 -- Replaces destination on one filesystem and requests durable directory publication where supported.
 public use "fs" function replace(source text, destination text) giving failable nothing.
 -- Advanced stream controls. flush empties process buffers; sync also requests stable storage from the host.
-public use "fs" function flush(stream pointer to streams.Stream) giving failable nothing.
-public use "fs" function sync(stream pointer to streams.Stream) giving failable nothing.
-public use "fs" function seek(stream pointer to streams.Stream, offset integer, origin text) giving failable nothing.
-public use "fs" function position(stream pointer to streams.Stream) giving failable unsigned.
-public use "fs" function size(stream pointer to streams.Stream) giving failable unsigned.
+public use "fs" function flush(stream pointer to streams.stream) giving failable nothing.
+public use "fs" function sync(stream pointer to streams.stream) giving failable nothing.
+public use "fs" function seek(stream pointer to streams.stream, offset integer, origin text) giving failable nothing.
+public use "fs" function position(stream pointer to streams.stream) giving failable unsigned.
+public use "fs" function size(stream pointer to streams.stream) giving failable unsigned.
+-- A writable stream can be shortened or extended. The cursor is unchanged.
+public use "fs" function truncate(stream pointer to streams.stream, size unsigned) giving failable nothing.
+-- Reserves storage through size, extending the file if necessary.
+public use "fs" function reserve(stream pointer to streams.stream, size unsigned) giving failable nothing.
+-- Advisory whole-file locking. The mode is "shared" or "exclusive".
+public use "fs" function lock(stream pointer to streams.stream, mode text) giving failable nothing.
+public use "fs" function unlock(stream pointer to streams.stream) giving failable nothing.
+-- Transfers bytes at an absolute offset without changing the stream position.
+-- A short count indicates end of file or a partial transfer; callers may retry.
+public use "fs" function fetch(stream pointer to streams.stream, offset unsigned, destination sequence of byte) giving failable unsigned.
+public use "fs" function store(stream pointer to streams.stream, offset unsigned, source sequence of constant byte) giving failable unsigned.
 -- Borrows the platform's native handle. It is valid only while the stream stays open.
-public use "fs" function handle(stream pointer to streams.Stream) giving failable unsigned.
+public use "fs" function handle(stream pointer to streams.stream) giving failable unsigned.
+-- A read-only file mapping. A length of zero maps from offset to end of file.
+public use "fs" function map(path text, offset unsigned, length unsigned) giving failable pointer to mapping.
+-- Shared writable mapping of an existing file. The requested range must be within the file.
+public use "fs" function edit(path text, offset unsigned, length unsigned) giving failable pointer to mapping.
+-- The returned bytes remain valid until unmap; do not truncate the underlying file.
+use "fs" function mapped(mapping pointer to mapping) giving failable sequence of constant byte.
+public function view(source pointer to mapping) giving failable sequence of constant byte borrowing source {
+  give mapped(source) try.
+}
+-- Mutable bytes borrow the mapping. Flush before unmap to request durable storage.
+use "fs" function borrow(source pointer to mapping) giving failable sequence of byte.
+public function mutable(source pointer to mapping) giving failable sequence of byte borrowing source {
+  give borrow(source) try.
+}
+use "fs" function publish(source pointer to mapping) giving failable nothing.
+public function persist(source pointer to mapping) giving failable nothing {
+  publish(source) try.
+}
+-- Flushes a bounded range of a writable shared mapping, then syncs its file.
+-- Offset and length are relative to the mapped view; zero length is a no-op.
+use "fs" function portion(source pointer to mapping, offset unsigned, length unsigned) giving failable nothing.
+public function persist(source pointer to mapping, offset unsigned, length unsigned) giving failable nothing {
+  portion(source, offset, length) try.
+}
+public use "fs" function unmap(mapping pointer to mapping) giving failable nothing.

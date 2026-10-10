@@ -2,7 +2,7 @@
 
 The official package catalog for the [FOO programming language](https://github.com/radiiplus/foo).
 
-This repository is where FOO's standard library and published community packages are made available. Use it to discover libraries, review what they provide, and install them in your FOO projects.
+This repository stores published community packages. Standard library modules are generated from `lib/*.iv` in the [FOO repository](https://github.com/radiiplus/foo/blob/main/registry/standard.json) and read by the registry directly.
 
 New to the language? Visit the [main FOO repository](https://github.com/radiiplus/foo) for installation, documentation, examples, and releases.
 

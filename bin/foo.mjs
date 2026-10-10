@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { chmodSync, existsSync, readFileSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { arch, homedir } from "node:os";
+import { arch } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,6 +11,7 @@ const candidates = [
   process.env.FOO_COMPILER,
   resolve(root, "bin", executable),
   resolve(root, ".artifacts", "native", `${process.platform}-${arch()}`, executable),
+  resolve(root, ".artifacts", "compiler", "bin", executable),
   resolve(root, ".artifacts", "native", executable),
 ].filter(Boolean);
 const available = candidates.filter(existsSync);
@@ -20,6 +21,10 @@ if (available.includes(source) && available.includes(cached) &&
     statSync(source).mtimeMs > statSync(cached).mtimeMs) {
   available.splice(available.indexOf(source), 1);
   available.splice(available.indexOf(cached), 0, source);
+}
+if (!process.env.FOO_COMPILER && available.includes(source)) {
+  available.splice(available.indexOf(source), 1);
+  available.unshift(source);
 }
 if (available.length === 0) {
   console.error("The native FOO compiler is missing. Run npm run native:build.");
@@ -54,7 +59,7 @@ if (process.platform !== "win32") {
 const zigVersion = JSON.parse(readFileSync(resolve(root, "toolchain.json"), "utf8")).zig;
 const cacheRoot = process.env.FOO_CACHE_HOME
   ? resolve(process.env.FOO_CACHE_HOME)
-  : resolve(homedir(), ".foo", "cache");
+  : resolve(process.cwd(), ".artifacts", "cache");
 process.env.ZIG_GLOBAL_CACHE_DIR ||= resolve(cacheRoot, "zig", zigVersion);
 process.env.ZIG_LOCAL_CACHE_DIR ||= resolve(process.cwd(), ".artifacts/cache/local");
 const result = spawnSync(compiler, process.argv.slice(2), {

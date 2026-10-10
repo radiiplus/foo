@@ -1,0 +1,58 @@
+-- Runs checked FOO compute kernels through Vulkan.
+public define device as opaque.
+public define buffer as opaque.
+public define kernel as opaque.
+
+-- Availability means a Vulkan loader and compute device are present.
+public use "gpu" function available giving boolean.
+public use "gpu" function open giving failable pointer to device.
+-- Name is owned text; release it with text.release.
+public use "gpu" function name(device pointer to device) giving failable text.
+public use "gpu" function capacity(device pointer to device) giving failable unsigned.
+public use "gpu" function supports(device pointer to device, feature text) giving failable boolean.
+public use "gpu" function reserve(device pointer to device, size unsigned) giving failable pointer to buffer.
+-- Borrowed views of coherent host-visible device memory. Serialize host
+-- access with dispatch and keep the buffer alive while a view is in use.
+use "gpu" function mapped(buffer pointer to buffer) giving failable sequence of constant byte.
+use "gpu" function mutable(buffer pointer to buffer) giving failable sequence of byte.
+public function view(source pointer to buffer) giving failable sequence of constant byte borrowing source {
+  give mapped(source) try.
+}
+public function edit(source pointer to buffer) giving failable sequence of byte borrowing source {
+  give mutable(source) try.
+}
+-- Transfers cover the entire buffer and finish before returning.
+public use "gpu" function upload(buffer pointer to buffer, source sequence of constant byte) giving failable nothing.
+public use "gpu" function download(buffer pointer to buffer, destination sequence of byte) giving failable nothing.
+-- Typed transfers use four bytes per decimal 32 element.
+public use "gpu" function send(buffer pointer to buffer, source sequence of constant decimal 32) giving failable nothing.
+public use "gpu" function receive(buffer pointer to buffer, destination sequence of decimal 32) giving failable nothing.
+public use "gpu" function push(buffer pointer to buffer, source sequence of constant unsigned 32) giving failable nothing.
+public use "gpu" function pull(buffer pointer to buffer, destination sequence of unsigned 32) giving failable nothing.
+-- Prepare compiles a checked FOO function declared `for gpu`.
+public use "gpu" function prepare(device pointer to device, entry text) giving failable pointer to kernel.
+-- Available only within a `for gpu` function.
+public use "gpu" function index giving unsigned.
+public use "gpu" function local giving unsigned.
+public use "gpu" function group giving unsigned.
+public use "gpu" function lane giving unsigned.
+public use "gpu" function subgroup giving unsigned.
+public use "gpu" function width giving unsigned.
+public use "gpu" function broadcast(value decimal 32) giving decimal 32.
+public use "gpu" function barrier giving nothing.
+-- Shared storage is local to one workgroup and requires explicit dispatch.
+public use "gpu" function shared(size unsigned) giving sequence of decimal 32.
+-- Returns the previous value; addition wraps at 32 bits.
+public use "gpu" function atomic(buffer sequence of unsigned 32, index unsigned, value unsigned 32) giving unsigned 32.
+public use "gpu" function bind(kernel pointer to kernel, index unsigned, buffer pointer to buffer) giving failable nothing.
+-- Launch uses a one-dimensional global range; finish waits for queued work.
+public use "gpu" function launch(kernel pointer to kernel, count unsigned) giving failable nothing.
+-- Dispatch requires a positive local size that divides count.
+public use "gpu" function dispatch(kernel pointer to kernel, count unsigned, group unsigned) giving failable nothing.
+-- Plane and volume use row-major linear gpu.index values.
+public use "gpu" function plane(kernel pointer to kernel, x unsigned, y unsigned, columns unsigned, rows unsigned) giving failable nothing.
+public use "gpu" function volume(kernel pointer to kernel, x unsigned, y unsigned, z unsigned, columns unsigned, rows unsigned, layers unsigned) giving failable nothing.
+public use "gpu" function finish(device pointer to device) giving failable nothing.
+public use "gpu" function discard(kernel pointer to kernel) giving failable nothing.
+public use "gpu" function dispose(buffer pointer to buffer) giving failable nothing.
+public use "gpu" function close(device pointer to device) giving failable nothing.

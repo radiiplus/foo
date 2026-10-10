@@ -1,0 +1,25 @@
+use sequence as sequences.
+use testing as check.
+
+function tail(items sequence of constant byte) giving failable sequence of constant byte borrowing items {
+  give sequences.view[byte](items, 1, 2) try.
+}
+
+test "borrowed byte view" {
+  constant source is sequences.sized[byte](4) try.
+  after { sequences.release[byte](source) fallback nothing. }
+  set source at 0 to 1.
+  set source at 1 to 2.
+  set source at 2 to 3.
+  set source at 3 to 4.
+  constant middle is sequences.view[byte](source, 1, 2) try.
+  check.expect(middle at 0 is 2).
+  check.expect(middle at 1 is 3).
+  constant end is sequences.view[byte](source, 4, 0) try.
+  constant last is sequences.view[byte](source, 3, 1) try.
+  check.expect(last at 0 is 4).
+  constant nested is sequences.view[byte](middle, 1, 1) try.
+  check.expect(nested at 0 is 3).
+  constant wrapped is tail(source) try.
+  check.expect(wrapped at 0 is 2).
+}

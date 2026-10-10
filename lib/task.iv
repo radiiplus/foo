@@ -1,30 +1,36 @@
 -- Declares task execution and networking.
 --- Runtime-selected concurrency without function coloring ---
 --- Scoped execution currently uses native threads on every backend. ---
-public define Executor as opaque.
-public define Channel as opaque.
-public define Scope as opaque.
-public define Pool as opaque.
-public define Net as opaque.
-public define Socket as opaque.
+public define scheduler as opaque.
+public define mailbox as opaque.
+public define group as opaque.
+public define workers as opaque.
+public define network as opaque.
+public define socket as opaque.
 public use "task" function backend giving integer 8.
 public use "task" function which giving pointer to byte.
-public use "task" function executor giving failable pointer to Executor.
+public use "task" function executor giving failable pointer to scheduler.
 public use "task" function block(callback function giving nothing for c) giving nothing.
-public use "task" function channel giving failable pointer to Channel.
-public use "task" function send(channel pointer to Channel, value integer) giving boolean.
-public use "task" function receive(channel pointer to Channel, output pointer to integer) giving boolean.
-public use "task" function scope giving failable pointer to Scope.
-public use "task" function launch(scope pointer to Scope, callback function taking (integer) giving nothing for c, argument integer) giving boolean.
-public use "task" function join(scope pointer to Scope) giving nothing.
-public use "task" function pool giving failable pointer to Pool.
-public use "task" function submit(pool pointer to Pool, callback function taking (integer) giving nothing for c, argument integer) giving boolean.
-public use "task" function wait(pool pointer to Pool) giving nothing.
+public use "task" function channel giving failable pointer to mailbox.
+public use "task" function send(channel pointer to mailbox, value integer) giving boolean.
+public use "task" function receive(channel pointer to mailbox, output pointer to integer) giving boolean.
+public use "task" function scope giving failable pointer to group.
+public use "task" function launch(scope pointer to group, callback function taking (integer) giving nothing for c, argument integer) giving boolean.
+public use "task" function cancel(scope pointer to group) giving failable nothing.
+public use "task" function cancelled giving boolean.
+public use "task" function join(scope pointer to group) giving nothing.
+public use "task" function pool giving failable pointer to workers.
+public use "task" function submit(pool pointer to workers, callback function taking (integer) giving nothing for c, argument integer) giving boolean.
+use "task" function interrupt(pool pointer to workers) giving failable nothing.
+public function halt(pool pointer to workers) giving failable nothing {
+  interrupt(pool) try.
+}
+public use "task" function wait(pool pointer to workers) giving nothing.
 public use "task" function affinity(cpu integer) giving boolean.
 public use "task" function label(name text) giving boolean.
-public use "task" function net(executor pointer to Executor) giving pointer to Net.
-public use "task" function kind(net pointer to Net) giving integer 8.
-public use "task" function listen(net pointer to Net, port integer 32) giving pointer to Socket.
-public use "task" function connect(net pointer to Net, host pointer to byte, port integer 32) giving pointer to Socket.
-public use "task" function pull(socket pointer to Socket, buffer pointer to byte, size integer) giving integer.
-public use "task" function push(socket pointer to Socket, buffer pointer to byte, size integer) giving boolean.
+public use "task" function net(executor pointer to scheduler) giving pointer to network.
+public use "task" function kind(net pointer to network) giving integer 8.
+public use "task" function listen(net pointer to network, port integer 32) giving pointer to socket.
+public use "task" function connect(net pointer to network, host pointer to byte, port integer 32) giving pointer to socket.
+public use "task" function pull(socket pointer to socket, buffer pointer to byte, size integer) giving integer.
+public use "task" function push(socket pointer to socket, buffer pointer to byte, size integer) giving boolean.

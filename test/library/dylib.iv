@@ -1,0 +1,18 @@
+use dylib as libraries.
+use "../../lib/process.iv" as process.
+use testing as check.
+use text as words.
+
+test "native dynamic symbol lifetime" {
+  constant path is process.environment("FOO_DYLIB_TEST_PATH") fallback "".
+  when words.length(path) greater than 0 {
+    after { words.release(path) fallback nothing. }
+    constant library is libraries.open(path) try.
+    constant symbol is libraries.lookup(library, "increment") try.
+    check.expect((libraries.open("missing-dynamic-library-7f19") fallback library) is library).
+    check.expect((libraries.lookup(library, "missing-symbol-7f19") fallback symbol) is symbol).
+    check.expect((libraries.call(symbol, 41) try) is 42).
+    libraries.discard(symbol) try.
+    libraries.close(library) try.
+  }
+}

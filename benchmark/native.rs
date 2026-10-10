@@ -222,6 +222,24 @@ fn iteration(metrics: &mut Metrics) -> bool {
     checksum != 499_999_500_000
 }
 
+#[inline(never)]
+fn make_values(seed: u64, metrics: &mut Metrics) -> Vec<u64> {
+    let mut values = reserve(10_000, metrics);
+    for (index, value) in values.iter_mut().enumerate() { *value = index as u64 + seed; }
+    values
+}
+
+fn returned(metrics: &mut Metrics) -> bool {
+    let mut checksum = 0u64;
+    for seed in 0..128 {
+        let values = make_values(seed, metrics);
+        for value in &values { checksum += value; }
+        release(values, metrics);
+    }
+    SINK.store(checksum, Ordering::Relaxed);
+    checksum != 6_480_640_000
+}
+
 fn report(metrics: &Metrics) {
     let average = if metrics.growths == 0 { 0.0 } else { metrics.capacitytotal as f64 / metrics.growths as f64 };
     let factor = if metrics.requested == 0 { 0.0 } else { metrics.capacitytotal as f64 / metrics.requested as f64 };
@@ -251,6 +269,7 @@ fn main() {
         "branch" => branching(&mut metrics),
         "growth" => growth(&mut metrics),
         "iteration" => iteration(&mut metrics),
+        "returned" => returned(&mut metrics),
         "lookup" => lookup(&mut metrics),
         _ => std::process::exit(2),
     };

@@ -1,0 +1,26 @@
+use testing as check.
+
+define Header as c record {
+  tag of type byte.
+  count of type unsigned 32.
+  mark of type unsigned 16.
+}.
+
+test "type-derived constants" {
+  eval {
+    constant width is reflect[integer 32].size.
+    constant alignment is reflect[integer 32].alignment.
+    constant size is reflect[Header].size.
+    constant spacing is reflect[Header].alignment.
+    constant fields is reflect[Header].count.
+    constant position is reflect[Header].offset("count").
+    verify width is 4.
+    verify alignment is 4.
+    verify size is 12.
+    verify spacing is 4.
+    verify fields is 3.
+    verify position is 4.
+    verify width multiply 2 is 8.
+  }
+  check.expect(width is 4).
+}

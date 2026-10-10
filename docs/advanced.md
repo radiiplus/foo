@@ -97,8 +97,8 @@ use net.
 
 constant connection is net.connect("127.0.0.1", 9000) try.
 after { net.close(connection) fallback nothing. }
-net.nodelay(connection, true) try.
-net.keepalive(connection, true) try.
+net.latency(connection, true) try.
+net.probe(connection, true) try.
 
 constant written is net.push(connection, "request") try.
 net.shutdown(connection, "write") try.
@@ -131,8 +131,8 @@ is a one-writer protocol: `file` has no lock, exclusive-create, or
 compare-and-swap operation. The guarantee is limited by the host filesystem and
 storage honoring the operating-system request; see the standard-library file
 contract for platform and failure details.
-Whole-file binary reads use `readbytes`; release their `sequence of byte` with
-`releasebytes`.
+Whole-file binary reads use `load`; release their `sequence of byte` with
+`file.release`.
 
 Streaming JSON, explicit allocators, atomics (shared operations completed as
 one step), task handles, and typed foreign declarations provide the other

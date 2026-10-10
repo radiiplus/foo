@@ -21,6 +21,10 @@ Prism.languages.foo = {
   punctuation: /[{}[\]().,:]/,
 };
 
+export function highlightFoo(source: string) {
+  return Prism.highlight(source, Prism.languages.foo, "foo");
+}
+
 Prism.languages.shell = {
   comment: /#.*/,
   string: { pattern: /"(?:\\.|[^"\\])*"|'[^']*'/, greedy: true },

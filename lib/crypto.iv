@@ -1,6 +1,73 @@
 -- Declares cryptography and secure random operations.
 public use "crypto" function hash(value text) giving failable text.
+-- SHA-256 of arbitrary bytes. digest returns 32 owned bytes; release with sequence.release[byte].
+public use "crypto" function digest(value sequence of constant byte) giving failable sequence of byte.
+public use "crypto" function hex(value sequence of constant byte) giving failable text.
+public define hasher as opaque.
+public use "crypto" function begin giving failable pointer to hasher.
+public use "crypto" function update(state pointer to hasher, value sequence of constant byte) giving failable nothing.
+public use "crypto" function finalize(state pointer to hasher) giving failable text.
+public use "crypto" function result(state pointer to hasher) giving failable sequence of byte.
+public use "crypto" function close(state pointer to hasher) giving nothing.
+-- BLAKE3 is available through the blake module.
+-- HMAC-SHA256 accepts arbitrary binary keys and data. Tags are 32 owned bytes.
+public define authenticator as opaque.
+public use "crypto" function auth(secret sequence of constant byte) giving failable pointer to authenticator.
+public use "crypto" function absorb(state pointer to authenticator, value sequence of constant byte) giving failable nothing.
+public use "crypto" function tag(state pointer to authenticator) giving failable sequence of byte.
+public use "crypto" function check(state pointer to authenticator, expected sequence of constant byte) giving failable boolean.
+public use "crypto" function discard(state pointer to authenticator) giving nothing.
+-- HKDF-SHA256 accepts zero-length salt/context and returns at most 8160 owned bytes.
+public use "crypto" function derive(secret sequence of constant byte, salt sequence of constant byte,
+    context sequence of constant byte, size unsigned) giving failable sequence of byte.
+-- Comparison time depends on the public lengths, not the equal-length byte values.
+public use "crypto" function compare(left sequence of constant byte, right sequence of constant byte) giving boolean.
 public use "crypto" function random(size unsigned 32) giving failable text.
+-- Reproducible test bytes from a 32-byte seed and arbitrary label; never use as entropy.
+use "crypto" function reproduce(seed sequence of constant byte, label sequence of constant byte,
+    size unsigned 32) giving failable sequence of byte.
+public function sample(seed sequence of constant byte, label sequence of constant byte,
+    size unsigned 32) giving failable sequence of byte {
+  give reproduce(seed, label, size) try.
+}
+-- AEAD payloads are ciphertext followed by a 16-byte tag.
+public use "crypto" function available(algorithm text) giving boolean.
+use "crypto" function wrap(algorithm text, value sequence of constant byte,
+    secret sequence of constant byte, nonce sequence of constant byte,
+    extra sequence of constant byte) giving failable sequence of byte.
+use "crypto" function unwrap(algorithm text, value sequence of constant byte,
+    secret sequence of constant byte, nonce sequence of constant byte,
+    extra sequence of constant byte) giving failable sequence of byte.
+public function encrypt(algorithm text, value sequence of constant byte,
+    secret sequence of constant byte, nonce sequence of constant byte,
+    extra sequence of constant byte) giving failable sequence of byte {
+  give wrap(algorithm, value, secret, nonce, extra) try.
+}
+public function decrypt(algorithm text, value sequence of constant byte,
+    secret sequence of constant byte, nonce sequence of constant byte,
+    extra sequence of constant byte) giving failable sequence of byte {
+  give unwrap(algorithm, value, secret, nonce, extra) try.
+}
+-- A secure key is locked in memory and wiped when released.
+public define vault as opaque.
+public use "crypto" function protect(secret sequence of constant byte) giving failable pointer to vault.
+use "crypto" function shield(algorithm text, value sequence of constant byte,
+    secret pointer to vault, nonce sequence of constant byte,
+    extra sequence of constant byte) giving failable sequence of byte.
+use "crypto" function reveal(algorithm text, value sequence of constant byte,
+    secret pointer to vault, nonce sequence of constant byte,
+    extra sequence of constant byte) giving failable sequence of byte.
+public function encipher(algorithm text, value sequence of constant byte,
+    secret pointer to vault, nonce sequence of constant byte,
+    extra sequence of constant byte) giving failable sequence of byte {
+  give shield(algorithm, value, secret, nonce, extra) try.
+}
+public function decipher(algorithm text, value sequence of constant byte,
+    secret pointer to vault, nonce sequence of constant byte,
+    extra sequence of constant byte) giving failable sequence of byte {
+  give reveal(algorithm, value, secret, nonce, extra) try.
+}
+public use "crypto" function forget(secret pointer to vault) giving nothing.
 public use "crypto" function seal(value text, secret text, nonce text, extra text) giving failable text.
 public use "crypto" function open(value text, secret text, nonce text, extra text) giving failable text.
 public use "crypto" function key(seed text) giving failable text.

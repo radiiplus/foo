@@ -70,6 +70,7 @@ proc substitute*(value: Type; replacements: Table[string, Type]): Type =
   result = Type(kind: value.kind, name: value.name, width: value.width,
     constant: value.constant, abi: value.abi, length: value.length,
     layout: value.layout, value: value.value, borrows: value.borrows,
+    releases: value.releases,
     generics: value.generics, constraints: value.constraints,
     labels: value.labels, defaults: value.defaults,
     variadic: value.variadic,
@@ -98,7 +99,7 @@ proc satisfies*(value: Type; trait: string): bool =
   of "Ord":
     value != nil and value.kind == "primitive" and
       value.name in ["integer", "unsigned", "boolean", "byte", "character", "text"]
-  of "Allocator": value != nil and value.kind == "opaque" and value.name == "Allocator"
+  of "Allocator": value != nil and value.kind == "opaque" and value.name == "allocator"
   else: false
 
 proc canCoerce*(fromType, toType: Type): Coercion =

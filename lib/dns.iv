@@ -1,0 +1,27 @@
+-- Resolves names and queries DNS record sets.
+public define answer as opaque.
+use "net" function records(host text, kind text) giving failable pointer to answer.
+use "net" function amount(value pointer to answer) giving failable unsigned.
+use "net" function domain(value pointer to answer, index unsigned) giving failable text.
+use "net" function datum(value pointer to answer, index unsigned) giving failable text.
+use "net" function classification(value pointer to answer, index unsigned) giving failable text.
+use "net" function forget(value pointer to answer) giving failable nothing.
+public use "net" function ttl(value pointer to answer, index unsigned) giving failable unsigned.
+public function query(host text, kind text) giving failable pointer to answer {
+  give records(host, kind) try.
+}
+public function count(value pointer to answer) giving failable unsigned {
+  give amount(value) try.
+}
+public function name(value pointer to answer, index unsigned) giving failable text borrowing value {
+  give domain(value, index) try.
+}
+public function data(value pointer to answer, index unsigned) giving failable text borrowing value {
+  give datum(value, index) try.
+}
+public function kind(value pointer to answer, index unsigned) giving failable text borrowing value {
+  give classification(value, index) try.
+}
+public function close(value pointer to answer) giving failable nothing {
+  forget(value) try.
+}

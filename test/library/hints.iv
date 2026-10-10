@@ -1,0 +1,543 @@
+use arch as cpu.
+use cpu as compute.
+use gpu as graphics.
+use vulkan as engine.
+use "../../lib/memory.iv".
+use matrix as grid.
+use tensor as cells.
+use sequence as sequences.
+use testing as check.
+
+function shade(left sequence of constant decimal 32, right sequence of constant decimal 32, output sequence of decimal 32) giving nothing for gpu {
+  constant index is graphics.index.
+  set output at index to (left at index) plus (right at index).
+}
+
+function paint(device pointer to graphics.device) giving failable pointer to graphics.kernel {
+  give graphics.prepare(device, "shade") try.
+}
+
+function tile(source sequence of constant decimal 32, output sequence of decimal 32) giving nothing for gpu {
+  constant lane is graphics.local.
+  constant scratch is graphics.shared(4).
+  set scratch at lane to source at lane.
+  graphics.barrier.
+  set output at lane to scratch at 0.
+}
+
+function weave(device pointer to graphics.device) giving failable pointer to graphics.kernel {
+  give graphics.prepare(device, "tile") try.
+}
+
+function stripe(source sequence of constant decimal 32, output sequence of decimal 32) giving nothing for gpu {
+  constant lane is graphics.group.
+  set output at lane to source at lane.
+}
+
+function etch(device pointer to graphics.device) giving failable pointer to graphics.kernel {
+  give graphics.prepare(device, "stripe") try.
+}
+
+function tally(source sequence of constant decimal 32, output sequence of decimal 32, counts sequence of unsigned 32) giving nothing for gpu {
+  constant lane is graphics.index.
+  constant previous is graphics.atomic(counts, 0, 1).
+  set output at lane to source at lane.
+}
+
+function meter(device pointer to graphics.device) giving failable pointer to graphics.kernel {
+  give graphics.prepare(device, "tally") try.
+}
+
+function wave(source sequence of constant decimal 32, output sequence of decimal 32) giving nothing for gpu {
+  constant index is graphics.index.
+  constant lane is graphics.lane.
+  constant subgroup is graphics.subgroup.
+  constant width is graphics.width.
+  constant selected is graphics.broadcast(source at index).
+  set output at index to selected.
+}
+
+function whirl(device pointer to graphics.device) giving failable pointer to graphics.kernel {
+  give graphics.prepare(device, "wave") try.
+}
+
+function rejects(kernel pointer to graphics.kernel) giving failable boolean {
+  graphics.dispatch(kernel, 5, 4) try.
+  give false.
+}
+
+function invalid(kernel pointer to graphics.kernel) giving failable boolean {
+  graphics.plane(kernel, 2, 2, 3, 1) try.
+  give false.
+}
+
+function lane(left sequence of decimal, right sequence of decimal, output sequence of decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to (left at index) plus (right at index).
+    set index to index plus 1.
+  }
+}
+
+function minus(left sequence of decimal, right sequence of decimal, output sequence of decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to (left at index) subtract (right at index).
+    set index to index plus 1.
+  }
+}
+
+function times(left sequence of decimal, right sequence of decimal, output sequence of decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to (left at index) multiply (right at index).
+    set index to index plus 1.
+  }
+}
+
+function quotient(left sequence of decimal, right sequence of decimal, output sequence of decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to (left at index) divide (right at index).
+    set index to index plus 1.
+  }
+}
+
+function narrow(left sequence of decimal 32, right sequence of decimal 32, output sequence of decimal 32, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to (left at index) plus (right at index).
+    set index to index plus 1.
+  }
+}
+
+function scale(source sequence of decimal, output sequence of decimal, factor decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to (source at index) multiply factor.
+    set index to index plus 1.
+  }
+}
+
+function bias(source sequence of decimal, output sequence of decimal, offset decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to offset subtract (source at index).
+    set index to index plus 1.
+  }
+}
+
+function fill(output sequence of decimal, value decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to value.
+    set index to index plus 1.
+  }
+}
+
+function mirror(source sequence of decimal, output sequence of decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to source at index.
+    set index to index plus 1.
+  }
+}
+
+function shift(left sequence of decimal, right sequence of decimal, output sequence of decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 5.
+  while index is less than count {
+    set output at index to (left at index) plus (right at index).
+    set index to index plus 1.
+  }
+}
+
+function affine(source sequence of decimal, output sequence of decimal, factor decimal, offset decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to (source at index) multiply factor plus offset.
+    set index to index plus 1.
+  }
+}
+
+function magnify(source sequence of decimal 32, output sequence of decimal 32, factor decimal 32, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to (source at index) multiply factor.
+    set index to index plus 1.
+  }
+}
+
+function window(source sequence of decimal, output sequence of decimal, factor decimal, begin unsigned, count unsigned) giving nothing {
+  dynamic index of type unsigned is begin.
+  while index is less than count {
+    set output at index to (source at index) multiply factor.
+    set index to index plus 1.
+  }
+}
+
+function invert(source sequence of decimal, output sequence of decimal, factor decimal, offset decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to offset subtract ((source at index) multiply factor).
+    set index to index plus 1.
+  }
+}
+
+function ratio(source sequence of decimal, output sequence of decimal, factor decimal, offset decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index is less than count {
+    set output at index to offset divide ((source at index) multiply factor).
+    set index to index plus 1.
+  }
+}
+
+function serial(source sequence of decimal, output sequence of decimal, count unsigned) giving nothing {
+  dynamic index of type unsigned is 0.
+  dynamic total of type decimal is 0.0.
+  while index is less than count {
+    set total to total plus (source at index).
+    set output at index to total.
+    set index to index plus 1.
+  }
+}
+
+test "cache and alignment hints" {
+  check.expect(not cpu.target("unknown")).
+  check.expect(not cpu.runtime("unknown")).
+  check.expect(cpu.target("sse2") or cpu.target("neon")).
+  check.expect(cpu.runtime("sse2") or cpu.runtime("neon")).
+  constant owner is system.
+  constant original is reserve(owner, 16, 64) try.
+  check.expect(aligned(original, 64)).
+  check.expect(not aligned(original, 3)).
+  copy(owner, original, "FOO") try.
+  constant grown is expand(owner, original, 32) try.
+  after { release(owner, grown) fallback nothing. }
+  check.expect(aligned(grown, 64)).
+  check.expect(identical[byte](reserve(owner, 4, 3) fallback grown, grown)).
+
+  constant bytes is bytes(owner, grown, 3) try.
+  cpu.prefetch(bytes, 0).
+  cpu.prefetch(bytes, 3).
+  check.expect(bytes at 0 is 70).
+
+  constant writable is sequences.sized[byte](4) try.
+  after { sequences.release[byte](writable) fallback nothing. }
+  cpu.stage(writable, 1).
+  cpu.stage(writable, 100).
+
+  dynamic one is sequences.sized[byte](64) try.
+  after { sequences.release[byte](one) fallback nothing. }
+  dynamic two is sequences.sized[byte](64) try.
+  after { sequences.release[byte](two) fallback nothing. }
+  dynamic result is sequences.sized[byte](64) try.
+  after { sequences.release[byte](result) fallback nothing. }
+  dynamic index is 0.
+  while index is less than 64 {
+    set one at index to 250.
+    set two at index to 10.
+    set index to index plus 1.
+  }
+  compute.add(one, two, result) try.
+  check.expect(result at 0 is 4).
+  check.expect(result at 31 is 4).
+  check.expect(result at 32 is 4).
+  check.expect(result at 63 is 4).
+
+  dynamic first is sequences.sized[decimal](257) try.
+  after { sequences.release[decimal](first) fallback nothing. }
+  dynamic second is sequences.sized[decimal](257) try.
+  after { sequences.release[decimal](second) fallback nothing. }
+  dynamic answer is sequences.sized[decimal](257) try.
+  after { sequences.release[decimal](answer) fallback nothing. }
+  dynamic cursor of type unsigned is 0.
+  while cursor is less than 257 {
+    set first at cursor to 6.0.
+    set second at cursor to 3.0.
+    set cursor to cursor plus 1.
+  }
+  lane(first, second, answer, 257).
+  check.real(answer at 0, 9.0).
+  check.real(answer at 32, 9.0).
+  check.real(answer at 256, 9.0).
+  lane(first, second, answer, 3).
+  check.real(answer at 2, 9.0).
+  minus(first, second, answer, 257).
+  check.real(answer at 256, 3.0).
+  times(first, second, answer, 257).
+  check.real(answer at 256, 18.0).
+  quotient(first, second, answer, 257).
+  check.real(answer at 256, 2.0).
+  scale(first, answer, 2.0, 257).
+  check.real(answer at 0, 12.0).
+  check.real(answer at 256, 12.0).
+  bias(first, answer, 10.0, 257).
+  check.real(answer at 32, 4.0).
+  fill(answer, 7.0, 257).
+  check.real(answer at 0, 7.0).
+  check.real(answer at 256, 7.0).
+  shift(first, second, answer, 257).
+  check.real(answer at 0, 7.0).
+  check.real(answer at 5, 9.0).
+  check.real(answer at 256, 9.0).
+  mirror(first, answer, 257).
+  check.real(answer at 32, 6.0).
+  affine(first, answer, 2.0, 3.0, 257).
+  check.real(answer at 256, 15.0).
+  window(first, answer, 2.0, 5, 257).
+  check.real(answer at 0, 15.0).
+  check.real(answer at 5, 12.0).
+  window(first, answer, 2.0, 0, 3).
+  check.real(answer at 2, 12.0).
+  invert(first, answer, 2.0, 20.0, 257).
+  check.real(answer at 256, 8.0).
+  ratio(first, answer, 2.0, 24.0, 257).
+  check.real(answer at 256, 2.0).
+  serial(first, answer, 3).
+  check.real(answer at 0, 6.0).
+  check.real(answer at 2, 18.0).
+  lane(first, second, first, 257).
+  check.real(first at 0, 9.0).
+  check.real(first at 256, 9.0).
+
+  dynamic small is sequences.sized[decimal 32](257) try.
+  after { sequences.release[decimal 32](small) fallback nothing. }
+  dynamic other is sequences.sized[decimal 32](257) try.
+  after { sequences.release[decimal 32](other) fallback nothing. }
+  dynamic narrowed is sequences.sized[decimal 32](257) try.
+  after { sequences.release[decimal 32](narrowed) fallback nothing. }
+  dynamic offset of type unsigned is 0.
+  while offset is less than 257 {
+    set small at offset to 2.0.
+    set other at offset to 3.0.
+    set offset to offset plus 1.
+  }
+  narrow(small, other, narrowed, 257).
+  check.expect(narrowed at 0 is 5.0).
+  check.expect(narrowed at 256 is 5.0).
+  constant factor of type decimal 32 is 2.0.
+  magnify(small, narrowed, factor, 257).
+  check.expect(narrowed at 0 is 4.0).
+  check.expect(narrowed at 256 is 4.0).
+
+  constant empty is reserve(owner, 0, 256) try.
+  check.expect(aligned(empty, 256)).
+  release(owner, empty) try.
+  constant group is arena try.
+  constant temporary is reserve(group, 8, 128) try.
+  check.expect(aligned(temporary, 128)).
+  close(group) try.
+}
+
+test "vector lane operations" {
+  constant low of type vector[4, unsigned] is splat(0).
+  constant high of type vector[4, unsigned] is splat(3).
+  constant indices is shuffle(low, high, 0, 4, 0, 4).
+  constant left of type vector[4, decimal] is splat(2.0).
+  constant right of type vector[4, decimal] is splat(3.0).
+  constant lanes is shuffle(left, right, 0, 4, 1, 5).
+  constant ordered is permute(lanes, 3, 2, 1, 0).
+  check.real(ordered at 0, 3.0).
+  check.real(ordered at 1, 2.0).
+  constant picked is gather(lanes, indices).
+  check.real(picked at 0, 2.0).
+  check.real(picked at 1, 3.0).
+  constant mask of type vector[4, boolean] is splat(true).
+  check.expect(gather(mask, indices) at 0).
+  constant updates is shuffle(left, right, 0, 4, 4, 0).
+  constant changed is scatter(lanes, indices, updates).
+  check.real(changed at 0, 3.0).
+  check.real(changed at 1, 3.0).
+  check.real(changed at 3, 2.0).
+
+  dynamic a is grid.create(2, 2) try.
+  after { grid.release(a) fallback nothing. }
+  dynamic b is grid.create(2, 2) try.
+  after { grid.release(b) fallback nothing. }
+  set a.values at 0 to 1.0.
+  set a.values at 1 to 2.0.
+  set a.values at 2 to 3.0.
+  set a.values at 3 to 4.0.
+  set b.values at 0 to 5.0.
+  set b.values at 1 to 6.0.
+  set b.values at 2 to 7.0.
+  set b.values at 3 to 8.0.
+  constant product is grid.product(a, b) try.
+  after { grid.release(product) fallback nothing. }
+  check.real(grid.get(product, 0, 0) try, 19.0).
+  check.real(grid.get(product, 1, 1) try, 50.0).
+  dynamic bias is sequences.sized[decimal](2) try.
+  after { sequences.release[decimal](bias) fallback nothing. }
+  set bias at 0 to 10.0.
+  set bias at 1 to 20.0.
+  constant shifted is grid.bias(product, bias) try.
+  after { grid.release(shifted) fallback nothing. }
+  check.real(grid.get(shifted, 0, 0) try, 29.0).
+  check.real(grid.get(shifted, 1, 1) try, 70.0).
+
+  dynamic shape is sequences.sized[unsigned](2) try.
+  after { sequences.release[unsigned](shape) fallback nothing. }
+  set shape at 0 to 2.
+  set shape at 1 to 2.
+  dynamic data is sequences.sized[decimal](4) try.
+  after { sequences.release[decimal](data) fallback nothing. }
+  set data at 0 to 1.0.
+  set data at 1 to 2.0.
+  set data at 2 to 3.0.
+  set data at 3 to 4.0.
+  constant cube is cells.build(shape, data) try.
+  after { cells.release(cube) fallback nothing. }
+  check.number(cells.rank(cube), 2).
+  constant doubled is cells.scale(cube, 2.0) try.
+  after { cells.release(doubled) fallback nothing. }
+  constant combined is cells.add(cube, doubled) try.
+  after { cells.release(combined) fallback nothing. }
+  dynamic coordinates is sequences.sized[unsigned](2) try.
+  after { sequences.release[unsigned](coordinates) fallback nothing. }
+  set coordinates at 0 to 1.
+  set coordinates at 1 to 0.
+  check.real(cells.get(combined, coordinates) try, 9.0).
+
+  when graphics.available {
+    constant device is graphics.open try.
+    after { graphics.close(device) fallback nothing. }
+    constant capacity is graphics.capacity(device) try.
+    check.expect(capacity greater than 0).
+    check.expect(graphics.supports(device, "shared") try).
+    check.expect(graphics.supports(device, "atomic") try).
+    constant first is graphics.reserve(device, 4) try.
+    after { graphics.dispose(first) fallback nothing. }
+    dynamic left is sequences.sized[byte](4) try.
+    after { sequences.release[byte](left) fallback nothing. }
+    dynamic right is sequences.sized[byte](4) try.
+    after { sequences.release[byte](right) fallback nothing. }
+    dynamic result is sequences.sized[byte](4) try.
+    after { sequences.release[byte](result) fallback nothing. }
+    set left at 0 to 1.
+    set left at 1 to 2.
+    set left at 2 to 3.
+    set left at 3 to 4.
+    set right at 0 to 10.
+    set right at 1 to 20.
+    set right at 2 to 30.
+    set right at 3 to 40.
+    compute.add(left, right, result) try.
+    check.expect(result at 3 is 44).
+    graphics.upload(first, left) try.
+    graphics.download(first, result) try.
+    check.expect(result at 0 is 1).
+    check.expect(result at 3 is 4).
+
+    dynamic colors is sequences.sized[decimal 32](4) try.
+    after { sequences.release[decimal 32](colors) fallback nothing. }
+    dynamic shades is sequences.sized[decimal 32](4) try.
+    after { sequences.release[decimal 32](shades) fallback nothing. }
+    dynamic pixels is sequences.sized[decimal 32](4) try.
+    after { sequences.release[decimal 32](pixels) fallback nothing. }
+    set colors at 0 to 1.0.
+    set colors at 1 to 2.0.
+    set colors at 2 to 3.0.
+    set colors at 3 to 4.0.
+    set shades at 0 to 10.0.
+    set shades at 1 to 20.0.
+    set shades at 2 to 30.0.
+    set shades at 3 to 40.0.
+    constant alpha is graphics.reserve(device, 16) try.
+    after { graphics.dispose(alpha) fallback nothing. }
+    constant beta is graphics.reserve(device, 16) try.
+    after { graphics.dispose(beta) fallback nothing. }
+    constant gamma is graphics.reserve(device, 16) try.
+    after { graphics.dispose(gamma) fallback nothing. }
+    graphics.send(alpha, colors) try.
+    graphics.send(beta, shades) try.
+    constant painted is paint(device) try.
+    after { graphics.discard(painted) fallback nothing. }
+    graphics.bind(painted, 0, alpha) try.
+    graphics.bind(painted, 1, beta) try.
+    graphics.bind(painted, 2, gamma) try.
+    check.expect(invalid(painted) fallback true).
+    graphics.launch(painted, 4) try.
+    graphics.finish(device) try.
+    graphics.receive(gamma, pixels) try.
+    check.real(pixels at 0, 11.0).
+    check.real(pixels at 1, 22.0).
+    check.real(pixels at 2, 33.0).
+    check.real(pixels at 3, 44.0).
+    graphics.plane(painted, 2, 2, 1, 2) try.
+    graphics.finish(device) try.
+    graphics.receive(gamma, pixels) try.
+    check.real(pixels at 3, 44.0).
+    graphics.volume(painted, 2, 1, 2, 1, 1, 2) try.
+    graphics.finish(device) try.
+    graphics.receive(gamma, pixels) try.
+    check.real(pixels at 3, 44.0).
+
+    constant woven is weave(device) try.
+    after { graphics.discard(woven) fallback nothing. }
+    graphics.bind(woven, 0, alpha) try.
+    graphics.bind(woven, 1, gamma) try.
+    check.expect(rejects(woven) fallback true).
+    graphics.dispatch(woven, 4, 4) try.
+    graphics.finish(device) try.
+    graphics.receive(gamma, pixels) try.
+    check.real(pixels at 0, 1.0).
+    check.real(pixels at 3, 1.0).
+
+    constant etched is etch(device) try.
+    after { graphics.discard(etched) fallback nothing. }
+    graphics.bind(etched, 0, beta) try.
+    graphics.bind(etched, 1, gamma) try.
+    graphics.dispatch(etched, 4, 1) try.
+    graphics.finish(device) try.
+    graphics.receive(gamma, pixels) try.
+    check.real(pixels at 0, 10.0).
+    check.real(pixels at 3, 40.0).
+
+    dynamic counts is sequences.sized[unsigned 32](4) try.
+    after { sequences.release[unsigned 32](counts) fallback nothing. }
+    set counts at 0 to 0.
+    set counts at 1 to 0.
+    set counts at 2 to 0.
+    set counts at 3 to 0.
+    constant counter is graphics.reserve(device, 16) try.
+    after { graphics.dispose(counter) fallback nothing. }
+    graphics.push(counter, counts) try.
+    constant measured is meter(device) try.
+    after { graphics.discard(measured) fallback nothing. }
+    graphics.bind(measured, 0, alpha) try.
+    graphics.bind(measured, 1, gamma) try.
+    graphics.bind(measured, 2, counter) try.
+    graphics.dispatch(measured, 4, 4) try.
+    graphics.pull(counter, counts) try.
+    check.expect(counts at 0 is 4).
+
+    when graphics.supports(device, "subgroup") try {
+      constant waved is whirl(device) try.
+      after { graphics.discard(waved) fallback nothing. }
+      graphics.bind(waved, 0, alpha) try.
+      graphics.bind(waved, 1, gamma) try.
+      graphics.dispatch(waved, 4, 4) try.
+      graphics.finish(device) try.
+      graphics.receive(gamma, pixels) try.
+      check.real(pixels at 0, 1.0).
+      check.real(pixels at 3, 1.0).
+    }
+  }
+  when engine.available {
+    check.expect(engine.count greater than 0).
+    constant device is engine.select(0) try.
+    after { engine.close(device) fallback nothing. }
+    constant buffer is engine.reserve(device, 4) try.
+    after { engine.dispose(buffer) fallback nothing. }
+    dynamic payload is sequences.sized[byte](4) try.
+    after { sequences.release[byte](payload) fallback nothing. }
+    dynamic output is sequences.sized[byte](4) try.
+    after { sequences.release[byte](output) fallback nothing. }
+    set payload at 0 to 7.
+    set payload at 3 to 9.
+    engine.upload(buffer, payload) try.
+    engine.download(buffer, output) try.
+    check.expect(output at 0 is 7).
+    check.expect(output at 3 is 9).
+  }
+}

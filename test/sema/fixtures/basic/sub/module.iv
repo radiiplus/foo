@@ -1,5 +1,5 @@
 -- Exercises sema fixtures basic sub behavior.
 
-  public function nestedadd(a integer 32, b integer 32) {
+  public function combine(a integer 32, b integer 32) {
     give a plus b.
   }

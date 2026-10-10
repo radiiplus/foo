@@ -1,0 +1,52 @@
+use virtual as pages.
+use testing as check.
+
+test "virtual memory lifecycle" {
+  constant region is pages.reserve(1) try.
+  check.expect(pages.size(region) try greater than or equal to 1).
+  check.expect((pages.load(region, 0) fallback 255) is 255).
+  pages.commit(region) try.
+  pages.store(region, 0, 42) try.
+  check.expect(pages.load(region, 0) try is 42).
+  check.expect((pages.load(region, pages.size(region) try) fallback 255) is 255).
+  pages.decommit(region) try.
+  check.expect((pages.load(region, 0) fallback 255) is 255).
+  pages.commit(region) try.
+  check.expect(pages.load(region, 0) try is 0).
+  pages.release(region) try.
+}
+
+test "virtual memory protection" {
+  constant region is pages.reserve(1) try.
+  pages.commit(region) try.
+  pages.store(region, 0, 42) try.
+  pages.protect(region, "read") try.
+  pages.store(region, 0, 7) fallback nothing.
+  check.expect(pages.load(region, 0) try is 42).
+  pages.protect(region, "write") try.
+  pages.store(region, 0, 7) try.
+  check.expect(pages.load(region, 0) try is 7).
+  pages.release(region) try.
+}
+
+test "virtual memory no access" {
+  constant region is pages.reserve(1) try.
+  pages.commit(region) try.
+  pages.store(region, 0, 7) try.
+  pages.protect(region, "none") try.
+  check.expect((pages.load(region, 0) fallback 255) is 255).
+  pages.protect(region, "read") try.
+  check.expect(pages.load(region, 0) try is 7).
+  pages.release(region) try.
+}
+
+test "virtual memory executable" {
+  constant region is pages.reserve(1) try.
+  pages.commit(region) try.
+  pages.store(region, 0, 7) try.
+  pages.protect(region, "execute") try.
+  check.expect(pages.load(region, 0) try is 7).
+  pages.store(region, 0, 9) fallback nothing.
+  check.expect(pages.load(region, 0) try is 7).
+  pages.release(region) try.
+}

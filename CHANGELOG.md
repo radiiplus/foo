@@ -3,6 +3,238 @@
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## Unreleased
+
+## 0.8.0 - 2026-10-09
+
+### Packages
+
+- Accept an optional SVG icon in package publications. Canonicalize a bounded
+  shape-only profile on the registry and render package icons as isolated images
+  in discovery cards and package details.
+- Prepare Windows and Linux compiler binaries and the 2.7.0 VS Code extension.
+- Compile and execute native test suites as separate processes and run the two
+  WASI compiler tests serially to avoid cross-test toolchain contention.
+
+### Documentation
+
+- Open the introduction and beginner lessons with concrete questions and
+  examples. Make the first program a single `display` statement, and move
+  typed functions out of the introductory path.
+- Use inferred result types in the first function examples, matching the
+  compiler's existing behavior.
+
+### Naming
+
+- Rename joined FOO bindings and the public `file.persist`, `net.egress`,
+  `topology.place`, and `tensor.product` operations; update native symbols,
+  callers, and reference examples. Scan project FOO and Markdown filenames
+  while preserving GitHub-managed filenames.
+- Rename repository-owned guides, fixtures, benchmark files, grammar data, and
+  installer assets to one-word stems, updating their references.
+- Give bitmap benchmark timing artifacts and paired result files one-word names;
+  update the comparison runner and audit references. Clear each timing file
+  before sampling so an old result cannot be accepted as a new measurement.
+- Expose BLAKE3, ZigZag, hex, and Base64 through `blake`, `zigzag`, `hex`, and
+  `base64` modules with one-word operations. Rename crypto, matrix, tensor,
+  task, process, mapping, network, and packing APIs to one-word operations;
+  keep native service symbols private behind those FOO APIs.
+- Rename constructed FOO test and helper identifiers. Extend the library check
+  to nested FOO fixtures and Markdown filenames, while retaining required
+  tooling and foreign ABI spellings. Qualify process, resource, and testing
+  imports in fixtures where unqualified names conflict.
+
+### Algorithm Performance
+
+- Combine bitmap words directly for union, intersection, difference, and
+  symmetric difference on C and Zig. On the 30,000-word benchmark, C's median
+  operation time fell from 117.44 ms to 1.41 ms. Add a C++ control and retain
+  the raw paired samples in `benchmark/baseline.json`.
+- Use a CPUID-guarded POPCNT loop for Zig LLVM x86-64 bitmap counts, with the
+  portable path retained for other backends and targets. The Zig benchmark
+  median fell from 2.45 ms to 1.84 ms across 31 paired samples. Update the GPU
+  IR test to validate binary SPIR-V payloads instead of obsolete OpenCL text.
+- Add paired operation-level benchmarks against C++ sorting and population
+  count controls, with preserved before/after bitmap fixtures and measured
+  limits. Batch bitmap counts through a native packed-word primitive, using
+  guarded POPCNT on supported x86 CPUs and a portable fallback. Skip unused
+  high-byte passes in unsigned radix sorting while preserving stable order.
+- Release text produced by backend-owned binary encoders through the owning
+  runtime on C and Zig; require successful hex-text cleanup in library tests.
+
+### Language And Compiler
+
+- Lower checked private `for gpu` kernels directly to SPIR-V and execute them
+  through a Vulkan compute adapter on hosted C and Zig builds. Support byte and
+  typed transfers, owned devices/buffers/kernels, workgroup dispatch, row-major
+  2D/3D IDs, shared storage, barriers, and unsigned 32 atomics. Remove the
+  OpenCL runtime and its source compilation, CPU selection, and event APIs.
+- Vendor Vulkan-Headers, volk, SPIR-V headers, and MoltenVK source. Load Vulkan
+  device entry points directly, request portability extensions when present,
+  and keep mapped coherent buffers for supported devices. Lower subgroup IDs,
+  width, and lane-zero broadcast with Vulkan capability checks. Link the Vulkan
+  adapter only when a program uses `gpu` or `vulkan`.
+  Resolve a private metric helper collision that blocked C hardware tests.
+- Vectorize eligible release-mode decimal sequence loops through the existing
+  evidence-gated optimizer. Runtime AVX-512F, AVX2, SSE2, and NEON dispatch
+  keeps the original checked scalar loop for unsupported sizes, overlap, and
+  bounds failures across 32-bit and 64-bit decimal sequences;
+  `--explain` reports the selected path.
+- Extend counted-loop vectorization to constant starts, invariant scalar
+  operands, fill and copy, and two arithmetic steps using FOO's `plus` and
+  `multiply` syntax. Add `foo test --mode release` to execute optimized tests.
+- Accept parameterized loop starts and scalar-left second operations while
+  rejecting dependent running totals; mark automatic CPU vectorization for
+  independent contiguous decimal maps implemented in the capability audit.
+- Compile Zig 0.16's x86 native service without its unsupported per-function
+  AVX-512 path, retaining AVX2 and SSE2 dispatch; keep AVX-512 on the C backend.
+- Use object compilation for Zig header checks and AArch64 service checks to
+  avoid the `FileNotFound` syntax-only probe, and fix freestanding feature
+  comparisons and Windows SDK service declarations.
+- Add compile-time layout reflection for C records, type-derived size and
+  alignment constants, field queries, and compile-time assertions.
+- Add FOO-style `borrowing` relationships for returned storage, checked atomic
+  memory orders, record alignment clauses, and checked vector permute, gather,
+  and scatter operations on the C and Zig backends.
+- Reject borrowed byte-view uses after an owner is released, resized, closed,
+  or unmapped, including aliases and views returned from cleanup scopes.
+- Add `releasing parameter` contracts for user-defined functions, with checks
+  for undeclared releases and invalidation of borrowed arguments at call sites.
+- Keep the managed Zig toolchain at 0.16.0.
+
+### Standard Library And Systems
+
+- Add structured `issue` values and ordered error trails, checked typed
+  pointers for scalar and C-record storage, and portable checked SIMD sequence
+  loads and stores for common 32-bit and 64-bit lane shapes.
+- Expose coherent Vulkan buffer views through `gpu.view/edit`, add explicit
+  platform capability queries, and invalidate borrowed GPU views after buffer
+  disposal. C and Zig fixtures cover these boundaries.
+- Add linear-time heap construction and merge, persistent root replacement,
+  pop with the removed minimum, and sorted extraction from a private heap copy.
+  C and Zig fixtures cover duplicates, empty heaps, ordering, and ownership.
+- Add persistent bitmap toggle, logical complement, and symmetric difference,
+  plus allocation-free next and previous set-bit scans. C and Zig fixtures
+  cover word boundaries, partial final words, empty inputs, and shape checks.
+- Add persistent, equality-based set union, intersection, difference, and
+  symmetric difference with deterministic member order, plus an allocation-free
+  subset check. C and Zig fixtures cover overlap, empty sets, and ownership.
+- Add explicit trailing-axis tensor broadcasting and shape-checked elementwise
+  multiplication for matrices and tensors. Results own their storage; C and Zig
+  fixtures cover singleton axes, scalars, empty shapes, and mismatches.
+- Add independently owned matrix row and column sums and tensor axis sums.
+  Empty reduction dimensions yield zeros; tensor sums remove the chosen axis
+  and accept rank-one inputs. C and Zig fixtures cover shapes and ownership.
+- Add linear-time sorted sequence union, intersection, and difference. All
+  return independently owned, ascending, duplicate-free results from ascending
+  inputs; C and Zig tests cover repeated values and empty sides.
+- Add canonical bit-packed flags, bounded maximal byte-run encoding, and
+  sorted unsigned delta streams through `packing`. Decoders reject malformed
+  encodings and enforce caller limits; C and Zig fixtures cover boundaries.
+- Add TCP send/receive socket buffer sizing and readback, checked IPv4/IPv6
+  unicast hop limits, and traffic class settings. All report effective OS
+  values; C and Zig fixtures cover IPv4, IPv6, and invalid inputs.
+- Add checked rectangular matrix crops, tensor axis crops, and tensor axis
+  concatenation. All return independent row-major values; C and Zig fixtures
+  cover nontrivial blocks, empty dimensions, invalid shapes, and overflow.
+- Add an owned `poll` watcher for persistent TCP and UDP readiness and one-shot
+  monotonic deadlines. Bounded waits return registration tokens, support
+  removal, and leave socket ownership with callers; C and Zig fixtures exercise
+  all three event sources.
+- Add stable O(n + m) sorted sequence merging, stable single-evaluation
+  partitioning into independently owned results, and eight-pass signed radix
+  ordering across both 64-bit limits on C and Zig.
+- Add bounded `process.poll` with cached exit status and TCP/UDP send and
+  receive timeouts with effective OS value readback. C and Zig fixtures cover
+  timeout behavior, invalid bounds, zero-disable, and child reaping.
+- Add independently owned rectangular matrix transpose, tensor reshape, and
+  checked tensor axis permutation. C and Zig fixtures cover non-square, scalar,
+  empty, and invalid shapes and confirm the results do not alias inputs.
+- Add owned synchronized counter, gauge, and histogram metrics; nested
+  thread-local tracing spans; and POSIX process soft/hard resource-limit
+  queries with soft-limit updates. Keep unsupported Windows limits explicit.
+- Add persistent bitmap union, intersection, and difference through
+  `bitmap.merge/intersect/difference`, plus checked prefix rank and zero-based
+  set-bit selection. Results own separate storage; C and Zig fixtures cover
+  word boundaries, empty values, and shape failures.
+- Add online logical CPU counts, current processor IDs, and owned scoped thread
+  affinity through `topology` on Windows and Linux. Fix Zig `task.affinity` to
+  apply native affinity instead of only validating the CPU index.
+- Add signed ZigZag LEB128 with checked offsets, lowercase hexadecimal bytes,
+  and unpadded Base64url bytes to `binary`. Both decoders reject noncanonical
+  forms, and all three formats run on C and Zig.
+- Add binary and incremental BLAKE3 hashing with owned 32-byte or hex results.
+  Bundle BLAKE3 C sources with SSE2 and NEON acceleration and a portable
+  fallback; Zig uses target-selected vector lanes.
+- Add binary AEAD selection for XChaCha20-Poly1305 and AES-256-GCM with
+  availability checks, locked and wiped 32-byte key handles, and bounded
+  deterministic labeled test streams separate from secure random bytes.
+  Reject uses after BLAKE3 state cleanup and secure-key release.
+- Add byte-oriented SHA-256 and streaming hashes, incremental CRC32C, borrowed
+  byte views, alignment and cache hints, read-only file mapping, and page-backed
+  virtual memory reservation, commit, protection, and decommit operations.
+- Add shared writable file mappings with borrowed write views, explicit durable
+  flushing, and flush-on-unmap behavior on Windows and POSIX.
+- Complete whole-region virtual memory management with checked load and store,
+  release, and none, read, read/write, and read/execute protection modes.
+- Add cooperative task cancellation with inherited cancellation in nested
+  scopes and pools, plus bounded framed gzip/zlib stream encoding and decoding.
+- Expand file operations with positional I/O, exclusive creation, locking,
+  allocation, metadata, directory traversal, temporary files, and failure
+  injection for storage tests; expose process exit and abort for crash tests.
+- Add typed TCP/UDP endpoints and datagrams, DNS record queries, interface and
+  route snapshots, resource counters, build-target and runtime CPU feature
+  checks, and byte operations with AVX2, SSE2, NEON, and scalar dispatch.
+- Add owned row-major CPU matrix and tensor operations, plus Vulkan GPU device,
+  buffer, and kernel management with transfers and compute dispatch.
+- Add monotonic instants, UTC nanosecond timestamps, checked elapsed arithmetic,
+  and validated civil dates with fixed offsets.
+- Add canonical unsigned variable-integer and fixed-width endian byte codecs,
+  persistent compact bitmaps, and persistent minimum-priority heaps.
+- Add bounded length-prefixed frames, CRC32C-checked binary blocks, and
+  lower-bound, upper-bound, and exact binary search over sorted sequences.
+- Add bounded, synchronized byte rings, bit-packed binary Bloom filters, and
+  stable unsigned radix sorting with checked ownership and cleanup.
+- Add streaming HMAC-SHA256 tags and verification, bounded HKDF-SHA256 key
+  derivation, and constant-time comparison for equal-length binary values.
+- Add native shared-library loading with an explicit 64-bit unary C symbol call
+  contract and explicit symbol and library lifetimes on C and Zig.
+- Expose live task, pending-work, and tracked heap-byte counters alongside
+  existing file, mapping, and thread accounting.
+- Add a persistent packed ordered search tree with logarithmic lookup and
+  rank queries, checked selection, and independent insertion and removal.
+- Add UDP unicast hop limits, traffic class, and send/receive buffer sizing
+  with effective-value readback and checked arguments on C and Zig.
+- Add process identity and owned child lifecycle controls, plus monotonic
+  cancellable one-shot timers with explicit cleanup on C and Zig.
+- Replace generic insertion sorting with a stable O(n log n) merge sort;
+  extend bounded byte rings with constant-time operations at both ends.
+- Add directly launched child processes with separate binary stdin, stdout,
+  and stderr pipes, bounded reads, partial writes, explicit input sealing,
+  and owned output cleanup on C and Zig.
+- Use lowercase, single-word public names throughout the standard library.
+
+### Tooling And Tests
+
+- Add a local source-release candidate packer with a file inventory, SHA-256
+  manifest, and Git provenance. Include backend sources, tests, build tools,
+  installers, registry code, and matching vendored dependencies.
+- Base CLI build, check, run, test, and benchmark progress on planned and
+  completed jobs, including test execution and benchmark samples. Show an
+  adapting finish estimate from per-project noncached timing history and expose
+  numeric progress in JSON events; failed commands retain their last completed
+  percentage.
+- Compile the bundled BLAKE3 1.8.7 C sources alongside programs importing
+  `crypto`, and cover hashing, AEAD, secure keys, and test streams on C and Zig.
+- Use the portable `avx512f` function target so GCC 11 accepts the Linux
+  native service while retaining runtime AVX-512F dispatch.
+- Bundle precompiled Windows x64 libsodium development files for C builds and
+  include them in release staging.
+- Bundle Windows x64 zlib development files for C compression builds and
+  include them in release staging.
+- Expand native, compiler, library, and documentation checks for the new
+  capabilities, including Windows and Linux service parity.
+
 ## 0.7.1 - 2026-10-03
 
 ### Compiler And Libraries

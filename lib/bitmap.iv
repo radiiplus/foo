@@ -1,0 +1,211 @@
+-- Persistent compact bitmaps. Each word stores 64 bits.
+use sequence as items.
+use arch as cpu.
+
+public define bitmap as record {
+  length of type unsigned.
+  words of type sequence of unsigned.
+}.
+
+function mask(index unsigned) giving unsigned {
+  dynamic result of type unsigned is 1.
+  dynamic bit of type unsigned is 0.
+  while bit less than index {
+    set result to result multiply 2.
+    increase bit by 1.
+  }
+  give result.
+}
+
+public function create(length unsigned) giving failable bitmap {
+  dynamic blocks is length divide 64.
+  when length remainder 64 is not 0 { increase blocks by 1. }
+  give bitmap(length, items.sized[unsigned](blocks) try).
+}
+
+public function get(value bitmap, index unsigned) giving failable boolean {
+  when index greater than or equal to value.length { give fail(Error.Bounds). }
+  constant word is value.words at (index divide 64).
+  give (word divide mask(index remainder 64)) remainder 2 is 1.
+}
+
+public function put(value bitmap, index unsigned, enabled boolean) giving failable bitmap {
+  when index greater than or equal to value.length { give fail(Error.Bounds). }
+  dynamic result is bitmap(value.length, items.copy[unsigned](value.words) try).
+  constant previous is get(value, index) try.
+  when previous is enabled { give result. }
+  constant slot is index divide 64.
+  constant bit is mask(index remainder 64).
+  when enabled {
+    set result.words at slot to (result.words at slot) plus bit.
+  } otherwise {
+    set result.words at slot to (result.words at slot) subtract bit.
+  }
+  give result.
+}
+
+-- Flips one checked bit without changing the source bitmap.
+public function toggle(value bitmap, index unsigned) giving failable bitmap {
+  give put(value, index, not (get(value, index) try)) try.
+}
+
+-- Complements only the logical bits; unused bits in the final word stay zero.
+public function invert(value bitmap) giving failable bitmap {
+  dynamic result is create(value.length) try.
+  after error { release(result) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than items.length[unsigned](value.words) {
+    constant remaining is value.length subtract index multiply 64.
+    dynamic maximum of type unsigned is 18446744073709551615.
+    when remaining less than 64 { set maximum to mask(remaining) subtract 1. }
+    set result.words at index to maximum subtract (value.words at index).
+    increase index by 1.
+  }
+  give result.
+}
+
+public function count(value bitmap) giving unsigned {
+  constant words of type sequence of constant unsigned is value.words.
+  give cpu.tally(words).
+}
+
+function population(word unsigned) giving unsigned {
+  constant result of type unsigned is cpu.count(word).
+  give result.
+}
+
+-- Combines equal-sized bitmaps without changing either input.
+function blend(left bitmap, right bitmap, operation unsigned) giving failable bitmap {
+  when left.length is not right.length { give fail(Error.Shape). }
+  dynamic result is create(left.length) try.
+  after error { release(result) fallback nothing. }
+  constant first of type sequence of constant unsigned is left.words.
+  constant second of type sequence of constant unsigned is right.words.
+  when not cpu.combine(first, second, result.words, operation) {
+    give fail(Error.Shape).
+  }
+  give result.
+}
+
+public function merge(left bitmap, right bitmap) giving failable bitmap {
+  give blend(left, right, 0) try.
+}
+
+public function intersect(left bitmap, right bitmap) giving failable bitmap {
+  give blend(left, right, 1) try.
+}
+
+public function difference(left bitmap, right bitmap) giving failable bitmap {
+  give blend(left, right, 2) try.
+}
+
+-- Keeps bits set in exactly one input.
+public function symmetric(left bitmap, right bitmap) giving failable bitmap {
+  give blend(left, right, 3) try.
+}
+
+-- Finds the first set bit at or after from, or null past the logical length.
+public function next(value bitmap, from unsigned) giving optional unsigned {
+  when from greater than value.length { give null. }
+  dynamic word is from divide 64.
+  dynamic offset is from remainder 64.
+  while word less than items.length[unsigned](value.words) {
+    dynamic current is value.words at word.
+    dynamic skipped of type unsigned is 0.
+    while skipped less than offset {
+      set current to current divide 2.
+      increase skipped by 1.
+    }
+    dynamic bit is offset.
+    while bit less than 64 and word multiply 64 plus bit less than value.length and current greater than 0 {
+      when current remainder 2 is 1 {
+        constant found of type optional unsigned is word multiply 64 plus bit.
+        give found.
+      }
+      set current to current divide 2.
+      increase bit by 1.
+    }
+    increase word by 1.
+    set offset to 0.
+  }
+  give null.
+}
+
+-- Finds the final set bit before an exclusive boundary, or null past the length.
+public function previous(value bitmap, before unsigned) giving optional unsigned {
+  when before greater than value.length { give null. }
+  dynamic end is before.
+  while end greater than 0 {
+    constant word is (end subtract 1) divide 64.
+    constant origin is word multiply 64.
+    constant limit is end subtract origin.
+    dynamic current is value.words at word.
+    dynamic bit of type unsigned is 0.
+    dynamic present is false.
+    dynamic last of type unsigned is 0.
+    while bit less than limit {
+      when current remainder 2 is 1 {
+        set present to true.
+        set last to origin plus bit.
+      }
+      set current to current divide 2.
+      increase bit by 1.
+    }
+    when present {
+      constant found of type optional unsigned is last.
+      give found.
+    }
+    set end to origin.
+  }
+  give null.
+}
+
+-- Counts set bits before index; index equal to length is allowed.
+public function rank(value bitmap, index unsigned) giving failable unsigned {
+  when index greater than value.length { give fail(Error.Bounds). }
+  dynamic total of type unsigned is 0.
+  dynamic word of type unsigned is 0.
+  while word less than index divide 64 {
+    set total to total plus population(value.words at word).
+    increase word by 1.
+  }
+  dynamic current of type unsigned is 0.
+  when index remainder 64 greater than 0 { set current to value.words at word. }
+  dynamic remaining is index remainder 64.
+  while remaining greater than 0 {
+    set total to total plus current remainder 2.
+    set current to current divide 2.
+    set remaining to remaining subtract 1.
+  }
+  give total.
+}
+
+-- Returns the index of the zero-based set bit, or null when absent.
+public function select(value bitmap, ordinal unsigned) giving optional unsigned {
+  dynamic remaining is ordinal.
+  dynamic index of type unsigned is 0.
+  for each word in value.words {
+    constant present is population(word).
+    when remaining greater than or equal to present {
+      set remaining to remaining subtract present.
+      set index to index plus 64.
+    } otherwise {
+      dynamic current is word.
+      dynamic bit of type unsigned is 0.
+      while bit less than 64 {
+        when current remainder 2 is 1 {
+          when remaining is 0 { give index plus bit. }
+          set remaining to remaining subtract 1.
+        }
+        set current to current divide 2.
+        increase bit by 1.
+      }
+    }
+  }
+  give null.
+}
+
+public function release(value bitmap) giving failable nothing {
+  items.release[unsigned](value.words) try.
+  give nothing.
+}

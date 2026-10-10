@@ -67,6 +67,7 @@ boundaries:
 | `known` | Validation when a value is already known during the build. |
 | `lookup` | One million checked dynamic sequence lookups. |
 | `runtime` | Standard runtime initialization and one hosted query. |
+| `returned` | Repeated owned-sequence returns, full reads, and caller releases. |
 | `startup` | Process and generated-program harness floor (the fixed cost of starting and measuring) without library work. |
 
 Run the suite using the project's configured mode and one backend with:
@@ -82,12 +83,25 @@ in both `dev` and `release`, then refresh the report used by the website:
 npm run benchmark:report
 ```
 
+For a focused cross-backend and control rerun, use a catalog name and a
+separate output file:
+
+```sh
+node tools/benchmark.mjs --workload returned --mode release --output benchmark/returned.json
+```
+
 The version 4 report keeps every raw sample in `benchmark/results.json` and
 records five implementations for each workload (the specific operation being
 measured): FOO through C, FOO through Zig, handwritten C, handwritten Zig, and
 handwritten Rust. Compilation duration and cache reuse are separate from runtime
 samples. Runtime samples include process startup and shutdown, so the report
 records both `startup` and `runtime` baselines.
+
+New reports also retain `allocationSamples` beside each timing sample. The
+`returned` workload enforces per-run ceilings of 128 payload allocations,
+10,240,000 allocated bytes, zero copied bytes, and 80,000 peak live payload
+bytes; it must end with zero live payload bytes. These counters cover instrumented
+payload storage, not allocator bookkeeping or whole-process resident memory.
 
 Set `RUSTC` when `rustc` is not on `PATH`. The report records
 `speedupAgainstRust` for each FOO backend and mode. A value above `1` means the
@@ -120,6 +134,8 @@ eliminated allocations and boundaries, and fused pipelines. A zero is an
 observed compiler fact, not an implied optimization.
 
 The current investigation and measurements are in [Performance Report](performance.md).
+Focused packed-bitmap and radix comparisons are in
+[Algorithm Benchmarks](../benchmark/algorithms.md).
 
 These measurements compare specific generated programs and handwritten
 controls under recorded conditions. They do not establish that FOO is broadly
@@ -128,6 +144,8 @@ controls under recorded conditions. They do not establish that FOO is broadly
 The report tool verifies that every cataloged workload produced one event for
 each requested backend and mode. A missing or unexpected workload fails report
 generation, preventing a report from silently omitting inconvenient results.
+It invokes cataloged `.iv` files by exact path; exploratory fixtures elsewhere
+in `benchmark/` do not change the report's workload set.
 
 Compiler time and memory are separate concerns. The runtime samples exclude
 both, so use build telemetry to detect slow or memory-heavy compilation rather

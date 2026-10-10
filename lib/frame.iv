@@ -1,0 +1,51 @@
+-- Bounded length-prefixed binary values. The prefix is canonical unsigned LEB128.
+use binary as wire.
+use sequence as items.
+
+public define packet as record {
+  data of type sequence of byte.
+  next of type unsigned.
+}.
+
+-- The returned frame owns its bytes; release with sequence.release[byte].
+public function pack(value sequence of constant byte) giving failable sequence of byte {
+  constant length is items.extent[byte](value).
+  constant prefix is wire.encode(length) try.
+  after { items.release[byte](prefix) fallback nothing. }
+  constant head is items.length[byte](prefix).
+  when length greater than 18446744073709551615 subtract head {
+    give fail(Error.Size).
+  }
+  dynamic output is items.sized[byte](head plus length) try.
+  dynamic index of type unsigned is 0.
+  while index less than head {
+    set output at index to prefix at index.
+    increase index by 1.
+  }
+  dynamic cursor of type unsigned is 0.
+  while cursor less than length {
+    set output at (head plus cursor) to value at cursor.
+    increase cursor by 1.
+  }
+  give output.
+}
+
+-- The caller's limit is checked before allocating the independent payload.
+public function read(source sequence of constant byte, offset unsigned, limit unsigned) giving failable packet {
+  constant header is wire.decode(source, offset) try.
+  constant extent is items.extent[byte](source).
+  when header.value greater than limit { give fail(Error.Size). }
+  when header.value greater than extent subtract header.next { give fail(Error.Bounds). }
+  dynamic output is items.sized[byte](header.value) try.
+  dynamic index of type unsigned is 0.
+  while index less than header.value {
+    set output at index to source at (header.next plus index).
+    increase index by 1.
+  }
+  give packet(output, header.next plus header.value).
+}
+
+public function release(value packet) giving failable nothing {
+  items.release[byte](value.data) try.
+  give nothing.
+}

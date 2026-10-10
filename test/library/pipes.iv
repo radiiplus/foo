@@ -1,0 +1,49 @@
+use "../../lib/process.iv" as jobs.
+use sequence as items.
+use testing as check.
+
+function missing(arguments sequence of text) giving failable boolean {
+  constant child is jobs.pipe("foo-missing-program-7f19", arguments) try.
+  jobs.close(child) try.
+  give false.
+}
+
+test "piped child transfers bytes and separates streams" {
+  constant arguments is items.sized[text](2) try.
+  after { items.release[text](arguments) fallback nothing. }
+  set arguments at 0 to "-e".
+  set arguments at 1 to "const a=[];process.stdin.on('data',x=>a.push(x));process.stdin.on('end',()=>{process.stdout.write(Buffer.concat(a));process.stderr.write(Buffer.from([9,8]));})".
+  check.expect(missing(arguments) fallback true).
+
+  constant child is jobs.pipe("node", arguments) try.
+  after { jobs.close(child) fallback nothing. }
+  constant content is items.sized[byte](3) try.
+  after { items.release[byte](content) fallback nothing. }
+  set content at 0 to 0.
+  set content at 1 to 255.
+  set content at 2 to 42.
+  check.expect(jobs.write(child, content) try is 3).
+  jobs.seal(child) try.
+  check.expect((jobs.write(child, content) fallback 999) is 999).
+
+  dynamic index of type unsigned is 0.
+  while index less than 3 {
+    constant chunk is jobs.read(child, "output", 1) try.
+    check.expect(items.length[byte](chunk) is 1).
+    check.expect(chunk at 0 is content at index).
+    jobs.release(chunk) try.
+    increase index by 1.
+  }
+  constant end is jobs.read(child, "output", 1) try.
+  check.expect(items.length[byte](end) is 0).
+  jobs.release(end) try.
+  constant first is jobs.read(child, "error", 1) try.
+  check.expect(items.length[byte](first) is 1).
+  check.expect(first at 0 is 9).
+  jobs.release(first) try.
+  constant last is jobs.read(child, "error", 1) try.
+  check.expect(items.length[byte](last) is 1).
+  check.expect(last at 0 is 8).
+  jobs.release(last) try.
+  check.expect(jobs.wait(child) try is 0).
+}

@@ -1,5 +1,14 @@
 -- Declares cryptography and secure random operations.
 public use "crypto" function hash(value text) giving failable text.
+-- SHA-256 of arbitrary bytes. digest returns 32 owned bytes; release with sequence.release[byte].
+public use "crypto" function digest(value sequence of constant byte) giving failable sequence of byte.
+public use "crypto" function hex(value sequence of constant byte) giving failable text.
+public define Hasher as opaque.
+public use "crypto" function begin giving failable pointer to Hasher.
+public use "crypto" function update(state pointer to Hasher, value sequence of constant byte) giving failable nothing.
+public use "crypto" function finalize(state pointer to Hasher) giving failable text.
+public use "crypto" function result(state pointer to Hasher) giving failable sequence of byte.
+public use "crypto" function close(state pointer to Hasher) giving nothing.
 public use "crypto" function random(size unsigned 32) giving failable text.
 public use "crypto" function seal(value text, secret text, nonce text, extra text) giving failable text.
 public use "crypto" function open(value text, secret text, nonce text, extra text) giving failable text.

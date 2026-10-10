@@ -32,9 +32,12 @@ keys, or release credentials.
 
 ## Repository conventions
 
-- Use one-word names for new source files, functions, types, and other code
-  declarations. Standard ecosystem filenames such as `CODE_OF_CONDUCT.md` and
-  GitHub template paths are exceptions.
+- Use one-word names for FOO files and declarations, public FOO APIs, and
+  repository-owned Markdown filenames. Keep established words such as
+  `checksum`; split constructed joins into modules or choose one clear word.
+  Foreign ABI symbols, required toolchain filenames, and GitHub metadata are
+  exceptions. Nim, C, Zig, JavaScript, and TypeScript internals follow their
+  existing conventions.
 - Follow the surrounding Nim, JavaScript, FOO, C, Zig, and Markdown style.
 - Keep public behavior consistent between the C and Zig backends.
 - Add focused regression coverage beside the affected subsystem.

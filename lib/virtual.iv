@@ -1,0 +1,11 @@
+-- Page-backed address space. Operations cover the entire reserved region.
+public define region as opaque.
+public use "vm" function reserve(size unsigned) giving failable pointer to region.
+public use "vm" function size(value pointer to region) giving failable unsigned.
+public use "vm" function commit(value pointer to region) giving failable nothing.
+-- Mode is "none", "read", "write" (read/write), or "execute" (read/execute).
+public use "vm" function protect(value pointer to region, mode text) giving failable nothing.
+public use "vm" function decommit(value pointer to region) giving failable nothing.
+public use "vm" function load(value pointer to region, offset unsigned) giving failable byte.
+public use "vm" function store(value pointer to region, offset unsigned, data byte) giving failable nothing.
+public use "vm" function release(value pointer to region) giving failable nothing.

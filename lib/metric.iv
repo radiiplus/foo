@@ -1,0 +1,18 @@
+-- Owned, synchronized instruments. Bounds must be strictly ascending.
+public define meter as opaque.
+-- Kinds are "counter", "gauge", and "histogram". Only histograms use bounds.
+public use "metric" function create(name text, kind text, bounds sequence of unsigned) giving failable pointer to meter.
+-- Counter and gauge increments fail on overflow.
+public use "metric" function add(value pointer to meter, amount unsigned) giving failable nothing.
+public use "metric" function set(value pointer to meter, amount unsigned) giving failable nothing.
+public use "metric" function observe(value pointer to meter, amount unsigned) giving failable nothing.
+public use "metric" function value(value pointer to meter) giving failable unsigned.
+public use "metric" function count(value pointer to meter) giving failable unsigned.
+public use "metric" function sum(value pointer to meter) giving failable unsigned.
+-- Histogram buckets are inclusive of each bound; the last bucket is overflow.
+public use "metric" function bucket(value pointer to meter, index unsigned) giving failable unsigned.
+-- Returns independently owned text.
+public use "metric" function name(value pointer to meter) giving failable text.
+-- Returns an independently owned JSON snapshot of one instrument.
+public use "metric" function export(value pointer to meter) giving failable text.
+public use "metric" function close(value pointer to meter) giving failable nothing.

@@ -1,9 +1,52 @@
 -- Declares atomic values and memory ordering operations.
-public define Atom as opaque.
-public use "atomic" function create(value unsigned) giving failable pointer to Atom.
-public use "atomic" function release(value pointer to Atom) giving nothing.
-public use "atomic" function load(value pointer to Atom, order text) giving failable unsigned.
-public use "atomic" function store(value pointer to Atom, number unsigned, order text) giving failable nothing.
-public use "atomic" function add(value pointer to Atom, number unsigned, order text) giving failable unsigned.
-public use "atomic" function swap(value pointer to Atom, number unsigned, order text) giving failable unsigned.
-public use "atomic" function replace(value pointer to Atom, expected unsigned, number unsigned, order text) giving failable boolean.
+public define atom as opaque.
+public define order as choice {
+  relaxed.
+  acquire.
+  releasing.
+  both.
+  sequential.
+}.
+function label(mode order) giving text {
+  match mode {
+    case relaxed { give "relaxed". }
+    case acquire { give "acquire". }
+    case releasing { give "release". }
+    case both { give "both". }
+    case sequential { give "sequential". }
+  }
+}
+public use "atomic" function create(value unsigned) giving failable pointer to atom.
+public use "atomic" function release(value pointer to atom) giving nothing.
+public use "atomic" function load(value pointer to atom, mode text) giving failable unsigned.
+public use "atomic" function store(value pointer to atom, number unsigned, mode text) giving failable nothing.
+public use "atomic" function add(value pointer to atom, number unsigned, mode text) giving failable unsigned.
+public use "atomic" function deduct(value pointer to atom, number unsigned, mode text) giving failable unsigned.
+public use "atomic" function swap(value pointer to atom, number unsigned, mode text) giving failable unsigned.
+public use "atomic" function replace(value pointer to atom, expected unsigned, number unsigned, mode text) giving failable boolean.
+-- Failure may use relaxed, acquire, or sequential, and cannot outrank success.
+public use "atomic" function compare(value pointer to atom, expected unsigned, number unsigned, success text, failure text) giving failable boolean.
+public function attempt(value pointer to atom, expected unsigned, number unsigned, mode text) giving failable boolean {
+  give replace(value, expected, number, mode) try.
+}
+public function read(value pointer to atom, mode order) giving failable unsigned {
+  give load(value, label(mode)) try.
+}
+public function write(value pointer to atom, number unsigned, mode order) giving failable nothing {
+  store(value, number, label(mode)) try.
+}
+public function increase(value pointer to atom, number unsigned, mode order) giving failable unsigned {
+  give add(value, number, label(mode)) try.
+}
+public function decrease(value pointer to atom, number unsigned, mode order) giving failable unsigned {
+  give deduct(value, number, label(mode)) try.
+}
+public function exchange(value pointer to atom, number unsigned, mode order) giving failable unsigned {
+  give swap(value, number, label(mode)) try.
+}
+public function commit(value pointer to atom, expected unsigned, number unsigned, mode order) giving failable boolean {
+  give replace(value, expected, number, label(mode)) try.
+}
+public function cas(value pointer to atom, expected unsigned, number unsigned, success order, failure order) giving failable boolean {
+  give compare(value, expected, number, label(success), label(failure)) try.
+}

@@ -1,14 +1,29 @@
 -- Declares owned allocations and grouped arena lifetimes.
-public define Allocator as opaque.
-public use "memory" function system giving pointer to Allocator.
-public use "memory" function arena giving failable pointer to Allocator.
-public use "memory" function allocate(allocator pointer to Allocator, size unsigned) giving failable pointer to byte.
-public use "memory" function release(allocator pointer to Allocator, buffer pointer to byte) giving failable nothing.
-public use "memory" function expand(allocator pointer to Allocator, buffer pointer to byte, size unsigned) giving failable pointer to byte.
-public use "memory" function copy(allocator pointer to Allocator, buffer pointer to byte, content text) giving failable nothing.
-public use "memory" function view(allocator pointer to Allocator, buffer pointer to byte, size unsigned) giving failable text.
-public use "memory" function close(allocator pointer to Allocator) giving failable nothing.
+public define allocator as opaque.
+public use "memory" function system giving pointer to allocator.
+public use "memory" function arena giving failable pointer to allocator.
+public use "memory" function allocate(allocator pointer to allocator, size unsigned) giving failable pointer to byte.
+-- Alignment must be a nonzero power of two and survives expand.
+public use "memory" function reserve(allocator pointer to allocator, size unsigned, alignment unsigned) giving failable pointer to byte.
+-- Checks an address; it does not establish ownership or lifetime.
+public use "memory" function aligned(buffer pointer to byte, alignment unsigned) giving boolean.
+public use "memory" function release(allocator pointer to allocator, buffer pointer to byte) giving failable nothing.
+public use "memory" function expand(allocator pointer to allocator, buffer pointer to byte, size unsigned) giving failable pointer to byte.
+public use "memory" function copy(allocator pointer to allocator, buffer pointer to byte, content text) giving failable nothing.
+public use "memory" function view(allocator pointer to allocator, buffer pointer to byte, size unsigned) giving failable text.
+-- Binary view; the allocation must remain alive and unresized while borrowed.
+-- Writes through the owner are visible through the view.
+public use "memory" function bytes(allocator pointer to allocator, buffer pointer to byte, size unsigned) giving failable sequence of constant byte.
+public use "memory" function close(allocator pointer to allocator) giving failable nothing.
 public use "memory" function transfer(source sequence of constant byte, destination sequence of byte) giving failable nothing.
 public use "memory" function clear(buffer sequence of byte) giving nothing.
 public use "memory" function compare(left sequence of constant byte, right sequence of constant byte) giving integer.
 public use "memory" function identical[T](left pointer to T, right pointer to T) giving boolean.
+-- Reinterprets only scalar or scalar-only C-record layouts. The allocation
+-- must contain a valid T at the checked offset and remain alive while borrowed.
+use "memory" function reinterpret[T](owner pointer to allocator, buffer pointer to byte,
+  offset unsigned) giving failable pointer to T.
+public function cast[T](owner pointer to allocator, buffer pointer to byte,
+  offset unsigned) giving failable pointer to T borrowing owner, buffer {
+  give reinterpret[T](owner, buffer, offset) try.
+}

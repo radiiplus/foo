@@ -90,6 +90,8 @@ type
     args*: seq[`Type`]
   EvalBlock* = ref object of Node
     body*: Block
+  Verify* = ref object of Node
+    condition*: Expression
   Reflect* = ref object of Node
     `type`*: `Type`
   Embed* = ref object of Node

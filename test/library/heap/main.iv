@@ -1,0 +1,144 @@
+use heap as priority.
+use sequence as items.
+use testing as check.
+
+function sample giving failable sequence of integer {
+  constant values is items.sized[integer](6) try.
+  set values at 0 to 5.
+  set values at 1 to 1.
+  set values at 2 to 3.
+  set values at 3 to 1.
+  set values at 4 to 9.
+  set values at 5 to 2.
+  give values.
+}
+
+function missing(value priority.heap[integer]) giving failable boolean {
+  constant result is priority.replace[integer](value, 4) try.
+  priority.release[integer](result) try.
+  give false.
+}
+
+function exhausted(value priority.heap[integer]) giving failable boolean {
+  constant result is priority.pop[integer](value) try.
+  priority.release[integer](result.rest) try.
+  give false.
+}
+
+test "bulk heap build owns input and handles duplicates" {
+  constant values is sample try.
+  after { items.release[integer](values) fallback nothing. }
+  constant built is priority.build[integer](values) try.
+  after { priority.release[integer](built) fallback nothing. }
+  check.number(priority.length[integer](built), 6).
+  check.expect(priority.first[integer](built) try is 1).
+  constant ordered is priority.sorted[integer](built) try.
+  after { items.release[integer](ordered) fallback nothing. }
+  check.expect(ordered at 0 is 1 and ordered at 1 is 1).
+  check.expect(ordered at 2 is 2 and ordered at 3 is 3).
+  check.expect(ordered at 4 is 5 and ordered at 5 is 9).
+  set built.values at 0 to 99.
+  check.expect(values at 0 is 5).
+  constant empty is items.create[integer].
+  constant blank is priority.build[integer](empty) try.
+  after { priority.release[integer](blank) fallback nothing. }
+  check.number(priority.length[integer](blank), 0).
+}
+
+test "heap merge heapifies both inputs into new storage" {
+  constant first is items.sized[integer](3) try.
+  after { items.release[integer](first) fallback nothing. }
+  set first at 0 to 7.
+  set first at 1 to 1.
+  set first at 2 to 5.
+  constant second is items.sized[integer](3) try.
+  after { items.release[integer](second) fallback nothing. }
+  set second at 0 to 3.
+  set second at 1 to 1.
+  set second at 2 to 2.
+  constant left is priority.build[integer](first) try.
+  constant right is priority.build[integer](second) try.
+  after {
+    priority.release[integer](left) fallback nothing.
+    priority.release[integer](right) fallback nothing.
+  }
+  constant joined is priority.merge[integer](left, right) try.
+  after { priority.release[integer](joined) fallback nothing. }
+  check.number(priority.length[integer](joined), 6).
+  constant ordered is priority.sorted[integer](joined) try.
+  after { items.release[integer](ordered) fallback nothing. }
+  check.expect(ordered at 0 is 1 and ordered at 1 is 1).
+  check.expect(ordered at 2 is 2 and ordered at 3 is 3).
+  check.expect(ordered at 4 is 5 and ordered at 5 is 7).
+  set joined.values at 0 to 99.
+  check.expect(priority.first[integer](left) try is 1).
+  check.expect(priority.first[integer](right) try is 1).
+  constant empty is priority.create[integer].
+  constant copy is priority.merge[integer](empty, right) try.
+  after { priority.release[integer](copy) fallback nothing. }
+  check.number(priority.length[integer](copy), 3).
+}
+
+test "heap root replacement preserves order and sources" {
+  constant values is sample try.
+  after { items.release[integer](values) fallback nothing. }
+  constant source is priority.build[integer](values) try.
+  after { priority.release[integer](source) fallback nothing. }
+  constant raised is priority.replace[integer](source, 4) try.
+  constant lowered is priority.replace[integer](source, 0) try.
+  after {
+    priority.release[integer](raised) fallback nothing.
+    priority.release[integer](lowered) fallback nothing.
+  }
+  check.expect(priority.first[integer](source) try is 1).
+  check.expect(priority.first[integer](raised) try is 1).
+  check.expect(priority.first[integer](lowered) try is 0).
+  constant ordered is priority.sorted[integer](raised) try.
+  after { items.release[integer](ordered) fallback nothing. }
+  check.expect(ordered at 0 is 1 and ordered at 1 is 2).
+  check.expect(ordered at 2 is 3 and ordered at 3 is 4).
+  check.expect(ordered at 4 is 5 and ordered at 5 is 9).
+  constant empty is priority.create[integer].
+  check.expect(missing(empty) fallback true).
+}
+
+test "heap pop returns minimum and independent remainder" {
+  constant values is sample try.
+  after { items.release[integer](values) fallback nothing. }
+  constant source is priority.build[integer](values) try.
+  after { priority.release[integer](source) fallback nothing. }
+  constant removed is priority.pop[integer](source) try.
+  after { priority.release[integer](removed.rest) fallback nothing. }
+  check.expect(removed.item is 1).
+  check.number(priority.length[integer](removed.rest), 5).
+  check.expect(priority.first[integer](removed.rest) try is 1).
+  set removed.rest.values at 0 to 99.
+  check.expect(priority.first[integer](source) try is 1).
+  constant empty is priority.create[integer].
+  check.expect(exhausted(empty) fallback true).
+  constant one is priority.push[integer](empty, 7) try.
+  after { priority.release[integer](one) fallback nothing. }
+  constant last is priority.pop[integer](one) try.
+  after { priority.release[integer](last.rest) fallback nothing. }
+  check.expect(last.item is 7).
+  check.number(priority.length[integer](last.rest), 0).
+}
+
+test "heap sorted extraction leaves heap intact" {
+  constant values is sample try.
+  after { items.release[integer](values) fallback nothing. }
+  constant source is priority.build[integer](values) try.
+  after { priority.release[integer](source) fallback nothing. }
+  constant ordered is priority.sorted[integer](source) try.
+  after { items.release[integer](ordered) fallback nothing. }
+  check.number(items.length[integer](ordered), 6).
+  check.expect(ordered at 0 is 1 and ordered at 1 is 1).
+  check.expect(ordered at 2 is 2 and ordered at 3 is 3).
+  check.expect(ordered at 4 is 5 and ordered at 5 is 9).
+  set ordered at 0 to 99.
+  check.expect(priority.first[integer](source) try is 1).
+  constant empty is priority.create[integer].
+  constant blank is priority.sorted[integer](empty) try.
+  after { items.release[integer](blank) fallback nothing. }
+  check.number(items.length[integer](blank), 0).
+}

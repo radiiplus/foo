@@ -1,7 +1,8 @@
 # FOO Basics
 
-This lesson starts from an empty file. Every complete example can be placed in
-`src/main.iv` and run with `foo run`.
+What can you do with an empty FOO file? Add one statement and you have a
+program you can run. Every complete example here can go in `src/main.iv`;
+run it with `foo run`.
 
 ## Your first statement
 

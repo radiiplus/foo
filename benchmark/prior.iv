@@ -1,0 +1,38 @@
+use sequence as items.
+use time as clock.
+use binary as wire.
+use file as files.
+
+function population(word unsigned) giving unsigned {
+  dynamic current is word.
+  dynamic total of type unsigned is 0.
+  while current greater than 0 {
+    set total to total plus current remainder 2.
+    set current to current divide 2.
+  }
+  give total.
+}
+
+constant size of type unsigned is 500000.
+constant words is items.sized[unsigned](size) try.
+dynamic index of type unsigned is 0.
+while index less than size {
+  set words at index to index multiply 1234567891234.
+  increase index by 1.
+}
+dynamic total of type unsigned is 0.
+constant started is clock.current try.
+set index to 0.
+while index less than 5 {
+  for each word in words {
+    set total to total plus population(word).
+  }
+  set words at 0 to (words at 0) plus 1.
+  increase index by 1.
+}
+constant elapsed is (clock.current try) subtract started.
+when total is not 72322775 { give fail(Error.Invalid). }
+constant encoded is wire.fixed(elapsed, 8, "big") try.
+files.save(".artifacts/bitmap.bin", encoded) try.
+items.release[byte](encoded) try.
+items.release[unsigned](words) try.

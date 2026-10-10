@@ -1,0 +1,51 @@
+use process as jobs.
+use sequence as items.
+use testing as check.
+
+function missing(arguments sequence of text) giving failable boolean {
+  constant child is jobs.spawn("foo-missing-program-7f19", arguments) try.
+  jobs.close(child) try.
+  give false.
+}
+
+test "process identity" {
+  check.expect(jobs.id greater than 0).
+  check.expect((jobs.parent try) greater than 0).
+}
+
+test "spawn and wait for a child" {
+  constant arguments is items.sized[text](2) try.
+  after { items.release[text](arguments) fallback nothing. }
+  set arguments at 0 to "-e".
+  set arguments at 1 to "process.exit(7)".
+  check.expect(missing(arguments) fallback true).
+  constant child is jobs.spawn("node", arguments) try.
+  check.expect((jobs.identity(child) try) greater than 0).
+  check.expect((jobs.wait(child) try) is 7).
+  check.expect((jobs.active(child) try) is false).
+  check.expect((jobs.wait(child) try) is 7).
+  jobs.close(child) try.
+  check.expect((jobs.wait(child) fallback 999) is 999).
+}
+
+test "terminate and reap a child" {
+  constant arguments is items.sized[text](2) try.
+  after { items.release[text](arguments) fallback nothing. }
+  set arguments at 0 to "-e".
+  set arguments at 1 to "for (;;) {}".
+  constant child is jobs.spawn("node", arguments) try.
+  jobs.kill(child) try.
+  check.expect((jobs.wait(child) try) is 137).
+  jobs.close(child) try.
+}
+
+test "signal a child to terminate" {
+  constant arguments is items.sized[text](2) try.
+  after { items.release[text](arguments) fallback nothing. }
+  set arguments at 0 to "-e".
+  set arguments at 1 to "setInterval(() => {}, 1000)".
+  constant child is jobs.spawn("node", arguments) try.
+  jobs.signal(child, "terminate") try.
+  check.expect((jobs.wait(child) try) is 143).
+  jobs.close(child) try.
+}

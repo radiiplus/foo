@@ -131,7 +131,15 @@ proc emitTypeDecl*(declaration: TypeDecl): seq[string] =
   elif value.kind == TypeKind.ExternUnion: keyword = "extern union"
   elif value.kind == TypeKind.ExternStruct: keyword = "extern struct"
   result.add("pub const " & declaration.name & " = " & keyword & " {")
-  for fieldName, field in value.fields: result.add("  " & fieldName & ": " & typeStr(field) & ",")
+  var first = true
+  var alignment = 0
+  for attribute in value.attributes:
+    if attribute.startsWith("align(") and attribute.endsWith(")"):
+      alignment = parseInt(attribute[6 ..< attribute.len - 1])
+  for fieldName, field in value.fields:
+    result.add("  " & fieldName & ": " & typeStr(field) &
+      (if first and alignment > 0: " align(" & $alignment & ")" else: "") & ",")
+    first = false
   result.add("};")
 
 proc usedRegisters*(function: Function): HashSet[string] =
@@ -296,6 +304,47 @@ proc emitInstr(instruction: Instruction; used: HashSet[string];
     for lane in instruction.mask: mask.add($(if lane >= lanes: not (lane - lanes) else: lane))
     finish(destination & "@shuffle(" & typeStr(instruction.dest.type.elem) & ", " & valueStr(instruction.val) &
       ", " & valueStr(instruction.val2) & ", @Vector(" & $instruction.mask.len & ", i32){ " & mask.join(", ") & " });")
+  of InstrKind.Gather, InstrKind.Scatter:
+    let width = $instruction.val.type.width
+    let count = $instruction.val2.type.width
+    let elem = typeStr(instruction.val.type.elem)
+    let index = typeStr(instruction.val2.type.elem)
+    let boolean = instruction.val.type.elem.kind == TypeKind.Bool
+    let signed = instruction.val2.type.elem.kind == TypeKind.Int
+    let guard = (if signed: "offset < 0 or " else: "") &
+      "@as(u64, @intCast(offset)) >= " & width
+    proc lanes(value: Value; width: int): string =
+      var parts: seq[string]
+      for lane in 0 ..< width:
+        parts.add(valueStr(value) & "[" & $lane & "]")
+      ".{ " & parts.join(", ") & " }"
+    let values = if instruction.kind == InstrKind.Scatter:
+      "const values: [" & count & "]" & elem & " = " &
+        (if boolean: lanes(instruction.args[0], instruction.val2.type.width)
+         else: "@bitCast(" & valueStr(instruction.args[0]) & ")") & "; "
+      else: ""
+    let source = "const input: [" & width & "]" & elem & " = " &
+      (if boolean: lanes(instruction.val, instruction.val.type.width)
+       else: "@bitCast(" & valueStr(instruction.val) & ")") &
+      "; const indices: [" & count & "]" &
+      index & " = @bitCast(" & valueStr(instruction.val2) & "); "
+    let output = if instruction.kind == InstrKind.Gather:
+      "var result: [" & count & "]" & elem & " = undefined; "
+      else: "var result = input; "
+    let assign = if instruction.kind == InstrKind.Gather:
+      "result[k] = input[@intCast(offset)]; "
+      else: "result[@intCast(offset)] = values[k]; "
+    var resultLanes: seq[string]
+    if boolean:
+      for lane in 0 ..< instruction.dest.type.width:
+        resultLanes.add("result[" & $lane & "]")
+    let converted = if boolean:
+      typeStr(instruction.dest.type) & "{ " & resultLanes.join(", ") & " }"
+      else: "@as(" & typeStr(instruction.dest.type) & ", @bitCast(result))"
+    finish(destination & "blk: { " & source & values & output &
+      "for (0.." & count & ") |k| { const offset = indices[k]; if (" &
+      guard & ") @panic(\"IndexOutOfBounds\"); " & assign &
+      "} break :blk " & converted & "; };")
   of InstrKind.Select: finish(destination & "@select(" & typeStr(instruction.dest.type.elem) & ", " & valueStr(instruction.cond) & ", " & valueStr(instruction.val) & ", " & valueStr(instruction.val2) & ");")
   of InstrKind.Reduce: finish(destination & "@reduce(." & (if instruction.reduceOp.len > 0: instruction.reduceOp else: "Add") & ", " & valueStr(instruction.val) & ");")
   of InstrKind.Trace: "shim.trace(" & quote(instruction.trace) & ", " & quote(instruction.span.file) & ", " & $instruction.span.start & ");"
@@ -386,7 +435,9 @@ proc emit*(input: Module; mode: string; options = EmitOptions()): EmitResult =
       raise newException(ValueError,
         "Native residues need a verified substrate binding before emission")
     contracts[contract.id] = contract
-  var code = "// FOO IR v1 -> Zig\nconst shim = @import(\"shim.zig\");\n\n"
+  var code = "// FOO IR v1 -> Zig\nconst shim = @import(\"shim.zig\");\n" &
+    "const __description = struct { name: []const u8, kind: []const u8, " &
+    "size: u64, alignment: u64 };\n\n"
   if options.coverage.len > 0:
     if options.runtime == "none":
       raise newException(ValueError, "Coverage requires the hosted runtime")

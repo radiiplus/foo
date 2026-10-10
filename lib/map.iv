@@ -1,77 +1,77 @@
 -- Stores typed key/value pairs with equality-based lookup.
 use sequence as items.
-public define Entry[K, V] as record {
+public define entry[K, V] as record {
   key of type K.
   value of type V.
 }.
-public define Map[K, V] as record {
-  entries of type sequence of Entry[K, V].
+public define dictionary[K, V] as record {
+  entries of type sequence of entry[K, V].
 }.
-public function create[K, V] giving Map[K, V] {
-  give Map[K, V](items.create[Entry[K, V]]).
+public function create[K, V] giving dictionary[K, V] {
+  give dictionary[K, V](items.create[entry[K, V]]).
 }
-public function length[K, V](collection Map[K, V]) giving unsigned {
-  give items.length[Entry[K, V]](collection.entries).
+public function length[K, V](collection dictionary[K, V]) giving unsigned {
+  give items.length[entry[K, V]](collection.entries).
 }
-public function get[K, V](collection Map[K, V], key K) giving failable V where K is Equatable {
-  for each entry in collection.entries {
-    when entry.key is key {
-      give entry.value.
+public function get[K, V](collection dictionary[K, V], key K) giving failable V where K is Equatable {
+  for each row in collection.entries {
+    when row.key is key {
+      give row.value.
     }
   }
-  give fail(Error.MissingKey).
+  give fail(Error.Missing).
 }
-public function contains[K, V](collection Map[K, V], key K) giving boolean where K is Equatable {
-  for each entry in collection.entries {
-    when entry.key is key {
+public function contains[K, V](collection dictionary[K, V], key K) giving boolean where K is Equatable {
+  for each row in collection.entries {
+    when row.key is key {
       give true.
     }
   }
   give false.
 }
-public function put[K, V](collection Map[K, V], key K, value V) giving failable Map[K, V] where K is Equatable {
+public function put[K, V](collection dictionary[K, V], key K, value V) giving failable dictionary[K, V] where K is Equatable {
   dynamic index of type unsigned is 0.
-  for each entry in collection.entries {
-    when entry.key is key {
-      dynamic result is items.copy[Entry[K, V]](collection.entries) try.
-      set result at index to Entry[K, V](key, value).
-      give Map[K, V](result).
+  for each row in collection.entries {
+    when row.key is key {
+      dynamic result is items.copy[entry[K, V]](collection.entries) try.
+      set result at index to entry[K, V](key, value).
+      give dictionary[K, V](result).
     }
     set index to index plus 1.
   }
-  give Map[K, V](items.append[Entry[K, V]](collection.entries, Entry[K, V](key, value)) try).
+  give dictionary[K, V](items.append[entry[K, V]](collection.entries, entry[K, V](key, value)) try).
 }
-public function remove[K, V](collection Map[K, V], key K) giving failable Map[K, V] where K is Equatable {
+public function remove[K, V](collection dictionary[K, V], key K) giving failable dictionary[K, V] where K is Equatable {
   dynamic index of type unsigned is 0.
-  for each entry in collection.entries {
-    when entry.key is key {
-      give Map[K, V](items.remove[Entry[K, V]](collection.entries, index) try).
+  for each row in collection.entries {
+    when row.key is key {
+      give dictionary[K, V](items.remove[entry[K, V]](collection.entries, index) try).
     }
     set index to index plus 1.
   }
-  give Map[K, V](items.copy[Entry[K, V]](collection.entries) try).
+  give dictionary[K, V](items.copy[entry[K, V]](collection.entries) try).
 }
-public function keys[K, V](collection Map[K, V]) giving failable sequence of K {
+public function keys[K, V](collection dictionary[K, V]) giving failable sequence of K {
   dynamic result is items.sized[K](length[K, V](collection)) try.
   after error { items.release[K](result) fallback nothing. }
   dynamic index of type unsigned is 0.
-  for each entry in collection.entries {
-    set result at index to entry.key.
+  for each row in collection.entries {
+    set result at index to row.key.
     increase index by 1.
   }
   give result.
 }
-public function values[K, V](collection Map[K, V]) giving failable sequence of V {
+public function values[K, V](collection dictionary[K, V]) giving failable sequence of V {
   dynamic result is items.sized[V](length[K, V](collection)) try.
   after error { items.release[V](result) fallback nothing. }
   dynamic index of type unsigned is 0.
-  for each entry in collection.entries {
-    set result at index to entry.value.
+  for each row in collection.entries {
+    set result at index to row.value.
     increase index by 1.
   }
   give result.
 }
-public function release[K, V](collection Map[K, V]) giving failable nothing {
-  items.release[Entry[K, V]](collection.entries) try.
+public function release[K, V](collection dictionary[K, V]) giving failable nothing {
+  items.release[entry[K, V]](collection.entries) try.
   give nothing.
 }

@@ -56,6 +56,12 @@ public define Point as c record {
 }.
 ```
 
+`memory.cast[T](owner, buffer, offset)` checks that a live allocation has room
+for an aligned T and returns a typed pointer borrowing both the allocator and
+buffer. T must be an integer, float, or scalar-only C record. The caller must
+ensure the bytes hold a valid value; ordinary FOO code cannot dereference the
+pointer, so this operation is intended for native interop.
+
 ---
 
 ## 2. The Magic of Regions (Bulk Cleanup)
@@ -127,6 +133,15 @@ of scalar values copies the value. Collection operations document whether they
 return a view, shallow copy (a copy that still refers to the same inner data),
 or separately owned allocation. A shallow copy of
 a pointer or nested collection does not extend the underlying lifetime.
+
+The checker rejects a use of a borrowed view after a direct owner release,
+resize, or unmap, and rejects use of an allocation after its allocator closes.
+Read-only views may observe writes made through a still-live owner; resizing or
+releasing that owner invalidates the view.
+Functions that may release a parameter declare `releasing parameter` after the
+result type. The checker rejects an undeclared release in a function body and
+invalidates the argument and its borrowed views at calls to a releasing
+function, including calls that return an error.
 
 FOO v1 also has no user-defined `Copy` or `Drop` trait, reference-counted smart
 pointer, or weak reference. Resource cleanup is expressed with `after`, and

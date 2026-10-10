@@ -425,6 +425,6 @@ state machines, injected capabilities, and property checks.
 2. Write a function that gives `failable text`. Handle it once with `try` and
    once with `fallback`.
 3. Loop over a sequence and stop when a chosen value appears.
-4. Create a 50 millisecond `Duration` and pass it to `clock.wait`.
+4. Create a 50 millisecond `duration` and pass it to `clock.wait`.
 
 Next: [Collections](collections.md).

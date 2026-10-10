@@ -1,6 +1,7 @@
 import std/[sequtils, sets, strutils, tables]
 import ./[kind, node, valid]
 import ../opt/arch as targetArch
+import ../opt/vector as vectorizer
 import std/unicode
 
 type
@@ -8,6 +9,9 @@ type
     inline*: bool
     target*: string
     cpu*: string
+    backend*: string
+    mode*: string
+    vectorize*: bool
     hot*: HashSet[string]
   OptimizeResult* = object
     module*: Module
@@ -20,6 +24,7 @@ type
     pipelines*: int
     continuations*: int
     serializations*: int
+    vectors*: int
 
 proc cloneType(value: `Type`; seen: var Table[pointer, `Type`]): `Type` =
   if value == nil: return nil
@@ -533,6 +538,9 @@ proc serialize(module: Module): int =
 
 proc optimize*(input: Module; options = OptimizeOptions()): OptimizeResult =
   result.module = cloneModule(input)
+  if options.vectorize:
+    result.vectors = vectorizer.apply(result.module, options.backend,
+      options.target, options.cpu, options.mode)
   let protected = addressTaken(result.module)
   result.continuations = specializeContinuations(result.module)
   result.serializations = serialize(result.module)
@@ -590,6 +598,7 @@ proc optimize*(input: Module; options = OptimizeOptions()): OptimizeResult =
   result.module.optimization.pipelines += result.pipelines
   result.module.optimization.continuations += result.continuations
   result.module.optimization.serializations += result.serializations
+  result.module.optimization.vectors += result.vectors
 
 proc typeKey(value: `Type`; seen: var HashSet[pointer]): string =
   if value == nil: return "void"

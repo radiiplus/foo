@@ -1,3 +1,3 @@
 #define FOOICON 101
 
-FOOICON ICON "../assets/logo-installer.ico"
+FOOICON ICON "../assets/installer.ico"

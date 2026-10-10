@@ -1,7 +1,26 @@
 -- Defines explicit, reusable conversions between a value and text.
-public define Codec[T] as record {
+public define codec[T] as record {
   encode of type function taking (T) giving failable text.
   decode of type function taking (text) giving failable T.
 }.
 public use "codec" function encode[T](value T) giving failable text.
 public use "codec" function decode[T](source text) giving failable T.
+
+use frame as framing.
+use sequence as items.
+use "codec" function marshal[T](value T) giving failable sequence of byte.
+use "codec" function unmarshal[T](source sequence of byte) giving failable T.
+
+-- A canonical length prefix bounds one specialized JSON payload.
+public function pack[T](value T) giving failable sequence of byte {
+  constant payload is marshal[T](value) try.
+  after { items.release[byte](payload) fallback nothing. }
+  give framing.pack(payload) try.
+}
+
+public function unpack[T](source sequence of constant byte, limit unsigned) giving failable T {
+  constant packet is framing.read(source, 0, limit) try.
+  after { framing.release(packet) fallback nothing. }
+  when packet.next is not items.extent[byte](source) { give fail(Error.Bounds). }
+  give unmarshal[T](packet.data) try.
+}

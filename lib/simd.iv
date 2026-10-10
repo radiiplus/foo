@@ -1,0 +1,100 @@
+use sequence as items.
+
+-- Four-lane contiguous memory operations. Lane order follows sequence order.
+public function load(source sequence of constant decimal 32, offset unsigned) giving failable vector[4, decimal 32] {
+  constant size is items.extent[decimal 32](source).
+  when offset greater than size or 4 greater than size subtract offset {
+    give fail(Error.Bounds).
+  }
+  constant first of type vector[4, decimal 32] is splat(source at offset).
+  constant second of type vector[4, decimal 32] is splat(source at (offset plus 1)).
+  constant third of type vector[4, decimal 32] is splat(source at (offset plus 2)).
+  constant fourth of type vector[4, decimal 32] is splat(source at (offset plus 3)).
+  constant low is shuffle(first, second, 0, 4, 0, 4).
+  constant high is shuffle(third, fourth, 0, 4, 0, 4).
+  give shuffle(low, high, 0, 1, 4, 5).
+}
+
+public function store(destination sequence of decimal 32, offset unsigned, value vector[4, decimal 32]) giving failable nothing {
+  constant size is items.length[decimal 32](destination).
+  when offset greater than size or 4 greater than size subtract offset {
+    give fail(Error.Bounds).
+  }
+  set destination at offset to value at 0.
+  set destination at (offset plus 1) to value at 1.
+  set destination at (offset plus 2) to value at 2.
+  set destination at (offset plus 3) to value at 3.
+  give nothing.
+}
+
+public function words(source sequence of constant unsigned 32, offset unsigned) giving failable vector[4, unsigned 32] {
+  constant size is items.extent[unsigned 32](source).
+  when offset greater than size or 4 greater than size subtract offset {
+    give fail(Error.Bounds).
+  }
+  constant first of type vector[4, unsigned 32] is splat(source at offset).
+  constant second of type vector[4, unsigned 32] is splat(source at (offset plus 1)).
+  constant third of type vector[4, unsigned 32] is splat(source at (offset plus 2)).
+  constant fourth of type vector[4, unsigned 32] is splat(source at (offset plus 3)).
+  constant low is shuffle(first, second, 0, 4, 0, 4).
+  constant high is shuffle(third, fourth, 0, 4, 0, 4).
+  give shuffle(low, high, 0, 1, 4, 5).
+}
+
+public function write(destination sequence of unsigned 32, offset unsigned, value vector[4, unsigned 32]) giving failable nothing {
+  constant size is items.length[unsigned 32](destination).
+  when offset greater than size or 4 greater than size subtract offset {
+    give fail(Error.Bounds).
+  }
+  set destination at offset to value at 0.
+  set destination at (offset plus 1) to value at 1.
+  set destination at (offset plus 2) to value at 2.
+  set destination at (offset plus 3) to value at 3.
+  give nothing.
+}
+
+public function pair(source sequence of constant decimal, offset unsigned) giving failable vector[2, decimal] {
+  constant size is items.extent[decimal](source).
+  when offset greater than size or 2 greater than size subtract offset {
+    give fail(Error.Bounds).
+  }
+  constant first of type vector[2, decimal] is splat(source at offset).
+  constant second of type vector[2, decimal] is splat(source at (offset plus 1)).
+  give shuffle(first, second, 0, 2).
+}
+
+public function place(destination sequence of decimal, offset unsigned, value vector[2, decimal]) giving failable nothing {
+  constant size is items.length[decimal](destination).
+  when offset greater than size or 2 greater than size subtract offset {
+    give fail(Error.Bounds).
+  }
+  set destination at offset to value at 0.
+  set destination at (offset plus 1) to value at 1.
+  give nothing.
+}
+
+public function signed(source sequence of constant integer 32, offset unsigned) giving failable vector[4, integer 32] {
+  constant size is items.extent[integer 32](source).
+  when offset greater than size or 4 greater than size subtract offset {
+    give fail(Error.Bounds).
+  }
+  constant first of type vector[4, integer 32] is splat(source at offset).
+  constant second of type vector[4, integer 32] is splat(source at (offset plus 1)).
+  constant third of type vector[4, integer 32] is splat(source at (offset plus 2)).
+  constant fourth of type vector[4, integer 32] is splat(source at (offset plus 3)).
+  constant low is shuffle(first, second, 0, 4, 0, 4).
+  constant high is shuffle(third, fourth, 0, 4, 0, 4).
+  give shuffle(low, high, 0, 1, 4, 5).
+}
+
+public function assign(destination sequence of integer 32, offset unsigned, value vector[4, integer 32]) giving failable nothing {
+  constant size is items.length[integer 32](destination).
+  when offset greater than size or 4 greater than size subtract offset {
+    give fail(Error.Bounds).
+  }
+  set destination at offset to value at 0.
+  set destination at (offset plus 1) to value at 1.
+  set destination at (offset plus 2) to value at 2.
+  set destination at (offset plus 3) to value at 3.
+  give nothing.
+}

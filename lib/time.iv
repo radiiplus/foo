@@ -1,29 +1,43 @@
 -- Measures elapsed time using a monotonic nanosecond clock.
-public define Instant as record {
+public define instant as record {
   nanoseconds of type unsigned.
 }.
-public define Duration as record {
+public define duration as record {
+  nanoseconds of type unsigned.
+}.
+-- UTC/POSIX nanoseconds since 1970-01-01, for values written to storage.
+public define stamp as record {
   nanoseconds of type unsigned.
 }.
 public use "time" function current giving failable unsigned.
+public use "time" function wall giving failable unsigned.
 public use "time" function sleep(duration unsigned) giving failable nothing.
-public function nanos(value unsigned) giving Duration {
-  give Duration(value).
+public function nanos(value unsigned) giving duration {
+  give duration(value).
 }
-public function millis(value unsigned) giving Duration {
-  give Duration(value multiply 1000000).
+public function millis(value unsigned) giving duration {
+  give duration(value multiply 1000000).
 }
-public function seconds(value unsigned) giving Duration {
-  give Duration(value multiply 1000000000).
+public function seconds(value unsigned) giving duration {
+  give duration(value multiply 1000000000).
 }
-public function now giving failable Instant {
-  give Instant(current try).
+public function now giving failable instant {
+  give instant(current try).
 }
-public function elapsed(first Instant, last Instant) giving Duration {
-  give Duration(last.nanoseconds subtract first.nanoseconds).
+public function utc giving failable stamp {
+  give stamp(wall try).
 }
-public function wait(duration Duration) giving failable nothing {
-  sleep(duration.nanoseconds) try.
+public function between(first stamp, last stamp) giving failable duration {
+  when last.nanoseconds less than first.nanoseconds {
+    give fail(Error.Time).
+  }
+  give duration(last.nanoseconds subtract first.nanoseconds).
+}
+public function elapsed(first instant, last instant) giving duration {
+  give duration(last.nanoseconds subtract first.nanoseconds).
+}
+public function wait(delay duration) giving failable nothing {
+  sleep(delay.nanoseconds) try.
 }
 public function measure(task function giving nothing) giving failable unsigned {
   constant first is current try.

@@ -1,0 +1,29 @@
+use compress as zip.
+use testing as check.
+use text as words.
+
+test "compression frame lengths" {
+  constant prefix is zip.header(4096) try.
+  after { words.release(prefix) fallback nothing. }
+  check.expect(words.length(prefix) is 4).
+  check.expect((zip.extent(prefix) try) is 4096).
+  check.expect((zip.extent("abc") fallback 0) is 0).
+  check.expect((zip.header(0) fallback "invalid") is "invalid").
+}
+
+test "gzip and zlib members" {
+  constant gzip is zip.pack("member payload", "gzip") try.
+  constant zlib is zip.pack("member payload", "zlib") try.
+  after {
+    words.release(gzip) fallback nothing.
+    words.release(zlib) fallback nothing.
+  }
+  constant first is zip.unpack(gzip, "gzip", 64) try.
+  constant second is zip.unpack(zlib, "zlib", 64) try.
+  after {
+    words.release(first) fallback nothing.
+    words.release(second) fallback nothing.
+  }
+  check.same(first, "member payload").
+  check.same(second, "member payload").
+}

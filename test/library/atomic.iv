@@ -1,0 +1,28 @@
+use atomic as atoms.
+use testing as check.
+
+test "atomic publication primitives" {
+  constant value is atoms.create(7) try.
+  after { atoms.release(value). }
+  check.expect(atoms.attempt(value, 7, 11, "both") try).
+  check.expect((atoms.deduct(value, 3, "release") try) is 11).
+  check.expect(atoms.load(value, "acquire") try is 8).
+  check.expect(not (atoms.attempt(value, 7, 12, "sequential") try)).
+  check.expect(atoms.compare(value, 8, 9, "release", "relaxed") try).
+  check.expect(not (atoms.compare(value, 8, 10, "acquire", "acquire") try)).
+  check.expect(atoms.load(value, "acquire") try is 9).
+  check.expect(atoms.compare(value, 9, 10, "relaxed", "acquire") fallback true).
+  atoms.store(value, 15, "release") try.
+  check.expect(atoms.load(value, "acquire") try is 15).
+  check.expect((atoms.load(value, "release") fallback 99) is 99).
+  check.expect((atoms.read(value, atoms.acquire) try) is 15).
+  atoms.write(value, 17, atoms.releasing) try.
+  check.expect((atoms.increase(value, 3, atoms.both) try) is 17).
+  check.expect((atoms.decrease(value, 2, atoms.relaxed) try) is 20).
+  check.expect((atoms.exchange(value, 9, atoms.sequential) try) is 18).
+  check.expect(atoms.commit(value, 9, 10, atoms.acquire) try).
+  check.expect(atoms.cas(value, 10, 11, atoms.releasing, atoms.relaxed) try).
+  check.expect(atoms.commit(value, 11, 12, atoms.sequential) try).
+  check.expect((atoms.read(value, atoms.acquire) try) is 12).
+  check.expect((atoms.read(value, atoms.releasing) fallback 99) is 99).
+}

@@ -1,0 +1,10 @@
+-- Reports live native resources owned by the current process.
+public use "resource" function files giving unsigned.
+public use "resource" function mapped giving unsigned.
+public use "resource" function threads giving unsigned.
+-- Accepted callbacks that have not finished, including queued pool work.
+public use "resource" function tasks giving unsigned.
+-- Pool callbacks accepted but not yet taken by a worker.
+public use "resource" function pending giving unsigned.
+-- Bytes held by tracked FOO-owned buffers and explicit memory allocations.
+public use "resource" function heap giving unsigned.

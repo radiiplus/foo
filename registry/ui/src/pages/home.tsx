@@ -1,9 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { Header } from "../components/header";
+import { Backdrop } from "../components/backdrop";
 import { Palette } from "../components/palette";
-import { Sidebar } from "../components/sidebar";
-import { health } from "../utils/registry";
 import { seo } from "../utils/seo";
 import Detail from "./detail";
 import Discover, { type Action } from "./discover";
@@ -13,11 +12,9 @@ import Standard from "./standard";
 const Docs = lazy(() => import("./docs"));
 const Downloads = lazy(() => import("./downloads"));
 
-type State = "checking" | "connected" | "offline";
 type Route = { page: "landing" } | { page: "registry" } | { page: "standard" } | { page: "detail"; name: string } | { page: "docs"; chapter: string; section?: string } | { page: "downloads" };
 
 function Home() {
-  const [state, setState] = useState<State>("checking");
   const [palette, setPalette] = useState(false);
   const [route, setRoute] = useState<Route>(() => routeFromLocation());
   const [action, setAction] = useState<Action>({ id: 0, type: "reset" });
@@ -29,7 +26,6 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    void health().then(() => setState("connected")).catch(() => setState("offline"));
     const onNavigate = () => setRoute(routeFromLocation());
     const onKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -59,13 +55,14 @@ function Home() {
   }, [route]);
 
   if (route.page === "landing") {
-    return <Landing onEnter={() => navigate()} />;
+    return <Landing onEnter={(query) => navigateTo(query ? `/registry?q=${encodeURIComponent(query)}` : "/registry")} />;
   }
 
   const selected = route.page === "detail" ? route.name : "";
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-[#080808] text-[#f5f5f5] selection:bg-[#60D5DF] selection:text-black">
+    <div className="registry-app-shell flex h-dvh flex-col overflow-hidden bg-[#080808] text-[#f5f5f5] selection:bg-[#60D5DF] selection:text-black">
+      <Backdrop />
       <Header
         active={route.page === "docs" ? "docs" : route.page === "downloads" ? "downloads" : route.page === "standard" ? "standard" : "libraries"}
         onPalette={() => setPalette(true)}
@@ -75,27 +72,16 @@ function Home() {
         onDownloads={() => navigateTo("/downloads")}
       />
       <div className="flex min-h-0 flex-1">
-        <Sidebar
-          active={route.page === "docs" ? "docs" : route.page === "downloads" ? "downloads" : route.page === "standard" ? "standard" : selected ? "detail" : "discover"}
-          online={state === "connected"}
-          onDiscover={() => command("reset")}
-          onPackages={() => command("reset")}
-          onCategories={() => command("categories")}
-          onTags={() => command("tags")}
-          onStandard={() => navigateTo("/standard")}
-          onDocs={() => navigateDocs()}
-          onDownloads={() => navigateTo("/downloads")}
-        />
         <main className={`min-w-0 flex-1 ${selected || route.page === "docs" || route.page === "downloads" ? "overflow-y-auto" : "overflow-hidden"}`}>
           {route.page === "docs"
             ? <Suspense fallback={<div className="grid h-full place-items-center font-mono text-[10px] text-[#707070]">Opening the FOO Book...</div>}><Docs id={route.chapter} section={route.section} /></Suspense>
             : route.page === "downloads"
             ? <Suspense fallback={<div className="grid h-full place-items-center font-mono text-[10px] text-[#707070]">Loading releases...</div>}><Downloads /></Suspense>
             : route.page === "standard"
-            ? <Standard onOpen={(name) => navigate(name)} />
+            ? <Standard onOpen={(name, symbolId) => navigateTo(`/package/${encodeURIComponent(name)}${symbolId ? `?view=api&api=${encodeURIComponent(symbolId)}` : ""}`, window.location.pathname + window.location.search)} />
             : selected
-            ? <Detail key={selected} name={selected} onBack={() => navigate()} onTag={(tag) => { navigate(); setAction({ id: Date.now(), type: "tag", value: tag }); }} />
-            : <Discover action={action} inputRef={searchRef} onOpen={(name) => navigate(name)} />}
+            ? <Detail key={selected} name={selected} backLabel={String(window.history.state?.back ?? "").startsWith("/standard") ? "Standard library" : "Libraries"} onBack={() => navigateTo(window.history.state?.back ?? "/registry")} onTag={(tag) => { navigate(); setAction({ id: Date.now(), type: "tag", value: tag }); }} />
+            : <Discover action={action} inputRef={searchRef} onOpen={(name) => navigateTo(`/package/${encodeURIComponent(name)}`, window.location.pathname + window.location.search)} />}
         </main>
       </div>
       <Palette
@@ -135,7 +121,7 @@ function navigate(name?: string) {
   navigateTo(name ? `/package/${encodeURIComponent(name)}` : "/registry");
 }
 
-function navigateTo(path: string) {
-  window.history.pushState({}, "", path);
+function navigateTo(path: string, back?: string) {
+  window.history.pushState(back ? { back } : {}, "", path);
   window.dispatchEvent(new PopStateEvent("popstate"));
 }

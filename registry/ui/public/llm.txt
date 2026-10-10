@@ -16,6 +16,238 @@ Do not silently reconcile contradictions. If the documentation, standard library
 All notable FOO compiler, language, standard-library, tooling, and distribution
 changes are recorded here.
 
+## Unreleased
+
+## 0.8.0 - 2026-10-09
+
+### Packages
+
+- Accept an optional SVG icon in package publications. Canonicalize a bounded
+  shape-only profile on the registry and render package icons as isolated images
+  in discovery cards and package details.
+- Prepare Windows and Linux compiler binaries and the 2.7.0 VS Code extension.
+- Compile and execute native test suites as separate processes and run the two
+  WASI compiler tests serially to avoid cross-test toolchain contention.
+
+### Documentation
+
+- Open the introduction and beginner lessons with concrete questions and
+  examples. Make the first program a single `display` statement, and move
+  typed functions out of the introductory path.
+- Use inferred result types in the first function examples, matching the
+  compiler's existing behavior.
+
+### Naming
+
+- Rename joined FOO bindings and the public `file.persist`, `net.egress`,
+  `topology.place`, and `tensor.product` operations; update native symbols,
+  callers, and reference examples. Scan project FOO and Markdown filenames
+  while preserving GitHub-managed filenames.
+- Rename repository-owned guides, fixtures, benchmark files, grammar data, and
+  installer assets to one-word stems, updating their references.
+- Give bitmap benchmark timing artifacts and paired result files one-word names;
+  update the comparison runner and audit references. Clear each timing file
+  before sampling so an old result cannot be accepted as a new measurement.
+- Expose BLAKE3, ZigZag, hex, and Base64 through `blake`, `zigzag`, `hex`, and
+  `base64` modules with one-word operations. Rename crypto, matrix, tensor,
+  task, process, mapping, network, and packing APIs to one-word operations;
+  keep native service symbols private behind those FOO APIs.
+- Rename constructed FOO test and helper identifiers. Extend the library check
+  to nested FOO fixtures and Markdown filenames, while retaining required
+  tooling and foreign ABI spellings. Qualify process, resource, and testing
+  imports in fixtures where unqualified names conflict.
+
+### Algorithm Performance
+
+- Combine bitmap words directly for union, intersection, difference, and
+  symmetric difference on C and Zig. On the 30,000-word benchmark, C's median
+  operation time fell from 117.44 ms to 1.41 ms. Add a C++ control and retain
+  the raw paired samples in `benchmark/baseline.json`.
+- Use a CPUID-guarded POPCNT loop for Zig LLVM x86-64 bitmap counts, with the
+  portable path retained for other backends and targets. The Zig benchmark
+  median fell from 2.45 ms to 1.84 ms across 31 paired samples. Update the GPU
+  IR test to validate binary SPIR-V payloads instead of obsolete OpenCL text.
+- Add paired operation-level benchmarks against C++ sorting and population
+  count controls, with preserved before/after bitmap fixtures and measured
+  limits. Batch bitmap counts through a native packed-word primitive, using
+  guarded POPCNT on supported x86 CPUs and a portable fallback. Skip unused
+  high-byte passes in unsigned radix sorting while preserving stable order.
+- Release text produced by backend-owned binary encoders through the owning
+  runtime on C and Zig; require successful hex-text cleanup in library tests.
+
+### Language And Compiler
+
+- Lower checked private `for gpu` kernels directly to SPIR-V and execute them
+  through a Vulkan compute adapter on hosted C and Zig builds. Support byte and
+  typed transfers, owned devices/buffers/kernels, workgroup dispatch, row-major
+  2D/3D IDs, shared storage, barriers, and unsigned 32 atomics. Remove the
+  OpenCL runtime and its source compilation, CPU selection, and event APIs.
+- Vendor Vulkan-Headers, volk, SPIR-V headers, and MoltenVK source. Load Vulkan
+  device entry points directly, request portability extensions when present,
+  and keep mapped coherent buffers for supported devices. Lower subgroup IDs,
+  width, and lane-zero broadcast with Vulkan capability checks. Link the Vulkan
+  adapter only when a program uses `gpu` or `vulkan`.
+  Resolve a private metric helper collision that blocked C hardware tests.
+- Vectorize eligible release-mode decimal sequence loops through the existing
+  evidence-gated optimizer. Runtime AVX-512F, AVX2, SSE2, and NEON dispatch
+  keeps the original checked scalar loop for unsupported sizes, overlap, and
+  bounds failures across 32-bit and 64-bit decimal sequences;
+  `--explain` reports the selected path.
+- Extend counted-loop vectorization to constant starts, invariant scalar
+  operands, fill and copy, and two arithmetic steps using FOO's `plus` and
+  `multiply` syntax. Add `foo test --mode release` to execute optimized tests.
+- Accept parameterized loop starts and scalar-left second operations while
+  rejecting dependent running totals; mark automatic CPU vectorization for
+  independent contiguous decimal maps implemented in the capability audit.
+- Compile Zig 0.16's x86 native service without its unsupported per-function
+  AVX-512 path, retaining AVX2 and SSE2 dispatch; keep AVX-512 on the C backend.
+- Use object compilation for Zig header checks and AArch64 service checks to
+  avoid the `FileNotFound` syntax-only probe, and fix freestanding feature
+  comparisons and Windows SDK service declarations.
+- Add compile-time layout reflection for C records, type-derived size and
+  alignment constants, field queries, and compile-time assertions.
+- Add FOO-style `borrowing` relationships for returned storage, checked atomic
+  memory orders, record alignment clauses, and checked vector permute, gather,
+  and scatter operations on the C and Zig backends.
+- Reject borrowed byte-view uses after an owner is released, resized, closed,
+  or unmapped, including aliases and views returned from cleanup scopes.
+- Add `releasing parameter` contracts for user-defined functions, with checks
+  for undeclared releases and invalidation of borrowed arguments at call sites.
+- Keep the managed Zig toolchain at 0.16.0.
+
+### Standard Library And Systems
+
+- Add structured `issue` values and ordered error trails, checked typed
+  pointers for scalar and C-record storage, and portable checked SIMD sequence
+  loads and stores for common 32-bit and 64-bit lane shapes.
+- Expose coherent Vulkan buffer views through `gpu.view/edit`, add explicit
+  platform capability queries, and invalidate borrowed GPU views after buffer
+  disposal. C and Zig fixtures cover these boundaries.
+- Add linear-time heap construction and merge, persistent root replacement,
+  pop with the removed minimum, and sorted extraction from a private heap copy.
+  C and Zig fixtures cover duplicates, empty heaps, ordering, and ownership.
+- Add persistent bitmap toggle, logical complement, and symmetric difference,
+  plus allocation-free next and previous set-bit scans. C and Zig fixtures
+  cover word boundaries, partial final words, empty inputs, and shape checks.
+- Add persistent, equality-based set union, intersection, difference, and
+  symmetric difference with deterministic member order, plus an allocation-free
+  subset check. C and Zig fixtures cover overlap, empty sets, and ownership.
+- Add explicit trailing-axis tensor broadcasting and shape-checked elementwise
+  multiplication for matrices and tensors. Results own their storage; C and Zig
+  fixtures cover singleton axes, scalars, empty shapes, and mismatches.
+- Add independently owned matrix row and column sums and tensor axis sums.
+  Empty reduction dimensions yield zeros; tensor sums remove the chosen axis
+  and accept rank-one inputs. C and Zig fixtures cover shapes and ownership.
+- Add linear-time sorted sequence union, intersection, and difference. All
+  return independently owned, ascending, duplicate-free results from ascending
+  inputs; C and Zig tests cover repeated values and empty sides.
+- Add canonical bit-packed flags, bounded maximal byte-run encoding, and
+  sorted unsigned delta streams through `packing`. Decoders reject malformed
+  encodings and enforce caller limits; C and Zig fixtures cover boundaries.
+- Add TCP send/receive socket buffer sizing and readback, checked IPv4/IPv6
+  unicast hop limits, and traffic class settings. All report effective OS
+  values; C and Zig fixtures cover IPv4, IPv6, and invalid inputs.
+- Add checked rectangular matrix crops, tensor axis crops, and tensor axis
+  concatenation. All return independent row-major values; C and Zig fixtures
+  cover nontrivial blocks, empty dimensions, invalid shapes, and overflow.
+- Add an owned `poll` watcher for persistent TCP and UDP readiness and one-shot
+  monotonic deadlines. Bounded waits return registration tokens, support
+  removal, and leave socket ownership with callers; C and Zig fixtures exercise
+  all three event sources.
+- Add stable O(n + m) sorted sequence merging, stable single-evaluation
+  partitioning into independently owned results, and eight-pass signed radix
+  ordering across both 64-bit limits on C and Zig.
+- Add bounded `process.poll` with cached exit status and TCP/UDP send and
+  receive timeouts with effective OS value readback. C and Zig fixtures cover
+  timeout behavior, invalid bounds, zero-disable, and child reaping.
+- Add independently owned rectangular matrix transpose, tensor reshape, and
+  checked tensor axis permutation. C and Zig fixtures cover non-square, scalar,
+  empty, and invalid shapes and confirm the results do not alias inputs.
+- Add owned synchronized counter, gauge, and histogram metrics; nested
+  thread-local tracing spans; and POSIX process soft/hard resource-limit
+  queries with soft-limit updates. Keep unsupported Windows limits explicit.
+- Add persistent bitmap union, intersection, and difference through
+  `bitmap.merge/intersect/difference`, plus checked prefix rank and zero-based
+  set-bit selection. Results own separate storage; C and Zig fixtures cover
+  word boundaries, empty values, and shape failures.
+- Add online logical CPU counts, current processor IDs, and owned scoped thread
+  affinity through `topology` on Windows and Linux. Fix Zig `task.affinity` to
+  apply native affinity instead of only validating the CPU index.
+- Add signed ZigZag LEB128 with checked offsets, lowercase hexadecimal bytes,
+  and unpadded Base64url bytes to `binary`. Both decoders reject noncanonical
+  forms, and all three formats run on C and Zig.
+- Add binary and incremental BLAKE3 hashing with owned 32-byte or hex results.
+  Bundle BLAKE3 C sources with SSE2 and NEON acceleration and a portable
+  fallback; Zig uses target-selected vector lanes.
+- Add binary AEAD selection for XChaCha20-Poly1305 and AES-256-GCM with
+  availability checks, locked and wiped 32-byte key handles, and bounded
+  deterministic labeled test streams separate from secure random bytes.
+  Reject uses after BLAKE3 state cleanup and secure-key release.
+- Add byte-oriented SHA-256 and streaming hashes, incremental CRC32C, borrowed
+  byte views, alignment and cache hints, read-only file mapping, and page-backed
+  virtual memory reservation, commit, protection, and decommit operations.
+- Add shared writable file mappings with borrowed write views, explicit durable
+  flushing, and flush-on-unmap behavior on Windows and POSIX.
+- Complete whole-region virtual memory management with checked load and store,
+  release, and none, read, read/write, and read/execute protection modes.
+- Add cooperative task cancellation with inherited cancellation in nested
+  scopes and pools, plus bounded framed gzip/zlib stream encoding and decoding.
+- Expand file operations with positional I/O, exclusive creation, locking,
+  allocation, metadata, directory traversal, temporary files, and failure
+  injection for storage tests; expose process exit and abort for crash tests.
+- Add typed TCP/UDP endpoints and datagrams, DNS record queries, interface and
+  route snapshots, resource counters, build-target and runtime CPU feature
+  checks, and byte operations with AVX2, SSE2, NEON, and scalar dispatch.
+- Add owned row-major CPU matrix and tensor operations, plus Vulkan GPU device,
+  buffer, and kernel management with transfers and compute dispatch.
+- Add monotonic instants, UTC nanosecond timestamps, checked elapsed arithmetic,
+  and validated civil dates with fixed offsets.
+- Add canonical unsigned variable-integer and fixed-width endian byte codecs,
+  persistent compact bitmaps, and persistent minimum-priority heaps.
+- Add bounded length-prefixed frames, CRC32C-checked binary blocks, and
+  lower-bound, upper-bound, and exact binary search over sorted sequences.
+- Add bounded, synchronized byte rings, bit-packed binary Bloom filters, and
+  stable unsigned radix sorting with checked ownership and cleanup.
+- Add streaming HMAC-SHA256 tags and verification, bounded HKDF-SHA256 key
+  derivation, and constant-time comparison for equal-length binary values.
+- Add native shared-library loading with an explicit 64-bit unary C symbol call
+  contract and explicit symbol and library lifetimes on C and Zig.
+- Expose live task, pending-work, and tracked heap-byte counters alongside
+  existing file, mapping, and thread accounting.
+- Add a persistent packed ordered search tree with logarithmic lookup and
+  rank queries, checked selection, and independent insertion and removal.
+- Add UDP unicast hop limits, traffic class, and send/receive buffer sizing
+  with effective-value readback and checked arguments on C and Zig.
+- Add process identity and owned child lifecycle controls, plus monotonic
+  cancellable one-shot timers with explicit cleanup on C and Zig.
+- Replace generic insertion sorting with a stable O(n log n) merge sort;
+  extend bounded byte rings with constant-time operations at both ends.
+- Add directly launched child processes with separate binary stdin, stdout,
+  and stderr pipes, bounded reads, partial writes, explicit input sealing,
+  and owned output cleanup on C and Zig.
+- Use lowercase, single-word public names throughout the standard library.
+
+### Tooling And Tests
+
+- Add a local source-release candidate packer with a file inventory, SHA-256
+  manifest, and Git provenance. Include backend sources, tests, build tools,
+  installers, registry code, and matching vendored dependencies.
+- Base CLI build, check, run, test, and benchmark progress on planned and
+  completed jobs, including test execution and benchmark samples. Show an
+  adapting finish estimate from per-project noncached timing history and expose
+  numeric progress in JSON events; failed commands retain their last completed
+  percentage.
+- Compile the bundled BLAKE3 1.8.7 C sources alongside programs importing
+  `crypto`, and cover hashing, AEAD, secure keys, and test streams on C and Zig.
+- Use the portable `avx512f` function target so GCC 11 accepts the Linux
+  native service while retaining runtime AVX-512F dispatch.
+- Bundle precompiled Windows x64 libsodium development files for C builds and
+  include them in release staging.
+- Bundle Windows x64 zlib development files for C compression builds and
+  include them in release staging.
+- Expand native, compiler, library, and documentation checks for the new
+  capabilities, including Windows and Linux service parity.
+
 ## 0.7.1 - 2026-10-03
 
 ### Compiler And Libraries
@@ -605,11 +837,13 @@ changes are recorded here.
 
 # The FOO Book
 
-FOO is a compiled systems language (a language translated before it runs and
-suited to low-level software) with sentence-like source code, explicit failure
-handling (errors are visible in the program's types), controlled memory, and C
-and Zig native backends (code generators that produce programs for the target
-machine).
+How much code does it take to make a FOO program? The first example below is
+one line. Run it, change the message, then follow the lessons as your program
+needs names, decisions, functions, and access to the system.
+
+FOO is a compiled systems language with sentence-like source code. It builds
+native programs through C or Zig and makes failures and memory ownership
+explicit when those details matter.
 
 This book has two layers:
 
@@ -697,6 +931,10 @@ surface of the current language.
 33. **[Advanced](advanced.md)** - Use allocators, protocol controls, native code, and hardware tuning.
 34. **[Syntax Guide](syntax.md)** - Look up complete sentence forms.
 
+Proposed systems design work is tracked separately from the current language:
+see the [systems capability audit](capabilities.md) and the
+[hardware and parallel computation goal](hardware.md).
+
 ## How to read an example
 
 A complete `foo` code block can be placed in an `.iv` source file unless the
@@ -745,66 +983,91 @@ Start with [Getting Started](start.md), then continue to
 
 --- SOURCE: docs/start.md ---
 
-# Chapter 2: Getting Started (Your First FOO Project)
+# Getting Started
 
-Welcome to your first day writing FOO! Today, we are going to set up your computer, create a brand new project, and write some actual code.
-
-In many ecosystems, getting started means fighting with package managers, version conflicts, and messy environment setups. FOO completely eliminates that headache. It is distributed as a standalone, native application. You just install it, and it works.
-
-Let’s get building!
+In a few minutes, you can run a FOO program that prints a message. This chapter
+takes you from checking the installation to editing that first line.
 
 ---
 
-## 1. The Magic Setup
+## Check the installation
 
-First, head over to the official FOO Releases page and download the installer for your operating system (Windows, macOS, or Linux). Linux PCs use `foo-amd64.deb`, while ARM64 Linux systems use `foo-arm64.deb`. Run the installer, and within seconds, the `foo` command will be available in your terminal.
+Download the package for your platform from the [FOO releases](https://github.com/radiiplus/foo/releases).
+Windows has an installer; Debian and Ubuntu have x64 and ARM64 packages. See
+[Platforms](platforms.md) for the supported targets.
 
-For Ubuntu running through Termux/proot on an ARM64 Android device, open the Ubuntu session and confirm `uname -m` prints `aarch64`. Install the ARM package there with `sudo apt install ./foo-arm64.deb`. This package is built for Ubuntu's glibc environment (the standard runtime used by most Linux distributions) and will not run directly in Termux's Android environment.
-
-Once it's installed, open your terminal (Command Prompt/PowerShell on Windows, or Terminal on Mac/Linux) and type this magic command:
+Open a terminal and check the installed toolchain:
 
 ```sh
 foo doctor
 ```
 
-**Why this is useful:** `foo doctor` checks the toolchain for the current project. The Debian installer provisions (downloads and configures) the pinned Zig backend (the exact supported Zig code generator) automatically, and `foo run` or `foo build` retries that managed installation on first use when setup happened offline. On Debian and Ubuntu, the C backend also provisions missing dependencies for the bundled `crypto`, `compress`, and `http` modules. `foo doctor` verifies these dependencies and reports what still needs attention. Clang is optional unless a project imports C headers.
-
-### Uninstalling FOO
-
-On Windows, uninstall FOO from **Settings > Apps > Installed apps** or use the
-**Uninstall FOO** shortcut in the FOO Start Menu group. On Ubuntu and Debian,
-run `sudo apt remove foo`. The uninstallers remove the compiler and its
-installer-managed backend without deleting projects or `~/.foo` user data.
+`foo doctor` reports whether the tools needed to build a project are ready.
 
 ---
 
-## 2. Creating Your First Project
+## Create a project
 
-Let’s create a dedicated folder for our new app. FOO has a built-in **Scaffolding** tool (a command that instantly generates a clean, perfectly organized folder structure for you).
+Create a project named `hello`:
 
 ```sh
-foo new my-first-app
-cd my-first-app
+foo new hello
+cd hello
 ```
 
-The generated project is ready for application code, tests, and benchmarks:
+The program you will edit is in `src/main.iv`.
+
+---
+
+## Write one statement
+
+Open `src/main.iv` and replace its contents with:
+
+```foo
+display "Hello, vibes!".
+```
+
+`display` prints a line. The quoted text is the message. The final period ends
+the statement. That is a complete FOO program; functions and named values come
+in later lessons.
+
+---
+
+## Run it
+
+From the project folder, run:
+
+```sh
+foo run
+```
+
+You should see:
+```text
+Hello, vibes!
+```
+
+Change the text in `src/main.iv` and run `foo run` again. You can now move on to
+[FOO Basics](basics.md), or explore what the project generated.
+
+## Explore your project
+
+The generated project has separate places for application code, tests, and
+benchmarks:
 
 ```text
-my-first-app/
-├─ src/
-│  └─ main.iv
-├─ test/
-│  └─ main.iv
-├─ benchmark/
-│  └─ main.iv
-├─ project.json
-└─ .gitignore
+hello/
+|-- src/
+|   `-- main.iv
+|-- test/
+|   `-- main.iv
+|-- benchmark/
+|   `-- main.iv
+|-- project.json
+`-- .gitignore
 ```
 
-The `.iv` extension marks FOO source. Put the application in `src/`, correctness
-checks in `test/`, and performance scenarios in `benchmark/`.
-
-Open `project.json`. The important starting fields are deliberately explicit:
+The `.iv` extension marks FOO source. `project.json` names the entry file and
+output directory:
 
 ```json
 {
@@ -818,60 +1081,24 @@ Open `project.json`. The important starting fields are deliberately explicit:
 }
 ```
 
-`entry` is what plain `foo run` starts. You do not need to search the source
-tree or rely on a guessed filename. `build.output` receives finished products;
-`.artifacts/` remains private compiler workspace. The generated `.ico` becomes
-the icon of Windows executables, while the `.svg` is available for desktop and
-release packaging.
+`foo run` checks the project, builds a native executable through the selected C
+or Zig backend, and runs it. Use `foo run --explain` when you want to see the
+chosen build path and cache reuse.
 
----
+### Installation details
 
-## 3. Writing Your First Sentences
+The Debian installer provisions the pinned Zig backend. `foo run` and
+`foo build` can retry that setup after an offline installation. On Debian and Ubuntu,
+the C backend also provisions dependencies for the bundled `crypto`, `compress`,
+and `http` modules. Clang is optional unless a project imports C headers.
 
-Open `src/main.iv` in your favorite code editor. Let’s write a program that greets the user.
+For Ubuntu through Termux/proot on ARM64 Android, check that `uname -m` prints
+`aarch64` inside Ubuntu and install `foo-arm64.deb` there. The package targets
+Ubuntu's glibc environment and does not run directly in Termux.
 
-FOO uses a small sentence-like grammar. The parser does not guess arbitrary
-English: parameters have declared types, calls use parentheses, and a period
-ends each simple statement.
-
-Type this out:
-
-```foo
-function greet(name text) {
-  display "Hello, " plus name plus "!".
-}
-
-constant name is "vibes".
-greet(name).
-```
-
-### Read the example
-*   **`name text`**: FOO is strictly **Typed** (meaning it keeps strict track of what kind of data is stored in a variable, preventing math errors on text), without repeating `of type` in parameter lists.
-*   **`plus`**: Instead of forcing you to use the `+` symbol for everything, FOO lets you use the English word `plus` to glue text together.
-*   **Implicit completion**: A function that gives nothing can simply end; use `give` when returning a value.
-*   **The Period (`.`)**: Notice how every action ends with a period? FOO reads your code like a book. A period tells the parser, *"This specific thought is complete."*
-
----
-
-## 4. Running Your App
-
-Now for the best part. In your terminal, simply type:
-
-```sh
-foo run
-```
-
-**What happens underneath:**
-FOO checks the project, lowers it through the selected C or Zig backend, reuses
-compatible cached work, builds a native executable, and runs it. A release build
-may select target-specific runtime paths; development builds favor compilation
-latency (build delay) and portable behavior. Use `foo run --explain` to see the selected path
-and reason.
-
-You should see:
-```text
-Hello, vibes!
-```
+On Windows, uninstall FOO from **Settings > Apps > Installed apps**. On Ubuntu
+and Debian, run `sudo apt remove foo`. Uninstalling leaves projects and `~/.foo`
+user data in place.
 
 ### Adding another runnable program
 
@@ -900,19 +1127,21 @@ path stays in `project.json`, so nobody has to remember it.
 
 ---
 
-## 5. Growing Your App: Adding a Second File
+## Add a second file
 
-As your app grows, you’ll want to split your code into multiple files to keep things organized. FOO handles this beautifully using **Namespaces** (invisible walls that keep the code in one file from accidentally messing up the code in another file).
+When an operation is useful in more than one file, put it in its own module.
+The module controls which names other files can see.
 
 Create a new file named `math.iv` and add this:
 
 <!-- snippet: project math src/math.iv -->
 ```foo
-public function add(left integer, right integer) giving integer {
+public function add(left integer, right integer) {
   give left plus right.
 }
 ```
-*Notice the word `public`? This is the only way to let other files see this function. If you leave `public` off, the function becomes private and completely invisible to the rest of your app. This prevents messy "spaghetti code" (where everything is tangled together and hard to track).*
+`public` makes `add` available to other modules. Without it, the function stays
+private to `math.iv`. FOO infers the result type from `give` here.
 
 Now, go back to `src/main.iv` and use it. This fragment depends on the
 `math.iv` file created immediately above:
@@ -927,9 +1156,10 @@ when total is 30 { display "Total calculated". }
 
 ---
 
-## 6. The World's Most Helpful Error Messages
+## Find a type error
 
-Everyone makes typos. When you make a mistake in FOO, the compiler doesn't just crash and give you a confusing wall of red text. It acts like a helpful teacher.
+What if you give an integer name a text value? The compiler points to the
+mismatch before you run the program.
 
 Try this deliberately invalid declaration:
 
@@ -951,28 +1181,30 @@ Server Path** to the `foo` executable.
 
 ---
 
-## 7. Your Daily Cheat Sheet
+## Commands to keep nearby
 
-Here are the commands you will use every single day as a FOO programmer:
+These commands cover the usual edit, check, and run cycle:
 
 *   **`foo check`**: Parses and type-checks the project without running it.
-*   **`foo build`**: The Factory. It compiles your code into a final, standalone, highly-optimized application file that you can share with others.
-*   **`foo run`**: The Quick Test. Builds the app and immediately runs it so you can see the results.
+*   **`foo build`**: Builds an application without running it.
+*   **`foo run`**: Builds and runs the application.
 *   **`foo test`**: Runs the checks under `test/` and any test blocks in the project.
 *   **`foo benchmark`**: Builds each program under `benchmark/` once, warms it up, and reports repeated timings.
-*   **`foo watch`**: The Tireless Assistant. It sits in the background, and every single time you hit "Save" in your code editor, it automatically re-checks and re-builds your app instantly.
+*   **`foo watch`**: Rechecks and rebuilds when project files change.
 *   **`foo fmt`**: Rewrites source using the canonical FOO formatting rules.
 
 ---
 
-You are now officially a FOO programmer! In the next chapter, we will dive deeper into the **Language** itself, exploring how FOO handles decisions, loops, and data.
+Continue with [FOO Basics](basics.md) for values, decisions, loops, and more
+small programs.
 
 --- SOURCE: docs/basics.md ---
 
 # FOO Basics
 
-This lesson starts from an empty file. Every complete example can be placed in
-`src/main.iv` and run with `foo run`.
+What can you do with an empty FOO file? Add one statement and you have a
+program you can run. Every complete example here can go in `src/main.iv`;
+run it with `foo run`.
 
 ## Your first statement
 
@@ -1119,9 +1351,9 @@ Next: [Variables](variables.md).
 
 # Types and Values
 
-FOO checks types before a program runs. A text value cannot accidentally become
-an integer, and a failable result (one that can contain either a value or an
-error) cannot be ignored.
+What happens if a program tries to use text as a number? FOO catches the
+mismatch before the program runs. Types also show when an operation can fail,
+so the caller has to handle that possibility.
 
 ## Primitive types (basic built-in kinds of values)
 
@@ -1243,7 +1475,7 @@ Records and choices define application-specific data. They are covered in
 ## Domain types instead of raw numbers
 
 Use a record when two values share a machine representation but have different
-meanings. The `time` module does this with `Instant` and `Duration`:
+meanings. The `time` module does this with `instant` and `duration`:
 
 ```foo
 use time as clock.
@@ -1252,7 +1484,7 @@ constant delay is clock.seconds(2).
 clock.wait(delay) try.
 ```
 
-`clock.wait` requires a `Duration`; it does not accept an unrelated raw count.
+`clock.wait` requires a `duration`; it does not accept an unrelated raw count.
 Use `nanos`, `millis`, or `seconds` at the boundary where the unit is known.
 This pattern also works for identifiers, distances, and prices.
 
@@ -1283,9 +1515,9 @@ Next: [Operators](operators.md).
 
 # Operators
 
-FOO uses words for arithmetic, comparison, and Boolean logic. The words make
-an expression readable, but the compiler still applies precise precedence
-rules.
+Want to add two values? Write `8 plus 2`. FOO uses words for arithmetic,
+comparisons, and Boolean logic, while applying precise rules when an
+expression combines several operations.
 
 ## Arithmetic
 
@@ -1397,7 +1629,9 @@ Next: [Conditions and loops](flow.md).
 
 # Conditions and Loops
 
-Control flow chooses which statements run and how often they run.
+Programs get useful when they can make a choice or repeat a task. FOO uses
+`when` for decisions and loops for repeated work; this lesson shows when each
+statement runs.
 
 ## `when`
 
@@ -1567,18 +1801,22 @@ Next: [Functions](functions.md).
 
 # Functions
 
-A function names a reusable operation. Its parameters describe the inputs and
-`giving` describes the result.
+When the same calculation appears twice, give it a name. A function takes
+inputs through parameters and returns a result with `give`. FOO can infer the
+result type, or you can state it with `giving`.
 
 ## Define and call a function
 
 ```foo
-function add(left integer, right integer) giving integer {
+function add(left integer, right integer) {
   give left plus right.
 }
 
 constant total is add(20, 22).
 ```
+
+The compiler infers `integer` from the value given by `add`. Keep parameter
+types explicit so callers know what to pass.
 
 Arguments are evaluated from left to right. Parentheses delimit a non-empty
 argument list. Omit them when a function has no parameters or arguments:
@@ -2069,7 +2307,7 @@ use map as maps.
 use core.
 
 public define Store as record {
-  values of type maps.Map[text, core.Reference].
+  values of type maps.dictionary[text, core.Reference].
 }.
 ```
 
@@ -2464,6 +2702,32 @@ and continuous build artifacts are useful.
 
 ## Build backends
 
+Build tasks can generate a record from structured values before compilation:
+
+```json
+{
+  "build": {
+    "tasks": {
+      "schema": {
+        "kind": "record",
+        "output": "schema.iv",
+        "values": {
+          "name": "Schema",
+          "fields": [
+            { "name": "id", "type": "unsigned" },
+            { "name": "ready", "type": "boolean" }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+The task validates identifiers and primitive field types, writes under
+`.artifacts/build/generated/`, and generated source is parsed and checked
+when imported like any other FOO module.
+
 ```sh
 foo check
 foo build --backend zig
@@ -2474,6 +2738,15 @@ foo run --explain
 The default output shows meaningful stages, job count, cache reuse, elapsed
 time, and the selected fast or compatibility path. `--explain` adds diagnostic
 detail without dumping every backend command.
+The progress bar counts completed source checks, product builds, test runs, and
+benchmark samples according to the selected command. Its ETA uses the planned
+work and adjusts as jobs finish; it is an estimate, especially for the first
+long compilation. A completed command reaches 100%, while a failed command
+keeps the progress reached before the failure. `--json` includes numeric
+progress counts, percentage, and estimated remaining seconds in each progress
+event.
+Completed noncached work updates per-project timing estimates in
+`.artifacts/progress.json`; cache hits do not replace cold-build timings.
 
 Completed products are written to `output/` by default:
 
@@ -2845,6 +3118,12 @@ public define Point as c record {
 }.
 ```
 
+`memory.cast[T](owner, buffer, offset)` checks that a live allocation has room
+for an aligned T and returns a typed pointer borrowing both the allocator and
+buffer. T must be an integer, float, or scalar-only C record. The caller must
+ensure the bytes hold a valid value; ordinary FOO code cannot dereference the
+pointer, so this operation is intended for native interop.
+
 ---
 
 ## 2. The Magic of Regions (Bulk Cleanup)
@@ -2916,6 +3195,15 @@ of scalar values copies the value. Collection operations document whether they
 return a view, shallow copy (a copy that still refers to the same inner data),
 or separately owned allocation. A shallow copy of
 a pointer or nested collection does not extend the underlying lifetime.
+
+The checker rejects a use of a borrowed view after a direct owner release,
+resize, or unmap, and rejects use of an allocation after its allocator closes.
+Read-only views may observe writes made through a still-live owner; resizing or
+releasing that owner invalidates the view.
+Functions that may release a parameter declare `releasing parameter` after the
+result type. The checker rejects an undeclared release in a function body and
+invalidates the argument and its borrowed views at calls to a releasing
+function, including calls that return an error.
 
 FOO v1 also has no user-defined `Copy` or `Drop` trait, reference-counted smart
 pointer, or weak reference. Resource cleanup is expressed with `after`, and
@@ -3013,10 +3301,22 @@ scalar values rather than UTF-8 bytes.
 ## 2. Files and paths (`file`)
 
 The `file` module reads, writes, opens, and joins ordinary text paths. Use
-`read` and `write` for expected UTF-8 text. Use `readbytes` and `writebytes` for
+`read` and `write` for expected UTF-8 text. Use `load` and `save` for
 arbitrary binary data; the returned `sequence of byte` is length-aware and must
-be released with `releasebytes`. Native path pointers belong behind explicit
+be released with `file.release`. Native path pointers belong behind explicit
 foreign declarations rather than a second standard path API.
+
+  `sequence.view[T](items, offset, count)` returns a read-only subrange without
+copying the elements. `memory.bytes(allocator, pointer, size)` returns a
+read-only byte view over an existing allocation. Keep the owner alive and do
+  not resize or release it while a view is in use; views are not released.
+
+  `file.fetch(stream, offset, destination)` and `file.store(stream, offset,
+  source)` transfer bytes at an absolute offset and return the number transferred.
+  A short read indicates end of file; callers can retry a partial transfer.
+  Open streams in `read`, `write`, or `update` mode as appropriate. Positional operations
+  preserve the stream's logical cursor, but mixing cursor-based and positional
+  operations concurrently on the same stream is unsupported.
 
 ```foo
 use file.
@@ -3043,27 +3343,31 @@ do not honor them. A cross-filesystem replacement fails.
 
 `file.replace` is atomic (readers see the old name or the new name, not a partly
 renamed name) only where the local filesystem provides atomic replacement.
-FOO does not currently expose file locks, exclusive creation, or a filesystem
-compare-and-swap (replace only if a value is still current). Use one publishing
+FOO does not currently expose a filesystem compare-and-swap (replace only if a
+value is still current). Use one publishing
 writer for each store. Several writers otherwise race, and the last successful
 replacement wins. `file.remove` does not sync the parent directory, so it does
 not promise a deletion that survives sudden power loss.
 
-The module also cannot list a directory. A collector that must rediscover
-immutable files after restart needs an application-maintained durable index, or
-the caller must supply the candidate paths. `file.flush` only empties process
+`file.scan` and `file.walk` can enumerate files after restart. A collector must
+still define its own naming and recovery rules. `file.flush` only empties process
 buffers. Explicit streams currently use length-aware `text` for bounded
-transfers; whole-file binary code should prefer `readbytes`.
+transfers; whole-file binary code should prefer `load`.
 
 The `process` module separates direct execution from shell interpretation.
 `process.execute(program, arguments)` passes every item in its
 `sequence of text` as one argument. `process.run(command)` intentionally
 interprets one command through the host shell and should only receive
 deliberately constructed shell syntax.
+`process.poll(child, milliseconds)` bounds a wait on an owned child and
+returns false if it is still running. Zero only checks status; after a true
+result, `process.wait(child)` returns the cached exit code.
+`process.signal(child, name)` accepts `"kill"` or `"terminate"` on Windows and
+POSIX, plus `"interrupt"` or `"hangup"` on POSIX.
 
 ---
 
-## 3. Networking and Web (`net`, `http`)
+## 3. Networking and Web (`net`, `dns`, `adapter`, `route`, `http`)
 
 FOO makes web requests incredibly simple. The `http` module handles all the complex TCP/IP and header parsing for you.
 
@@ -3092,7 +3396,7 @@ runtime contract on the C and Zig backends.
 
 The `json` module parses text into a checked document tree and writes that tree
 back to text. A successfully parsed tree is structurally valid JSON; use
-`Codec[T]` when the application needs a specific FOO record type.
+`codec[T]` when the application needs a specific FOO record type.
 
 ```foo
 use json as documents.
@@ -3104,7 +3408,7 @@ constant encoded is documents.write(value) try.
 display encoded.
 ```
 
-The JSON module works with a document tree. Use `Codec[T]` when an application
+The JSON module works with a document tree. Use `codec[T]` when an application
 needs to carry a typed encoder and decoder together:
 
 ```foo
@@ -3114,7 +3418,7 @@ define Token as record { value of type text. }.
 function encode(token Token) giving failable text { give token.value. }
 function decode(source text) giving failable Token { give Token(source). }
 
-constant codec is codecs.Codec[Token](encode, decode).
+constant codec is codecs.codec[Token](encode, decode).
 constant token is codec.decode("abc") try.
 ```
 
@@ -3140,7 +3444,7 @@ is a number from 0 through 255; text uses a JSON string. Optional values use
 their value or JSON `null`, and choices use a one-field object whose key is the
 active variant.
 Payload-free variants use an empty object as their value. Sequences are decoded
-into runtime-managed storage. Define and pass an explicit `Codec[T]` when field names,
+into runtime-managed storage. Define and pass an explicit `codec[T]` when field names,
 schema versions, validation, unknown-field handling, maximum input size, or a
 different ownership policy belongs to the application contract.
 
@@ -3162,6 +3466,11 @@ when clock.elapsed(first, last).nanoseconds greater than 0 {
 }
 ```
 
+`clock.utc` returns a `stamp` containing UTC/POSIX nanoseconds since
+1970-01-01. Persist stamps, not monotonic instants; wall time can move when the
+host clock is corrected. `clock.between` returns a duration and fails if its
+second stamp precedes its first.
+
 ---
 
 ## 5. Cryptography (`crypto`)
@@ -3172,10 +3481,11 @@ reader can restore it.
 
 FOO's `crypto` module provides hashing (turning data into a fixed-size
 fingerprint) and encryption (making data unreadable without the required key).
-The C backend uses libsodium headers and its static library at build time. On
-Debian and Ubuntu, FOO downloads and caches `libsodium-dev` automatically when
-the dependency is missing; no system installation or administrator access is
-required. The Zig backend uses Zig's cryptography library.
+The C backend uses libsodium headers and its static library at build time.
+Windows x64 distributions include both. On Debian and Ubuntu, FOO downloads
+and caches `libsodium-dev` automatically when the dependency is missing; no
+system installation or administrator access is required. The Zig backend uses
+Zig's cryptography library.
 
 **Supported Libraries:**
 *   **libsodium:** The C backend's cryptography dependency.
@@ -3188,14 +3498,86 @@ and Ubuntu, FOO also provisions missing `zlib1g-dev` and
 link the cached libsodium and zlib archives and ship a cached `libcurl.so.4`
 beside the executable. `foo doctor` verifies or provisions these dependencies
 for native modules imported by local project sources. Provisioning requires
-working apt package metadata and network access. On other systems, install the
-development files or supply their include and library paths explicitly.
+working apt package metadata and network access. On other systems without a
+bundled library, install the development files or supply their include and
+library paths explicitly.
+Windows x64 builds use the bundled static zlib headers and library in
+`vendor/zlib`.
+
+`compress.encode` and `compress.decode` transfer arbitrarily long data between
+`io.stream` handles using bounded chunks. The wire format has a four-byte
+little-endian compressed length before each independent gzip or zlib member;
+it is a framed FOO stream rather than a single gzip or zlib file. The decoder
+checks each compressed frame and decompressed block against caller limits before
+writing it. `compress.pack` and `compress.unpack` retain their single-value
+format for interoperability with ordinary gzip and zlib data.
+
+`packing.bits` stores zero/one byte flags least-significant bit first;
+`packing.expand(bytes, count)` requires the exact byte length and zero unused
+high bits. `packing.runs` stores maximal byte runs as count-byte pairs with
+counts from 1 to 255; `packing.unroll(bytes, limit)` rejects malformed pairs
+and bounds the expanded byte count. `packing.deltas` encodes nondecreasing
+unsigned values as canonical LEB128 differences from zero;
+`packing.restore(bytes, limit)` rejects malformed integers and arithmetic
+overflow while bounding the decoded item count. Returned sequences own their
+storage and must be released with `sequence.release` for their element type.
 
 **Available Algorithms:**
-*   **Hashing:** SHA-256 through `crypto.hash`.
-*   **Encryption:** XChaCha20-Poly1305 through `crypto.seal` and `crypto.open`.
+*   **Hashing:** SHA-256 and BLAKE3 over binary input, including incremental updates.
+*   **Authentication and key derivation:** HMAC-SHA256 and HKDF-SHA256 over bytes.
+*   **Encryption:** XChaCha20-Poly1305 and AES-256-GCM through binary
+    `crypto.encrypt` and `crypto.decrypt`; text `crypto.seal` and `crypto.open`
+    retain XChaCha20-Poly1305 compatibility.
 *   **Signatures:** Ed25519 through `crypto.sign` and `crypto.verify`.
 *   **Passwords:** Argon2id through `crypto.password` and `crypto.confirm`.
+
+`crypto.hash` preserves the text-to-hex API. For binary data,
+`crypto.hex(bytes)` returns SHA-256 as lowercase hex text and
+`crypto.digest(bytes)` returns 32 owned bytes. Release a raw digest with
+`sequence.release[byte]` and hex text with `text.release`. Both functions accept arbitrary byte sequences,
+including embedded zero bytes.
+
+For large or chunked input, `crypto.begin` creates a SHA-256 `Hasher`.
+`crypto.update(state, bytes)` processes each chunk without combining the input.
+`crypto.finalize(state)` returns hex text and `crypto.result(state)`
+returns 32 owned bytes. Finalization can be repeated and each result is
+independently owned. Updates after finalization fail. Call `crypto.close(state)`
+once when finished, including on error paths.
+
+`blake.digest(bytes)` returns a 32-byte BLAKE3 digest and `blake.hex`
+returns lowercase hex. Use `blake.begin`, `blake.update`, `blake.result` or
+`blake.finalize`, and `blake.close` for chunked input. BLAKE3 results are
+repeatable without consuming the state; later updates can extend it. C builds
+compile the bundled BLAKE3 sources with SSE2 on x86-64 and NEON on AArch64;
+Zig uses target-selected vector lanes.
+
+`crypto.encrypt` and `crypto.decrypt` accept `"xchacha20poly1305"` with a
+24-byte nonce or `"aes256gcm"` with a 12-byte nonce. Both require a 32-byte
+key and return owned binary data. `crypto.available` reports whether an
+algorithm can run on the current backend; C's AES-GCM requires CPU support.
+Authentication failures return an error and never expose plaintext. Nonces
+must be unique for each key. `crypto.protect(key)` stores a 32-byte key in
+locked memory; `crypto.encipher` and `crypto.decipher` use it without returning the key,
+and `forget` wipes and releases it. If memory locking fails, `protect` fails.
+The caller still owns the input byte sequence and must manage that copy.
+
+`crypto.sample(seed, label, size)` provides up to 1 MiB of reproducible
+bytes for tests using a 32-byte seed and keyed BLAKE3. It is deterministic and
+must not be used for secrets; use `crypto.random` for entropy.
+
+`checksum.compute(bytes)` returns CRC32C for corruption detection. For chunked
+input, use `checksum.begin`, `update`, `result`, and `close`. CRC32C does not
+provide cryptographic integrity; use `crypto.digest` when an attacker may alter
+the data.
+
+For authenticated messages, `crypto.auth(key)` creates an HMAC-SHA256 state.
+Feed binary chunks with `crypto.absorb`, then use `crypto.tag` for an owned
+32-byte tag or `crypto.check` to verify one. Both finalize the state; call
+`crypto.discard` to wipe and release it. `crypto.derive(secret, salt, context,
+size)` returns an owned HKDF-SHA256 output of at most 8160 bytes.
+`crypto.compare` compares bytes without value-dependent early exit when the
+lengths match; the lengths themselves are observable. Release tags and derived
+bytes with `sequence.release[byte]`.
 
 ```foo
 use crypto.
@@ -3220,7 +3602,155 @@ application source.
 
 Advanced users can stay inside those portable contracts while controlling more of the underlying service. `http` exposes persistent request headers, redirect limits, and connection reuse. `net` exposes partial sends, half-close, TCP_NODELAY, and keepalive. `file` exposes process-buffer flushing, stable-storage sync, atomic same-filesystem replacement, removal, byte seeking, position, and size. These are explicit operations on the same handles used by the simpler APIs; no backend object leaks into FOO code.
 
+`net.timeout(connection, direction, milliseconds)` and
+`net.expiry(socket, direction, milliseconds)` set TCP and UDP send or
+receive timeouts. Direction is `"send"` or `"receive"`; zero disables the
+timeout. Both return the effective OS value in milliseconds, which may differ
+from the request. Values above 2,147,483,647 fail, and a timed-out transfer
+currently reports `IoFailure`.
+
+`net.provision(connection, direction, size)` sets a TCP send or receive buffer;
+`net.allocation` queries it. Direction is `"send"` or `"receive"`, size is
+1..2,147,483,647 bytes, and both return the effective OS capacity rather than
+the requested size. `net.lifetime(connection, hops)` sets an IPv4 TTL or IPv6
+unicast hop limit from 1 to 255. `net.priority(connection, value)` sets the
+IPv4 TOS or IPv6 traffic class from 0 to 255. Both report the effective OS
+value; hosts may restrict nonzero traffic classes.
+
+`poll.create` owns a watcher for up to 128 registrations. Register an open TCP
+connection or listener with `poll.tcp`, or a UDP socket with `poll.udp`, using
+`"receive"` or `"send"` and a unique nonzero token. Socket registrations stay
+active until `poll.remove`; readiness can also report a closed or failed peer,
+so the subsequent socket operation determines the outcome. `poll.deadline`
+registers a one-shot monotonic timer by token. `poll.wait` returns a ready token
+or zero when its millisecond timeout expires; zero checks without blocking.
+`poll.child` registers an owned child's exit under a token; it remains ready
+until removed. Keep that child open while registered. `poll.remove` drops a registration, and `poll.close` releases the watcher
+without closing its sockets. Delays and waits above 2,147,483,647 milliseconds
+fail. Keep sockets open while registered and serialize poller calls.
+
+`file.open(path, "create")` creates a new file exclusively and opens it for
+reading and writing; it fails if the path already exists. `"update"` opens an
+existing file for both. `file.truncate(stream, size)` changes its length and
+`file.reserve(stream, size)` requests allocation through the given size,
+extending the file when needed. Both keep the stream cursor. `file.lock` accepts
+`"shared"` or `"exclusive"` for a blocking, advisory whole-file lock; call
+`file.unlock` when done. Closing a stream releases its lock. These operations
+require a writable stream except a shared lock.
+
+`file.scan(path)` opens a directory cursor. `file.next(cursor)` returns one
+entry name in host order and returns empty text at the end; file names cannot
+be empty. Release each nonempty name with `text.release`, then close the cursor
+with `file.finish`. The cursor skips `.` and `..`.
+`file.walk(path)` opens a depth-first recursive cursor. `file.visit` returns
+relative paths, yielding each directory before its children and never following
+links. Release each nonempty result with `text.release`; call `file.halt`
+even when stopping early.
+`file.metadata(path)` returns an owned snapshot with size, type (`file`,
+`directory`, `link`, or `other`), read-only status, and `modified`, `accessed`,
+and `changed` times as UTC nanoseconds since 1970. `changed` is the filesystem
+metadata-change time, not creation time. The snapshot describes the link itself
+when the path is a link. `file.category` borrows the snapshot; `extent`,
+`modified`, `accessed`, `changed`, and `writable` inspect it. `writable` reflects
+the read-only attribute or mode bits and does not probe effective access. Close the snapshot
+with `file.dismiss`. `file.temporary(directory, prefix)` creates an exclusive
+empty file and returns its owned path. The prefix may contain ASCII letters,
+digits, `_`, and `-`; remove the file and release the path when finished.
+`file.remove` removes files and empty directories. `file.free(path)` reports
+bytes available to the process on the containing filesystem, and
+`file.block(path)` reports its allocation unit in bytes. Both require an
+existing path.
+
+`testing.fault("write", count)` arms a one-shot fault for the current thread.
+`file.store` returns at most `count` bytes; `io.write` writes at most `count`
+bytes and then fails. `"sync"` fails after flushing process buffers, before the
+host sync request; `"replace"` fails before renaming. Pass zero for those two
+operations. `testing.clear` disarms a pending fault. These controls are for
+deterministic failure tests and do not simulate a sudden process or power loss;
+use `process.exit` or `process.abort` for child-process crash tests.
+
 `file.handle(stream)` and `net.handle(connection)` expose borrowed operating-system handles for native calls. They return file descriptors and socket descriptors on POSIX, or a Win32 `HANDLE` and Winsock `SOCKET` on Windows. Keep the FOO resource open while using its handle, synchronize native and FOO operations on it, and leave closing to the FOO resource owner.
+
+`resource.files`, `resource.mapped`, and `resource.threads` report live
+FOO-owned file handles, mapped bytes, and thread handles. `resource.tasks`
+counts accepted callbacks that have not finished; `resource.pending` counts
+callbacks accepted but not yet started. `resource.heap` counts tracked FOO-owned
+buffers and explicit memory allocations, excluding native library internals.
+All are diagnostic snapshots, not synchronization primitives. Standard input,
+output, and error are borrowed handles and are not counted as owned files.
+
+`dylib.open(path)` loads a native shared library. `dylib.lookup(library, name)`
+resolves a symbol for the explicit `uint64_t (*)(uint64_t)` C ABI; invoke it
+with `dylib.call`, then `dylib.discard` the symbol and `dylib.close` the library.
+The caller is responsible for matching the exported C signature. Closing a
+library invalidates all symbols obtained from it, and later calls fail.
+
+`bitmap.merge`, `bitmap.intersect`, and `bitmap.difference` combine equal-length
+bitmaps and return independently owned results; a length mismatch fails with
+`Shape`. `bitmap.rank(value, index)` counts set bits before `index`, allowing
+the bitmap length as the final boundary. `bitmap.select(value, ordinal)`
+returns the index of a zero-based set bit or null when absent. Both queries
+scan the packed words and allocate no storage.
+`bitmap.toggle` flips a checked bit; `bitmap.invert` complements logical bits
+without setting unused final-word bits. `bitmap.symmetric` keeps bits set in
+exactly one of two equal-length inputs. These updates return independent
+bitmaps. `bitmap.next(value, from)` includes `from`, while
+`bitmap.previous(value, before)` excludes `before`; both return null if no bit
+qualifies or the boundary exceeds the bitmap length.
+
+`tree` provides a persistent ordered search structure for `Ord` values.
+`rank`, `find`, `lower`, and `nth` use a packed midpoint search in logarithmic
+time. `insert` and `remove` return independent values and copy storage in
+linear time. Duplicate insertion leaves the set size unchanged.
+
+`set` supports `unite`, `intersect`, `difference`, and `symmetric` over
+`Equatable` members. The first result keeps all left members then appends new
+right members; intersection and difference keep left order, while symmetric
+difference keeps left-only members before right-only members. These results
+own their storage and need `set.release`; `set.subset` checks inclusion without
+allocating. Membership scans make the algebra O(n × m) comparisons.
+
+`heap.build` and `heap.merge` use bottom-up heapification after copying their
+inputs. `heap.replace` changes the minimum of a nonempty heap, and `heap.pop`
+returns both the minimum and an independently owned remaining heap. Release
+every returned heap with `heap.release`. `heap.sorted` returns an independent
+ascending sequence; release it with `sequence.release`.
+
+`file.map(path, offset, length)` opens a read-only mapping; `file.edit` opens a
+shared writable mapping of an existing file. `length` zero means the rest of
+the file; an empty range or a range beyond the file fails. The offset need not
+be page aligned. `file.view(mapping)` borrows read-only bytes and
+`file.mutable(mapping)` borrows writable bytes from an edit mapping.
+`file.persist(mapping)` requests durable publication of changed pages, and
+`file.persist(mapping, offset, length)` requests it for a checked range
+relative to the mapped view; zero length does nothing. Both sync the backing
+file after flushing pages. They do not identify persistent-memory devices.
+`file.unmap(mapping)` flushes writable mappings before releasing them. Finish
+using each view before unmapping; the checker rejects a later use of the view.
+Do not truncate the file while it is mapped.
+
+`virtual.reserve(size)` reserves a page-rounded region without committing it.
+`virtual.commit(region)` makes the whole region readable and writable.
+`virtual.protect(region, mode)` accepts `none`, `read`, `write` (read/write), or
+`execute` (read/execute). `virtual.decommit` discards committed pages, and a
+later commit supplies zero-filled pages. `virtual.load/store` check bounds and
+protection before access. Release each region with `virtual.release`.
+
+`memory.reserve(owner, size, alignment)` accepts a nonzero power of two
+and retains that alignment when `memory.expand` grows or shrinks the buffer.
+`memory.aligned(pointer, alignment)` checks an address, without validating its
+ownership or lifetime. `arch.prefetch(bytes, offset)` and
+`arch.stage(bytes, offset)` issue advisory read and write cache hints;
+out-of-range offsets do nothing. Prefetch does not make an invalid view safe to
+access and does not guarantee a cache hit.
+
+Atomic operations accept explicit `relaxed`, `acquire`, `release`, `both`, and
+`sequential` orders. `atomic.compare` takes separate success and failure orders;
+failure permits only `relaxed`, `acquire`, or `sequential` and cannot require a
+stronger order than success. Invalid combinations return `InvalidOrder`.
+The typed `atomic.order` choice is accepted by `read`, `write`, `increase`,
+`decrease`, `exchange`, `commit`, and `cas`; the original text operations remain
+available for existing code.
 
 The transfer contract is used throughout the runtime, including sequences,
 text, JSON, HTTP buffers, and allocator growth (expanding reserved memory).
@@ -3237,6 +3767,15 @@ benchmark evidence required for new paths.
 
 `sequence.map` allocates its result once. `sequence.filter` and `sequence.dedup`
 reserve once and compact once instead of reallocating for each accepted element.
+`sequence.merge` combines two ascending sequences in one pass.
+`sequence.unique` removes adjacent duplicates from ascending input in linear
+time and returns independent storage. For ascending
+inputs, `sequence.unite`, `sequence.intersect`, and `sequence.difference` return
+sorted, duplicate-free, independently owned results in linear time. Release
+each result with `sequence.release`. `sequence.partition`
+keeps the order of each side and calls the predicate once per item; release
+both `division.kept` and `division.rest` after use. `radix.signed` sorts signed
+64-bit values into an independent result, including both signed limits.
 `text.split` counts fields before allocating its result sequence. Deduplication
 still performs O(n²) equality comparisons (the comparisons can grow with the
 square of the item count); its allocation and copying work is
@@ -3295,28 +3834,39 @@ signature reference for the installed compiler version.
 | Module | Purpose | Common operations |
 | --- | --- | --- |
 | `io` | Standard and file streams | bare console `display`/`report`; stream `input`/`output`/`report`, `read`, `line`, `write`, `close` |
-| `file` | Text and binary files, inspection, copying, same-filesystem replacement, directories, and stream position | `open`, `read`, `write`, `readbytes`, `writebytes`, `releasebytes`, `exists`, `kind`, `copy`, `working`, `remove`, `replace`, `sync`, `seek`, `position`, `size` |
+| `file` | Text and binary files, inspection, copying, same-filesystem replacement, directories, and stream position | `open`, `read`, `write`, `load`, `save`, `release`, `exists`, `kind`, `copy`, `working`, `remove`, `replace`, `sync`, `seek`, `position`, `size` |
 | `text` | Owned text operations and byte-oriented predicates | `concatenate`, `trim`, `length`, `slice`, `find`, `starts`, `ends`, `contains`, `split`, `release` |
 | `json` | JSON documents and streaming | `parse`, `write`, `field`, `item`, `kind`, `size`, `set`, `append`, `stream`, `feed`, `next`, `data`, `close` |
 | `time` | Raw and typed monotonic time (measured by a clock that does not move backward) | `current`, `sleep`, `measure`, `nanos`, `millis`, `seconds`, `now`, `elapsed`, `wait` |
-| `process` | Direct execution, shell commands, arguments, and environment | `execute`, `run`, `count`, `argument`, `environment` |
+| `timer` | Owned cancellable one-shot timers | `create`, `arm`, `wait`, `cancel`, `close` |
+| `process` | Direct execution, child control and pipes, identity, arguments, and environment | `execute`, `run`, `spawn`, `pipe`, `write`, `read`, `seal`, `release`, `active`, `wait`, `poll`, `kill`, `close`, `id`, `parent`, `identity` |
 | `system` | Host information | `cores`, `host`, `page` |
 | `log` | Application messages | `note`, `alert` |
+| `metric` | Owned synchronized counters, gauges, and histograms | `create`, `add`, `set`, `observe`, `value`, `count`, `sum`, `bucket`, `name`, `close` |
+| `trace` | Nested monotonic spans on one thread | `begin`, `current`, `identity`, `parent`, `name`, `finish`, `elapsed`, `close` |
+| `limit` | POSIX process resource limits | `available`, `soft`, `hard`, `set` |
 
-The filesystem module is `file`.
-It does not currently provide directory enumeration, file locks, exclusive
-creation, or compare-and-swap. `sync` plus same-filesystem `replace` supports a
-one-writer publication protocol; exact storage guarantees and caveats are in
+The filesystem module is `file`. Directory enumeration, advisory locks, and
+exclusive creation are available. `sync` plus same-filesystem `replace` supports
+a one-writer publication protocol; compare-and-swap replacement remains open.
+Exact storage guarantees and caveats are in
 [The Standard Library](library.md#2-files-and-paths-file).
 
 ## Collections
 
 | Module | Storage model | Main operations |
 | --- | --- | --- |
-| `sequence` | Persistent (updates return a new value) typed sequence | `create`, `append`, `remove`, `copy`, `length`, `find`, `sort`, `filter`, `map`, `reverse`, `any`, `all`, `fold`, `take`, `drop`, `deduplicate`, `release` |
+| `sequence` | Persistent (updates return a new value) typed sequence | `create`, `append`, `remove`, `copy`, `length`, `find`, `lower`, `upper`, `search`, `sort`, `merge`, `unite`, `intersect`, `difference`, `filter`, `partition`, `map`, `reverse`, `any`, `all`, `fold`, `take`, `drop`, `deduplicate`, `release` |
+| `bitmap` | Persistent compact bits | `create`, `get`, `put`, `toggle`, `invert`, `count`, `merge`, `intersect`, `difference`, `symmetric`, `rank`, `select`, `next`, `previous`, `release` |
+| `heap` | Persistent minimum-priority values | `create`, `build`, `first`, `push`, `remove`, `merge`, `replace`, `pop`, `sorted`, `length`, `release` |
+| `ring` | Owned bounded byte deque with synchronized operations | `create`, `push`, `prepend`, `pop`, `remove`, `first`, `last`, `length`, `capacity`, `close` |
+| `bloom` | Owned bit-packed membership filter for byte keys | `create`, `add`, `contains`, `bits`, `rounds`, `close` |
+| `radix` | Independent ascending signed or unsigned sort result | `sort`, `signed` |
+| `matrix` | Owned dense row-major decimal matrix | `create`, `get`, `add`, `product`, `hadamard`, `bias`, `transpose`, `crop`, `sum`, `release` |
+| `tensor` | Owned dense row-major decimal tensor | `create`, `build`, `rank`, `get`, `add`, `scale`, `hadamard`, `broadcast`, `reshape`, `permute`, `crop`, `concat`, `sum`, `release` |
 | `map` | Persistent ordered generic key/value map | `create`, `get`, `contains`, `put`, `remove`, `keys`, `values`, `length`, `release` |
 | `table` | Mutable native text-keyed map | `create`, `get`, `contains`, `put`, `remove`, `length`, `close` |
-| `set` | Persistent unique values | `create`, `insert`, `contains`, `remove`, `length`, `release` |
+| `set` | Persistent unique values with equality-based algebra | `create`, `insert`, `contains`, `remove`, `unite`, `intersect`, `difference`, `symmetric`, `subset`, `length`, `release` |
 | `queue` | Persistent first-in/first-out values | `create`, `append`, `first`, `remove`, `length`, `release` |
 | `stack` | Persistent last-in/first-out values | `create`, `push`, `top`, `remove`, `length`, `release` |
 | `list` | Mutable list of borrowed byte pointers | `create`, `push`, `get`, `length`, `close` |
@@ -3327,12 +3877,30 @@ the mutable or pointer-oriented modules when their ownership (who must release
 storage) and ordering
 contracts match the workload.
 
+`ring.push` and `prepend` return false when full; `pop` and `remove` fail when empty. `bloom`
+may report a match for an absent key, but never misses an inserted key while
+open. Close both handles after use. `radix.sort` returns a new sequence that
+the caller releases with `sequence.release[unsigned]`. `radix.signed` returns
+an independent signed sequence released with `sequence.release[integer]`.
+
 ## Networking
 
 | Module | Level | Capabilities |
 | --- | --- | --- |
 | `http` | HTTP client and server | Client requests, headers, redirects, reuse, response status/body, server listen/accept/read/reply. |
-| `net` | TCP sockets | Connect, listen, accept, complete/partial send, receive, shutdown, no-delay, keepalive, close. |
+| `net` | TCP and UDP sockets | Connect, listen, datagrams, typed endpoints, multicast, broadcast, hop limits, traffic class, socket buffers, timeouts, and IPv4 UDP interface selection. |
+| `tls` | Verified client TLS streams | Availability, connect, send, receive, timeout, and close; requires an OpenSSL runtime. |
+| `ipc` | File-backed shared regions | Exclusive create, join, borrowed byte views, advisory lock, unlock, and close. |
+| `poll` | Socket readiness and deadlines | Owned poller with TCP/UDP receive or send watches, one-shot monotonic deadlines, token removal, and bounded waits. |
+| `dns` | DNS answers | Record query, count, name, data, kind, TTL, and close. |
+| `adapter` | Network interfaces | Snapshot assigned addresses, families, indices, and MTUs. |
+| `route` | Routes | Snapshot destinations, gateways, prefixes, indices, and metrics. |
+
+`tls.available` checks whether a compatible OpenSSL library can be loaded.
+Set `FOO_TLS_LIBRARY` to its absolute path when it is outside the default
+loader locations. `tls.connect` verifies the peer against OpenSSL's default
+trust roots and the requested hostname; `SSL_CERT_FILE` can select a trust
+bundle for a process.
 
 The simple HTTP path chooses conservative defaults:
 
@@ -3364,11 +3932,16 @@ This layered API keeps common code short without hiding protocol controls.
 
 | Module | Purpose | Main operations |
 | --- | --- | --- |
-| `crypto` | Hashing, random bytes, authenticated encryption, signatures, passwords | `hash`, `random`, `seal`, `open`, `key`, `sign`, `verify`, `password`, `confirm` |
-| `compress` | Compression with explicit format and output limits | `pack`, `unpack` |
+| `crypto` | Binary hashing, message authentication, key derivation, constant-time comparison, random bytes, encryption, signatures, passwords | `digest`, `begin`, `auth`, `absorb`, `tag`, `check`, `discard`, `derive`, `compare`, `random`, `seal`, `open`, `sign`, `verify` |
+| `checksum` | CRC32C corruption detection for binary data | `compute`, `begin`, `update`, `result`, `close` |
+| `binary` | Canonical unsigned variable integers and fixed-width endian integers | `encode`, `decode`, `fixed`, `parse` |
+| `packing` | Canonical binary flags, byte runs, and sorted unsigned deltas | `bits`, `expand`, `runs`, `unroll`, `deltas`, `restore` |
+| `frame` | Bounded length-prefixed binary payloads | `pack`, `read`, `release` |
+| `block` | Bounded CRC32C-checked binary payloads | `pack`, `read`, `release` |
+| `compress` | Whole-value gzip/zlib and bounded framed block streams | `pack`, `unpack`, `encode`, `decode` |
 | `unicode` | Unicode validation and conversion | `scan`, `next`, `valid`, `points`, `wide`, `narrow`, `release` |
 | `buffer` | Release converted buffers | `free`, `words`, `points` |
-| `codec` | Application-defined typed conversion plus portable generated JSON for scalar, optional, sequence, choice, and record values | `Codec[T]`, `encode[T]`, `decode[T]` |
+| `codec` | Application-defined typed conversion plus portable generated JSON for scalar, optional, sequence, choice, and record values | `codec[T]`, `encode[T]`, `decode[T]` |
 
 Cryptographic calls can fail and must use postfix `try` or a deliberate
 fallback. Do not invent keys or nonces by formatting ordinary application
@@ -3379,8 +3952,13 @@ values; use the module's key and random facilities.
 | Module | Purpose | Main surface |
 | --- | --- | --- |
 | `memory` | Allocators (objects that reserve and release memory) and owned memory | `system`, `arena`, `allocate`, `expand`, `release`, `copy`, `view`, `close`, `transfer`, `clear`, `compare`, `identical` |
+| `virtual` | Page-backed regions with whole-region protection | `reserve`, `size`, `commit`, `protect`, `decommit`, `load`, `store`, `release` |
 | `atomic` | Shared atomic unsigned values | `create`, `load`, `store`, `add`, `swap`, `replace`, `release` |
-| `arch` | Processor utilities | `count`, `pause`, `ticks` |
+| `arch` | Processor utilities and build/runtime SIMD queries | `count`, `pause`, `ticks`, `target`, `runtime`, `prefetch`, `stage` |
+| `cpu` | Runtime-dispatched byte addition | `add` |
+| `topology` | Online logical CPUs, current processor, and scoped thread affinity | `count`, `current`, `pin`, `restore` |
+| `gpu` | Vulkan compute with checked FOO kernels and explicit ownership | `available`, `open`, `reserve`, `upload`, `download`, `prepare`, `bind`, `dispatch`, `finish`, `discard`, `dispose`, `close` |
+| `vulkan` | Direct SPIR-V compute shader execution with explicit bindings | `count`, `select`, `compile`, `bind`, `dispatch`, `plane`, `volume` |
 | `stream` | Pointer-oriented byte streams | `input`, `output`, `report`, `read`, `write`, `print`, `close` |
 
 These modules are advanced surfaces. Their pointer, lifetime (how long data
@@ -3402,9 +3980,9 @@ an operating-system thread or shared-memory protocol is specifically required.
 
 | Module | Purpose | Main operations |
 | --- | --- | --- |
-| `testing` | Test assertions | `expect`, generic `same`, `every`, `Generator[T]`, `generate[T]` |
+| `testing` | Test assertions | `expect`, generic `same`, `every`, `generator[T]`, `generate[T]` |
 | `contract` | Application preconditions (rules required before work starts) and invariants (rules that must always remain true) | `require`, `ensure`, `invariant` |
-| `state` | Immutable checked state transitions | `Machine[S, E]`, `create`, `step` |
+| `state` | Immutable checked state transitions | `machine[S, E]`, `create`, `step` |
 
 `testing.every` checks a Boolean property for a bounded range of unsigned
 indexes. It is deterministic enumeration (the same range is checked in the
@@ -3465,6 +4043,12 @@ source under `src/`, a starter test under `test/`, and a starter performance
 scenario under `benchmark/`. Before publication, set the repository URL and
 package metadata in `project.json`, write at least 100 non-empty lines of
 documentation, and commit every source change.
+
+To display a package icon in the registry, add `"icon": "assets/icon.svg"` to
+`project.json` and commit that SVG. The path stays inside the package and the
+file must be at most 64 KiB. Publication accepts basic vector shapes and paint
+attributes, then displays the validated icon as an image in registry listings
+and package details. Scripts, links, styles, and external resources are rejected.
 
 ## Authentication and publication
 
@@ -3595,6 +4179,14 @@ installation still verifies the canonical bundle digest. Owners can deprecate a
 version with `foo deprecate package@version message`; the source remains
 available so existing lockfiles never break.
 
+Bundled `lib/*` modules are maintained in the FOO repository. Its generated
+`registry/standard.json` contains their searchable public API and source
+digests. The registry website, API, and `foo search` merge that catalog with
+community packages from `foo.registry`; standard modules are not separately
+published into the community repository. Regenerate the standard catalog with
+`npm run registry:standard` after changing `lib/*.iv` and verify it with
+`npm run registry:standard:check` before publishing FOO source changes.
+
 --- SOURCE: docs/testing.md ---
 
 # Testing
@@ -3638,6 +4230,7 @@ foo test test/orders.iv
 foo test --filter tax
 foo test --backend c
 foo test --backend zig
+foo test --mode release
 foo test --watch
 foo test lib
 ```
@@ -3716,7 +4309,7 @@ test "indexes stay in range" {
 
 This runs exactly 100 cases: `0` through `99`. It is deterministic and does
 not generate arbitrary values of a type. For varied typed inputs, define an
-index-to-value function, store it in `Generator[T]`, and call `generate`:
+index-to-value function, store it in `generator[T]`, and call `generate`:
 
 ```foo
 use testing as check.
@@ -3730,7 +4323,7 @@ function positive(value unsigned) giving boolean {
 }
 
 test "generated values stay positive" {
-  constant generator is check.Generator[unsigned](sample).
+  constant generator is check.generator[unsigned](sample).
   check.generate[unsigned](100, generator, positive).
 }
 ```
@@ -3763,7 +4356,7 @@ fixture-lifecycle syntax (setup and cleanup rules for test data). Backend
 coverage instrumentation (tracking which code ran) exists in the compiler pipeline, but
 `foo test` does not yet expose a stable coverage reporting flag. Use
 [`foo benchmark`](benchmarking.md) for repeatable application measurements.
-Type-driven `test every T` syntax is not implemented; use `Generator[T]` and
+Type-driven `test every T` syntax is not implemented; use `generator[T]` and
 `generate` explicitly. These are tooling and language boundaries, not hidden
 syntax.
 
@@ -3838,6 +4431,7 @@ boundaries:
 | `known` | Validation when a value is already known during the build. |
 | `lookup` | One million checked dynamic sequence lookups. |
 | `runtime` | Standard runtime initialization and one hosted query. |
+| `returned` | Repeated owned-sequence returns, full reads, and caller releases. |
 | `startup` | Process and generated-program harness floor (the fixed cost of starting and measuring) without library work. |
 
 Run the suite using the project's configured mode and one backend with:
@@ -3853,12 +4447,25 @@ in both `dev` and `release`, then refresh the report used by the website:
 npm run benchmark:report
 ```
 
+For a focused cross-backend and control rerun, use a catalog name and a
+separate output file:
+
+```sh
+node tools/benchmark.mjs --workload returned --mode release --output benchmark/returned.json
+```
+
 The version 4 report keeps every raw sample in `benchmark/results.json` and
 records five implementations for each workload (the specific operation being
 measured): FOO through C, FOO through Zig, handwritten C, handwritten Zig, and
 handwritten Rust. Compilation duration and cache reuse are separate from runtime
 samples. Runtime samples include process startup and shutdown, so the report
 records both `startup` and `runtime` baselines.
+
+New reports also retain `allocationSamples` beside each timing sample. The
+`returned` workload enforces per-run ceilings of 128 payload allocations,
+10,240,000 allocated bytes, zero copied bytes, and 80,000 peak live payload
+bytes; it must end with zero live payload bytes. These counters cover instrumented
+payload storage, not allocator bookkeeping or whole-process resident memory.
 
 Set `RUSTC` when `rustc` is not on `PATH`. The report records
 `speedupAgainstRust` for each FOO backend and mode. A value above `1` means the
@@ -3891,6 +4498,8 @@ eliminated allocations and boundaries, and fused pipelines. A zero is an
 observed compiler fact, not an implied optimization.
 
 The current investigation and measurements are in [Performance Report](performance.md).
+Focused packed-bitmap and radix comparisons are in
+[Algorithm Benchmarks](../benchmark/algorithms.md).
 
 These measurements compare specific generated programs and handwritten
 controls under recorded conditions. They do not establish that FOO is broadly
@@ -3899,6 +4508,8 @@ controls under recorded conditions. They do not establish that FOO is broadly
 The report tool verifies that every cataloged workload produced one event for
 each requested backend and mode. A missing or unexpected workload fails report
 generation, preventing a report from silently omitting inconvenient results.
+It invokes cataloged `.iv` files by exact path; exploratory fixtures elsewhere
+in `benchmark/` do not change the report's workload set.
 
 Compiler time and memory are separate concerns. The runtime samples exclude
 both, so use build telemetry to detect slow or memory-heavy compilation rather
@@ -4105,8 +4716,9 @@ FOO uses a build planner (the component that orders build work) and two cache
 levels. The project cache reuses a whole
 artifact (generated build output) only when the project, backend, target, CPU,
 options, and compiler
-inputs still match. Zig's shared cache can reuse lower-level backend work across
-projects. A changed input invalidates the affected cache identity; FOO does not
+inputs still match. Zig's project-local cache reuses lower-level backend work;
+set `FOO_CACHE_HOME` or `ZIG_GLOBAL_CACHE_DIR` to share it across projects.
+A changed input invalidates the affected cache identity; FOO does not
 claim source-file incremental linking (rejoining only changed compiled pieces)
 where the backend cannot provide it.
 
@@ -4429,7 +5041,7 @@ This page answers a practical question: **Which familiar language features exist
 ### ✅ What is in FOO v1
 *   **Collections:** Typed modules for sequences, maps, sets, queues, stacks, and mutable text-keyed tables. *(Note: No collection literal syntax).*
 *   **Transformations:** `map`, `filter`, `sort`, `find`, `dedup`, `reverse`, `take`, `drop`, `any`, `all`, `fold`, iteration, and checked `at` indexing. *(Note: No operator overloading).*
-*   **Reusable patterns:** `Codec[T]`, `Machine[S, E]`, `Cursor[T, S]`, `Participant`, typed monotonic and calendar time, dimensional quantities, application contracts, generated property checks, and explicit pointer identity are standard-library APIs rather than new syntax.
+*   **Reusable patterns:** `codec[T]`, `machine[S, E]`, `cursor[T, S]`, `participant`, typed monotonic and calendar time, dimensional quantities, application contracts, generated property checks, and explicit pointer identity are standard-library APIs rather than new syntax.
 *   **Ownership:** Scope arenas (groups of temporary memory released together), explicit `Allocator` values, tracked borrowed views, move/retention checks, and `after` cleanup blocks.
 *   **References:** Non-null `pointer to T`. Nullability is handled via `optional pointer to T`. Raw address manipulation requires unsafe/native access.
 *   **Safety:** Checked indexing/arithmetic, provenance-aware pointers (addresses whose origin is tracked), scope escape checks, and strict synchronization (worker coordination) rules. **Panics are fatal** (not recoverable with `fallback`).
@@ -4899,8 +5511,8 @@ use net.
 
 constant connection is net.connect("127.0.0.1", 9000) try.
 after { net.close(connection) fallback nothing. }
-net.nodelay(connection, true) try.
-net.keepalive(connection, true) try.
+net.latency(connection, true) try.
+net.probe(connection, true) try.
 
 constant written is net.push(connection, "request") try.
 net.shutdown(connection, "write") try.
@@ -4933,8 +5545,8 @@ is a one-writer protocol: `file` has no lock, exclusive-create, or
 compare-and-swap operation. The guarantee is limited by the host filesystem and
 storage honoring the operating-system request; see the standard-library file
 contract for platform and failure details.
-Whole-file binary reads use `readbytes`; release their `sequence of byte` with
-`releasebytes`.
+Whole-file binary reads use `load`; release their `sequence of byte` with
+`file.release`.
 
 Streaming JSON, explicit allocators, atomics (shared operations completed as
 one step), task handles, and typed foreign declarations provide the other
@@ -5004,6 +5616,294 @@ FOO believes that you should never be trapped by your language.
 
 FOO gives you the safety of a high-level language, with the raw power of a low-level systems language. You are never forced to choose.
 
+--- SOURCE: docs/audit.md ---
+
+# Optimization audit
+
+FOO 0.7.1, source inspection on 2026-10-09. This is a working audit, not a
+claim that the master performance checklist is complete. The baseline
+environment and raw results are recorded alongside each optimization below.
+
+## Architecture and measurement boundary
+
+`src/build/compiler.nim` lowers, specializes, validates, runs release
+optimization, and validates again before emitting C or Zig. `src/backend/c`
+and `src/backend/zig` implement the hosted runtime. `lib/*.iv` supplies FOO
+library code and native service declarations. `benchmark/results.json` and
+`docs/performance.md` cover process-level workloads, while
+`benchmark/algorithms.md` covers packed counting and sorting. Process startup
+is material for short operations, so operation-level timers are required for
+algorithm changes. C and Zig builds must be checked separately.
+
+## Prioritized findings
+
+| Priority | Component and call path | Evidence and bottleneck | Proposed change and expected effect | Risks and validation |
+| --- | --- | --- | --- | --- |
+| 1, implemented | `lib/bitmap.iv`: `merge/intersect/difference/symmetric -> blend -> arch.combine` | The old path unpacked each 64-bit word in a 64-step loop. The paired operation median was 117.44 ms on the fixed fixture. | Native packed-word OR/AND/AND-NOT/XOR reduces the median to 1.41 ms (83.2x) on this fixture. Results still allocate independent owned output. | C and Zig bitmap tests, C freestanding cross test, exact checksum, native unaligned/invalid-input test, generated x86-64 inspection. No SIMD dispatch was needed. |
+| 2, implemented | `src/backend/zig/library.zig`: `arch.tally -> bitmap.count` | The generic x86-64 build emitted no `popcnt` instruction; the paired prior Zig median was 2.4505 ms. | CPUID-guarded `popcntq` on the Zig LLVM x86-64 path reduces the paired median to 1.8383 ms (25.0%) on the same fixture. Dev Zig and other architectures retain `@popCount`. | Zig dev and release checksum, 31 paired samples, emitted instruction check, AArch64 dev/release cross-build; untested runtime on hardware without POPCNT. |
+| 2 | `lib/sequence.iv`: stable sort and merge | Stable merge sort uses temporary storage and repeated passes; exact copy and allocation cost has not been measured. | Profile sizes and ownership paths before changing buffer reuse. | Stability, branch ownership, empty and duplicate inputs; compare equivalent C/Zig controls. |
+| 3 | `lib/bitmap.iv`: `rank/select/get/put` | `mask` and partial-word scans are linear in bit position; `put` copies the entire bitmap. | Measure rank/select distributions; consider native word primitives if these operations dominate. | Bounds, 64-bit extremes, persistent ownership; random differential tests. |
+| 4 | `src/backend/c/runtime.h` and `src/backend/zig/library.zig`: sequence allocation and copying | Existing process benchmarks show workload-dependent backend differences, but do not isolate allocation count or bytes copied. | Instrument a representative generated program before changing representation or ownership lowering. | Borrow invalidation, cleanup, retained branches; both backends and debug/release. |
+| 5 | `src/backend/c/driver.nim` and Zig driver: optional native services | Build gates select crypto/compress/HTTP/Vulkan sources by use, but startup and binary-size impact needs a paired minimal-program measurement. | Compare minimal versus one-service programs and inspect linked dependencies. | Accidental eager linkage; size, startup, dynamic imports on each host. |
+
+## Scope still requiring evidence
+
+Task scheduling, networking, file and VM operations, processes, cryptography,
+compression, GPU transfer and dispatch, CPU-specific byte processing, target
+portability, and the remaining library modules need dedicated workloads before
+an optimization can be justified. Existing conformance tests establish behavior
+but are not performance profiles. No performance claim is made for these areas.
+
+## Dependency boundary
+
+`vendor/libsodium` and `vendor/zlib` contain Windows x64 static libraries;
+`vendor/vulkan/volk.c` is source-linked only for selected Vulkan programs.
+The MoltenVK tree is an upstream source snapshot and is not compiled by the
+Windows build. OS libraries and drivers are outside FOO's source control.
+Dependency provenance, update steps, and patch records belong in
+`docs/vendor.md`.
+
+## Packed bitmap result
+
+The fixture is `benchmark/algebra.iv`: 30,000 64-bit words per input, two
+rounds of union, intersection, and difference, and a checked result checksum
+of 4,162,660. It initializes inputs before the monotonic operation timer.
+`benchmark/control.cpp` performs the same six owned output allocations,
+bitwise passes, and population counts. `benchmark/compare.mjs` warms each
+binary twice and alternates paired samples (nine by default, 31 for the Zig
+comparison); it records every operation
+and whole-process observation. All results are from Windows x64 on an Intel
+Core i5-1145G7, using FOO 0.7.1 release mode, Zig 0.16.0, and Clang 18.1.3.
+
+| Comparison | FOO operation median | Control median | Interpretation |
+| --- | ---: | ---: | --- |
+| C backend after vs C backend before | 1.4111 ms | 117.4396 ms | 83.2x on this fixture; raw data in `benchmark/baseline.json`. |
+| C backend after vs C++20 | 3.3861 ms | 2.9550 ms | FOO was slower in this validation run; raw data in `benchmark/control.json`. |
+| Zig backend after vs prior Zig | 1.8383 ms | 2.4505 ms | 26/31 paired wins, two-sided sign-test p=0.00019; raw data in `benchmark/algebra-zig-change.json`. |
+| Zig backend after vs C++20 | 1.1084 ms | 0.7072 ms | C++ was faster in this separate run; raw data in `benchmark/zig.json`. |
+
+The old C executable is 168,960 bytes and the optimized one 167,936 bytes.
+The prior Zig executable is 619,008 bytes and the guarded-POPCNT one 619,520
+bytes, a 512-byte increase.
+An earlier C++ comparison measured 1.7744 ms for FOO and 1.6560 ms for the
+control; the table now uses the fresh paired samples from the renamed runner.
+The optimized executable imports only `KERNEL32.dll`; this fixture does not
+link libsodium, zlib, or Vulkan. An instrumented C release run reports nine
+allocations, 1,920,008 allocated bytes, zero copied bytes, and 1,200,000 peak
+tracked bytes. The old executable was not instrumented, so no measured
+before/after allocation claim is made. Whole-process timing contains large
+startup and scheduler variation and is not used for the speedup claim.
+
+The generated C release binary contains scalar `orq` and `andq` packed-word
+instructions in the hot path. The implementation also has a portable scalar
+path and no runtime feature requirement. The fixed-width copy uses a compiler
+builtin on Clang/GCC so freestanding targets need no libc declaration; the
+Windows MSVC path uses `memcpy`.
+The Zig path detects POPCNT with CPUID only in LLVM x86-64 builds, then uses
+`popcntq` for each packed word. Zig 0.16's non-LLVM x86 backend cannot encode
+that instruction in inline assembly, so dev builds use the portable loop.
+AArch64 dev and release cross-builds succeeded, but no AArch64 runtime result
+is claimed from this Windows host. Short bitmap counts and x86-64 machines
+without POPCNT still need dedicated performance samples.
+
+Reproduce after building the native compiler:
+
+```powershell
+node bin/foo.mjs build benchmark/algebra.iv --backend c --mode release --target windows-x64
+Copy-Item .artifacts/build/app.exe .artifacts/algebra-after.exe
+clang++ -O3 -std=c++20 -march=native -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH benchmark/control.cpp -o .artifacts/control.exe
+node benchmark/compare.mjs .artifacts/algebra-after.exe .artifacts/control.exe a benchmark/control.json native
+node bin/foo.mjs test test/library/bitmap.iv --backend c --target windows-x64
+node bin/foo.mjs test test/library/bitmap.iv --backend zig --target windows-x64
+node bin/foo.mjs build benchmark/algebra.iv --backend zig --mode release --target windows-x64
+node benchmark/compare.mjs .artifacts/algebra-zig-after.exe .artifacts/algebra-zig.exe a benchmark/algebra-zig-change.json foo .artifacts/algebra.bin .artifacts/bitmap-algebra-time.bin 31
+node bin/foo.mjs build benchmark/algebra.iv --backend zig --mode release --target linux-arm64
+```
+
+The before binary is preserved locally at `.artifacts/algebra-before.exe`;
+`benchmark/baseline.json` contains the paired before/after samples.
+The focused C/Zig bitmap and bit-operation suites pass. The 70-module
+standard-library check passes. The native suite initially reported six failures:
+one freestanding C compilation failure fixed by the builtin copy path, three
+stale platform/dependency expectations fixed and rerun individually, and two
+parallel WASI timeouts that passed individually. A serial native run then
+found an obsolete GPU test that parsed SPIR-V as OpenCL text; the test now
+checks the binary payload and passes directly. The full `test lib` C run exited
+without diagnostics after a long compile, so it cannot be counted as passed.
+The final native rerun passed 35/35 suites with two workers, including the
+SPIR-V and WASI cases.
+
+--- SOURCE: docs/capabilities.md ---
+
+# Systems capability audit
+
+This tracks general FOO capabilities exposed by demanding systems libraries.
+It is not a Stateful-specific feature list. "Partial" means the named API
+exists but does not yet meet the full use case.
+
+| Capability | Status | Current boundary |
+| --- | --- | --- |
+| Binary and streaming cryptographic hashing | Implemented | SHA-256 and BLAKE3 accept byte sequences and incremental chunks, return independent owned binary or hex results, and have explicit state cleanup. `checksum` provides separate direct and incremental CRC32C. |
+| Streaming message authentication | Implemented | `crypto.auth/absorb/tag/check/discard` provide incremental HMAC-SHA256 over arbitrary bytes, repeatable 32-byte tags, constant-time tag verification, and explicit state cleanup. |
+| HKDF key derivation | Implemented | `crypto.derive` implements HKDF-SHA256 extraction and expansion over binary secret, salt, and context, including empty salt, with the RFC 5869 limit of 8160 output bytes. |
+| Constant-time byte comparison | Implemented | `crypto.compare` compares equal-length byte sequences without early exit based on byte values; differing lengths return false immediately and remain observable. |
+| Hardware-assisted hashing | Implemented | Bundled BLAKE3 C sources dispatch to SSE2 on x86-64 or NEON on AArch64, with a portable fallback. Zig BLAKE3 uses target-selected SIMD lanes. SHA-256 and CRC32C retain portable implementations. |
+| Owned bytes and read-only byte views | Implemented | Owned byte sequences and borrowed `sequence.view`, `memory.bytes`, and `file.view` ranges are public. The checker rejects uses after direct release, resize, close, or unmap, including aliases and returned views released by cleanup. |
+| User-defined lifetime relationships | Implemented | `borrowing parameter` relates returned storage to an input, and `releasing parameter` declares owner invalidation. The checker rejects undeclared releases in ordinary function bodies and invalidates caller aliases and views after declared releasing calls, including error paths. |
+| Compile-time assertions | Implemented | `eval { verify condition. }` rejects a false condition. |
+| Type-derived compile-time constants | Implemented | `eval` folds `reflect[T].size` and `.alignment` for fixed-width scalars, pointers, slices, text, and C records using the selected target's pointer width. |
+| Record field and layout introspection | Implemented | `eval` folds C-record `reflect[T].count`, `.offset(name or index)`, `.fieldname(index)`, and `.fieldtype(name or index)`; field types are returned as FOO type text. Source generation is tracked separately below. |
+| Macros and controlled source generation | Implemented | `eval` performs constant work, and `build.tasks` has a structured `record` task that validates a type name, field identifiers, and primitive field types before emitting ordinary checked FOO source. Syntax macros and compiler plugins are outside this controlled generation contract. |
+| Derive implementations | Implemented | Records and choices support checked `derives Equatable`, `Hash`, and `Ord` contracts for eligible components. `Hash` and `Ord` imply structural equality, and derived ordering is lexicographic. Persistence-specific derives are outside this general trait contract. |
+| Derived specialized serializers | Implemented | `codec.encode[T]/decode[T]` generate specialized JSON conversion; `codec.pack[T]/unpack[T]` wrap the same type-specialized payload in a canonical length-prefixed byte frame with a decode limit and trailing-data rejection. The payload remains JSON, not a native binary field layout. |
+| Atomic compare-and-swap and ordering | Implemented | `atomic.order` provides typed choices for `read/write/increase/decrease/exchange/commit/cas`; the original text calls remain for compatibility. Invalid operation/order pairs and compare failure orders return `InvalidOrder`. |
+| Memory mapping | Implemented | `file.map/view` and `file.edit/mutable` expose bounded read-only and shared writable ranges on Windows and POSIX; both `file.persist` forms and `file.unmap` manage writable mappings, and later uses of borrowed views are rejected. |
+| Cache and alignment hints | Implemented | `arch.prefetch/stage` provide advisory byte-slice hints; `memory.reserve/aligned` guarantee and check power-of-two address alignment, including after growth. `c record ... aligned to N` raises record alignment on C and Zig. |
+| Typed pointer reinterpretation | Implemented | `memory.cast[T]` borrows an owned allocation as an integer, float, or scalar-only C record after checking allocator provenance, extent, alignment, and pointer arithmetic. The caller supplies initialized, valid `T` bytes and keeps the owner alive; ordinary FOO code cannot dereference the pointer, which is intended for native interop. |
+| Filesystem storage operations | Implemented | Positioned I/O, exclusive create and update, truncation, preallocation, advisory locks, free-space and allocation-unit queries, metadata snapshots, and exclusive temporary files are public. |
+| Crash and failure injection | Implemented | `process.exit/abort` terminate child processes for crash tests; `testing.fault/clear` inject one-shot partial writes, sync errors, and pre-rename replacement errors for the current thread. |
+| Native ABI and platform capabilities | Implemented | C interop and target selection are complemented by `platform.page/width/alignment/little` for runtime page size, pointer width, maximum C alignment, and byte order, plus `platform.supports` for named hosted capabilities. This describes the selected host runtime, not arbitrary cross targets. |
+| Structured system errors | Implemented | `issue.create/wrap` carry category, operation, named cause, and context; owned `issue` trails preserve ordered operation frames and original causes. Text fields borrow caller storage, and callers attach context explicitly around the short named tags in `failable T`. |
+| Task cancellation | Implemented | `task.cancel/halt` request cooperative cancellation; callbacks check `task.cancelled`, nested scopes and pools inherit the request, new work is rejected, and queued pool callbacks are skipped. `join/wait` still synchronize completion. |
+| Resource accounting | Implemented | `resource.files/mapped/threads` count live native handles and mapped bytes; `tasks/pending` count accepted callbacks and work not yet started, and `heap` counts tracked FOO-owned buffers and explicit allocations. Values are snapshots, not synchronization primitives. |
+| Structured metrics | Implemented | `metric` owns synchronized counters, gauges, and bounded histograms with checked arithmetic, named instruments, and close. `metric.export` returns an independently owned JSON snapshot with histogram bounds and buckets. Histogram buckets are inclusive of their upper bound and include overflow. |
+| Nested tracing spans | Implemented | `trace.begin/finish` track monotonic durations, parent IDs, labels, and the current span per thread. Spans finish in LIFO order on their creating thread and require close; export remains application-defined. |
+| POSIX process limits | Implemented | `limit.available/soft/hard/set` query and update soft file-descriptor, address-space, CPU-time, and stack limits through the host OS. Unlimited values map to the maximum unsigned value. Windows and unsupported kinds report unavailability. |
+| Portable binary integer codecs | Implemented | `binary.encode/decode` use canonical unsigned LEB128 with checked overflow and malformed-input rejection; `binary.fixed/parse` use checked 1-8 byte little- or big-endian values. |
+| Signed ZigZag variable integers | Implemented | `zigzag.encode/decode` map signed 64-bit integers through ZigZag and canonical LEB128, including both signed limits; decoding returns the next offset and rejects malformed, overflowing, or nonminimal input. |
+| Canonical hexadecimal byte codec | Implemented | `hex.encode/decode` convert arbitrary bytes to lowercase hex and back, including empty values; decoding rejects odd lengths, uppercase, and non-hex characters. Results are independently owned. |
+| Canonical Base64url byte codec | Implemented | `base64.encode/decode` encode arbitrary bytes without padding using the URL-safe alphabet; decoding rejects padding, whitespace, other alphabets, invalid lengths, and nonzero unused tail bits. Results are independently owned. |
+| Bit-packed binary flags | Implemented | `packing.bits/expand` use least-significant-bit-first groups of eight for zero/one byte flags; decoding requires an explicit flag count, exact byte length, and zero unused high bits. Results are independently owned. |
+| Canonical byte run-length codec | Implemented | `packing.runs/unroll` encode maximal runs as count-byte pairs with counts from 1 to 255; decoding rejects truncated, zero-count, or nonmaximal runs and enforces a caller output limit. |
+| Sorted unsigned delta codec | Implemented | `packing.deltas/restore` encode nondecreasing unsigned values as canonical LEB128 differences from zero; decoding enforces an item limit and rejects malformed varints and sum overflow. |
+| Bounded length-prefixed frames | Implemented | `frame.pack/read` use canonical length prefixes, caller-supplied decode limits, checked ranges, owned payloads, and next offsets. |
+| Checksummed binary blocks | Implemented | `block.pack/read` append little-endian CRC32C, reject truncated or corrupt blocks before allocating an owned payload, and enforce decode limits. CRC32C is not authentication. |
+| Ordered binary search | Implemented | `sequence.lower/upper/search` find insertion boundaries and the first equal element in O(log n) comparisons on ascending sorted input. |
+| Stable generic sorting | Implemented | `sequence.sort[T]` returns an independent stable ascending copy in O(n log n) comparisons with O(n) scratch storage. |
+| Stable sorted merge | Implemented | `sequence.merge[T]` combines two ascending inputs in O(n + m) comparisons into one independently owned result; equal values from the left input precede equal values from the right. |
+| Sorted sequence union | Implemented | `sequence.unite[T]` combines two ascending inputs into a sorted, duplicate-free, independently owned union in O(n + m) comparisons. |
+| Sorted sequence intersection | Implemented | `sequence.intersect[T]` returns shared distinct values from two ascending inputs in O(n + m) comparisons with independent storage. |
+| Sorted sequence difference | Implemented | `sequence.difference[T]` returns distinct values present only in the ascending left input in O(n + m) comparisons with independent storage. |
+| Equality-based set union | Implemented | `set.unite[T]` preserves left insertion order, appends right-only members in their order, and returns independent storage without requiring `Ord`. |
+| Equality-based set intersection | Implemented | `set.intersect[T]` returns shared members in left insertion order with independent storage and only an `Equatable` constraint. |
+| Equality-based set difference | Implemented | `set.difference[T]` returns left-only members in left insertion order with independent storage and only an `Equatable` constraint. |
+| Equality-based symmetric difference | Implemented | `set.symmetric[T]` returns left-only members followed by right-only members in insertion order with independent storage. |
+| Equality-based subset check | Implemented | `set.subset[T]` checks that every left member appears in right without allocating; the empty set is a subset of every set. |
+| Stable sequence partition | Implemented | `sequence.partition[T]` evaluates its predicate once per element, preserves order in both independently owned results, and uses O(n) work and scratch storage. |
+| Compact bitmaps | Implemented | `bitmap` stores 64 bits per word, checks bounds, counts set bits, and returns independent updated values. |
+| Persistent bitmap algebra | Implemented | `bitmap.merge/intersect/difference` return independent bitmaps with union, intersection, and left-minus-right bits; unequal logical lengths fail with `Shape`. Inputs remain unchanged. |
+| Bitmap prefix rank | Implemented | `bitmap.rank(value, index)` counts set bits strictly before a checked index, including `index` equal to the bitmap length. It scans packed words without allocating. |
+| Bitmap ordinal select | Implemented | `bitmap.select(value, ordinal)` returns the position of a zero-based set bit, or null when the ordinal is absent. It scans packed words without allocating. |
+| Persistent bitmap toggle | Implemented | `bitmap.toggle` flips one checked logical bit into an independently owned bitmap without changing the source. |
+| Logical bitmap complement | Implemented | `bitmap.invert` returns an independent complement over exactly the logical length; unused high bits in a partial final word stay zero. |
+| Persistent bitmap symmetric difference | Implemented | `bitmap.symmetric` returns independently owned bits set in exactly one input; unequal logical lengths fail with `Shape`. |
+| Next set-bit scan | Implemented | `bitmap.next(value, from)` finds the first set bit at or after `from`, or null when absent or beyond the logical length. |
+| Previous set-bit scan | Implemented | `bitmap.previous(value, before)` finds the last set bit strictly before `before`, or null when absent or beyond the logical length. |
+| Priority heaps | Implemented | `heap` exposes typed persistent minimum-priority queues with insertion, removal, bulk construction, merge, root replacement, pop with value, and sorted extraction. Updates own copied storage. |
+| Linear-time heap construction | Implemented | `heap.build[T]` copies an arbitrary sequence and restores minimum-heap order bottom-up in O(n) work. |
+| Linear-time heap merge | Implemented | `heap.merge[T]` copies two valid heaps, checks combined length overflow, and heapifies the combined values in O(n + m) work. |
+| Persistent heap root replacement | Implemented | `heap.replace[T]` replaces a nonempty heap's minimum in independent storage and restores heap order; an empty heap fails with `Empty`. |
+| Heap pop with removed value | Implemented | `heap.pop[T]` returns both the removed minimum and an independent remaining heap in one result; an empty heap fails with `Empty`. |
+| Sorted heap extraction | Implemented | `heap.sorted[T]` drains a private copy into an independent ascending sequence in O(n log n) comparisons while leaving the source unchanged. |
+| Bounded byte deque | Implemented | `ring` owns a fixed-capacity byte buffer with constant-time insertion, removal, and peeking at both ends; full insertion returns false and empty removal fails. Calls are synchronized and handles require close. |
+| Bit-packed Bloom filters | Implemented | `bloom` owns a configurable bitset for arbitrary byte keys, supports incremental insert and membership checks, and guarantees no false negatives until close; false positives remain possible. Its hash is noncryptographic. |
+| Stable unsigned radix sort | Implemented | `radix.sort` returns an independent ascending sequence of 64-bit unsigned values using eight stable byte passes, linear work per pass, and linear scratch storage. |
+| Stable signed radix sort | Implemented | `radix.signed` returns an independent ascending sequence of 64-bit signed values, including both limits, using eight stable byte passes and O(n) scratch storage. |
+| Binary codecs and algorithms | Implemented | Integer, hex, Base64url, bit-packed flag, run-length, and sorted delta codecs; bounded frames and CRC32C blocks; sorted search, stable merge, set operations, stable partition, radix sorting, and `sequence.unique` for ascending inputs; JSON, bitmaps, heaps, byte rings, Bloom filters, and an ordered search tree are public. This is a bounded library of algorithms, not a general algorithm catalog. |
+| Storage data structures | Implemented | Equality-based persistent sets with algebra and subset checks, compact bitmaps with algebra and rank/select, priority heaps, byte rings, Bloom filters, and a persistent packed ordered search tree are public. Tree lookup and rank are logarithmic; immutable updates copy values in linear time. |
+| Time primitives | Implemented | `time.instant` is monotonic for elapsed measurement; `time.stamp` is UTC/POSIX nanoseconds since 1970 for persistence, with checked `between` arithmetic. `calendar` supplies validated civil dates and fixed offsets. |
+| Process identity | Implemented | `process.id/parent` query current and parent process IDs; `process.identity` queries a spawned child's ID while its handle remains open. IDs may be reused after a process exits. |
+| Spawned child lifecycle | Implemented | `process.spawn/active/wait/kill/close` launch directly with typed arguments, cache exit status, terminate, reap, and explicitly close owned child handles on Windows and POSIX. Process groups remain separate work. |
+| Child standard-stream pipes | Implemented | `process.pipe` launches with separate stdin, stdout, and stderr; `write` accepts binary partial writes, `seal` closes stdin, and `read` returns one bounded owned binary chunk from `"output"` or `"error"`. `release` frees returned bytes and `close` closes remaining pipes. |
+| Cancellable one-shot timers | Implemented | `timer.create/arm/wait/cancel/close` use monotonic deadlines, support rearming, wake a blocked waiter on cancellation, and release owned resources. One waiter may wait per timer. |
+| Runtime SIMD and automatic CPU vectorization | Implemented | `arch.runtime` detects usable CPU features, `cpu.add` dispatches byte addition, and hosted release builds automatically vectorize independent contiguous 32-bit and 64-bit decimal map loops. Length, overlap, start, and CPU checks preserve the original scalar loop when vector execution is unsuitable. |
+| Online logical CPU count | Implemented | `topology.count` reports the host's online logical processor count on Windows and POSIX. It may differ from the CPUs allowed to this process. |
+| Current processor identity | Implemented | `topology.current` reports the calling thread's OS logical processor ID on Windows and Linux; on Windows, IDs encode processor group and group-local number. Other POSIX targets return `MissingValue`. |
+| Scoped thread affinity | Implemented | `topology.pin/restore` save, apply, and restore a calling thread's affinity on Windows and Linux. Restore must run on that thread and rejects repeated calls; Linux CPU IDs must fit `CPU_SETSIZE`, and the OS may reject an unavailable processor. `task.affinity` now applies native affinity on Zig as well as C. |
+| CPU topology and NUMA placement | Implemented | `topology.nodes/node` discover NUMA nodes and map OS CPU IDs on Windows and Linux; `place/restore` scope thread affinity to an available CPU in a requested node. Unsupported hosts report `MissingValue`; memory allocation policy is separate. |
+| Persistent memory | Implemented | Shared writable file mappings expose whole-map `file.persist(mapping)` and bounded `file.persist(mapping, offset, length)` flushes; both request synchronous page flush and file synchronization on Windows and POSIX. This is a durability request for file-backed memory, not a persistent-memory device or power-loss guarantee. |
+
+## Broader systems layers
+
+These capabilities are shared needs for network services, games, tooling,
+storage, and scientific software. The status describes the public FOO surface,
+not platform facilities used internally by the runtime.
+
+| Capability | Status | Current boundary |
+| --- | --- | --- |
+| Datagrams and socket addresses | Implemented | Typed IPv4/IPv6 endpoints, binary UDP packets, typed sender addresses, connected UDP, broadcast, and multicast controls are public. |
+| UDP unicast hop limits | Implemented | `net.unicast` sets a checked IPv4 TTL or IPv6 unicast hop limit from 1 to 255 and reports the effective value. |
+| UDP traffic class | Implemented | `net.traffic` sets a checked IPv4 TOS or IPv6 traffic class byte and reports the effective value; platforms may restrict nonzero classes. |
+| UDP socket buffers | Implemented | `net.buffer/capacity` set and query send or receive capacity, reporting the effective OS value, which may differ from the request. |
+| TCP socket timeouts | Implemented | `net.timeout` sets send or receive timeouts on owned TCP connections, reports the effective OS value in milliseconds, and accepts zero to disable a timeout. Requests above 2,147,483,647 ms fail. |
+| TCP socket buffers | Implemented | `net.provision/allocation` set and query send or receive capacity on owned TCP sockets, returning the effective OS size; zero and values above 2,147,483,647 fail when setting. |
+| TCP unicast hop limits | Implemented | `net.lifetime` sets a checked IPv4 TTL or IPv6 unicast hop limit from 1 to 255 and reports the effective OS value. |
+| TCP traffic class | Implemented | `net.priority` sets a checked IPv4 TOS or IPv6 traffic class byte and reports the effective OS value; platforms may restrict nonzero classes. |
+| UDP socket timeouts | Implemented | `net.expiry` provides the same bounded, effective-value send and receive timeout contract for owned UDP sockets; a timed-out operation returns `IoFailure`. |
+| DNS and network discovery | Implemented | `dns` exposes A, AAAA, CNAME, NS, PTR, MX, SRV, and TXT record sets with TTLs; `adapter` and `route` expose owned interface and routing snapshots. |
+| Advanced DNS resolution | Implemented | `dns.query(host, "txt")` returns TXT records through the system resolver, concatenating each record's character strings into bounded text. Resolver override and cancellable asynchronous lookup are outside this synchronous API. |
+| Generic TLS | Implemented | `tls.available/connect/send/receive/timeout/close` provide owned client TLS streams for arbitrary TCP protocols using a loaded OpenSSL runtime, default trust roots, peer and hostname verification, and a bounded handshake. TLS server wrapping and custom trust stores are outside this client contract. |
+| Local IPC and shared memory | Implemented | `ipc.create/join/view/edit/lock/unlock/close` provide named file-backed shared regions with exclusive creation, shared writable mappings, and advisory whole-region synchronization on Windows and POSIX. Local sockets, process-shared semaphores, and wait/wake events remain separate APIs. |
+| Event polling and timers | Implemented | `poll` combines TCP and UDP readiness, child exit readiness, and one-shot monotonic deadlines under unique tokens; `timer` provides separate cancellable timers. Child registrations remain ready until removed. Poller mutation is serialized by the caller; user events are outside this API. |
+| TCP readiness polling | Implemented | `poll.tcp` registers owned TCP connections or listeners for receive or send readiness with unique tokens; registrations persist until removed, and bounded waits return ready tokens or zero on timeout. |
+| UDP readiness polling | Implemented | `poll.udp` registers owned UDP sockets for receive or send readiness in the same bounded poller; closed registered sockets fail the wait until removed. |
+| Poller deadline events | Implemented | `poll.deadline` registers one-shot monotonic millisecond deadlines alongside sockets; zero-delay deadlines fire immediately, fired tokens are removed, and `poll.close` leaves sockets owned by their callers. |
+| Virtual memory | Implemented | `virtual.reserve/commit/protect/decommit/load/store/release` manages whole page-backed regions with checked access and none, read, read/write, or read/execute protection; file mappings support writable views and flushing. |
+| Directory and file discovery | Implemented | `file.scan` enumerates one directory; `file.walk` traverses recursively without following links; `file.metadata` snapshots kind, size, read-only status, and timestamps; `file.temporary` creates an exclusive file. |
+| Process lifecycle and OS events | Implemented | Process identity, owned child launch, status, named signaling, kill, reaping, child standard-stream pipes, POSIX resource limits, and child exit polling are public. `signal` supports kill and terminate on Windows and POSIX, plus interrupt and hangup on POSIX; process groups are separate. |
+| Bounded child wait | Implemented | `process.poll` waits up to 4,294,967,294 ms for an owned child, returns false on timeout, and caches completion so `wait` still returns the exit status. Zero is a nonblocking check. |
+| Dynamic libraries | Implemented | `dylib.open/lookup/call/discard/close` load a native shared library, resolve a symbol with the declared 64-bit unary C ABI, invoke it, and unload it. Symbols are invalid after close; other C signatures are not covered by this contract. |
+| CPU and device capabilities | Implemented | `arch.runtime` queries usable SIMD features; `topology.count/allowed/current/nodes/node/pin/place` expose online and eligible CPUs, NUMA mapping, and scoped affinity on supported hosts. `gpu.available/open/name/supports/capacity` discover Vulkan compute devices, and `gpu.view/edit` borrow coherent host-visible buffer memory. Explicit DMA ownership is outside this contract. |
+| Streaming compression | Implemented | `compress.encode/decode` stream independent gzip or zlib members through `io.stream` with a four-byte length frame, bounded input chunks, caller limits for compressed frames and output blocks, and truncation rejection. `pack/unpack` retain single-value interoperability. |
+| Broader cryptography and entropy | Implemented | Binary SHA-256 and BLAKE3, HMAC-SHA256, HKDF-SHA256, constant-time comparison, secure random bytes, Ed25519, and Argon2id are public. Binary AEAD selects XChaCha20-Poly1305 or AES-256-GCM with availability checks; 32-byte AEAD keys have locked, wiped storage; labeled keyed-BLAKE3 test streams are deterministic and bounded. |
+| Telemetry and resource limits | Implemented | Live resource counters, synchronized metrics with owned JSON export, thread-local spans, and POSIX process-limit queries and soft-limit controls are public. Span propagation, Windows process-limit controls, and hard-limit changes are outside this scoped interface. |
+| Advanced network and device I/O | Implemented | TCP and UDP timeouts, hop limits, traffic class, and buffer sizing are public; `net.egress` selects or clears an IPv4 UDP egress adapter by checked OS index where supported. Raw packets, zero-copy transfers, io_uring, RDMA, and direct GPU interop are outside this socket-control contract. |
+
+## Hardware and parallel computation
+
+The [hardware design goal](hardware.md) tracks portable numerical semantics,
+CPU SIMD, GPU execution, and future accelerators. The table distinguishes
+current support from the remaining roadmap.
+
+| Capability | Status | Current boundary |
+| --- | --- | --- |
+| Vector lane indexing | Implemented | `permute`, checked vector-lane `gather`, and checked vector-lane `scatter` run on C and Zig; duplicate scatter indices resolve in source order. |
+| Dense CPU matrix and tensor values | Implemented | The `matrix` and `tensor` modules provide owned row-major decimal values, checked shapes, and portable CPU operations. |
+| Rectangular matrix transpose | Implemented | `matrix.transpose` exchanges rows and columns, reorders row-major decimal values, and returns independently owned storage, including for empty dimensions. |
+| Owned tensor reshape | Implemented | `tensor.reshape` checks the new shape's product against the value count and copies both shape and row-major values into an independent result without reordering elements. |
+| Tensor axis permutation | Implemented | `tensor.permute` requires every source axis exactly once, checks rank and bounds, reorders row-major decimal values into a new owned shape, and handles scalar and empty tensors. |
+| Rectangular matrix crop | Implemented | `matrix.crop` checks the row and column intervals, copies the selected rectangle in row-major order, and returns independently owned storage, including zero-sized regions. |
+| Tensor axis crop | Implemented | `tensor.crop` checks one axis interval, preserves the other extents, copies row-major blocks into an independent tensor, and supports zero-length intervals. |
+| Tensor axis concatenation | Implemented | `tensor.concat` requires matching ranks and nonjoined extents, checks joined extent overflow, and copies each operand's row-major blocks into an independent result. |
+| Matrix row sums | Implemented | `matrix.sum(value, "row")` returns one independently owned decimal sum per row in O(rows + rows × columns) work; a row with zero columns sums to zero. |
+| Matrix column sums | Implemented | `matrix.sum(value, "column")` returns one independently owned decimal sum per column in O(columns + rows × columns) work; a column with zero rows sums to zero. |
+| Tensor axis sums | Implemented | `tensor.sum` removes one checked axis, sums its values in source order, and owns the resulting shape and row-major values. Reducing a zero-length axis yields zero-valued results, and reducing rank one yields a scalar. |
+| Matrix elementwise product | Implemented | `matrix.hadamard` requires identical row and column extents, multiplies corresponding decimal cells, and returns independent row-major storage. |
+| Explicit tensor broadcasting | Implemented | `tensor.broadcast` right-aligns source axes with a target shape, expands singleton axes and optional leading axes, rejects incompatible extents, and owns the expanded row-major values and shape. |
+| Tensor elementwise product | Implemented | `tensor.hadamard` requires identical ranks and extents, multiplies corresponding decimal cells, and returns independent row-major storage without implicit broadcasting. |
+| Build-target SIMD feature query | Implemented | `arch.target` reports selected-target `sse2`, `avx2`, `avx512f`, `fma`, `neon`, and `sve` support. |
+| Runtime CPU execution | Implemented | `arch.runtime` checks CPU and OS support; `cpu.add` uses runtime AVX2/SSE2 or NEON selection with a scalar fallback, explicit output, and checked lengths and overlap. |
+| Counted decimal loop vectorization | Implemented | Hosted C and Zig release builds transform independent 32-bit and 64-bit decimal sequence loops with constant or parameter starts, up to two reads, scalar operands, fill/copy, and up to two arithmetic steps in either scalar order. Runtime guards select AVX-512F on C, AVX2 or SSE2 on x86, and NEON on AArch64; the original checked loop handles short, overlapping, or invalid ranges. Zig 0.16 cannot compile the per-function AVX-512 path. |
+| Automatic CPU vectorization | Implemented | The release optimizer recognizes the independent contiguous decimal map forms above without source annotations, reports its selection, and retains scalar execution for short ranges, unsupported CPUs, aliasing, invalid bounds, and dependent loops. Other loop forms and order-changing reductions are outside this contract. |
+| Portable SIMD foundation | Implemented | Fixed-width vectors, masks, lane arithmetic and selection, shuffle/permute, reductions, and feature queries run on C and Zig. `simd` provides checked contiguous load/store for four-lane decimal32, unsigned32, and integer32 values and two-lane decimal64 values. Automatic map vectorization selects a supported CPU path; explicit vector operations do not promise one hardware instruction. |
+| GPU host execution | Implemented | `gpu` discovers Vulkan compute devices, owns devices, buffers, and kernels, transfers bytes, decimal 32 sequences, or unsigned 32 sequences, binds arguments, and synchronously launches one-, two-, or three-dimensional ranges. |
+| FOO GPU lowering | Implemented | A private `function ... for gpu` with decimal 32 and unsigned 32 sequence parameters, global/local/group and subgroup IDs, indexed reads and writes, straight-line decimal arithmetic, shared decimal workgroup storage, unsigned 32 atomic addition, a uniform barrier, and lane-zero broadcast lowers directly to SPIR-V. Unsupported effects and operations fail compilation. |
+| GPU execution model | Implemented | Hosted C and Zig programs use `gpu.prepare`, checked bound buffers and workgroup sizes, `gpu.dispatch`, device feature and capacity queries, and synchronous completion. Shared storage and atomic requirements are checked before dispatch. |
+| Multidimensional Vulkan dispatch | Implemented | `gpu.plane` and `gpu.volume` launch checked 2D/3D ranges; generated `gpu.index`, `gpu.local`, and `gpu.group` use row-major linear IDs. |
+| Advanced GPU portability | Implemented | The Vulkan path requests MoltenVK portability extensions, exposes coherent mapped buffers, and now runs checked unsigned 32-bit buffer copy kernels alongside decimal 32 kernels on available compute devices. MoltenVK still requires a macOS build; asynchronous events, device-local staging, and a software kernel fallback remain outside this contract. |
+| Parallel compiler lowering | Implemented | Typed vectors and automatic CPU decimal maps lower for hosted C and Zig; checked straight-line decimal arithmetic and unsigned 32-bit buffer copy GPU kernels lower to SPIR-V with unsupported effects rejected. General control flow and wider GPU numeric operations remain outside these kernel families. |
+| Matrix, tensor, and accelerator model | Implemented | Dense decimal matrix and tensor libraries provide owned row-major shapes, transpose, reshape, permutation, crops, concatenation, reductions, broadcasting, elementwise products, matrix products, and rank-three `tensor.product` with singleton batch broadcasting. This is a CPU model; mixed precision, hardware matrix acceleration, tiling, and device placement are outside its contract. |
+
+The public poller combines socket and child readiness with deadlines. User
+events remain a future source; TLS and file-backed IPC have separate ownership
+contracts. Each public capability should describe a
+stable FOO operation and keep platform-specific controls available through
+explicit native bindings when needed.
+
+No persistence keywords, implicit durable variables, or database-specific
+language constructs are planned. General type-safe systems primitives should
+serve storage, networking, media, scientific computing, and other libraries.
+
 --- SOURCE: docs/concurrency.md ---
 
 # Chapter 6: Concurrency
@@ -5029,7 +5929,7 @@ function worker {
 }
 
 constant handle is threads.spawn(worker) try.
-after { threads.close[threads.Thread](handle) fallback nothing. }
+after { threads.close[threads.thread](handle) fallback nothing. }
 
 display "Waiting for worker".
 threads.wait(handle) try.
@@ -5042,7 +5942,7 @@ and use `after` to guarantee that a successful lock is released.
 ```foo
 use thread as threads.
 
-function protect(mutex pointer to threads.Mutex)
+function protect(mutex pointer to threads.guard)
   giving failable nothing {
   threads.lock(mutex) try.
   after { threads.unlock(mutex) fallback nothing. }
@@ -5075,6 +5975,11 @@ Use `task.launch(scope, callback, argument)` for scoped work and call
 `task.submit(pool, callback, argument)` followed by `task.wait(pool)` for pooled
 work. Channel values are signed 64-bit integers; `task.send` and `task.receive`
 return booleans so the caller can handle a closed or unavailable channel.
+`task.cancel(scope)` and `task.halt(pool)` request cooperative
+cancellation. New work is rejected, queued pool callbacks are skipped, and a
+running callback can check `task.cancelled` and return. A scope or pool created
+inside a callback inherits cancellation from its parent task. Join or wait for
+callbacks to finish before using the data they may have accessed.
 
 Backend selection is a compile-time optimization decision, not a source-level
 fork (two different versions written by the programmer). A backend must
@@ -5106,9 +6011,9 @@ atomics only for small shared values with a deliberately chosen memory order.
 
 # Expressions and English Grammar
 
-FOO uses English words where they make intent clearer, but every sentence has
-one precise parse (one structural reading) and one checked type. This chapter separates syntax that runs
-today from ideas still being designed.
+How can code read like a sentence without leaving its meaning open to guesswork?
+FOO gives each expression one precise structure and a checked type. This
+chapter shows the forms accepted today and calls out ideas still in design.
 
 ## Naming rule
 
@@ -5349,8 +6254,9 @@ Next: [Functions](functions.md).
 
 # Language Foundations
 
-This chapter answers the questions that determine how FOO behaves beneath its
-English surface. Every section labels its status. **Current** syntax is accepted
+What does FOO infer for you, and what must you state yourself? This chapter
+answers that question across types, absence, memory, and effects. Every section
+labels its status. **Current** syntax is accepted
 by the compiler today. **Library** behavior is supplied by the standard library
 or project tools. An explicit boundary says what the language deliberately does
 not promise. See [Patterns with today's language](patterns.md) for complete
@@ -5475,8 +6381,8 @@ for each item in items {
 ```
 
 The `iterator` module provides an explicit user-defined protocol.
-`Cursor[T, S]` pairs source state with a failable pull function, while
-`Step[T, S]` distinguishes an item from ordinary exhaustion with `finished`,
+`cursor[T, S]` pairs source state with a failable pull function, while
+`step[T, S]` distinguishes an item from ordinary exhaustion with `finished`,
 an optional `value`, and the next `state`. The `item` and `done` constructors
 keep those fields consistent. Borrowing and cleanup remain ordinary value and
 `after` rules. Custom cursors do not participate in `for each`; that loop stays
@@ -5597,19 +6503,19 @@ and ownership visible without adding hidden record behavior.
 
 ### State machines (Library)
 
-The `state` module provides `Machine[S, E]`, `create`, and `step` for an
+The `state` module provides `machine[S, E]`, `create`, and `step` for an
 immutable value plus an application-defined failable transition. This record
 and function API is the canonical form; FOO does not add a second `state`
 declaration that would hide ownership, persistence, or recovery policy.
 
 ### Serialization (turning values into storable or transferable data; current library)
 
-The `json` module parses, inspects, streams, and writes JSON. `Codec[T]` (a
+The `json` module parses, inspects, streams, and writes JSON. `codec[T]` (a
 paired encoder and decoder) groups
 an explicit text encoder and decoder so applications can pass a typed codec as
 one value. `codec.encode[T]` and `codec.decode[T]` generate concrete JSON code
 for supported scalars, optional values, sequences, choices, and records without runtime reflection. Byte buffers and
-text conversions remain explicit. Applications use an explicit `Codec[T]`
+text conversions remain explicit. Applications use an explicit `codec[T]`
 when field naming, versions, unknown fields, allocation, endianness (the byte
 order used to store a number), or input policy differs from that standard form.
 
@@ -5695,7 +6601,7 @@ constant offline is "offline".
 constant connection is primary fallback secondary fallback offline.
 ```
 
-The `transaction` module defines a `Participant` containing prepare, commit,
+The `transaction` module defines a `participant` containing prepare, commit,
 and rollback functions. `execute` registers rollback with `after error`, then
 runs application work and commits. It covers one-process coordination only.
 Nested transactions, irreversible side effects, cancellation, crash recovery,
@@ -5726,12 +6632,12 @@ inject clocks, seeds, inputs, and services.
 ### Time and units (Library)
 
 `time.current`, `time.sleep`, and `time.measure` use raw nanoseconds for
-compatibility. `time.Instant`, `time.Duration`, `nanos`, `millis`, `seconds`,
+compatibility. `time.instant`, `time.duration`, `nanos`, `millis`, `seconds`,
 `now`, `elapsed`, and `wait` provide typed monotonic time (time measured by a
 clock that does not move backward) for new code.
-`calendar.Date`, `Zone`, and `Moment` provide checked Gregorian dates, civil
+`calendar.civil`, `offset`, and `stamp` provide checked Gregorian dates, civil
 times, and fixed UTC offsets. Named political time zones require an external
-versioned database and are not guessed from an offset. `units.Quantity[D]`
+versioned database and are not guessed from an offset. `units.measure[D]`
 keeps addition and difference operations within one dimension; constructors
 provide length, mass, and temperature dimensions without unit-suffixed literals.
 
@@ -5764,10 +6670,13 @@ foo benchmark benchmark/lookup.iv
 
 Native `test "name"` blocks are current and each block runs in isolation.
 `testing.every(count, property)` checks a bounded deterministic property using
-indexes from zero through `count subtract 1`. `testing.Generator[T]` and
-`testing.generate` map those indexes to typed generated values. Compile-time checks can use
-supported `eval` computations and ordinary compiler errors; `verify at compile
-time` is not accepted syntax.
+indexes from zero through `count subtract 1`. `testing.generator[T]` and
+`testing.generate` map those indexes to typed generated values. Use
+`eval { verify condition. }` for compile-time assertions. `eval` can derive
+constants from `reflect[T].size` and `.alignment` for fixed-width scalar types
+and explicit C records with fixed-width scalar fields. C records also expose
+`.count` and `.offset("field")` inside `eval`. Other layouts depend
+on the target and are not folded there.
 
 ### Documentation and reflection (Current boundary)
 
@@ -5793,107 +6702,293 @@ added only when those forms cannot express a required safety contract.
 
 Next: [Patterns with today's language](patterns.md).
 
---- SOURCE: docs/intro.md ---
+--- SOURCE: docs/hardware.md ---
 
-# Chapter 1: Welcome to FOO (The Best of Both Worlds)
+# Hardware and Parallel Computation
 
-For decades, programmers have been forced to make a tough choice: Do you want a language that is easy to read and write (like Python), or do you want a language that is blazing fast and gives you total control over the hardware (like C, C++, or Rust)?
+Status: staged implementation. Current FOO supports fixed-width
+`vector[N, T]`, lane-wise arithmetic and comparisons, `splat`, `shuffle`,
+`permute`, `gather`, `scatter`, `select`, `reduce`, and CPU target profiles.
+The `matrix` and `tensor` modules provide dense CPU values and operations.
+`arch.runtime` queries CPU features usable by the process, and `cpu.add` runs
+byte addition through AVX2, SSE2, NEON, or scalar code at runtime. Release
+builds also vectorize eligible decimal sequence loops. The `gpu`
+module discovers a Vulkan compute device and runs SPIR-V kernels with explicit buffers,
+transfers, and completion. Private `function ... for gpu` declarations lower a
+checked straight-line decimal 32 sequence subset to SPIR-V. Matrix and tensor
+remain library records.
 
-Usually, you can't have both. If you choose the easy language, your program might run slow. If you choose the fast language, your code often looks like a wall of confusing math symbols, brackets, and semicolons.
+`gather` reads lanes from one vector using a vector of integer indices.
+`scatter` returns a new vector after writing lanes in index order, so the last
+write wins when indices repeat. Both check every index. `permute` selects
+compile-time lanes from one vector. These operations run on the C and Zig
+backends; they do not yet promise one hardware gather or scatter instruction.
+`arch.target(feature)` reports the selected build target's SIMD features for
+`sse2`, `avx2`, `avx512f`, `fma`, `neon`, and `sve`. `arch.runtime(feature)`
+checks whether this process can use the requested instruction set.
 
-**FOO was built to end that compromise.**
+`platform.page`, `width`, `alignment`, and `little` report the host's page
+size, pointer width in bytes, maximum C alignment, and byte order.
+`platform.supports` reports named runtime capabilities such as `"mapping"`,
+`"position"`, `"locking"`, `"affinity"`, `"numa"`, and `"limits"`; unknown names
+return false. An individual operation can still fail for a particular resource.
 
-FOO is a sentence-like systems language (a language for low-level,
-high-performance programs). It reads close to English and compiles through C
-or Zig to native code (instructions built to run directly on the chosen
-machine). Its optimizer (the compiler stage that removes needless work)
-removes proven unnecessary work and selects compatible runtime paths (internal
-implementations used while the program runs) without changing the source
-contract (the behavior the language promises).
+`topology.count` reports online logical processors, which can exceed the CPUs
+allowed to the current process. `topology.current` reports the calling thread's
+OS processor ID. `topology.pin(cpu)` returns an owned placement that remembers
+the thread's previous affinity; call `topology.restore(placement)` once, on the
+same thread, to restore it. Pinning may fail if the OS disallows the requested
+processor. Windows IDs are processor-group number times 64 plus the number
+within that group. Linux pinning accepts CPU IDs below `CPU_SETSIZE`.
+Current-processor and affinity operations are available on
+Windows and Linux; other POSIX targets return `MissingValue`.
+`topology.allowed` counts processors the calling thread can use in its current
+Windows processor group or Linux affinity mask.
+`topology.nodes` reports the discovered NUMA node count, and
+`topology.node(cpu)` maps an OS processor ID to its node. Use
+`topology.place(node)` to pin the current thread to an available CPU in that
+node; restore its prior affinity with `topology.restore`. These NUMA calls are
+available on Windows and Linux and do not change memory allocation policy.
 
----
+## Runtime Execution
 
-## 1. Reads Like English, Runs Like a Sports Car
+Release builds for the hosted C and Zig backends recognize independent counted
+loops over 32-bit or 64-bit decimal sequences. They support constant or
+parameter starting
+indices, up to two indexed reads, invariant scalar operands, fill and copy,
+`plus`, `subtract`, `multiply`, `divide`, and a second arithmetic operation
+with an invariant scalar on either side. Each loop writes one output sequence and increments
+its index by one.
+The optimizer selects the SIMD candidate through the compiler's evidenced
+specialization selector. A runtime guard checks the input and output lengths,
+overlap, lane count, and CPU features before dispatching to AVX-512F on the C
+backend for large ranges, AVX2 or SSE2 on x86, or NEON on AArch64. Zig 0.16
+uses AVX2 or SSE2 on x86 because its C compilation cannot build the per-function
+AVX-512 path. The original checked scalar
+loop remains the fallback for unsupported sizes, overlap, and bounds failures.
+`--explain` reports `vectorize` when this path is selected. Dependent loops
+remain scalar. Other loop forms and order-changing reductions are outside the
+implemented automatic CPU vectorization contract.
 
-FOO's parser (the part of the compiler that reads source) accepts a small,
-defined sentence grammar. It does not guess the meaning of arbitrary English.
+`cpu.add(left, right, output)` takes equally sized byte slices, adds each lane
+modulo 256, and writes into caller-owned output. Exact in-place output is
+allowed; partial overlap fails. Runtime dispatch checks CPU and operating-system
+support before using AVX2 or SSE2 on x86, uses NEON on AArch64, and otherwise
+uses scalar code.
 
-Here is a complete, working FOO program:
+`simd.load/store` move four contiguous decimal32 lanes to and from sequences;
+`simd.words/write` do the same for unsigned32, `simd.signed/assign` for
+integer32, and `simd.pair/place` for two decimal64 lanes. Every operation
+checks its offset and extent. These value operations are portable across C and
+Zig; explicit shuffles and gathers do not promise one native instruction.
 
-```foo
-function greet(name text) giving text {
-  give "Hello, " plus name plus "!".
+`gpu.available` reports whether a Vulkan loader and compute device are present.
+`gpu.open` owns a logical device and queue. `reserve`, `upload`, `download`,
+`prepare`, `bind`, `launch`, and `finish` provide explicit execution. Buffers
+use coherent host-visible memory and remain mapped while owned. Transfers and
+dispatch complete before returning. Bound buffers cannot be disposed until the
+kernel is discarded. Programs call `discard`, `dispose`, and `close` for owned
+resources. `gpu.capacity` reports the device workgroup limit; dispatch also
+checks the kernel's local-memory limit. `gpu.supports` recognizes `shared`,
+`atomic`, `subgroup`, and `mapping`. `gpu.view/edit` borrow coherent host-visible
+bytes from an owned buffer; keep the buffer live and serialize host access with
+dispatch. Subgroup preparation requires compute-stage subgroup
+ballot support from the selected device.
+`gpu.plane` and `gpu.volume` launch two- and three-dimensional ranges with
+checked local dimensions and buffer coverage. Generated `gpu.index`,
+`gpu.local`, and `gpu.group` are row-major linear IDs in every launch shape.
+
+The implemented FOO kernel subset takes decimal 32 sequence parameters and uses
+`gpu.index`, `gpu.local`, and `gpu.group` for indexed reads and writes in 1D,
+2D, and 3D ranges. It supports straight-line `plus`, `subtract`, `multiply`,
+and `divide`. `gpu.prepare` takes
+a compile-time kernel name, generates SPIR-V, and compiles it on the opened
+device. `gpu.send` and `gpu.receive` transfer decimal 32 sequences. The launch
+checks every bound buffer can cover the requested count. `gpu.dispatch` takes
+an explicit workgroup size that must divide the total count. `gpu.shared`
+allocates compile-time sized decimal 32 workgroup storage; its local-ID access
+requires a group no larger than the allocation. `gpu.barrier`
+synchronizes global and local workgroup memory. `gpu.atomic` performs wrapping
+unsigned 32 addition on a writable device sequence; `gpu.push` and `gpu.pull`
+transfer unsigned 32 sequences. Straight-line kernels make barrier participation
+uniform. Unsupported effects or control flow fail
+compilation. For example:
+
+```text
+function shade(left sequence of constant decimal 32, right sequence of constant decimal 32, output sequence of decimal 32) giving nothing for gpu {
+  constant index is gpu.index.
+  set output at index to (left at index) plus (right at index).
 }
 
-display greet("vibes").
+constant kernel is gpu.prepare(device, "shade") try.
 ```
 
-Notice what is missing: there are no semicolons, no entry-point wrapper, and no
-parentheses around every condition. Top-level statements run in source order;
-functions use words such as `give` and `plus` when a value must be returned or
-combined.
+`gpu.lane`, `gpu.subgroup`, and `gpu.width` expose subgroup location and size.
+`gpu.broadcast` broadcasts a decimal 32 value from lane zero. Preparation
+rejects these operations when the selected device lacks subgroup ballot support.
 
-FOO does not interpret this program line by line. It checks and lowers (turns
-into a simpler compiler form) the source, then a C or Zig backend (code
-generator) produces a native executable (a program built to run directly on
-the chosen operating system and processor).
+The lower-level `vulkan` module accepts caller-supplied SPIR-V bytes and an
+explicit descriptor count and initial workgroup width. It exposes device
+enumeration, byte buffers, binding, and checked 1D/2D/3D dispatch. This path
+does not validate shader memory access; callers must provide matching bindings
+and buffer sizes. The adapter requests portability extensions for MoltenVK
+when the loader reports them. MoltenVK source is vendored, but its binary and
+macOS loader setup remain external to the FOO build.
 
----
+## Goal
 
-## 2. The Ultimate Shapeshifter (Multiple Build Backends)
+FOO source should describe numerical operations in FOO terms while the compiler
+selects legal CPU SIMD instructions, GPU execution, or a portable implementation
+for the declared target. A native instruction remains available through a
+target-checked native contract when the portable operations are insufficient.
 
-When you tell FOO to build your app, it doesn't just do it one way. FOO acts as a master translator, capable of generating code for two of the most powerful systems languages in the world: **C** and **Zig**.
+Value shape and execution placement are separate decisions. A scalar, vector,
+matrix, or tensor describes data and operations; none silently moves data to a
+GPU. Choosing a GPU requires an explicit device, buffer ownership, transfer,
+kernel launch, and completion dependency. The compiler may remove a transfer
+only after proving that the program observes the same result and effects.
 
-*   **The C Backend:** FOO can translate your code into standard, highly-optimized C11. This means your FOO program can run on virtually any device on Earth, from massive cloud servers to tiny embedded microcontrollers.
-*   **The Zig Backend:** FOO can also translate your code into Zig, taking advantage of modern memory safety features and lightning-fast compilation times.
+## Semantic Contract
 
-### Smart Optimization (`opt`)
-FOO's optimizer uses the declared target and CPU profile. On a compatible
-x86-64 release target, medium byte transfers can use AVX2 (processor
-instructions that handle several bytes at once). AArch64 (the common 64-bit
-ARM processor architecture) and Zig have
-their own overlap-safe block paths, while other sizes and targets keep portable
-fallbacks. Generic specialization (creating code for an exact type),
-collection allocation strategy (how memory is reserved), task event services,
-and cache identity (the inputs that decide whether saved build work is still
-valid) use the same target-aware contract. Read
-[Optimization Under the Hood](tuning.md) for the exact thresholds and limits.
+- Fixed-width `vector[N, T]` has exactly `N` lanes. A target may use one
+  register, several registers, or scalar code. A scalable-vector target such as
+  SVE needs a separate length-independent execution model; its runtime lane
+  count must not silently change the meaning of `N`.
+- Masks are typed lane predicates. `select` and masked memory operations must
+  define which lanes are read or written, including fault and bounds behavior.
+- Integer overflow, conversion, and indexed access retain FOO's checked
+  behavior. Floating-point contraction, reassociation, rounding, exceptional
+  values, and mixed precision need explicit modes before an optimizer changes
+  their results. A fused multiply-add is a distinct operation unless a selected
+  mode permits contraction.
+- Gather, scatter, shuffle, and reductions need defined index rules and
+  reduction order. Parallel execution cannot invent a deterministic result for
+  an order-sensitive reduction without a specified order.
+- Host, device, shared, constant, and private memory have explicit ownership,
+  lifetimes, visibility, and synchronization. A buffer, image, or texture is a
+  resource kind; its location does not follow from its element type.
+- A kernel is validated against its declared target capabilities. It may use
+  only operations, address spaces, atomics, and call effects available there.
+  Workgroup barriers require uniform participation. Launch sizes, streams,
+  and scratch memory are explicit controls with checked limits.
+- Subgroups are a portable concept with target-dependent size. Portable code
+  cannot assume a fixed warp or wavefront width. Lane exchange and reduction
+  state their behavior when only some lanes are active.
 
----
+The following broader vector and kernel sketches are proposed, not executable
+FOO today:
 
-## 3. Superpowers Hidden in Plain Sight
+```text
+constant values of type vector[8, decimal 32] is ...
+constant result is values multiply scale plus bias.
 
-The language also exposes compile-time work, checked memory contracts, and
-native interoperability without changing its ordinary statement grammar.
+kernel calculate(input, output) {
+  constant index is invocation.index.
+  output[index] is input[index] multiply 2.
+}
+```
 
-### 🪄 Compile-Time Magic (`eval`)
-Sometimes, you have heavy tasks—like reading a configuration file, doing complex math, or formatting a giant block of text—that never actually change while the user is running the app.
-With an `eval` block, supported computation happens while the program is built
-and its result is stored in the output. This can remove runtime computation,
-but the stored result still contributes to executable or loaded memory size.
+## Compiler Shape
 
-### 🛡️ Bulletproof Memory (Sealing)
-Memory bugs include reading data before initialization and using storage after
-its owner has closed. FOO's sealing analysis tracks supported ownership and
-ordering contracts and rejects violations it can prove. Native code and an
-incorrect foreign contract remain the programmer's responsibility.
+FOO should keep one parser and type system, then extend its typed IR with
+explicit vector and parallel operations. Shape and layout specialization happen
+before target lowering. The IR must retain address spaces, masks, memory
+effects, barriers, atomic orders, launch dimensions, and capability requirements
+so neither the C/Zig CPU paths nor a GPU backend can erase a required effect.
 
-### 🤝 Play Nice With Others (Interoperability)
-FOO can generate typed declarations from supported C headers with `foo bind`.
-Those declarations check the FOO side of each call; the native library and its
-declared ABI, layout, ownership, and lifetime contracts must still be correct.
+The CPU path provides a portable reference implementation and selected SIMD
+lowering for AVX2, AVX-512, NEON, and scalable-vector targets where semantics
+permit it. A kernel also needs a CPU execution path for testing and fallback.
+The first GPU lowering path covers straight-line decimal 32 maps through
+Vulkan compute on the hosted C and Zig backends. MoltenVK is vendored for a
+future tested macOS path. Backend availability is queried at runtime.
 
----
+## Roadmap
 
-## 4. How This Book is Structured
+Implemented CPU baseline: fixed vectors and the vector operations above;
+owned row-major decimal `matrix` values with addition, multiplication, column
+bias, rectangular transpose, checked rectangular crop, row and column sums,
+and elementwise multiplication;
+owned row-major
+decimal `tensor` values with shape validation, indexed reads, addition,
+scaling, elementwise multiplication, explicit trailing-axis broadcasting,
+reshape, checked axis permutation, axis crop, axis concatenation, and
+checked axis sums. Each reduction returns owned storage and uses zero as the
+sum of an empty dimension. Tensor axis sums remove that axis from the result
+shape, including a rank-one reduction to a scalar.
+`tensor.broadcast` accepts a smaller source rank by treating missing leading
+axes as singleton axes. Each aligned source extent must equal its target extent
+or be one. The result owns its shape and expanded values; `tensor.hadamard`
+requires equal shapes and never broadcasts implicitly.
+`tensor.product` multiplies rank-three row-major decimal batches. Equal batch
+extents pair directly; a singleton batch broadcasts to the other input. The
+inner matrix extents must match, and the result owns its shape and values.
+Transforms return independent values that their owners release.
+Runtime CPU feature checks and dispatched byte addition are implemented.
+Vulkan compute discovery, typed and byte transfers, FOO kernel lowering for
+straight-line decimal 32 maps, explicit one-, two-, and three-dimensional
+workgroups, local and group IDs, shared decimal storage, unsigned 32 atomic
+addition, barriers, capability checks, shader compilation, and synchronous
+launch are implemented on hosted C and Zig builds. The C path has been
+executed on an Intel Vulkan device; the Zig and macOS paths need hardware runs.
 
-This documentation is designed to take you from a complete beginner to a systems-level expert, step-by-step.
-*   We will start with the **Language** (how to write basic sentences and logic).
-*   We will move to **Data and Memory** (how FOO keeps your apps safe from crashing).
-*   We will explore **Systems and Concurrency** (how to talk to the internet and do multiple things at once).
-*   Finally, we will look at the **Compiler and Advanced** features (how to bend the hardware to your will).
+| Stage | Capabilities | Acceptance |
+| --- | --- | --- |
+| Foundation | Vector types, masks, lane arithmetic, reductions, shuffle, permute, gather, scatter, CPU feature detection, explicit alignment, SIMD loads and stores | Scalar and SIMD results agree on supported targets, including bounds, overflow, masks, and floating-point modes; generated instruction selection is inspected and benchmarked. |
+| Advanced GPU model | Software CPU fallback, broader subgroup operations, private memory controls, streams, fences, typed asynchronous transfers, and further device backends | A kernel runs through the CPU reference path and one GPU backend with matching results and checked ownership, synchronization, and capability errors. |
+| Compiler | Compile-time vector specialization, automatic vectorization, kernel validation, parallel IR, CPU SIMD lowering, GPU lowering, target capability checking, layout specialization, device optimization | Source is unchanged across supported targets; unsupported operations fail during checking; optimization preserves the semantic contract and reports selected paths. |
+| Advanced | Matrix and tensor operations, mixed precision, FP16, BF16, INT8, INT4, matrix acceleration such as AMX and tensor cores, shared-memory tiling, asynchronous pipelines, accelerator abstraction | Operations have explicit shape, precision, accumulation, layout, and resource contracts, with correctness and performance evidence per target. |
 
-You don't need to memorize everything today. Start with `display "Hello, world!".`, and let's get started!
+Automatic vectorization and placement are optimizations, not promises attached
+to a spelling such as `parallel`. CPU threads, CPU SIMD, and GPU execution have
+different costs and effects; selection must be visible through build diagnostics
+and measurements. Native contracts remain the escape hatch for instructions
+that the portable model cannot yet express.
+
+This work shares foundations with persistent storage and networking: type and
+layout introspection, generated specialized code, byte views, lifetime checks,
+atomics, structured errors, and an effect-aware IR. A capability belongs in FOO
+when these projects need the same general operation, rather than when one
+application needs a special keyword.
+
+--- SOURCE: docs/intro.md ---
+
+# Introduction
+
+What does a complete FOO program look like? One line:
+
+```foo
+display "Hello, world!".
+```
+
+It prints `Hello, world!`. The period ends the statement, and the program can
+run as written. You do not need to define a function or import an output
+library first.
+
+## From words to a program
+
+FOO uses a small, precise vocabulary. `display` writes a line of text. `plus`
+joins text or adds numbers. When you need to keep a value, give it a name:
+
+```foo
+constant name is "vibes".
+display "Hello, " plus name plus "!".
+```
+
+Change `"vibes"` and run the program again. The compiler checks that the
+pieces fit together before it builds the executable. You will meet functions,
+types, and error handling after these first statements feel familiar.
+
+## What FOO is for
+
+FOO compiles through C or Zig to native code. Its sentence-like syntax is
+defined grammar, rather than arbitrary English: each statement has a specific
+meaning the compiler can check. The language also gives programs explicit ways
+to handle failures and manage memory when they grow beyond small examples.
+
+Those systems features matter later. To begin, you only need a project and a
+file containing the first line above. [Getting Started](start.md) walks through
+both, and [FOO Basics](basics.md) explains the next few statements.
 
 --- SOURCE: docs/language.md ---
 
@@ -6324,7 +7419,7 @@ state machines, injected capabilities, and property checks.
 2. Write a function that gives `failable text`. Handle it once with `try` and
    once with `fallback`.
 3. Loop over a sequence and stop when a chosen value appears.
-4. Create a 50 millisecond `Duration` and pass it to `clock.wait`.
+4. Create a 50 millisecond `duration` and pass it to `clock.wait`.
 
 Next: [Collections](collections.md).
 
@@ -6403,7 +7498,7 @@ as `account.owner` and pass it explicitly.
 
 ## Typed time
 
-The `time` module supplies `Instant` and `Duration` records. Constructors name
+The `time` module supplies `instant` and `duration` records. Constructors name
 the unit at the boundary, so a raw count is not accidentally passed as a
 duration.
 
@@ -6421,15 +7516,16 @@ when elapsed.nanoseconds greater than 0 { display "The clock advanced". }
 
 Use `clock.nanos`, `clock.millis`, or `clock.seconds` to construct a duration.
 `clock.elapsed` panics if the second instant is earlier because unsigned
-subtraction is checked. Use `calendar.Date`, `calendar.Zone`, and
-`calendar.Moment` for civil time with a fixed UTC offset. Named political time
-zones require an external versioned time-zone database. An `Instant` remains a
-monotonic measurement point (a clock value that does not move backward) rather
-than a calendar timestamp.
+subtraction is checked. Use `calendar.civil`, `calendar.offset`, and
+`calendar.stamp` for civil time with a fixed UTC offset. Named political time
+zones require an external versioned time-zone database. An `instant` remains a
+monotonic measurement point rather than a calendar timestamp. Use `clock.utc`
+for a persisted UTC/POSIX `stamp`; wall time can change when the host clock is
+corrected.
 
 ## Explicit codecs
 
-`Codec[T]` groups the two directions of a text conversion. The application
+`codec[T]` groups the two directions of a text conversion. The application
 still decides field names, versions, limits, and validation.
 
 ```foo
@@ -6448,7 +7544,7 @@ function decode(source text) giving failable Token {
   give Token(source).
 }
 
-constant codec is codecs.Codec[Token](encode, decode).
+constant codec is codecs.codec[Token](encode, decode).
 constant token is codec.decode("abc") try.
 constant stored is codec.encode(token) try.
 display stored.
@@ -6469,7 +7565,7 @@ constant restored is codecs.decode[Token](stored) try.
 ```
 
 The generated path is type-specific and does not use runtime reflection. Use an
-explicit `Codec[T]` when field names, versions, validation, or the wire format
+explicit `codec[T]` when field names, versions, validation, or the wire format
 differ from the standard representation. Generated codecs currently cover
 booleans, integers, decimals, text, optional values, sequences, choices, and
 nested records composed from those values.
@@ -6506,12 +7602,12 @@ Custom types cannot participate in `for each` yet. Use a cursor with a `next`
 function that returns a closed step choice.
 
 ```foo
-define Step as choice {
+define step as choice {
   item(unsigned).
   done.
 }.
 
-function next(index unsigned) giving Step {
+function next(index unsigned) giving step {
   when index less than 3 { give item(index). }
   give done.
 }
@@ -6535,7 +7631,7 @@ The three parts are always visible:
 2. Extract an item only in the `item(value)` case.
 3. Stop in the `done` case.
 
-Add a failure variant or make `next` return `failable Step` when reading can
+Add a failure variant or make `next` return `failable step` when reading can
 fail. A resource-backed cursor also needs an immediate `after` cleanup.
 
 ## Capabilities as values
@@ -6631,7 +7727,7 @@ test "generated indexes stay in range" {
 
 This is deterministic enumeration (the same range is checked in the same
 order), not automatic generation for every value of a type. For varied typed
-inputs, wrap an index-to-value function in `Generator[T]` and call `generate`.
+inputs, wrap an index-to-value function in `generator[T]` and call `generate`.
 The index is reproducible, so a failing value can be recreated.
 
 ## Pointer identity
@@ -6718,9 +7814,9 @@ The current abstractions intentionally stop at these boundaries:
 | --- | --- |
 | Iteration | Custom cursors use `iterator.next`; `for each` accepts compiler-supported collections. |
 | Reuse | Records compose other records; there is no inheritance or implicit record subtyping. |
-| Time zones | `calendar.Zone` is a fixed UTC offset; named zones need an external versioned database. |
+| Time zones | `calendar.offset` is a fixed UTC offset; named zones need an external versioned database. |
 | Transactions | `transaction.execute` coordinates one process; durable and distributed recovery is application policy. |
-| Units | `Quantity[D]` checks `add` and `difference` within one dimension; multiplication, division, and conversion are explicit functions. |
+| Units | `measure[D]` checks `add` and `difference` within one dimension; multiplication, division, and conversion are explicit functions. |
 | Source generation | Build tasks may emit checked FOO source; syntax macros and compiler plugins are not language features. |
 
 Do not invent extra syntax at these boundaries. Use explicit records and
@@ -6729,7 +7825,7 @@ functions so ownership, failure, and external policy remain visible.
 ## Check yourself
 
 1. Add an `Email` record with a validating `create` function.
-2. Define a `Codec[Email]` that rejects empty text.
+2. Define a `codec[Email]` that rejects empty text.
 3. Create a state machine that rejects a value greater than ten.
 4. Replace a real clock dependency with a `Clock` record in a test.
 5. Write a property callback that succeeds for indexes below fifty.
@@ -6782,7 +7878,41 @@ ranking.
 | `known` | Validation of a build-time-known value. |
 | `lookup` | One million checked dynamic sequence lookups. |
 | `runtime` | Runtime initialization and a hosted query. |
+| `returned` | Repeated owned-sequence construction, return, read, and release. |
 | `startup` | Process and generated-program startup. |
+
+### Returned-sequence cost audit
+
+The new `returned` fixture returns 128 independently owned 10,000-element
+unsigned sequences from a function. Its caller reads all elements and releases
+each result. The focused [raw-sample report](../benchmark/returned.json) records
+three warmups and nine timed release runs per implementation on 2026-10-09.
+Both FOO backends and the handwritten C, Zig, and Rust controls
+completed the checksum and reported 128 payload allocations, 10,240,000
+allocated bytes, zero copied bytes, zero final live bytes, and 80,000 peak live
+payload bytes in release builds on this Windows x64 host. This shows no
+additional instrumented payload allocation or copy at the return boundary for
+this shape; it does not establish the same result for nested, generic, or
+borrowed return values. Generated C packages the pointer and length into its
+return value; generated Zig returns the slice. Compiler telemetry reported two generic
+specializations and zero calls inlined or allocations eliminated for this
+fixture. The catalog now enforces those memory ceilings on every timed run.
+
+| Implementation | Median process time | Timed sample range |
+| --- | ---: | ---: |
+| FOO/C | 34.82 ms | 24.30-58.09 ms |
+| FOO/Zig | 90.80 ms | 72.73-206.59 ms |
+| Handwritten C | 190.34 ms | 78.25-295.46 ms |
+| Handwritten Zig | 513.72 ms | 352.04-1179.63 ms |
+| Handwritten Rust | 252.12 ms | 136.64-412.90 ms |
+
+Other tests were using CPU during this run and the spreads are wide. These
+whole-process timings are preserved for inspection, not used as a speed ranking.
+
+The checked-in full-suite report below predates this fixture. Its timing rows
+must not be used as results for `returned`; use a fresh `benchmark:report` run
+for a timing comparison. The memory figures above exclude allocator metadata
+and process resident memory.
 
 ## Rust comparison
 
@@ -6820,7 +7950,7 @@ counts are not a claim that FOO is generally faster than Rust.
 The table above is the earlier full-suite snapshot. After that run, hosted Zig
 executables that allocate sequences began linking libc and using its allocator.
 A focused 2026-10-02 rerun of `branch` is recorded with all 20 timed samples in
-[`benchmark/branch-allocator.json`](../benchmark/branch-allocator.json). Three
+[`benchmark/branch.json`](../benchmark/branch.json). Three
 warmups preceded timing; the five release binaries ran as separate processes in
 rotating sequential order on the same Intel Core i5-1145G7 Windows x64 machine.
 
@@ -7174,6 +8304,25 @@ In the next chapter, we will look at **Advanced** features, where we will explor
 
 # Building Release Binaries
 
+## Source candidate
+
+Before assigning a new version, stage the current repository sources:
+
+```sh
+npm run source:pack
+```
+
+This writes `.artifacts/release-source/foo-source-candidate/` and a matching
+`.tar.gz` archive. The package includes compiler and backend sources, FOO
+libraries, build and packaging tools, tests, docs, installers, registry code,
+and vendored sources and headers. Generated output and ignored local files are
+excluded. `source.json` records each file's SHA-256, the current commit, the
+manifest version, and whether the worktree was dirty. The command refuses to
+overwrite an existing candidate; pass `--output=PATH` for another candidate.
+The candidate is for review and local builds, not a versioned publication.
+Update the release version in `package.json`, `package-lock.json`, and
+`project.json` and complete release checks before publishing.
+
 Use one command from the repository root:
 
 ```sh
@@ -7191,8 +8340,19 @@ operating system will run on another.
 | Linux ARM64 | Builds Linux ARM64 natively. |
 
 Output is staged under `release/foo-vVERSION/` using names such as
-`foo-vVERSION-windows-x64` and `foo-vVERSION-linux-x64`. The existing installer
-command consumes those directories:
+`foo-vVERSION-windows-x64` and `foo-vVERSION-linux-x64`.
+
+Package the VS Code extension in the same release directory before generating
+checksums:
+
+```text
+cd editors/textmate
+npx --yes @vscode/vsce@4.0.0 package --out ../../release/foo-vVERSION/foo.iv-EDITORVERSION.vsix
+cd ../..
+```
+
+Use the version in `editors/textmate/package.json` for `EDITORVERSION`.
+Then build the installers and checksums:
 
 ```sh
 npm run build:installers
@@ -7205,7 +8365,7 @@ both Linux TAR archives, the npm package, and `SHA256SUMS.txt`.
 
 Windows builds require Node.js, Nim 2.2.12, Clang, and `llvm-rc`. The resource
 compiler is included with standard LLVM installations and embeds
-`installers/assets/logo-installer.ico` in `foo.exe`.
+`installers/assets/installer.ico` in `foo.exe`.
 
 Linux and WSL builds require Node.js, Nim 2.2.12, Clang, and the OpenSSL
 development package. The Linux ARM64 cross-build uses FOO's pinned managed Zig
@@ -7310,8 +8470,8 @@ failable value and therefore need postfix `try` or a deliberate `fallback`.
 
 ### Reading a File
 `file.read` reads an entire file into `text`. Use it when the file is expected
-to contain UTF-8. For arbitrary binary data, `readbytes` returns a length-aware
-`sequence of byte`; release that owned result with `releasebytes`.
+to contain UTF-8. For arbitrary binary data, `load` returns a length-aware
+`sequence of byte`; release that owned result with `file.release`.
 ```foo
 use file.
 
@@ -7334,9 +8494,9 @@ Binary files use the same high-level shape without hex encoding:
 ```foo
 use file.
 
-constant content is file.readbytes("input.bin") try.
-after { file.releasebytes(content) fallback nothing. }
-file.writebytes("copy.bin", content) try.
+constant content is file.load("input.bin") try.
+after { file.release(content) fallback nothing. }
+file.save("copy.bin", content) try.
 display "Copied bytes".
 ```
 
@@ -7378,6 +8538,13 @@ physically removes a file; a missing path fails. If `replace` fails, inspect the
 destination before retrying: the atomic rename may have completed before the
 directory durability request failed.
 
+`file.temporary(directory, prefix)` exclusively creates an empty file in the
+destination directory and returns its owned path. `file.metadata(path)` returns
+a snapshot of type, size, read-only status, and file times; `file.walk(path)` yields
+relative paths recursively without descending through links. In tests,
+`testing.fault` can inject a one-shot partial write or a sync or replace error
+for the current thread; `testing.clear` removes a pending fault.
+
 ---
 
 ## 2. Networking (The `net` Module)
@@ -7406,6 +8573,35 @@ constant response is network.receive(socket, 1024) try.
 display response.
 ```
 
+`net.address(host, port)` groups an endpoint for `dial`, `serve`, and UDP
+`deliver`. `net.resolve(host, port, family)` resolves the first numeric address;
+`family` is `"any"`, `"ipv4"`, or `"ipv6"`. Release the returned endpoint's
+owned `host` with `text.release` when finished.
+
+For datagrams, `net.bind(host, port)` opens a UDP socket and `net.local` reads
+its assigned port. `deliver` accepts a read-only byte sequence. `capture`
+returns a packet with borrowed `payload` bytes and `sender` text plus a
+`origin` port; `discard` releases the packet and invalidates both views.
+`dispose` closes the socket. A zero-length packet is valid. Receiving a packet
+larger than the requested size fails and consumes that packet.
+
+`ipv4` and `ipv6` parse numeric addresses into fixed-width values; `socket4`
+and `socket6` pair them with ports. `scoped6` also sets the IPv6 interface scope.
+Use `dial4`/`dial6` or `serve4`/`serve6` for typed TCP endpoints, and
+`send4`/`send6` for typed UDP destinations. `sender4` and `sender6` extract a
+typed endpoint from a received packet; the wrong address family fails.
+`connect4` and `connect6` associate a bound UDP socket with one peer, after
+which `emit` sends whole datagrams to that peer. `capture` still
+returns its sender. `broadcast`, `join4`/`leave4`, `join6`/`leave6`, and the
+multicast interface, hop, and loop controls configure UDP delivery.
+
+`dns.query(host, kind)` queries A, AAAA, CNAME, NS, PTR, MX, SRV, or TXT records.
+TXT character strings within a record are concatenated into text of at most
+511 bytes; longer records are omitted. `dns.count/name/data/kind/ttl` inspect the owned result; names and data borrow
+it until `dns.close`. `adapter.scan` and `route.scan` return owned snapshots of
+interface addresses, indices, MTUs, and routing entries. Close each snapshot
+with its module's `close`.
+
 ---
 
 ## 3. Running Programs (The `process` Module)
@@ -7414,21 +8610,28 @@ Sometimes you need to run an external command, like a database tool or a system
 utility. Prefer direct execution so arguments never become shell syntax.
 
 ```foo
-use process.
+use process as jobs.
 use sequence as sequences.
 use text.
 
 constant empty is sequences.create[text].
 constant arguments is sequences.append[text](empty, "example.com") try.
 after { sequences.release[text](arguments) fallback nothing. }
-constant status is process.execute("ping", arguments) try.
+constant status is jobs.execute("ping", arguments) try.
 
-when process.count greater than 0 {
-  constant first is process.argument(0) try.
+when jobs.count greater than 0 {
+  constant first is jobs.argument(0) try.
   after { text.release(first) fallback nothing. }
   display first.
 }
 ```
+
+`jobs.pipe` launches a child with separate standard input, output, and error
+pipes. `jobs.write` accepts binary bytes and reports how many were accepted;
+`jobs.seal` signals end of input. Read at most 16 MiB per `jobs.read` call from
+`"output"` or `"error"`, then free each returned byte sequence with
+`jobs.release`. Drain both output streams when the child can write to both,
+and close its handle with `jobs.close` after waiting or when abandoning it.
 
 Use `process.run` only when shell interpretation is intentional.
 
@@ -7811,8 +9014,9 @@ Next: [The Compiler](compiler.md).
 
 # Variables
 
-FOO has two value declarations: `constant` for a binding (a name connected to
-a value) that cannot change, and `dynamic` for one that can.
+Give a value a name when you want to use it again. Should that value change
+later? FOO makes the choice visible: `constant` keeps the binding fixed, and
+`dynamic` lets you update it.
 
 ## Constants
 
@@ -7951,3 +9155,59 @@ only how it is stored.
 | Reusing a name in one scope | Rename one binding or move it into an inner block. |
 
 Next: [Types and values](types.md).
+
+--- SOURCE: docs/vendor.md ---
+
+# Vendored dependency updates
+
+## Inventory and header policy
+
+| Dependency | Bundled form and provenance | Build use |
+| --- | --- | --- |
+| BLAKE3 1.8.7 | C sources and headers, commit `f3149ec5bb5449af877ba20377a11008ff499fa2`, Apache-2.0 | C crypto programs; portable, SSE2, and NEON sources as selected by target. |
+| libsodium 1.0.22 | Windows x64 static library and matching headers, archive SHA-256 in `vendor/libsodium/README.md` | Windows C crypto programs; Linux package provisioner supplies the target build. |
+| zlib 1.3.1 | Windows x64 static library and matching headers, source and library hashes in `vendor/zlib/README.md` | Windows C compression programs; Linux package provisioner supplies the target build. |
+| SPIR-V Headers | `spirv.h`, commit `86f980c731e62ae4eaf383d320449d71687936bf`, MIT | Compiler GPU generation. |
+| Vulkan Headers and volk | Headers commit `c46850864f4661461b0f6cb9922c058ffea4915e`; volk commit `0dc3ce00bf98b9f0b6fe708ca0f7eb74e2830173` | Vulkan programs only. The loader and driver come from the OS. |
+| MoltenVK | Source snapshot commit `67b2682699d7903606b97a0392061d85d27d49e6` | Not linked in Windows builds; its macOS upstream dependencies and ICD are external. |
+
+Headers for a bundled library stay at the same upstream revision as its
+implementation or binary. Add more library headers only when a build actually
+uses them and their license, revision, and target variants can be recorded.
+The C standard library, platform SDK, and kernel headers remain supplied by
+the selected target toolchain: copying host headers into `vendor/` would risk
+ABI mismatches for cross-target builds. The Windows `stdlib.h`/`errno.h`
+failure observed with a Linux-target C build on this host is a target-toolchain
+configuration issue, not missing third-party headers.
+
+## Patch log
+
+| Date | Dependency | Local patch | Validation |
+| --- | --- | --- | --- |
+| 2026-10-09 | All above | No upstream source patch in this optimization pass. | Inventory and build gates inspected. |
+
+Add a row for every future source patch, including the upstream revision,
+changed files, reason, benchmark or correctness evidence, and the upstream
+issue or pull request when one exists. Keep the original upstream archive or
+commit retrievable, and store a reproducible patch against it.
+
+## Update procedure
+
+1. Record the current revision, license, target support, compiled sources,
+   linked symbols, and raw baseline results for a representative FOO program.
+2. Obtain the new upstream release from its authoritative source. Verify its
+   release hash or commit and preserve its license and notices. Update headers
+   together with matching sources or static libraries, including each target
+   variant used by FOO.
+3. Reapply local patches one at a time, review conflicts, and update the patch
+   log. Confirm optional services remain linked only when imported.
+4. Rebuild the native compiler and run the complete relevant library, native,
+   backend, and platform tests. At minimum run `npm test`,
+   `node bin/foo.mjs test lib --backend c`, and
+   `node bin/foo.mjs test lib --backend zig` on available hosts, plus the
+   dependency's own conformance tests and target cross-builds.
+5. Repeat the same performance fixtures and parameters used for the baseline.
+   Record raw samples, executable size, startup, peak memory, dependency
+   versions, compiler flags, and hardware. Reject the patch if it regresses
+   correctness, security, portability, or the intended workload without a
+   documented trade-off.

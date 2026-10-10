@@ -50,7 +50,7 @@ const native = spawnSync(process.execPath, [join(root, "tools/native.mjs"),
 if (native.status !== 0) process.exit(native.status ?? 1);
 rmSync(output, { recursive: true, force: true });
 mkdirSync(join(output, "bin"), { recursive: true });
-for (const name of ["assets", "lib", "docs", "test/native/service.c", "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT", "LICENSE-APACHE"])
+for (const name of ["assets", "lib", "docs", "vendor", "test/native/service.c", "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT", "LICENSE-APACHE"])
   cpSync(join(root, name), join(output, name), { recursive: true });
 for (const name of readdirSync(join(root, "test", "library"))) {
   if (!name.endsWith(".iv") && !["project.json", "public.txt"].includes(name)) continue;
@@ -63,15 +63,15 @@ if (!existsSync(nativeSource))
   throw new Error(`Native compiler was not produced: ${nativeSource}`);
 cpSync(nativeSource, join(output, "bin", nativeName));
 if (platform !== "win32") chmodSync(join(output, "bin", nativeName), 0o755);
-cpSync(join(root, "installers", "assets", "logo-installer.ico"), join(output, "assets", "foo.ico"));
-cpSync(join(root, "installers", "assets", "logo-installer.png"), join(output, "assets", "foo.png"));
+cpSync(join(root, "installers", "assets", "installer.ico"), join(output, "assets", "foo.ico"));
+cpSync(join(root, "installers", "assets", "installer.png"), join(output, "assets", "foo.png"));
 const binaries = { [platform]: `bin/${nativeName}` };
 cpSync(join(root, "tools/toolchain.mjs"), join(output, "tools/toolchain.mjs"));
 
 const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 delete manifest.devDependencies;
 delete manifest.dependencies;
-manifest.files = ["assets", "bin", "lib", "docs", "test/library/*.iv", "test/library/project.json",
+manifest.files = ["assets", "bin", "lib", "docs", "vendor", "test/library/*.iv", "test/library/project.json",
   "test/library/public.txt", "test/native/service.c", "tools/toolchain.mjs",
   "toolchain.json", "project.json", "README.md", "CHANGELOG.md", "LICENSE", "LICENSE-MIT",
   "LICENSE-APACHE", "foo.artifact.json"];

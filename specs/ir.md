@@ -153,7 +153,7 @@ one terminator; terminators cannot occur in its instruction list.
 | result.catch | Conditional success/fallback selection with a validated fallback block |
 | trace.append | Error context or propagation-site recording |
 | cleanup.register | LIFO cleanup with an always/error condition and validated body |
-| vector.splat, vector.shuffle, vector.select, vector.reduce | Fixed lane types, masks and reduction operator |
+| vector.splat, vector.shuffle, vector.gather, vector.scatter, vector.select, vector.reduce | Fixed lane types, checked indexed lanes, masks and reduction operator |
 | embed, reflect, eval | Resource, type or compile-time residue |
 | native | A declared opaque contract and substrate hint |
 | atomic, thread | Synchronization operations requiring verified target-specific contracts |

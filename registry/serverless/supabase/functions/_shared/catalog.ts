@@ -3,11 +3,14 @@ import { parseRegistry, parseShard, type IndexEntry, type RegistryManifest } fro
 import type { PackageRecord } from "./manifest.ts";
 
 const defaultSource = "https://raw.githubusercontent.com/radiiplus/foo.registry/main";
+const defaultFooSource = "https://raw.githubusercontent.com/radiiplus/foo/main";
 const exactVersion = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/;
 
 export type Catalog = {
   manifest: RegistryManifest;
   entries: IndexEntry[];
+  standard: Map<string, PackageRecord>;
+  revision: string;
 };
 
 export type Discovery = (request: Request, route: string) => Promise<Response>;
@@ -18,16 +21,39 @@ export class CatalogError extends Error {
   }
 }
 
+const cache = new WeakMap<typeof fetch, { expires: number; value: Promise<Catalog> }>();
+
 export async function loadCatalog(requestFetch: typeof fetch = fetch): Promise<Catalog> {
+  const current = cache.get(requestFetch);
+  if (current && current.expires > Date.now()) return current.value;
+  const value = readCatalog(requestFetch);
+  cache.set(requestFetch, { expires: Date.now() + 60_000, value });
+  void value.catch(() => {
+    if (cache.get(requestFetch)?.value === value) cache.delete(requestFetch);
+  });
+  return value;
+}
+
+async function readCatalog(requestFetch: typeof fetch): Promise<Catalog> {
   const source = (setting("REGISTRY_SOURCE") ?? defaultSource).replace(/\/$/, "");
-  const manifest = parseRegistry(await readJson(`${source}/indexes/index.json`, requestFetch));
+  const fooSource = (setting("FOO_SOURCE") ?? defaultFooSource).replace(/\/$/, "");
+  const [manifestValue, standardValue] = await Promise.all([
+    readJson(`${source}/indexes/index.json`, requestFetch),
+    readJson(`${fooSource}/registry/standard.json`, requestFetch),
+  ]);
+  const manifest = parseRegistry(manifestValue);
+  const standard = parseStandard(standardValue);
   const shards = await Promise.all(manifest.shards.map(async (descriptor) => {
     const entries = parseShard(await readText(`${source}/${descriptor.path}?v=${manifest.revision}`, requestFetch));
     if (entries.length !== descriptor.count) throw new CatalogError(`Registry shard count mismatch: ${descriptor.path}`, 502);
     return entries;
   }));
-  const entries = shards.flat();
-  if (entries.length !== manifest.count) throw new CatalogError("Registry package count mismatch", 502);
+  const published = shards.flat();
+  if (published.length !== manifest.count) throw new CatalogError("Registry package count mismatch", 502);
+  const entries = [...published.filter((entry) => entry.kind !== "standard"), ...standard.entries]
+    .sort((left, right) => compare(left.category, right.category) || compare(left.name, right.name));
+  if (new Set(entries.map((entry) => entry.name)).size !== entries.length)
+    throw new CatalogError("Duplicate registry package name", 502);
   for (let index = 1; index < entries.length; index += 1) {
     const previous = entries[index - 1];
     const current = entries[index];
@@ -36,7 +62,26 @@ export async function loadCatalog(requestFetch: typeof fetch = fetch): Promise<C
       throw new CatalogError("Registry index is not deterministically sorted", 502);
     }
   }
-  return { manifest, entries };
+  return { manifest, entries, standard: new Map(standard.packages.map((record) => [record.name, record])),
+    revision: `${manifest.revision}:${standard.revision}` };
+}
+
+function parseStandard(value: unknown): { revision: string; entries: IndexEntry[]; packages: PackageRecord[] } {
+  if (!object(value) || value.schema !== "foo.standard-catalog/v1" || typeof value.revision !== "string" ||
+      !Number.isSafeInteger(value.count) || !Array.isArray(value.entries) || !Array.isArray(value.packages) ||
+      value.count !== value.entries.length || value.count !== value.packages.length) {
+    throw new CatalogError("Invalid FOO standard catalog", 502);
+  }
+  const entries = value.entries as IndexEntry[];
+  const packages = value.packages as PackageRecord[];
+  for (let index = 0; index < entries.length; index += 1) {
+    if (entries[index]?.kind !== "standard" || !entries[index].name.startsWith("lib/") ||
+        packages[index]?.schema !== "foo.package/v1" || packages[index].kind !== "standard" ||
+        packages[index].name !== entries[index].name || packages[index].version !== entries[index].version) {
+      throw new CatalogError("Invalid FOO standard catalog entry", 502);
+    }
+  }
+  return { revision: value.revision, entries, packages };
 }
 
 export async function handleDiscovery(request: Request, route: string, requestFetch: typeof fetch = fetch): Promise<Response> {
@@ -58,10 +103,10 @@ export async function handleDiscovery(request: Request, route: string, requestFe
   if (route.startsWith("/package/")) {
     const name = segment(route, "/package/");
     const selected = select(catalog, name, url.searchParams.get("version") ?? "");
-    const record = await packageRecord(selected.path, catalog.manifest.revision, requestFetch);
+    const record = await catalogRecord(catalog, selected.entry, selected.path, requestFetch);
     return response({
       schema: "foo.package-response/v1",
-      registry: catalog.manifest.revision,
+      registry: catalog.revision,
       package: record,
       versions: selected.entry.versions,
     });
@@ -92,7 +137,7 @@ function list(catalog: Catalog, parameters: URLSearchParams) {
   const packages = matches.slice(offset, offset + limit);
   return {
     schema: "foo.search/v1",
-    registry: catalog.manifest.revision,
+    registry: catalog.revision,
     query,
     filters: { category, tag, kind },
     sort,
@@ -120,7 +165,7 @@ async function resolve(catalog: Catalog, name: string, requested: string, reques
       continue;
     }
     const selected = select(catalog, requirement.name, requirement.version);
-    const record = await packageRecord(selected.path, catalog.manifest.revision, requestFetch);
+    const record = await catalogRecord(catalog, selected.entry, selected.path, requestFetch);
     records.set(record.name, { ...record, direct: requirement.direct });
     for (const dependency of record.dependencies) {
       if (dependency.kind !== "runtime") continue;
@@ -131,7 +176,7 @@ async function resolve(catalog: Catalog, name: string, requested: string, reques
   const packages = [...records.values()].sort((left, right) => compare(left.name, right.name));
   return {
     schema: "foo.resolution/v1",
-    registry: catalog.manifest.revision,
+    registry: catalog.revision,
     root: `${name}@${first.version}`,
     count: packages.length,
     packages,
@@ -156,6 +201,15 @@ async function packageRecord(path: string, revision: string, requestFetch: typeo
     throw new CatalogError(`Invalid package record: ${path}`, 502);
   }
   return value as unknown as PackageRecord;
+}
+
+function catalogRecord(catalog: Catalog, entry: IndexEntry, path: string, requestFetch: typeof fetch) {
+  if (entry.kind === "standard") {
+    const record = catalog.standard.get(entry.name);
+    if (!record) throw new CatalogError(`Standard module not found: ${entry.name}`, 502);
+    return Promise.resolve(record);
+  }
+  return packageRecord(path, catalog.manifest.revision, requestFetch);
 }
 
 function facets(entries: IndexEntry[]) {

@@ -1,0 +1,14 @@
+-- Signed 64-bit ZigZag integers use canonical unsigned LEB128 on the wire.
+public define decoded as record {
+  value of type integer.
+  next of type unsigned.
+}.
+use "binary" function zigzag(value integer) giving failable sequence of byte.
+use "binary" function unfold(source sequence of constant byte, offset unsigned) giving failable integer.
+use "binary" function next(source sequence of constant byte, offset unsigned) giving failable unsigned.
+public function encode(value integer) giving failable sequence of byte {
+  give zigzag(value) try.
+}
+public function decode(source sequence of constant byte, offset unsigned) giving failable decoded {
+  give decoded(unfold(source, offset) try, next(source, offset) try).
+}

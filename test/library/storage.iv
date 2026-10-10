@@ -1,0 +1,62 @@
+use file as files.
+use io as streams.
+use sequence as sequences.
+use testing as check.
+use text as words.
+
+test "storage discovery and controlled failures" {
+  constant root is ".artifacts/storage-check".
+  constant sub is ".artifacts/storage-check/sub".
+  constant leaf is ".artifacts/storage-check/sub/leaf".
+  constant draft is ".artifacts/storage-check/draft".
+  constant published is ".artifacts/storage-check/published".
+  files.directory(root) try.
+  files.directory(sub) try.
+  constant temp is files.temporary(root, "item-") try.
+  constant info is files.metadata(temp) try.
+  check.same(files.category(info) try, "file").
+  check.expect((files.extent(info) try) is 0).
+  check.expect((files.modified(info) try) is greater than 0).
+  check.expect(files.writable(info) try).
+  files.dismiss(info) try.
+
+  constant output is files.open(temp, "update") try.
+  constant payload is sequences.sized[byte](3) try.
+  after { sequences.release[byte](payload) fallback nothing. }
+  set payload at 0 to 65.
+  set payload at 1 to 66.
+  set payload at 2 to 67.
+  check.fault("write", 1) try.
+  check.expect((files.store(output, 0, payload) try) is 1).
+  check.fault("sync", 0) try.
+  files.sync(output) fallback nothing.
+  files.sync(output) try.
+  streams.close(output) try.
+  constant written is files.read(temp) try.
+  check.same(written, "A").
+  words.release(written) try.
+
+  files.write(draft, "ready") try.
+  check.fault("replace", 0) try.
+  files.replace(draft, published) fallback nothing.
+  check.expect(files.exists(draft) try).
+  files.replace(draft, published) try.
+  files.write(leaf, "nested") try.
+  constant walker is files.walk(root) try.
+  dynamic found of type boolean is false.
+  dynamic item of type text is files.visit(walker) try.
+  while words.length(item) greater than 0 {
+    when item is "sub/leaf" { set found to true. }
+    words.release(item) try.
+    set item to files.visit(walker) try.
+  }
+  check.expect(found).
+  files.halt(walker) try.
+  files.remove(leaf) try.
+  files.remove(sub) try.
+  files.remove(published) try.
+  files.remove(temp) try.
+  words.release(temp) try.
+  files.remove(root) try.
+  check.clear try.
+}

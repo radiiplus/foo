@@ -77,6 +77,12 @@ proc attributes(parser: Parser): seq[string] =
       let argument = parser.advance
       value.add("(" & (if argument.kind == Kind.String: "\"" & argument.text & "\"" else: argument.text) & ")")
       discard parser.expect(Kind.Close, "expected ')'")
+    if attribute.text == "borrows":
+      parser.diagnostics.emit(Code.Syntax, attribute.span,
+        "Write 'borrowing parameter' after the function result")
+    if attribute.text == "align":
+      parser.diagnostics.emit(Code.Syntax, attribute.span,
+        "Write 'aligned to N' after the record declaration")
     result.add(value)
     discard parser.expect(Kind.Bracket, "expected ']'")
     parser.lines()
@@ -235,6 +241,16 @@ proc functionOptions(parser: Parser; attributes: var seq[string]; abi: var strin
       discard parser.advance
       parser.takeWord("call")
       attributes.add("noinline")
+    elif parser.check(Kind.Ident) and parser.peek.text == "borrowing":
+      discard parser.advance
+      attributes.add("borrows(" & parser.name.text & ")")
+      while parser.match(Kind.Comma):
+        attributes.add("borrows(" & parser.name.text & ")")
+    elif parser.check(Kind.Ident) and parser.peek.text == "releasing":
+      discard parser.advance
+      attributes.add("releases(" & parser.name.text & ")")
+      while parser.match(Kind.Comma):
+        attributes.add("releases(" & parser.name.text & ")")
     else:
       break
 
@@ -1054,6 +1070,11 @@ proc statement(parser: Parser): Statement =
     elif parser.check(Kind.Choice): body = parser.choiceType()
     elif parser.match(Kind.Opaque): body = Opaque(tag: "opaque", span: token.span)
     else: body = parser.parseType
+    while parser.check(Kind.Ident) and parser.peek.text == "aligned":
+      discard parser.advance
+      discard parser.expect(Kind.To, "expected 'to' after 'aligned'")
+      let alignment = parser.expect(Kind.Int, "expected a byte alignment")
+      attributes.add("align(" & alignment.text & ")")
     var derives: Derive
     if parser.match(Kind.Derives):
       var traits = @[parser.name]
@@ -1119,7 +1140,12 @@ proc statement(parser: Parser): Statement =
     discard parser.expect(Kind.Dot, "expected '.'")
     UnreachableStatement(tag: "unreachable-statement", span: parser.span)
   of Kind.Ident, Kind.Sequence, Kind.Text:
-    if token.text == "set" and parser.peek(1).kind != Kind.Paren:
+    if token.text == "verify" and parser.peek(1).kind != Kind.Paren:
+      discard parser.advance
+      let condition = parser.expression
+      discard parser.expect(Kind.Dot, "expected '.'")
+      Verify(tag: "verify", span: token.span, condition: condition)
+    elif token.text == "set" and parser.peek(1).kind != Kind.Paren:
       discard parser.advance
       let target = parser.postfix
       discard parser.expect(Kind.To, "expected 'to'")

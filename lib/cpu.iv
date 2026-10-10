@@ -1,0 +1,4 @@
+-- Runs byte arithmetic with runtime CPU feature selection.
+-- Add wraps each byte modulo 256. Output may be either input exactly, but
+-- partial overlap is rejected. All three slices must have the same length.
+public use "cpu" function add(left sequence of constant byte, right sequence of constant byte, output sequence of byte) giving failable nothing.

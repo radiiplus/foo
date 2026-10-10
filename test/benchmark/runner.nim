@@ -1,4 +1,4 @@
-import std/[os, strutils]
+import std/[json, os, strutils]
 import ../../src/benchmark/runner
 
 let root = getTempDir() / "foo-benchmark-runner-test"
@@ -19,13 +19,21 @@ doAssert discoverBenchmarks(root, root / "benchmark" / "nested" / "worker.iv")[0
   "nested/worker"
 
 var calls = 0
+var events: seq[string]
 let results = runBenchmarks(root, "startup", warmup = 2, iterations = 4,
   executor = proc(suite: BenchmarkSuite): BenchmarkSample =
     inc calls
-    BenchmarkSample(passed: true, elapsedMs: calls.float, error: "", metrics: nil))
+    BenchmarkSample(passed: true, elapsedMs: calls.float, error: "", metrics: nil),
+  progress = proc(phase, name, detail: string; cached: bool) =
+    events.add(phase & ":" & name & ":" & detail))
 doAssert calls == 6
+doAssert events[0] == "plan:Measurement:6"
+doAssert events.len == 13
+doAssert events[^1] == "sampled:startup:"
 doAssert results.len == 1
 doAssert results[0].samplesMs.len == 4
+doAssert results[0].metricsSamples.len == 4
+doAssert results[0].metricsSamples[0].kind == JObject
 doAssert results[0].minimumMs == 3
 doAssert results[0].medianMs == 4.5
 doAssert results[0].meanMs == 4.5

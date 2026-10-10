@@ -1,4 +1,18 @@
 -- Declares guarded CPU intrinsics.
 public use "arch" function count(value unsigned) giving unsigned 32.
+-- Counts set bits across packed 64-bit words in one native pass.
+public use "arch" function tally(values sequence of constant unsigned) giving unsigned.
+-- Combines equal-length packed words: 0 union, 1 intersection, 2 difference,
+-- 3 symmetric difference. Returns false for invalid lengths or operation.
+public use "arch" function combine(left sequence of constant unsigned,
+  right sequence of constant unsigned, output sequence of unsigned,
+  operation unsigned) giving boolean.
 public use "arch" function pause giving nothing.
 public use "arch" function ticks giving unsigned.
+-- Reports whether the selected build target enables a named instruction set.
+public use "arch" function target(feature text) giving boolean.
+-- Reports instructions usable by this process on the executing CPU.
+public use "cpu" function runtime(feature text) giving boolean.
+-- Advisory cache hints; offsets outside the slice are ignored.
+public use "arch" function prefetch(bytes sequence of constant byte, offset unsigned) giving nothing.
+public use "arch" function stage(bytes sequence of byte, offset unsigned) giving nothing.

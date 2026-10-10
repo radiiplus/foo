@@ -1,0 +1,10 @@
+-- Owns a cancellable one-shot timer driven by the monotonic clock.
+public define alarm as opaque.
+public use "timer" function create giving failable pointer to alarm.
+-- Rearming replaces the pending deadline. Zero fires immediately.
+public use "timer" function arm(value pointer to alarm, nanoseconds unsigned) giving failable nothing.
+-- Returns true after expiry, false after cancellation or before first arm.
+public use "timer" function wait(value pointer to alarm) giving failable boolean.
+public use "timer" function cancel(value pointer to alarm) giving failable nothing.
+-- Wakes a blocked waiter before releasing the timer.
+public use "timer" function close(value pointer to alarm) giving failable nothing.

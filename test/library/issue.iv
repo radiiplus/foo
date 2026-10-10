@@ -1,0 +1,30 @@
+use issue as errors.
+use testing as check.
+
+test "structured error fields and contextual wrapping" {
+  constant cause is errors.create("storage", "read", "IoFailure", "block 7").
+  check.expect(cause.category is "storage").
+  check.expect(cause.operation is "read").
+  check.expect(cause.cause is "IoFailure").
+  check.expect(cause.context is "block 7").
+  constant outer is errors.wrap(cause, "open", "index").
+  check.expect(outer.category is "storage").
+  check.expect(outer.operation is "open").
+  check.expect(outer.cause is "IoFailure").
+  check.expect(outer.context is "index").
+}
+
+test "error trail preserves each operation and source error" {
+  constant source is errors.create("storage", "read", "IoFailure", "block 7").
+  constant initial is errors.begin(source) try.
+  after { errors.release(initial) fallback nothing. }
+  constant outer is errors.create("index", "open", "IoFailure", "catalog").
+  constant chained is errors.push(initial, outer) try.
+  after { errors.release(chained) fallback nothing. }
+  check.number(errors.length(chained), 2).
+  check.number(errors.length(initial), 1).
+  check.expect((errors.frame(chained, 0) try).operation is "read").
+  check.expect((errors.frame(chained, 1) try).context is "catalog").
+  check.expect((errors.frame(chained, 0) try).cause is "IoFailure").
+  check.expect((errors.frame(chained, 2) fallback outer).operation is "open").
+}

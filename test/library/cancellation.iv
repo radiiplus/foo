@@ -1,0 +1,25 @@
+use task as jobs.
+use testing as check.
+
+dynamic count of type integer is 0.
+function work(value integer) giving nothing for c {
+  set count to count plus value.
+  give nothing.
+}
+
+test "cancelled scope rejects new work" {
+  constant scope is jobs.scope try.
+  jobs.cancel(scope) try.
+  check.expect(not jobs.launch(scope, work, 1)).
+  jobs.join(scope).
+  check.expect(count is 0).
+  check.expect(not jobs.cancelled).
+}
+
+test "cancelled pool rejects new work" {
+  constant pool is jobs.pool try.
+  jobs.halt(pool) try.
+  check.expect(not jobs.submit(pool, work, 1)).
+  jobs.wait(pool).
+  check.expect(count is 0).
+}

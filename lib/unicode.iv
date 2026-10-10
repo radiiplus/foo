@@ -1,8 +1,8 @@
 -- Declares Unicode validation and conversion.
-public define Cursor as opaque.
-public use "unicode" function scan(value text) giving failable pointer to Cursor.
-public use "unicode" function next(value pointer to Cursor) giving optional unsigned 32.
-public use "unicode" function release(value pointer to Cursor) giving nothing.
+public define cursor as opaque.
+public use "unicode" function scan(value text) giving failable pointer to cursor.
+public use "unicode" function next(value pointer to cursor) giving optional unsigned 32.
+public use "unicode" function release(value pointer to cursor) giving nothing.
 public use "unicode" function valid(value text) giving boolean.
 public use "unicode" function points(value text) giving failable sequence of unsigned 32.
 public use "unicode" function wide(value text) giving failable sequence of unsigned 16.

@@ -37,15 +37,19 @@ let built = %*{
   "version": "1.0.0",
   "description": "Bundled JSON module.",
   "category": "data",
-  "versions": [{"version": "1.0.0", "path": "packages/lib/json/1.0.0.json"}],
+  "kind": "standard",
+  "versions": [{"version": "1.0.0", "path": "registry/standard.json"}],
 }
 var files = initTable[string, string]()
 files["indexes/index.json"] = $index
 files["indexes/index-000001.jsonl"] = $entry & "\n" & $scopedEntry & "\n" & $built & "\n"
 files["packages/foo-http/1.4.2.json"] = $package
-files["packages/lib/json/1.0.0.json"] = $(%*{
-  "schema": "foo.package/v1", "name": "lib/json", "version": "1.0.0",
-  "description": "Bundled JSON module."})
+files["registry/standard.json"] = $(%*{
+  "schema": "foo.standard-catalog/v1", "revision": "standard-revision", "count": 1,
+  "entries": [built],
+  "packages": [{"schema": "foo.package/v1", "kind": "standard",
+    "name": "lib/json", "version": "1.0.0", "description": "Bundled JSON module."}],
+})
 setRegistryTransport(proc(config: Registry; path, methodName, body, token: string): RegistryResponse =
   discard config; discard methodName; discard body; discard token
   if files.hasKey(path): RegistryResponse(status: 200, body: files[path])

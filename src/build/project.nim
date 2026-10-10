@@ -204,7 +204,7 @@ proc compiler*(project: Project): Compiler =
     includes.add(if isAbsolute(path): path else: project.root / path)
   project.cachedCompiler = newCompiler(project.root, backend, includes, mode,
     mode == "release" or config.semantic, triple(selectedTarget), selectedCpu,
-    selectedProfile)
+    selectedProfile, config.runtime)
   project.cachedCompiler
 
 proc taskDefinitions(config: BuildConfig): Table[string, buildTasks.Task] =

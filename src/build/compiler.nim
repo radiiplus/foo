@@ -37,6 +37,7 @@ type
     optimization*: bool
     target*: string
     cpu*: string
+    runtime*: string
     hot*: HashSet[string]
     checked*: Table[string, string]
     programs*: Table[string, Program]
@@ -44,10 +45,10 @@ type
 
 proc newCompiler*(root: string; backend = "zig"; includes: seq[string] = @[];
     mode = "dev"; optimization = false; target = ""; cpu = "";
-    profile = ""): Compiler =
+    profile = ""; runtime = ""): Compiler =
   let counts = optimizationProfile.load(profile)
   Compiler(root: absolutePath(root), backend: backend, includes: includes, mode: mode,
-    optimization: optimization, target: target, cpu: cpu,
+    optimization: optimization, target: target, cpu: cpu, runtime: runtime,
     hot: optimizationProfile.hot(counts),
     checked: initTable[string, string](), programs: initTable[string, Program](),
     typings: initTable[string, Table[pointer, semantic.Type]]())
@@ -56,7 +57,7 @@ proc parseSource(compiler: Compiler; file, source: string; diag: Engine): Progra
   diag.setSource(source, file)
   let tokens = newLexer(source, diag).lex()
   result = newParser(tokens, diag).parse()
-  if not diag.failed: eval.expand(result)
+  if not diag.failed: eval.expand(result, compiler.target)
   if not diag.failed:
     interopExpand.expand(result, diag, compiler.root,
       cBinding.BindOptions(includePaths: compiler.includes))
@@ -381,7 +382,9 @@ proc ir*(compiler: Compiler; file: string): Module =
   if errors.len > 0: raise newException(ValueError, errors.mapIt(it.msg).join("\n"))
   if compiler.optimization or compiler.mode == "release":
     let optimized = optimize(lowered, OptimizeOptions(inline: compiler.mode == "release",
-      target: compiler.target, cpu: compiler.cpu, hot: compiler.hot)).module
+      target: compiler.target, cpu: compiler.cpu, backend: compiler.backend,
+      mode: compiler.mode, vectorize: compiler.mode == "release" and
+        compiler.runtime != "none", hot: compiler.hot)).module
     let invalid = validate(optimized)
     if invalid.len > 0: raise newException(ValueError, invalid.mapIt(it.msg).join("\n"))
     return optimized

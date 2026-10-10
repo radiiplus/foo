@@ -1,0 +1,64 @@
+use net as network.
+use "../../lib/process.iv" as jobs.
+use sequence as items.
+use text as words.
+use testing as check.
+
+function silent(connection pointer to network.connection) giving failable boolean {
+  constant received is network.receive(connection, 1) try.
+  words.release(received) try.
+  give false.
+}
+
+function empty(socket pointer to network.datagram) giving failable boolean {
+  constant packet is network.capture(socket, 1) try.
+  network.discard(packet) try.
+  give false.
+}
+
+function overflow(child pointer to jobs.child) giving failable boolean {
+  constant finished is jobs.poll(child, 4294967295) try.
+  give finished.
+}
+
+test "TCP send and receive timeouts" {
+  constant listener is network.listen("127.0.0.1", 0) try.
+  after { network.close(listener) fallback nothing. }
+  constant port is network.port(listener) try.
+  constant client is network.connect("127.0.0.1", port) try.
+  after { network.close(client) fallback nothing. }
+  constant server is network.accept(listener) try.
+  after { network.close(server) fallback nothing. }
+  check.expect((network.timeout(client, "send", 40) try) greater than 0).
+  check.expect((network.timeout(server, "receive", 40) try) greater than 0).
+  check.expect(silent(server) fallback true).
+  check.number(network.timeout(server, "receive", 0) try, 0).
+  check.number(network.timeout(server, "other", 40) fallback 999, 999).
+  check.number(network.timeout(server, "receive", 2147483648) fallback 999, 999).
+}
+
+test "UDP send and receive timeouts" {
+  constant socket is network.bind("127.0.0.1", 0) try.
+  after { network.dispose(socket) fallback nothing. }
+  check.expect((network.expiry(socket, "send", 40) try) greater than 0).
+  check.expect((network.expiry(socket, "receive", 40) try) greater than 0).
+  check.expect(empty(socket) fallback true).
+  check.number(network.expiry(socket, "receive", 0) try, 0).
+  check.number(network.expiry(socket, "other", 40) fallback 999, 999).
+  check.number(network.expiry(socket, "receive", 2147483648) fallback 999, 999).
+}
+
+test "bounded child wait" {
+  dynamic arguments is items.sized[text](2) try.
+  after { items.release[text](arguments) fallback nothing. }
+  set arguments at 0 to "-e".
+  set arguments at 1 to "for (;;) {}".
+  constant child is jobs.spawn("node", arguments) try.
+  after { jobs.close(child) fallback nothing. }
+  check.expect(not (jobs.poll(child, 0) try)).
+  check.expect(overflow(child) fallback true).
+  jobs.kill(child) try.
+  check.expect(jobs.poll(child, 1000) try).
+  check.number(jobs.wait(child) try, 137).
+  check.expect(jobs.poll(child, 0) try).
+}

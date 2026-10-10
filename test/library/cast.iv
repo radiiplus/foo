@@ -1,0 +1,26 @@
+use "../../lib/memory.iv" as storage.
+use testing as check.
+
+define Header as c record {
+  tag of type unsigned 32.
+  size of type unsigned 32.
+}.
+
+function invalid(owner pointer to storage.allocator, source pointer to byte,
+  offset unsigned) giving failable boolean {
+  constant value is storage.cast[Header](owner, source, offset) try.
+  give false.
+}
+
+test "checked typed storage view" {
+  constant owner is storage.system.
+  constant source is storage.reserve(owner, 32, 16) try.
+  after { storage.release(owner, source) fallback nothing. }
+  constant value is storage.cast[Header](owner, source, 0) try.
+  check.expect(storage.identical[Header](value, value)).
+  check.expect(invalid(owner, source, 1) fallback true).
+  check.expect(invalid(owner, source, 28) fallback true).
+  constant other is storage.arena try.
+  after { storage.close(other) fallback nothing. }
+  check.expect(invalid(other, source, 0) fallback true).
+}

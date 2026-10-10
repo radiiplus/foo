@@ -1,0 +1,31 @@
+use testing as check.
+
+define Header as c record {
+  tag of type byte.
+  address of type pointer to byte.
+  count of type unsigned 32.
+} aligned to 64.
+
+test "target layout and aligned records" {
+  eval {
+    constant word is reflect[pointer to byte].size.
+    constant slice is reflect[sequence of byte].size.
+    constant size is reflect[Header].size.
+    constant alignment is reflect[Header].alignment.
+    constant fields is reflect[Header].count.
+    constant first is reflect[Header].fieldname(0).
+    constant second is reflect[Header].fieldtype("address").
+    constant position is reflect[Header].offset(1).
+    verify word is 8.
+    verify slice is 16.
+    verify size is 64.
+    verify alignment is 64.
+    verify fields is 3.
+    verify first is "tag".
+    verify second is "pointer to byte".
+    verify position is 8.
+  }
+  constant actual is reflect[Header].
+  check.expect(actual.size is size).
+  check.expect(actual.alignment is alignment).
+}

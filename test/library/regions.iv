@@ -1,0 +1,134 @@
+use matrix as grid.
+use sequence as items.
+use tensor as cells.
+use testing as check.
+
+function mismatch(value grid.matrix) giving failable boolean {
+  constant region is grid.crop(value, 2, 0, 2, 1) try.
+  grid.release(region) try.
+  give false.
+}
+function outside(value cells.tensor, axis unsigned, offset unsigned, count unsigned) giving failable boolean {
+  constant region is cells.crop(value, axis, offset, count) try.
+  cells.release(region) try.
+  give false.
+}
+function incompatible(left cells.tensor, right cells.tensor, axis unsigned) giving failable boolean {
+  constant joined is cells.concat(left, right, axis) try.
+  cells.release(joined) try.
+  give false.
+}
+
+test "checked rectangular matrix crop" {
+  dynamic source is grid.create(3, 4) try.
+  after { grid.release(source) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic amount of type decimal is 1.0.
+  while index less than 12 {
+    set source.values at index to amount.
+    increase index by 1.
+    set amount to amount plus 1.0.
+  }
+  dynamic region is grid.crop(source, 1, 1, 2, 2) try.
+  after { grid.release(region) fallback nothing. }
+  check.number(region.rows, 2).
+  check.number(region.columns, 2).
+  check.real(grid.get(region, 0, 0) try, 6.0).
+  check.real(grid.get(region, 0, 1) try, 7.0).
+  check.real(grid.get(region, 1, 0) try, 10.0).
+  check.real(grid.get(region, 1, 1) try, 11.0).
+  set region.values at 0 to 99.0.
+  check.real(grid.get(source, 1, 1) try, 6.0).
+  constant empty is grid.crop(source, 3, 0, 0, 4) try.
+  after { grid.release(empty) fallback nothing. }
+  check.number(empty.rows, 0).
+  check.number(empty.columns, 4).
+  check.number(items.length[decimal](empty.values), 0).
+  check.expect(mismatch(source) fallback true).
+}
+
+test "tensor axis crop preserves row-major blocks" {
+  dynamic shape is items.sized[unsigned](3) try.
+  after { items.release[unsigned](shape) fallback nothing. }
+  set shape at 0 to 2.
+  set shape at 1 to 3.
+  set shape at 2 to 2.
+  dynamic values is items.sized[decimal](12) try.
+  after { items.release[decimal](values) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic amount of type decimal is 1.0.
+  while index less than 12 {
+    set values at index to amount.
+    increase index by 1.
+    set amount to amount plus 1.0.
+  }
+  constant source is cells.build(shape, values) try.
+  after { cells.release(source) fallback nothing. }
+  dynamic region is cells.crop(source, 1, 1, 2) try.
+  after { cells.release(region) fallback nothing. }
+  check.number(region.shape at 0, 2).
+  check.number(region.shape at 1, 2).
+  check.number(region.shape at 2, 2).
+  check.real(region.values at 0, 3.0).
+  check.real(region.values at 3, 6.0).
+  check.real(region.values at 4, 9.0).
+  check.real(region.values at 7, 12.0).
+  set region.values at 0 to 99.0.
+  check.real(source.values at 2, 3.0).
+  check.expect(outside(source, 1, 3, 1) fallback true).
+  check.expect(outside(source, 3, 0, 1) fallback true).
+  constant empty is cells.crop(source, 1, 3, 0) try.
+  after { cells.release(empty) fallback nothing. }
+  check.number(empty.shape at 1, 0).
+  check.number(items.length[decimal](empty.values), 0).
+}
+
+test "tensor concatenation validates shapes and owns values" {
+  dynamic shape is items.sized[unsigned](3) try.
+  after { items.release[unsigned](shape) fallback nothing. }
+  set shape at 0 to 2.
+  set shape at 1 to 3.
+  set shape at 2 to 2.
+  dynamic values is items.sized[decimal](12) try.
+  after { items.release[decimal](values) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  dynamic amount of type decimal is 1.0.
+  while index less than 12 {
+    set values at index to amount.
+    increase index by 1.
+    set amount to amount plus 1.0.
+  }
+  constant source is cells.build(shape, values) try.
+  after { cells.release(source) fallback nothing. }
+  constant first is cells.crop(source, 1, 0, 1) try.
+  after { cells.release(first) fallback nothing. }
+  constant second is cells.crop(source, 1, 1, 2) try.
+  after { cells.release(second) fallback nothing. }
+  dynamic joined is cells.concat(first, second, 1) try.
+  after { cells.release(joined) fallback nothing. }
+  check.number(joined.shape at 1, 3).
+  set index to 0.
+  while index less than 12 {
+    check.real(joined.values at index, source.values at index).
+    increase index by 1.
+  }
+  set joined.values at 0 to 99.0.
+  check.real(first.values at 0, 1.0).
+  check.expect(incompatible(first, second, 3) fallback true).
+  dynamic mismatch is items.copy[unsigned](shape) try.
+  after { items.release[unsigned](mismatch) fallback nothing. }
+  set mismatch at 2 to 3.
+  constant other is cells.create(mismatch) try.
+  after { cells.release(other) fallback nothing. }
+  check.expect(incompatible(first, other, 1) fallback true).
+  dynamic wide is items.sized[unsigned](2) try.
+  after { items.release[unsigned](wide) fallback nothing. }
+  set wide at 0 to 18446744073709551615.
+  set wide at 1 to 0.
+  constant huge is cells.create(wide) try.
+  after { cells.release(huge) fallback nothing. }
+  set wide at 0 to 1.
+  constant one is cells.create(wide) try.
+  after { cells.release(one) fallback nothing. }
+  check.expect(incompatible(huge, one, 0) fallback true).
+}

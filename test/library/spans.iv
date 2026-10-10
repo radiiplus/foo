@@ -1,0 +1,38 @@
+use trace as spans.
+use testing as check.
+use text as words.
+
+function early(value pointer to spans.span) giving failable boolean {
+  spans.finish(value) try.
+  give false.
+}
+function premature(value pointer to spans.span) giving failable boolean {
+  spans.close(value) try.
+  give false.
+}
+
+test "nested spans retain parent identity and duration" {
+  check.expect(spans.current is 0).
+  constant outer is spans.begin("request") try.
+  constant id is spans.identity(outer) try.
+  check.expect(id greater than 0).
+  check.expect(spans.parent(outer) try is 0).
+  check.expect(spans.current is id).
+  constant inner is spans.begin("decode") try.
+  check.expect(premature(inner) fallback true).
+  check.expect(spans.parent(inner) try is id).
+  constant nested is spans.identity(inner) try.
+  check.expect(spans.current is nested).
+  check.expect(early(outer) fallback true).
+  constant label is spans.name(inner) try.
+  check.expect(label is "decode").
+  words.release(label) try.
+  constant duration is spans.finish(inner) try.
+  check.expect(spans.elapsed(inner) try is duration).
+  spans.close(inner) try.
+  check.expect(spans.current is id).
+  constant total is spans.finish(outer) try.
+  check.expect(spans.elapsed(outer) try is total).
+  spans.close(outer) try.
+  check.expect(spans.current is 0).
+}

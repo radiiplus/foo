@@ -17,6 +17,7 @@ type
     warmup*: int
     iterations*: int
     samplesMs*: seq[float]
+    metricsSamples*: seq[JsonNode]
     minimumMs*: float
     medianMs*: float
     meanMs*: float
@@ -101,7 +102,13 @@ proc runBenchmarks*(root = getCurrentDir(); filter = ""; backend = "zig";
   if warmup < 0: raise newException(ValueError, "Benchmark warmup cannot be negative")
   if iterations < 1: raise newException(ValueError, "Benchmark iterations must be at least 1")
   let projectRoot = absolutePath(root)
-  for suite in discoverBenchmarks(projectRoot, filter):
+  let suites = discoverBenchmarks(projectRoot, filter)
+  if progress != nil:
+    if executor == nil:
+      for stage in ["Source", "Compilation"]:
+        progress("plan", stage, $suites.len, false)
+    progress("plan", "Measurement", $(suites.len * (warmup + iterations)), false)
+  for suite in suites:
     var artifact = ""
     var measured = BenchmarkResult(suite: suite, warmup: warmup,
       iterations: iterations, metrics: newJObject(),
@@ -126,19 +133,24 @@ proc runBenchmarks*(root = getCurrentDir(); filter = ""; backend = "zig";
       if fileExists(facts): measured.optimization = parseJson(readFile(facts))
 
     for _ in 0 ..< warmup:
+      if progress != nil: progress("sample", suite.name, "", false)
       let sample = if executor != nil: executor(suite)
         else: measureArtifact(artifact, projectRoot)
       if not sample.passed:
         measured.error = sample.error
         break
+      if progress != nil: progress("sampled", suite.name, "", false)
     if measured.error.len == 0:
       for _ in 0 ..< iterations:
+        if progress != nil: progress("sample", suite.name, "", false)
         let sample = if executor != nil: executor(suite)
           else: measureArtifact(artifact, projectRoot)
         if not sample.passed:
           measured.error = sample.error
           break
+        if progress != nil: progress("sampled", suite.name, "", false)
         if sample.metrics != nil: measured.metrics = sample.metrics
+        measured.metricsSamples.add(if sample.metrics != nil: sample.metrics else: newJObject())
         measured.samplesMs.add(sample.elapsedMs)
     measured.summarize()
     result.add(measured)

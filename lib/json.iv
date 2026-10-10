@@ -1,18 +1,18 @@
 -- Declares JSON trees and streaming tokens.
-public define Value as opaque.
-public define Stream as opaque.
-public use "json" function parse(source text) giving failable pointer to Value.
-public use "json" function write(value pointer to Value) giving failable text.
-public use "json" function field(value pointer to Value, name text) giving failable text.
-public use "json" function item(value pointer to Value, index unsigned 32) giving failable text.
+public define value as opaque.
+public define reader as opaque.
+public use "json" function parse(source text) giving failable pointer to value.
+public use "json" function write(value pointer to value) giving failable text.
+public use "json" function field(value pointer to value, name text) giving failable text.
+public use "json" function item(value pointer to value, index unsigned 32) giving failable text.
 public use "json" function quote(value text) giving failable text.
-public use "json" function kind(value pointer to Value) giving text.
-public use "json" function size(value pointer to Value) giving failable unsigned 32.
-public use "json" function set(value pointer to Value, name text, source text) giving failable nothing.
-public use "json" function append(value pointer to Value, source text) giving failable nothing.
-public use "json" function release(value pointer to Value) giving nothing.
-public use "json" function stream giving failable pointer to Stream.
-public use "json" function feed(value pointer to Stream, chunk text, final boolean) giving failable nothing.
-public use "json" function next(value pointer to Stream) giving failable text.
-public use "json" function data(value pointer to Stream) giving failable text.
-public use "json" function close(value pointer to Stream) giving nothing.
+public use "json" function kind(value pointer to value) giving text.
+public use "json" function size(value pointer to value) giving failable unsigned 32.
+public use "json" function set(value pointer to value, name text, source text) giving failable nothing.
+public use "json" function append(value pointer to value, source text) giving failable nothing.
+public use "json" function release(value pointer to value) giving nothing.
+public use "json" function stream giving failable pointer to reader.
+public use "json" function feed(value pointer to reader, chunk text, final boolean) giving failable nothing.
+public use "json" function next(value pointer to reader) giving failable text.
+public use "json" function data(value pointer to reader) giving failable text.
+public use "json" function close(value pointer to reader) giving nothing.

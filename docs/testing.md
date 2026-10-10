@@ -39,6 +39,7 @@ foo test test/orders.iv
 foo test --filter tax
 foo test --backend c
 foo test --backend zig
+foo test --mode release
 foo test --watch
 foo test lib
 ```
@@ -117,7 +118,7 @@ test "indexes stay in range" {
 
 This runs exactly 100 cases: `0` through `99`. It is deterministic and does
 not generate arbitrary values of a type. For varied typed inputs, define an
-index-to-value function, store it in `Generator[T]`, and call `generate`:
+index-to-value function, store it in `generator[T]`, and call `generate`:
 
 ```foo
 use testing as check.
@@ -131,7 +132,7 @@ function positive(value unsigned) giving boolean {
 }
 
 test "generated values stay positive" {
-  constant generator is check.Generator[unsigned](sample).
+  constant generator is check.generator[unsigned](sample).
   check.generate[unsigned](100, generator, positive).
 }
 ```
@@ -164,6 +165,6 @@ fixture-lifecycle syntax (setup and cleanup rules for test data). Backend
 coverage instrumentation (tracking which code ran) exists in the compiler pipeline, but
 `foo test` does not yet expose a stable coverage reporting flag. Use
 [`foo benchmark`](benchmarking.md) for repeatable application measurements.
-Type-driven `test every T` syntax is not implemented; use `Generator[T]` and
+Type-driven `test every T` syntax is not implemented; use `generator[T]` and
 `generate` explicitly. These are tooling and language boundaries, not hidden
 syntax.

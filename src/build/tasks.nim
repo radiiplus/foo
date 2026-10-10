@@ -33,6 +33,40 @@ proc substitute(text: string; values: Table[string, JsonNode]; name: string): st
 proc appendU32(output: var string; value: int) =
   for shift in [0, 8, 16, 24]: output.add(char((value shr shift) and 0xff))
 
+proc identifier(value: string; upper: bool): bool =
+  if value.len == 0 or (if upper: value[0] notin {'A'..'Z'}
+      else: value[0] notin {'a'..'z'}): return false
+  for letter in value:
+    if letter notin {'A'..'Z', 'a'..'z', '0'..'9'}: return false
+  true
+
+proc recordSource(task: Task; name: string): string =
+  if not task.output.endsWith(".iv"):
+    raise newException(ValueError, "Record task '" & name & "' needs a .iv output")
+  let declaration = task.values.getOrDefault("name")
+  let fields = task.values.getOrDefault("fields")
+  if declaration == nil or declaration.kind != JString or
+      not identifier(declaration.getStr(), true) or
+      fields == nil or fields.kind != JArray or fields.len == 0:
+    raise newException(ValueError, "Record task '" & name & "' needs a type name and fields")
+  let kinds = ["boolean", "byte", "character", "decimal", "decimal 32",
+    "integer", "integer 8", "integer 16", "integer 32", "integer 128",
+    "text", "unsigned", "unsigned 8", "unsigned 16", "unsigned 32", "unsigned 128"]
+  var seen = initTable[string, bool]()
+  result = "public define " & declaration.getStr() & " as record {\n"
+  for field in fields:
+    if field.kind != JObject or not field.hasKey("name") or
+        not field.hasKey("type") or field["name"].kind != JString or
+        field["type"].kind != JString:
+      raise newException(ValueError, "Record task '" & name & "' has an invalid field")
+    let label = field["name"].getStr()
+    let kind = field["type"].getStr()
+    if not identifier(label, false) or label in seen or kind notin kinds:
+      raise newException(ValueError, "Record task '" & name & "' has an invalid field")
+    seen[label] = true
+    result.add("  " & label & " of type " & kind & ".\n")
+  result.add("}.\n")
+
 proc tasks*(root: string; definitions: Table[string, Task];
     selected: seq[string] = @[]; excluded: seq[string] = @[]): seq[string] =
   let generated = root / ".artifacts" / "build" / "generated"
@@ -75,6 +109,7 @@ proc tasks*(root: string; definitions: Table[string, Task];
       if inputs.len != 1: raise newException(ValueError, "Copy task '" & name & "' needs exactly one input")
       content = readFile(confined(root, inputs[0]))
     of "text": content = substitute(task.text, task.values, name)
+    of "record": content = recordSource(task, name)
     of "embed":
       content = "FOO\0\1"
       for path in inputs:

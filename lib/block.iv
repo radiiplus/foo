@@ -1,0 +1,65 @@
+-- Length-prefixed payloads with a trailing little-endian CRC32C checksum.
+-- CRC32C detects accidental corruption; it does not authenticate a block.
+use binary as wire.
+use checksum as checks.
+use sequence as items.
+
+public define packet as record {
+  data of type sequence of byte.
+  next of type unsigned.
+}.
+
+public function pack(value sequence of constant byte) giving failable sequence of byte {
+  constant length is items.extent[byte](value).
+  constant prefix is wire.encode(length) try.
+  after { items.release[byte](prefix) fallback nothing. }
+  constant head is items.length[byte](prefix).
+  when length greater than 18446744073709551611 subtract head {
+    give fail(Error.Size).
+  }
+  constant trailer is wire.fixed(checks.compute(value), 4, "little") try.
+  after { items.release[byte](trailer) fallback nothing. }
+  dynamic output is items.sized[byte](head plus length plus 4) try.
+  dynamic index of type unsigned is 0.
+  while index less than head {
+    set output at index to prefix at index.
+    increase index by 1.
+  }
+  dynamic cursor of type unsigned is 0.
+  while cursor less than length {
+    set output at (head plus cursor) to value at cursor.
+    increase cursor by 1.
+  }
+  set index to 0.
+  while index less than 4 {
+    set output at (head plus length plus index) to trailer at index.
+    increase index by 1.
+  }
+  give output.
+}
+
+-- Validates bounds and checksum before allocating the returned payload.
+public function read(source sequence of constant byte, offset unsigned, limit unsigned) giving failable packet {
+  constant header is wire.decode(source, offset) try.
+  constant extent is items.extent[byte](source).
+  when header.value greater than limit { give fail(Error.Size). }
+  when header.value greater than extent subtract header.next { give fail(Error.Bounds). }
+  constant trailer is header.next plus header.value.
+  when extent subtract trailer less than 4 { give fail(Error.Bounds). }
+  constant expected is wire.parse(source, trailer, 4, "little") try.
+  constant view is items.view[byte](source, header.next, header.value) try.
+  constant actual of type unsigned is checks.compute(view).
+  when actual is not expected { give fail(Error.Checksum). }
+  dynamic output is items.sized[byte](header.value) try.
+  dynamic index of type unsigned is 0.
+  while index less than header.value {
+    set output at index to view at index.
+    increase index by 1.
+  }
+  give packet(output, trailer plus 4).
+}
+
+public function release(value packet) giving failable nothing {
+  items.release[byte](value.data) try.
+  give nothing.
+}

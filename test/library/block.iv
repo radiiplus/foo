@@ -1,0 +1,63 @@
+use block as blocks.
+use sequence as items.
+use testing as check.
+
+function rejects(source sequence of constant byte, offset unsigned, limit unsigned) giving failable boolean {
+  constant value is blocks.read(source, offset, limit) try.
+  blocks.release(value) try.
+  give false.
+}
+
+test "checked binary blocks" {
+  constant payload is items.sized[byte](3) try.
+  after { items.release[byte](payload) fallback nothing. }
+  set payload at 0 to 1.
+  set payload at 1 to 0.
+  set payload at 2 to 255.
+  constant encoded is blocks.pack(payload) try.
+  after { items.release[byte](encoded) fallback nothing. }
+  check.expect(items.length[byte](encoded) is 8 and encoded at 0 is 3).
+  constant parsed is blocks.read(encoded, 0, 3) try.
+  after { blocks.release(parsed) fallback nothing. }
+  check.expect(parsed.next is 8).
+  check.expect(parsed.data at 0 is 1 and parsed.data at 1 is 0 and parsed.data at 2 is 255).
+  check.expect(rejects(encoded, 0, 2) fallback true).
+
+  constant damaged is items.copy[byte](encoded) try.
+  after { items.release[byte](damaged) fallback nothing. }
+  set damaged at 2 to 9.
+  check.expect(rejects(damaged, 0, 3) fallback true).
+  set damaged at 2 to 0.
+  set damaged at 7 to 0.
+  check.expect(rejects(damaged, 0, 3) fallback true).
+  constant short is items.take[byte](encoded, 7) try.
+  after { items.release[byte](short) fallback nothing. }
+  check.expect(rejects(short, 0, 3) fallback true).
+
+  constant empty is items.create[byte].
+  constant blank is blocks.pack(empty) try.
+  after { items.release[byte](blank) fallback nothing. }
+  constant vacant is blocks.read(blank, 0, 0) try.
+  after { blocks.release(vacant) fallback nothing. }
+  check.expect(vacant.next is 5 and items.length[byte](vacant.data) is 0).
+}
+
+test "CRC32C wire format" {
+  constant digits is items.sized[byte](9) try.
+  after { items.release[byte](digits) fallback nothing. }
+  set digits at 0 to 49.
+  set digits at 1 to 50.
+  set digits at 2 to 51.
+  set digits at 3 to 52.
+  set digits at 4 to 53.
+  set digits at 5 to 54.
+  set digits at 6 to 55.
+  set digits at 7 to 56.
+  set digits at 8 to 57.
+  constant encoded is blocks.pack(digits) try.
+  after { items.release[byte](encoded) fallback nothing. }
+  check.expect(items.length[byte](encoded) is 14).
+  check.expect(encoded at 0 is 9).
+  check.expect(encoded at 10 is 131 and encoded at 11 is 146).
+  check.expect(encoded at 12 is 6 and encoded at 13 is 227).
+}

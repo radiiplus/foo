@@ -1,0 +1,42 @@
+-- Polls owned TCP and UDP sockets and one-shot monotonic deadlines.
+use net as network.
+use process as processes.
+public define watcher as opaque.
+use "net" function watch giving failable pointer to watcher.
+public function create giving failable pointer to watcher {
+  give watch try.
+}
+-- Tokens must be nonzero and unique within a watcher. Direction is "receive" or "send".
+-- Socket registrations remain active until removed; keep each socket open meanwhile.
+use "net" function stream(value pointer to watcher, socket pointer to network.connection, direction text, token unsigned) giving failable nothing.
+public function tcp(value pointer to watcher, socket pointer to network.connection, direction text, token unsigned) giving failable nothing {
+  stream(value, socket, direction, token) try.
+}
+use "net" function packet(value pointer to watcher, socket pointer to network.datagram, direction text, token unsigned) giving failable nothing.
+public function udp(value pointer to watcher, socket pointer to network.datagram, direction text, token unsigned) giving failable nothing {
+  packet(value, socket, direction, token) try.
+}
+-- Reports a child once it exits; remove the registration or close the child afterward.
+use "net" function process(value pointer to watcher, child pointer to processes.child, token unsigned) giving failable nothing.
+public function child(value pointer to watcher, spawned pointer to processes.child, token unsigned) giving failable nothing {
+  process(value, spawned, token) try.
+}
+-- A deadline fires once. Zero milliseconds makes it immediately ready.
+use "net" function alarm(value pointer to watcher, token unsigned, milliseconds unsigned) giving failable nothing.
+public function deadline(value pointer to watcher, token unsigned, milliseconds unsigned) giving failable nothing {
+  alarm(value, token, milliseconds) try.
+}
+use "net" function unwatch(value pointer to watcher, token unsigned) giving failable nothing.
+public function remove(value pointer to watcher, token unsigned) giving failable nothing {
+  unwatch(value, token) try.
+}
+-- Returns the ready token, or zero after the timeout. Zero milliseconds only checks.
+use "net" function ready(value pointer to watcher, milliseconds unsigned) giving failable unsigned.
+public function wait(value pointer to watcher, milliseconds unsigned) giving failable unsigned {
+  give ready(value, milliseconds) try.
+}
+-- Does not close registered sockets.
+use "net" function cease(value pointer to watcher) giving failable nothing.
+public function close(value pointer to watcher) giving failable nothing {
+  cease(value) try.
+}

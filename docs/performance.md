@@ -42,7 +42,41 @@ ranking.
 | `known` | Validation of a build-time-known value. |
 | `lookup` | One million checked dynamic sequence lookups. |
 | `runtime` | Runtime initialization and a hosted query. |
+| `returned` | Repeated owned-sequence construction, return, read, and release. |
 | `startup` | Process and generated-program startup. |
+
+### Returned-sequence cost audit
+
+The new `returned` fixture returns 128 independently owned 10,000-element
+unsigned sequences from a function. Its caller reads all elements and releases
+each result. The focused [raw-sample report](../benchmark/returned.json) records
+three warmups and nine timed release runs per implementation on 2026-10-09.
+Both FOO backends and the handwritten C, Zig, and Rust controls
+completed the checksum and reported 128 payload allocations, 10,240,000
+allocated bytes, zero copied bytes, zero final live bytes, and 80,000 peak live
+payload bytes in release builds on this Windows x64 host. This shows no
+additional instrumented payload allocation or copy at the return boundary for
+this shape; it does not establish the same result for nested, generic, or
+borrowed return values. Generated C packages the pointer and length into its
+return value; generated Zig returns the slice. Compiler telemetry reported two generic
+specializations and zero calls inlined or allocations eliminated for this
+fixture. The catalog now enforces those memory ceilings on every timed run.
+
+| Implementation | Median process time | Timed sample range |
+| --- | ---: | ---: |
+| FOO/C | 34.82 ms | 24.30-58.09 ms |
+| FOO/Zig | 90.80 ms | 72.73-206.59 ms |
+| Handwritten C | 190.34 ms | 78.25-295.46 ms |
+| Handwritten Zig | 513.72 ms | 352.04-1179.63 ms |
+| Handwritten Rust | 252.12 ms | 136.64-412.90 ms |
+
+Other tests were using CPU during this run and the spreads are wide. These
+whole-process timings are preserved for inspection, not used as a speed ranking.
+
+The checked-in full-suite report below predates this fixture. Its timing rows
+must not be used as results for `returned`; use a fresh `benchmark:report` run
+for a timing comparison. The memory figures above exclude allocator metadata
+and process resident memory.
 
 ## Rust comparison
 
@@ -80,7 +114,7 @@ counts are not a claim that FOO is generally faster than Rust.
 The table above is the earlier full-suite snapshot. After that run, hosted Zig
 executables that allocate sequences began linking libc and using its allocator.
 A focused 2026-10-02 rerun of `branch` is recorded with all 20 timed samples in
-[`benchmark/branch-allocator.json`](../benchmark/branch-allocator.json). Three
+[`benchmark/branch.json`](../benchmark/branch.json). Three
 warmups preceded timing; the five release binaries ran as separate processes in
 rotating sequential order on the same Intel Core i5-1145G7 Windows x64 machine.
 

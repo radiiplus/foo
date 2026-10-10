@@ -1,0 +1,29 @@
+use radix as digits.
+use sequence as items.
+use time as clock.
+use binary as wire.
+use file as files.
+
+constant size of type unsigned is 200000.
+constant values is items.sized[unsigned](size) try.
+dynamic index of type unsigned is 0.
+while index less than size {
+  set values at index to (index multiply 48271) remainder 1000003.
+  increase index by 1.
+}
+constant started is clock.current try.
+constant sorted is digits.sort(values) try.
+constant elapsed is (clock.current try) subtract started.
+set index to 1.
+while index less than size {
+  when (sorted at index) less than (sorted at (index subtract 1)) {
+    give fail(Error.Invalid).
+  }
+  increase index by 1.
+}
+when sorted at (size divide 2) is not 499996 { give fail(Error.Invalid). }
+constant encoded is wire.fixed(elapsed, 8, "big") try.
+files.save(".artifacts/radix.bin", encoded) try.
+items.release[byte](encoded) try.
+items.release[unsigned](sorted) try.
+items.release[unsigned](values) try.

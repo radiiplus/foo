@@ -3,6 +3,10 @@
 Reflection produces an immutable description with name and kind as text, and
 size and alignment as unsigned-bit values. Names use FOO type vocabulary.
 Sizes and alignments describe the selected target, not the compiler host.
+Inside `eval`, size and alignment also fold for fixed-width scalars, pointers,
+slices, text, and C records. C records expose a field count and compile-time
+queries for a field's offset, name, and FOO type spelling. The offset and type
+queries accept a field name or zero-based index; the name query accepts an index.
 
 Version: 1.
 
@@ -149,6 +153,16 @@ Hash for records/choices whose components meet the corresponding requirements.
 Function types use only `function taking (...) giving T`. Parameter names are
 not part of a function type; argument order and result type are. Parameter types
 are invariant; calls do not guess adapters or discard errors.
+An ordinary function can declare `borrowing items` after its result type. Its
+returned pointer or sequence may then borrow from that named parameter. The
+escape checker rejects a return borrowed from another parameter or a shorter
+local scope. This relationship does not retain an owner or prevent explicit
+release or resize; callers must keep borrowed storage valid.
+An ordinary function that may release a parameter on any path declares
+`releasing items` after its result type. Callers treat that storage and its
+borrowed views as invalid after the call. The checker rejects a function body
+that releases a parameter without this declaration. Conditional release is
+permitted; the declaration conservatively invalidates the argument at callers.
 Calling-convention metadata is retained as specified in [ABI](abi.md), without
 introducing a second function-type spelling.
 
@@ -170,6 +184,11 @@ byte alignment. An empty packed record has size one and no value bits.
 
 Vectors have a positive constant lane count. Arithmetic requires matching
 numeric lane types and is lane-wise; comparisons produce Boolean lanes.
-Splat, shuffle, select and reduction are library-facing operations with checked
-signatures. Vector register layout is not a foreign ABI contract. Hardware
+Splat, shuffle, permute, gather, scatter, select and reduction have checked
+signatures. `permute` selects literal lanes from one vector. `gather` reads
+lanes from one vector using a vector of integer indices. `scatter` returns a
+new vector after writing indexed lanes in order, with the last write winning
+for repeated indices. Both indexed operations trap on an out-of-range lane.
+These operate on vector values, not arbitrary memory addresses. Vector register
+layout is not a foreign ABI contract. Hardware
 operations require a compatible target in addition to the capability level.

@@ -1,0 +1,145 @@
+-- Persistent minimum-priority heap. Updates copy the sequence before reordering.
+use sequence as items.
+
+public define heap[T] as record {
+  values of type sequence of T.
+}.
+
+public function create[T] giving heap[T] {
+  give heap[T](items.create[T]).
+}
+
+public function length[T](value heap[T]) giving unsigned {
+  give items.length[T](value.values).
+}
+
+public function first[T](value heap[T]) giving failable T {
+  when length[T](value) is 0 { give fail(Error.Empty). }
+  give value.values at 0.
+}
+
+function descend[T](values sequence of T, count unsigned, origin unsigned) giving nothing where T is Ord {
+  dynamic cursor is origin.
+  while count greater than 1 and cursor less than or equal to (count subtract 2) divide 2 {
+    constant left is cursor multiply 2 plus 1.
+    dynamic child is left.
+    when left plus 1 less than count and (values at (left plus 1)) less than (values at left) {
+      set child to left plus 1.
+    }
+    when not ((values at child) less than (values at cursor)) { stop. }
+    constant saved is values at cursor.
+    set values at cursor to values at child.
+    set values at child to saved.
+    set cursor to child.
+  }
+}
+
+function heapify[T](values sequence of T) giving nothing where T is Ord {
+  constant count is items.length[T](values).
+  dynamic cursor is count divide 2.
+  while cursor greater than 0 {
+    set cursor to cursor subtract 1.
+    descend[T](values, count, cursor).
+  }
+}
+
+-- Copies an arbitrary sequence and builds a minimum heap in linear time.
+public function build[T](values sequence of T) giving failable heap[T] where T is Ord {
+  constant result is items.copy[T](values) try.
+  heapify[T](result).
+  give heap[T](result).
+}
+
+-- Combines two owned heaps into an independent minimum heap.
+public function merge[T](left heap[T], right heap[T]) giving failable heap[T] where T is Ord {
+  constant prefix is length[T](left).
+  constant suffix is length[T](right).
+  when suffix greater than 18446744073709551615 subtract prefix {
+    give fail(Error.Bounds).
+  }
+  constant result is items.sized[T](prefix plus suffix) try.
+  dynamic cursor of type unsigned is 0.
+  while cursor less than prefix {
+    set result at cursor to left.values at cursor.
+    increase cursor by 1.
+  }
+  dynamic index of type unsigned is 0.
+  while index less than suffix {
+    set result at cursor to right.values at index.
+    increase cursor by 1.
+    increase index by 1.
+  }
+  heapify[T](result).
+  give heap[T](result).
+}
+
+public function push[T](value heap[T], item T) giving failable heap[T] where T is Ord {
+  dynamic result is heap[T](items.append[T](value.values, item) try).
+  dynamic cursor is length[T](result) subtract 1.
+  while cursor greater than 0 {
+    constant parent is (cursor subtract 1) divide 2.
+    when not ((result.values at cursor) less than (result.values at parent)) { stop. }
+    constant saved is result.values at parent.
+    set result.values at parent to result.values at cursor.
+    set result.values at cursor to saved.
+    set cursor to parent.
+  }
+  give result.
+}
+
+public function remove[T](value heap[T]) giving failable heap[T] where T is Ord {
+  constant size is length[T](value).
+  when size is 0 { give fail(Error.Empty). }
+  when size is 1 { give create[T]. }
+  constant tail is value.values at (size subtract 1).
+  dynamic result is heap[T](items.remove[T](value.values, size subtract 1) try).
+  set result.values at 0 to tail.
+  descend[T](result.values, size subtract 1, 0).
+  give result.
+}
+
+-- Replaces the current minimum without changing the source heap.
+public function replace[T](value heap[T], item T) giving failable heap[T] where T is Ord {
+  when length[T](value) is 0 { give fail(Error.Empty). }
+  constant values is items.copy[T](value.values) try.
+  set values at 0 to item.
+  descend[T](values, length[T](value), 0).
+  give heap[T](values).
+}
+
+public define popped[T] as record {
+  item of type T.
+  rest of type heap[T].
+}.
+
+-- Returns both the removed minimum and an independent remaining heap.
+public function pop[T](value heap[T]) giving failable popped[T] where T is Ord {
+  constant item is first[T](value) try.
+  give popped[T](item, remove[T](value) try).
+}
+
+-- Drains a private heap copy into an independently owned ascending sequence.
+public function sorted[T](value heap[T]) giving failable sequence of T where T is Ord {
+  constant count is length[T](value).
+  constant work is items.copy[T](value.values) try.
+  after { items.release[T](work) fallback nothing. }
+  constant result is items.sized[T](count) try.
+  after error { items.release[T](result) fallback nothing. }
+  dynamic remaining is count.
+  dynamic cursor of type unsigned is 0.
+  while remaining greater than 0 {
+    set result at cursor to work at 0.
+    set remaining to remaining subtract 1.
+    when remaining greater than 0 {
+      set work at 0 to work at remaining.
+      descend[T](work, remaining, 0).
+    }
+    increase cursor by 1.
+  }
+  give result.
+}
+
+public function release[T](value heap[T]) giving failable nothing {
+  items.release[T](value.values) try.
+  give nothing.
+}

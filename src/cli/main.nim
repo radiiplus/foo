@@ -332,8 +332,8 @@ proc main*(input: seq[string]): int =
         if backend notin ["c", "zig"]:
           raise newException(ValueError, "--backend must be c or zig")
       elif argument == "--mode" or argument.startsWith("--mode="):
-        if command notin ["check", "build", "run", "graph", "ir", "benchmark"]:
-          raise newException(ValueError, "--mode is available for project commands and benchmark")
+        if command notin ["check", "build", "run", "graph", "ir", "test", "benchmark"]:
+          raise newException(ValueError, "--mode is available for project commands, test, and benchmark")
         if argument.contains("="): mode = argument[7 .. ^1]
         else:
           inc index
@@ -383,6 +383,22 @@ proc main*(input: seq[string]): int =
         progress: if operation != nil: operation.reporter() else: nil)
       let project = buildProject.newProject(root, projectOptions)
       let entry = if positional.len > 0: positional[0] else: ""
+      if operation != nil:
+        let config = project.config()
+        operation.configure(root,
+          if backend.len > 0: backend elif config.backend.len > 0:
+            config.backend else: "zig",
+          if target.len > 0: target elif config.target.len > 0:
+            config.target[0] else: buildProject.host,
+          if command == "release": "release" elif mode.len > 0: mode
+            elif config.optimize.len > 0: config.optimize else: "dev")
+        operation.report("plan", "Source",
+          $(if entry.len > 0: 1 else: project.files().len))
+        if command != "check":
+          operation.report("plan", "Compilation",
+            $max(1, config.products.len))
+        if command == "run": operation.report("plan", "Execution", "1")
+        if command == "release": operation.plan("Packaging", 1, 2.0)
       case command
       of "graph": echo pretty(project.graph())
       of "ir":
@@ -406,13 +422,15 @@ proc main*(input: seq[string]): int =
           raise newException(ValueError,
             "Choose an entry file when a project has multiple executables")
         let artifact = products.values.toSeq[0]
-        operation.update("Execution", "application", cliDisplay.stateWorking)
+        operation.report("run", "application", "")
         var executable = quoteShell(artifact)
         for argument in passthrough:
           executable.add(" " & quoteShell(argument))
         let response = execCmdEx(executable)
-        operation.update("Execution", "application",
-          if response.exitCode == 0: cliDisplay.stateComplete else: cliDisplay.stateFailed)
+        if response.exitCode == 0:
+          operation.report("ran", "application", "")
+        else:
+          operation.update("Execution", "application", cliDisplay.stateFailed)
         operation.finish(response.exitCode == 0,
           $project.files().len & (if project.files().len == 1: " file" else: " files") &
           " · 0 errors · 0 warnings")
@@ -424,9 +442,11 @@ proc main*(input: seq[string]): int =
           raise newException(ValueError,
             "usage: foo release [--sign] [--provider name] [--backend c|zig] [--target name]")
         operation.update("Packaging", "release", cliDisplay.stateWorking)
+        operation.startWork("Packaging")
         let bundled = buildRelease.bundle(project, signing, provider)
         operation.update("Packaging", "release", cliDisplay.stateComplete,
           bundled.directory, true)
+        operation.finishWork("Packaging")
         operation.finish(summary = $bundled.artifacts.len &
           (if bundled.artifacts.len == 1: " artifact" else: " artifacts") &
           (if signing: " signed" else: "") & " · " & bundled.directory)
@@ -448,16 +468,19 @@ proc main*(input: seq[string]): int =
         raise newException(ValueError,
           "usage: foo sign <artifact> [--provider name] [--target name]")
       activeOperation = cliDisplay.newOperation("SIGN", jsonOutput, verbose)
+      activeOperation.plan("Signing", 1, 2.0)
       let project = buildProject.newProject(root)
       let artifact = if isAbsolute(positional[0]): positional[0]
         else: root / positional[0]
       activeOperation.update("Signing", artifact.lastPathPart,
         cliDisplay.stateWorking)
+      activeOperation.startWork("Signing")
       let signed = buildRelease.sign(artifact,
         project.manifest().deployment.signing,
         if target.len > 0: buildProject.triple(target) else: "", provider)
       activeOperation.update("Signing", artifact.lastPathPart,
         cliDisplay.stateComplete, signed, true)
+      activeOperation.finishWork("Signing")
       activeOperation.finish(summary = signed)
       activeOperation = nil
       return 0
@@ -465,12 +488,15 @@ proc main*(input: seq[string]): int =
     of "test":
       if positional.len > 1:
         raise newException(ValueError,
-          "usage: foo test [file.iv|directory] [--filter name] [--backend c|zig] [--watch]")
+          "usage: foo test [file.iv|directory] [--filter name] [--backend c|zig] [--mode dev|release] [--watch]")
       proc executeTests() =
         activeOperation = cliDisplay.newOperation("TEST", jsonOutput, verbose)
+        activeOperation.configure(root,
+          if backend.len > 0: backend else: "zig", buildProject.host,
+          if mode.len > 0: mode else: "dev")
         let results = test(if positional.len > 0: positional[0] else: root,
           filter, if backend.len > 0: backend else: "zig",
-          progress = activeOperation.reporter())
+          progress = activeOperation.reporter(), mode = mode)
         var failed = 0
         for item in results:
           if not item.passed: inc failed
@@ -496,6 +522,9 @@ proc main*(input: seq[string]): int =
         if filter.len > 0: raise newException(ValueError, "Choose a benchmark name or --filter, not both")
         filter = positional[0]
       activeOperation = cliDisplay.newOperation("BENCHMARK", jsonOutput, verbose)
+      activeOperation.configure(root,
+        if backend.len > 0: backend else: "zig", buildProject.host,
+        if mode.len > 0: mode else: "project")
       let results = benchmarkRunner.runBenchmarks(root, filter,
         if backend.len > 0: backend else: "zig", warmup, iterations,
         progress = activeOperation.reporter(), mode = mode)
@@ -524,6 +553,7 @@ proc main*(input: seq[string]): int =
               "meanMs": item.meanMs, "maximumMs": item.maximumMs,
               "percentile95Ms": item.percentile95Ms,
               "samplesMs": item.samplesMs,
+              "metricsSamples": item.metricsSamples,
               "compilationMs": item.compilationMs, "cached": item.cached,
               "metrics": item.metrics, "optimization": item.optimization})
       activeOperation.finish(failed == 0, $results.len &

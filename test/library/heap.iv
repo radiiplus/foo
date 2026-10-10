@@ -1,0 +1,33 @@
+use heap as priority.
+use testing as check.
+
+test "persistent minimum heap" {
+  constant empty is priority.create[integer].
+  constant first is priority.push[integer](empty, 7) try.
+  constant second is priority.push[integer](first, 3) try.
+  constant third is priority.push[integer](second, 9) try.
+  constant fourth is priority.push[integer](third, 1) try.
+  constant fifth is priority.push[integer](fourth, 3) try.
+  constant without is priority.remove[integer](fifth) try.
+  constant again is priority.remove[integer](without) try.
+  constant last is priority.remove[integer](again) try.
+  after {
+    priority.release[integer](first) fallback nothing.
+    priority.release[integer](second) fallback nothing.
+    priority.release[integer](third) fallback nothing.
+    priority.release[integer](fourth) fallback nothing.
+    priority.release[integer](fifth) fallback nothing.
+    priority.release[integer](without) fallback nothing.
+    priority.release[integer](again) fallback nothing.
+    priority.release[integer](last) fallback nothing.
+  }
+  check.expect(priority.length[integer](empty) is 0).
+  constant missing is priority.first[integer](empty) fallback 44.
+  check.expect(missing is 44).
+  check.expect(priority.first[integer](fifth) try is 1).
+  check.expect(priority.first[integer](fourth) try is 1).
+  check.expect(priority.first[integer](without) try is 3).
+  check.expect(priority.first[integer](again) try is 3).
+  check.expect(priority.first[integer](last) try is 7).
+  check.expect(priority.length[integer](last) is 2).
+}

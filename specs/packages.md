@@ -38,8 +38,8 @@ start {
 ```
 
 Public choice variants are part of the choice's module interface. For example,
-an aliased import of a public `Step` choice exposes its constructors as
-`alias.item(...)` and `alias.done` as well as the type `alias.Step`. Match
+an aliased import of a public `step` choice exposes its constructors as
+`alias.item(...)` and `alias.done` as well as the type `alias.step`. Match
 patterns use the same qualifier, such as `case alias.item(value)`. Generic
 payload variants accept the choice's type arguments. A payload-free generic
 variant is inferred from an expected choice type, or called with explicit type

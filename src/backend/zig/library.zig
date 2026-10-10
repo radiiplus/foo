@@ -138,6 +138,15 @@ var fast_maps: ?*FastMap = null;
 fn acquire() void {
     while (lock.cmpxchgWeak(false, true, .acquire, .monotonic) != null) std.atomic.spinLoopHint();
 }
+fn heapBytes() u64 {
+    acquire();
+    var total: u64 = 0;
+    var iterator = retained.valueIterator();
+    while (iterator.next()) |entry|
+        total = std.math.add(u64, total, entry.bytes.len) catch std.math.maxInt(u64);
+    lock.store(false, .release);
+    return std.math.add(u64, total, managed.memory.allocated()) catch std.math.maxInt(u64);
+}
 fn retain(comptime T: type, bytes: []const T) ![]T {
     if (bytes.len == 0) return &.{};
     const result = try allocator.alloc(T, bytes.len);
@@ -375,9 +384,53 @@ pub const arch = struct {
     fn supported() void {
         if (builtin.cpu.arch != .x86_64 and builtin.cpu.arch != .aarch64) @compileError("Architecture intrinsics require x86_64 or aarch64");
     }
+    fn popcntAvailable() bool {
+        var eax: u32 = undefined;
+        var ebx: u32 = undefined;
+        var ecx: u32 = undefined;
+        var edx: u32 = undefined;
+        asm volatile ("cpuid"
+            : [_] "={eax}" (eax),
+              [_] "={ebx}" (ebx),
+              [_] "={ecx}" (ecx),
+              [_] "={edx}" (edx),
+            : [_] "{eax}" (@as(u32, 1)),
+              [_] "{ecx}" (@as(u32, 0)),
+        );
+        return ecx & (@as(u32, 1) << 23) != 0;
+    }
+    fn nativeCount(value: u64) u64 {
+        return asm volatile ("popcntq %[value], %[result]"
+            : [result] "=r" (-> u64),
+            : [value] "r" (value),
+        );
+    }
     pub fn count(value: u64) u32 {
         comptime supported();
         return @popCount(value);
+    }
+    pub fn tally(values: []const u64) u64 {
+        comptime supported();
+        var total: u64 = 0;
+        if (builtin.zig_backend == .stage2_llvm and builtin.cpu.arch == .x86_64 and popcntAvailable()) {
+            for (values) |value| total += nativeCount(value);
+            return total;
+        }
+        for (values) |value| total += @popCount(value);
+        return total;
+    }
+    pub fn combine(left: []const u64, right: []const u64, output: []u64, operation: u64) bool {
+        comptime supported();
+        if (operation > 3 or left.len != right.len or left.len != output.len) return false;
+        for (left, right, output) |a, b, *result| {
+            result.* = switch (operation) {
+                0 => a | b,
+                1 => a & b,
+                2 => a & ~b,
+                else => a ^ b,
+            };
+        }
+        return true;
     }
     pub fn pause() void {
         comptime supported();
@@ -395,6 +448,28 @@ pub const arch = struct {
               [high] "={edx}" (high),
         );
         return (@as(u64, high) << 32) | low;
+    }
+    pub fn target(feature: []const u8) bool {
+        const cpu = builtin.target.cpu;
+        if (cpu.arch == .x86_64) {
+            if (std.mem.eql(u8, feature, "sse2")) return std.Target.x86.featureSetHas(cpu.features, .sse2);
+            if (std.mem.eql(u8, feature, "avx2")) return std.Target.x86.featureSetHas(cpu.features, .avx2);
+            if (std.mem.eql(u8, feature, "avx512f")) return std.Target.x86.featureSetHas(cpu.features, .avx512f);
+            if (std.mem.eql(u8, feature, "fma")) return std.Target.x86.featureSetHas(cpu.features, .fma);
+        }
+        if (cpu.arch == .aarch64) {
+            if (std.mem.eql(u8, feature, "neon")) return std.Target.aarch64.featureSetHas(cpu.features, .neon);
+            if (std.mem.eql(u8, feature, "sve")) return std.Target.aarch64.featureSetHas(cpu.features, .sve);
+        }
+        return false;
+    }
+    pub fn prefetch(bytes: []const u8, offset: u64) void {
+        if (offset >= bytes.len) return;
+        @prefetch(&bytes[@intCast(offset)], .{ .rw = .read, .locality = 3 });
+    }
+    pub fn stage(bytes: []u8, offset: u64) void {
+        if (offset >= bytes.len) return;
+        @prefetch(&bytes[@intCast(offset)], .{ .rw = .write, .locality = 3 });
     }
 };
 
@@ -430,6 +505,12 @@ pub const atomic = struct {
             else => unreachable,
         }
     }
+    pub fn deduct(value: *Atom, number: u64, ordering: []const u8) !u64 {
+        switch (try atomic.order(ordering)) {
+            inline .monotonic, .acquire, .release, .acq_rel, .seq_cst => |o| return value.fetchSub(number, o),
+            else => unreachable,
+        }
+    }
     pub fn swap(value: *Atom, number: u64, ordering: []const u8) !u64 {
         switch (try atomic.order(ordering)) {
             inline .monotonic, .acquire, .release, .acq_rel, .seq_cst => |o| return value.swap(number, o),
@@ -442,6 +523,29 @@ pub const atomic = struct {
             else => unreachable,
         }
     }
+    fn validFailure(comptime success: std.builtin.AtomicOrder, comptime failure: std.builtin.AtomicOrder) bool {
+        return switch (failure) {
+            .monotonic => true,
+            .acquire => success == .acquire or success == .acq_rel or success == .seq_cst,
+            .seq_cst => success == .seq_cst,
+            else => false,
+        };
+    }
+    pub fn compare(value: *Atom, expected: u64, number: u64, success_name: []const u8, failure_name: []const u8) !bool {
+        const success = try atomic.order(success_name);
+        const failure = try atomic.order(failure_name);
+        switch (success) {
+            inline .monotonic, .acquire, .release, .acq_rel, .seq_cst => |s| switch (failure) {
+                inline .monotonic, .acquire, .seq_cst => |f| {
+                    if (comptime validFailure(s, f))
+                        return value.cmpxchgStrong(expected, number, s, f) == null;
+                    return error.InvalidOrder;
+                },
+                else => return error.InvalidOrder,
+            },
+            else => return error.InvalidOrder,
+        }
+    }
 };
 
 // Only this bridge knows the Zig implementation of opaque FOO handles.
@@ -451,7 +555,24 @@ fn convert(comptime T: type, value: anytype) T {
     return value;
 }
 pub fn call(comptime module: []const u8, comptime name: []const u8, comptime Result: type, args: anytype) Result {
-    inline for (.{ "fs", "io", "net", "process", "thread", "time", "text" }) |namespace| {
+    if (comptime std.mem.eql(u8, module, "memory") and std.mem.eql(u8, name, "reinterpret")) {
+        const pointer = @typeInfo(Result).error_union.payload;
+        const T = @typeInfo(pointer).pointer.child;
+        managed.enter();
+        defer managed.leave();
+        return managed.memory.reinterpret(T, convert(*managed.Allocator, args[0]), args[1], args[2]);
+    }
+    if (comptime std.mem.eql(u8, module, "resource") and std.mem.eql(u8, name, "heap")) return heapBytes();
+    if (comptime std.mem.eql(u8, module, "resource") and std.mem.eql(u8, name, "tasks")) return @import("shim.zig").resourceTasks();
+    if (comptime std.mem.eql(u8, module, "resource") and std.mem.eql(u8, name, "pending")) return @import("shim.zig").resourcePending();
+    if (comptime std.mem.eql(u8, module, "text") and std.mem.eql(u8, name, "release")) {
+        buffers.free(args[0]) catch |err| {
+            if (err != error.UnknownBuffer) return err;
+            return @import("service.zig").call(module, name, Result, args);
+        };
+        return;
+    }
+    inline for (.{ "bloom", "cpu", "topology", "platform", "dylib", "fs", "vm", "gpu", "io", "net", "tls", "process", "resource", "ring", "thread", "time", "timer", "text", "metric", "trace", "limit" }) |namespace| {
         if (comptime std.mem.eql(u8, module, namespace)) return @import("service.zig").call(module, name, Result, args);
     }
     if (comptime std.mem.eql(u8, module, "sequence")) return sequence(name, Result, args);
@@ -526,12 +647,12 @@ fn Wrapped(comptime T: type) type {
 
 fn codec(comptime name: []const u8, comptime Result: type, args: anytype) Result {
     const Payload = @typeInfo(Result).error_union.payload;
-    if (comptime std.mem.eql(u8, name, "encode")) {
+    if (comptime std.mem.eql(u8, name, "encode") or std.mem.eql(u8, name, "marshal")) {
         const encoded = try std.json.Stringify.valueAlloc(allocator, Wrapped(@TypeOf(args[0])){ .value = args[0] }, .{});
         errdefer allocator.free(encoded);
         return try adopt(u8, encoded);
     }
-    if (comptime std.mem.eql(u8, name, "decode"))
+    if (comptime std.mem.eql(u8, name, "decode") or std.mem.eql(u8, name, "unmarshal"))
         return try std.json.parseFromSliceLeaky(Payload, allocator, args[0], .{
             .allocate = .alloc_always,
             .duplicate_field_behavior = .@"error",
@@ -558,7 +679,7 @@ fn table(comptime name: []const u8, comptime Result: type, args: anytype) Result
     }
     if (map.entries.len == 0) {
         if (comptime std.mem.eql(u8, name, "contains") or std.mem.eql(u8, name, "remove")) return false;
-        return error.MissingKey;
+        return error.Missing;
     }
     const entry = fastSlot(map, hashBytes(args[1]), args[1], false);
     if (comptime std.mem.eql(u8, name, "contains")) return entry.state == .occupied;
@@ -571,7 +692,7 @@ fn table(comptime name: []const u8, comptime Result: type, args: anytype) Result
         return true;
     }
     if (comptime std.mem.eql(u8, name, "get")) {
-        if (entry.state != .occupied or entry.value.len != @sizeOf(Payload)) return error.MissingKey;
+        if (entry.state != .occupied or entry.value.len != @sizeOf(Payload)) return error.Missing;
         const pointer: *align(1) const Payload = @ptrCast(entry.value.ptr);
         return pointer.*;
     }
@@ -580,7 +701,13 @@ fn table(comptime name: []const u8, comptime Result: type, args: anytype) Result
 
 fn sequence(comptime name: []const u8, comptime Result: type, args: anytype) Result {
     if (comptime std.mem.eql(u8, name, "create")) return &.{};
-    if (comptime std.mem.eql(u8, name, "length")) return @intCast(args[0].len);
+    if (comptime std.mem.eql(u8, name, "length") or std.mem.eql(u8, name, "extent")) return @intCast(args[0].len);
+    if (comptime std.mem.eql(u8, name, "view")) {
+        const start = std.math.cast(usize, args[1]) orelse return error.Bounds;
+        const count = std.math.cast(usize, args[2]) orelse return error.Bounds;
+        if (start > args[0].len or count > args[0].len - start) return error.Bounds;
+        return args[0][start .. start + count];
+    }
     if (comptime std.mem.eql(u8, name, "sized")) {
         const Slice = @typeInfo(Result).error_union.payload;
         const T = @typeInfo(Slice).pointer.child;
@@ -704,19 +831,380 @@ pub const testing = struct {
     }
 };
 
+pub const checksum = struct {
+    pub const State = struct { value: u32 = 0xffffffff };
+    pub fn update(state: *State, bytes: []const u8) void {
+        for (bytes) |byte| {
+            state.value ^= byte;
+            for (0..8) |_| state.value = (state.value >> 1) ^
+                (if ((state.value & 1) != 0) @as(u32, 0x82f63b78) else 0);
+        }
+    }
+    pub fn compute(bytes: []const u8) u32 {
+        var state = State{};
+        update(&state, bytes);
+        return ~state.value;
+    }
+    pub fn begin() !*State {
+        const state = try allocator.create(State);
+        state.* = .{};
+        return state;
+    }
+    pub fn result(state: *State) u32 { return ~state.value; }
+    pub fn close(state: *State) void { allocator.destroy(state); }
+};
+
+pub const binary = struct {
+    pub fn octet(value: u64) !u8 {
+        return std.math.cast(u8, value) orelse error.Bounds;
+    }
+    pub fn widen(value: u8) u64 {
+        return value;
+    }
+    pub fn encode(value: u64) ![]u8 {
+        var rest = value;
+        var count: usize = 1;
+        while (rest >= 128) : (count += 1) rest >>= 7;
+        const bytes = try sequenceReserve(u8, count, count);
+        rest = value;
+        for (bytes, 0..) |*byte, index| {
+            byte.* = @truncate(rest & 127);
+            rest >>= 7;
+            if (index + 1 < count) byte.* |= 128;
+        }
+        return bytes;
+    }
+    fn read(source: []const u8, offset: u64) !struct { value: u64, next: u64 } {
+        const start = std.math.cast(usize, offset) orelse return error.Bounds;
+        if (start > source.len) return error.Bounds;
+        var value: u64 = 0;
+        for (source[start..], 0..) |byte, index| {
+            if (index >= 10) return error.InvalidEncoding;
+            const part = byte & 127;
+            if (index == 9 and part > 1) return error.InvalidEncoding;
+            value |= @as(u64, part) << @as(u6, @intCast(index * 7));
+            if (byte & 128 == 0) {
+                if (index > 0 and part == 0) return error.InvalidEncoding;
+                return .{ .value = value, .next = offset + index + 1 };
+            }
+        }
+        return error.InvalidEncoding;
+    }
+    pub fn scan(source: []const u8, offset: u64) !u64 {
+        return (try read(source, offset)).value;
+    }
+    pub fn next(source: []const u8, offset: u64) !u64 {
+        return (try read(source, offset)).next;
+    }
+    pub fn zigzag(value: i64) ![]u8 {
+        const bits: u64 = @bitCast(value);
+        return encode((bits << 1) ^ (if (value < 0) std.math.maxInt(u64) else @as(u64, 0)));
+    }
+    pub fn unfold(source: []const u8, offset: u64) !i64 {
+        const value = (try read(source, offset)).value;
+        const bits = (value >> 1) ^ (if (value & 1 != 0) std.math.maxInt(u64) else @as(u64, 0));
+        return @bitCast(bits);
+    }
+    pub fn hex(value: []const u8) ![]const u8 {
+        if (value.len > std.math.maxInt(usize) / 2) return error.OutOfMemory;
+        const output = try allocator.alloc(u8, value.len * 2);
+        defer allocator.free(output);
+        const digits = "0123456789abcdef";
+        for (value, 0..) |byte, index| {
+            output[index * 2] = digits[byte >> 4];
+            output[index * 2 + 1] = digits[byte & 15];
+        }
+        return retain(u8, output);
+    }
+    pub fn unpack(value: []const u8) ![]u8 {
+        if (value.len % 2 != 0) return error.InvalidEncoding;
+        for (value) |byte| {
+            if (!((byte >= '0' and byte <= '9') or (byte >= 'a' and byte <= 'f')))
+                return error.InvalidEncoding;
+        }
+        const output = try sequenceReserve(u8, value.len / 2, value.len / 2);
+        _ = std.fmt.hexToBytes(output, value) catch unreachable;
+        return output;
+    }
+    pub fn base64(value: []const u8) ![]const u8 {
+        const encoder = std.base64.url_safe_no_pad.Encoder;
+        const groups = value.len / 3;
+        const extra = if (value.len % 3 == 0) @as(usize, 0) else value.len % 3 + 1;
+        if (groups > (std.math.maxInt(usize) - extra) / 4) return error.OutOfMemory;
+        const output = try allocator.alloc(u8, encoder.calcSize(value.len));
+        defer allocator.free(output);
+        return retain(u8, encoder.encode(output, value));
+    }
+    pub fn restore(value: []const u8) ![]u8 {
+        const decoder = std.base64.url_safe_no_pad.Decoder;
+        const size = decoder.calcSizeForSlice(value) catch return error.InvalidEncoding;
+        const decoded = try allocator.alloc(u8, size);
+        defer allocator.free(decoded);
+        decoder.decode(decoded, value) catch return error.InvalidEncoding;
+        const output = try sequenceReserve(u8, size, size);
+        @memcpy(output, decoded);
+        return output;
+    }
+    fn endian(name: []const u8) !bool {
+        if (std.mem.eql(u8, name, "little")) return true;
+        if (std.mem.eql(u8, name, "big")) return false;
+        return error.InvalidInput;
+    }
+    pub fn fixed(value: u64, width: u64, name: []const u8) ![]u8 {
+        const little = try endian(name);
+        if (width < 1 or width > 8 or
+            (width < 8 and value >= (@as(u64, 1) << @as(u6, @intCast(width * 8)))))
+            return error.InvalidInput;
+        const count: usize = @intCast(width);
+        const bytes = try sequenceReserve(u8, count, count);
+        var rest = value;
+        for (0..count) |index| {
+            bytes[if (little) index else count - index - 1] = @truncate(rest);
+            rest >>= 8;
+        }
+        return bytes;
+    }
+    pub fn parse(source: []const u8, offset: u64, width: u64, name: []const u8) !u64 {
+        const little = try endian(name);
+        if (width < 1 or width > 8) return error.InvalidInput;
+        const start = std.math.cast(usize, offset) orelse return error.Bounds;
+        const count: usize = @intCast(width);
+        if (start > source.len or count > source.len - start) return error.Bounds;
+        var value: u64 = 0;
+        for (0..count) |index| {
+            const slot = if (little) count - index - 1 else index;
+            value = (value << 8) | source[start + slot];
+        }
+        return value;
+    }
+};
+
 pub const crypto = struct {
     const Aead = std.crypto.aead.chacha_poly.XChaCha20Poly1305;
+    const Aes = std.crypto.aead.aes_gcm.Aes256Gcm;
     const Ed = std.crypto.sign.Ed25519;
+    const Hmac = std.crypto.auth.hmac.sha2.HmacSha256;
+    const Hkdf = std.crypto.kdf.hkdf.HkdfSha256;
+    pub const Hasher = struct {
+        state: std.crypto.hash.sha2.Sha256,
+        digest: [32]u8 = undefined,
+        finalized: bool = false,
+    };
+    pub const Authenticator = struct {
+        state: Hmac,
+        digest: [Hmac.mac_length]u8 = undefined,
+        finalized: bool = false,
+    };
+    pub const BlakeHasher = struct { state: std.crypto.hash.Blake3 };
+    fn digestCopy(value: [32]u8) ![]u8 {
+        const bytes = try sequenceReserve(u8, 32, 32);
+        @memcpy(bytes, &value);
+        return bytes;
+    }
     pub fn hash(data: []const u8) ![]const u8 {
-        var digest: [32]u8 = undefined;
-        std.crypto.hash.sha2.Sha256.hash(data, &digest, .{});
-        return retain(u8, &std.fmt.bytesToHex(digest, .lower));
+        var output: [32]u8 = undefined;
+        std.crypto.hash.sha2.Sha256.hash(data, &output, .{});
+        return retain(u8, &std.fmt.bytesToHex(output, .lower));
+    }
+    pub fn digest(data: []const u8) ![]u8 {
+        var output: [32]u8 = undefined;
+        std.crypto.hash.sha2.Sha256.hash(data, &output, .{});
+        return digestCopy(output);
+    }
+    pub fn hex(data: []const u8) ![]const u8 {
+        return hash(data);
+    }
+    pub fn begin() !*Hasher {
+        const hasher = try allocator.create(Hasher);
+        hasher.* = .{ .state = std.crypto.hash.sha2.Sha256.init(.{}) };
+        return hasher;
+    }
+    pub fn update(value: *Hasher, data: []const u8) !void {
+        if (value.finalized) return error.AlreadyFinalized;
+        value.state.update(data);
+    }
+    fn finish(value: *Hasher) void {
+        if (!value.finalized) {
+            value.state.final(&value.digest);
+            value.finalized = true;
+        }
+    }
+    pub fn finalize(value: *Hasher) ![]const u8 {
+        finish(value);
+        return retain(u8, &std.fmt.bytesToHex(value.digest, .lower));
+    }
+    pub fn result(value: *Hasher) ![]u8 {
+        finish(value);
+        return digestCopy(value.digest);
+    }
+    pub fn close(value: *Hasher) void {
+        allocator.destroy(value);
+    }
+    pub fn blake(data: []const u8) ![]u8 {
+        var hash_value: [32]u8 = undefined;
+        std.crypto.hash.Blake3.hash(data, &hash_value, .{});
+        return digestCopy(hash_value);
+    }
+    pub fn fingerprint(data: []const u8) ![]const u8 {
+        var hash_value: [32]u8 = undefined;
+        std.crypto.hash.Blake3.hash(data, &hash_value, .{});
+        return retain(u8, &std.fmt.bytesToHex(hash_value, .lower));
+    }
+    pub fn initiate() !*BlakeHasher {
+        const value = try allocator.create(BlakeHasher);
+        value.* = .{ .state = std.crypto.hash.Blake3.init(.{}) };
+        return value;
+    }
+    pub fn append(value: *BlakeHasher, data: []const u8) !void {
+        value.state.update(data);
+    }
+    pub fn extract(value: *BlakeHasher) ![]u8 {
+        var hash_value: [32]u8 = undefined;
+        value.state.final(&hash_value);
+        return digestCopy(hash_value);
+    }
+    pub fn render(value: *BlakeHasher) ![]const u8 {
+        var hash_value: [32]u8 = undefined;
+        value.state.final(&hash_value);
+        return retain(u8, &std.fmt.bytesToHex(hash_value, .lower));
+    }
+    pub fn retire(value: *BlakeHasher) void {
+        std.crypto.secureZero(u8, std.mem.asBytes(value));
+        allocator.destroy(value);
+    }
+    pub fn auth(secret: []const u8) !*Authenticator {
+        const value = try allocator.create(Authenticator);
+        value.* = .{ .state = Hmac.init(secret) };
+        return value;
+    }
+    pub fn absorb(value: *Authenticator, bytes: []const u8) !void {
+        if (value.finalized) return error.AlreadyFinalized;
+        value.state.update(bytes);
+    }
+    fn authfinish(value: *Authenticator) void {
+        if (!value.finalized) {
+            value.state.final(&value.digest);
+            value.finalized = true;
+        }
+    }
+    pub fn tag(value: *Authenticator) ![]u8 {
+        authfinish(value);
+        return digestCopy(value.digest);
+    }
+    pub fn check(value: *Authenticator, expected: []const u8) !bool {
+        authfinish(value);
+        return expected.len == Hmac.mac_length and
+            std.crypto.timing_safe.eql([Hmac.mac_length]u8, value.digest, expected[0..Hmac.mac_length].*);
+    }
+    pub fn discard(value: *Authenticator) void {
+        std.crypto.secureZero(u8, std.mem.asBytes(value));
+        allocator.destroy(value);
+    }
+    pub fn derive(secret: []const u8, salt: []const u8, context: []const u8, size: u64) ![]u8 {
+        if (size > 255 * Hmac.mac_length) return error.InvalidLength;
+        const length = std.math.cast(usize, size) orelse return error.InvalidLength;
+        const output = try sequenceReserve(u8, length, length);
+        var prk = Hkdf.extract(salt, secret);
+        defer std.crypto.secureZero(u8, &prk);
+        Hkdf.expand(output, context, prk);
+        return output;
+    }
+    pub fn compare(left: []const u8, right: []const u8) bool {
+        if (left.len != right.len) return false;
+        return std.crypto.timing_safe.compare(u8, left, right, .little) == .eq;
     }
     pub fn random(size: u32) ![]const u8 {
         const buffer = try allocator.alloc(u8, size);
         defer allocator.free(buffer);
         try runtimeIo().randomSecure(buffer);
         return retain(u8, buffer);
+    }
+    pub fn reproduce(seed: []const u8, label: []const u8, size: u32) ![]u8 {
+        if (seed.len != 32 or size > 1048576) return error.InvalidLength;
+        const output = try sequenceReserve(u8, size, size);
+        var state = std.crypto.hash.Blake3.init(.{ .key = seed[0..32].* });
+        defer std.crypto.secureZero(u8, std.mem.asBytes(&state));
+        state.update("FOO deterministic test stream v1\x00");
+        state.update(label);
+        state.final(output);
+        return output;
+    }
+    fn cipher(algorithm: []const u8, secret: []const u8, nonce: []const u8) !bool {
+        const aes = std.mem.eql(u8, algorithm, "aes256gcm");
+        if (!aes and !std.mem.eql(u8, algorithm, "xchacha20poly1305")) return error.InvalidAlgorithmOrLength;
+        if (secret.len != 32 or nonce.len != (if (aes) @as(usize, 12) else 24)) return error.InvalidAlgorithmOrLength;
+        return aes;
+    }
+    pub fn available(algorithm: []const u8) bool {
+        return std.mem.eql(u8, algorithm, "xchacha20poly1305") or
+            std.mem.eql(u8, algorithm, "aes256gcm");
+    }
+    pub fn wrap(algorithm: []const u8, data: []const u8, secret: []const u8, nonce: []const u8, extra: []const u8) ![]u8 {
+        const aes = try cipher(algorithm, secret, nonce);
+        if (data.len > std.math.maxInt(usize) - 16) return error.InvalidLength;
+        const output = try sequenceReserve(u8, data.len + 16, data.len + 16);
+        if (aes) {
+            Aes.encrypt(output[0..data.len], output[data.len..][0..16], data, extra, nonce[0..12].*, secret[0..32].*);
+        } else {
+            Aead.encrypt(output[0..data.len], output[data.len..][0..16], data, extra, nonce[0..24].*, secret[0..32].*);
+        }
+        return output;
+    }
+    pub fn unwrap(algorithm: []const u8, data: []const u8, secret: []const u8, nonce: []const u8, extra: []const u8) ![]u8 {
+        const aes = try cipher(algorithm, secret, nonce);
+        if (data.len < 16) return error.InvalidAlgorithmOrLength;
+        const length = data.len - 16;
+        const plain = try allocator.alloc(u8, length);
+        defer {
+            std.crypto.secureZero(u8, plain);
+            allocator.free(plain);
+        }
+        if (aes) {
+            Aes.decrypt(plain, data[0..length], data[length..][0..16].*, extra, nonce[0..12].*, secret[0..32].*) catch return error.AuthenticationFailed;
+        } else {
+            Aead.decrypt(plain, data[0..length], data[length..][0..16].*, extra, nonce[0..24].*, secret[0..32].*) catch return error.AuthenticationFailed;
+        }
+        const output = try sequenceReserve(u8, length, length);
+        @memcpy(output, plain);
+        return output;
+    }
+    pub const SecureKey = struct { bytes: [32]u8 };
+    const WindowsLock = struct {
+        extern "kernel32" fn VirtualLock(?*const anyopaque, usize) callconv(.winapi) i32;
+        extern "kernel32" fn VirtualUnlock(?*const anyopaque, usize) callconv(.winapi) i32;
+    };
+    const PosixLock = struct {
+        extern "c" fn mlock(?*const anyopaque, usize) c_int;
+        extern "c" fn munlock(?*const anyopaque, usize) c_int;
+    };
+    pub fn protect(secret: []const u8) !*SecureKey {
+        if (secret.len != 32) return error.InvalidLength;
+        const protected = try std.heap.page_allocator.create(SecureKey);
+        const locked = if (builtin.os.tag == .windows)
+            WindowsLock.VirtualLock(protected, @sizeOf(SecureKey)) != 0
+        else
+            PosixLock.mlock(protected, @sizeOf(SecureKey)) == 0;
+        if (!locked) {
+            std.heap.page_allocator.destroy(protected);
+            return error.SecureMemoryUnavailable;
+        }
+        @memcpy(&protected.bytes, secret);
+        return protected;
+    }
+    pub fn shield(algorithm: []const u8, data: []const u8, protected: *SecureKey, nonce: []const u8, extra: []const u8) ![]u8 {
+        return wrap(algorithm, data, &protected.bytes, nonce, extra);
+    }
+    pub fn reveal(algorithm: []const u8, data: []const u8, protected: *SecureKey, nonce: []const u8, extra: []const u8) ![]u8 {
+        return unwrap(algorithm, data, &protected.bytes, nonce, extra);
+    }
+    pub fn forget(protected: *SecureKey) void {
+        std.crypto.secureZero(u8, std.mem.asBytes(protected));
+        if (builtin.os.tag == .windows) {
+            _ = WindowsLock.VirtualUnlock(protected, @sizeOf(SecureKey));
+        } else {
+            _ = PosixLock.munlock(protected, @sizeOf(SecureKey));
+        }
+        std.heap.page_allocator.destroy(protected);
     }
     pub fn seal(data: []const u8, secret: []const u8, nonce: []const u8, context: []const u8) ![]const u8 {
         if (secret.len != Aead.key_length or nonce.len != Aead.nonce_length) return error.InvalidLength;
@@ -806,6 +1294,18 @@ pub const unicode = struct {
 };
 
 pub const compress = struct {
+    pub fn header(size: u64) ![]const u8 {
+        if (size == 0 or size > std.math.maxInt(u32)) return error.StreamTooLong;
+        var bytes: [4]u8 = undefined;
+        std.mem.writeInt(u32, &bytes, @intCast(size), .little);
+        return retain(u8, &bytes);
+    }
+    pub fn extent(bytes: []const u8) !u64 {
+        if (bytes.len != 4) return error.InvalidCompressedData;
+        const size = std.mem.readInt(u32, bytes[0..4], .little);
+        if (size == 0) return error.InvalidCompressedData;
+        return size;
+    }
     fn container(format: []const u8) !std.compress.flate.Container {
         if (std.mem.eql(u8, format, "gzip")) return .gzip;
         if (std.mem.eql(u8, format, "zlib")) return .zlib;

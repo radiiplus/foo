@@ -1,6 +1,6 @@
 {
   "name": "foo",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "bin": {
     "foo": "bin/foo.mjs"
   },
@@ -17,6 +17,7 @@
     "test:editor": "node test/editor/run.mjs && node test/editor/snapshots.mjs && node test/editor/theme.mjs && node test/editor/probe.mjs",
     "test:host": "node test/editor/editor.mjs",
     "build": "node tools/build.mjs",
+    "source:pack": "node tools/source.mjs",
     "binaries": "node tools/binaries.mjs",
     "binaries:signed": "node --env-file=.env.sign tools/binaries.mjs --sign",
     "build:installers": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/build.ps1",
@@ -26,7 +27,9 @@
     "native:build": "node tools/native.mjs",
     "test:native": "node test/native/run.mjs",
     "benchmark": "node bin/foo.mjs benchmark --warmup 3 --iterations 20",
-    "benchmark:report": "node tools/benchmark.mjs"
+    "benchmark:report": "node tools/benchmark.mjs",
+    "registry:standard": "node tools/standard-catalog.mjs",
+    "registry:standard:check": "node tools/standard-catalog.mjs --check"
   },
   "devDependencies": {
     "@vscode/test-electron": "3.1.0",
@@ -56,14 +59,17 @@
     "assets/",
     "src/",
     "lib/",
+    "vendor/",
     "docs/",
     "tools/toolchain.mjs",
     "tools/native.mjs",
     "tools/benchmark.mjs",
+    "tools/standard-catalog.mjs",
     "toolchain.json",
     "project.json",
     "specs/",
     "benchmark/",
+    "registry/standard.json",
     "test/library/*.iv",
     "test/library/project.json",
     "test/library/public.txt",

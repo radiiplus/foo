@@ -1,0 +1,53 @@
+-- Named file-backed shared regions for local processes.
+use file as files.
+use io as streams.
+
+public define region as record {
+  stream of type pointer to streams.stream.
+  mapping of type pointer to files.mapping.
+}.
+
+-- Create is exclusive. The caller owns the path and removes it after all users close.
+public function create(path text, size unsigned) giving failable region {
+  when size is 0 { give fail(Error.Bounds). }
+  constant stream is files.open(path, "create") try.
+  after error { streams.close(stream) fallback nothing. }
+  files.reserve(stream, size) try.
+  constant mapping is files.edit(path, 0, size) try.
+  give region(stream, mapping).
+}
+
+public function join(path text) giving failable region {
+  constant stream is files.open(path, "update") try.
+  after error { streams.close(stream) fallback nothing. }
+  constant size is files.size(stream) try.
+  when size is 0 { give fail(Error.Bounds). }
+  constant mapping is files.edit(path, 0, size) try.
+  give region(stream, mapping).
+}
+
+public function size(value region) giving failable unsigned {
+  give files.size(value.stream) try.
+}
+
+public function view(value region) giving failable sequence of constant byte borrowing value {
+  give files.view(value.mapping) try.
+}
+
+public function edit(value region) giving failable sequence of byte borrowing value {
+  give files.mutable(value.mapping) try.
+}
+
+-- Locks are advisory and cover the whole backing file.
+public function lock(value region) giving failable nothing {
+  files.lock(value.stream, "exclusive") try.
+}
+
+public function unlock(value region) giving failable nothing {
+  files.unlock(value.stream) try.
+}
+
+public function close(value region) giving failable nothing {
+  files.unmap(value.mapping) try.
+  streams.close(value.stream) try.
+}

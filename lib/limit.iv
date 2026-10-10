@@ -1,0 +1,8 @@
+-- POSIX process limits. Unsupported kinds or targets report missing values.
+-- Kinds: "files", "address", "cpu", and "stack".
+public use "limit" function available(kind text) giving boolean.
+-- UINT64 maximum denotes an unlimited soft or hard limit.
+public use "limit" function soft(kind text) giving failable unsigned.
+public use "limit" function hard(kind text) giving failable unsigned.
+-- Replaces only the soft limit; the OS checks it against the hard limit.
+public use "limit" function set(kind text, value unsigned) giving failable nothing.

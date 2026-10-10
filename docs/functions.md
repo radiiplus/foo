@@ -1,17 +1,21 @@
 # Functions
 
-A function names a reusable operation. Its parameters describe the inputs and
-`giving` describes the result.
+When the same calculation appears twice, give it a name. A function takes
+inputs through parameters and returns a result with `give`. FOO can infer the
+result type, or you can state it with `giving`.
 
 ## Define and call a function
 
 ```foo
-function add(left integer, right integer) giving integer {
+function add(left integer, right integer) {
   give left plus right.
 }
 
 constant total is add(20, 22).
 ```
+
+The compiler infers `integer` from the value given by `add`. Keep parameter
+types explicit so callers know what to pass.
 
 Arguments are evaluated from left to right. Parentheses delimit a non-empty
 argument list. Omit them when a function has no parameters or arguments:

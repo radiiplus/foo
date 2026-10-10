@@ -13,6 +13,9 @@ writeFile(root / "project.json", pretty(manifest) & "\n")
 var documentation = "# foo-registry-publish\n"
 for index in 1 .. 100: documentation.add("Documentation line " & $index & ".\n")
 writeFile(root / "README.md", documentation)
+writeFile(root / "icon.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>")
+manifest["icon"] = %"icon.svg"
+writeFile(root / "project.json", pretty(manifest) & "\n")
 writeFile(root / "src" / "main.iv",
   "-- Exposes the package version.\npublic constant version is \"0.1.0\".\n")
 
@@ -48,6 +51,7 @@ doAssert progressEvents == @[
 ]
 doAssert submitted["manifest"]["revision"].getStr() == revision
 doAssert submitted["documentation"].len == 101
+doAssert submitted["icon"].getStr().contains("<path")
 doAssert not submitted["manifest"].hasKey("owner")
 doAssert submitted["source"]["format"].getStr() == "foo.source/v1"
 doAssert submitted["source"]["digest"].getStr().len == 64

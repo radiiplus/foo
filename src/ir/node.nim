@@ -144,6 +144,7 @@ type
     pipelines*: int
     continuations*: int
     serializations*: int
+    vectors*: int
     bounds*: int
 
   Module* = ref object

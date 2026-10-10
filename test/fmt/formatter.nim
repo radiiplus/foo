@@ -32,4 +32,7 @@ define Device as record { #[volatile] data of type pointer to unsigned 32. }.
 """)
 doAssert hardware.contains("function boot for startup without setup")
 doAssert hardware.contains("data of type pointer to unsigned 32 with exact access")
+let aligned = formatSource("define Header as c record { tag of type byte. } aligned to 64.")
+doAssert aligned.contains("} aligned to 64.")
+doAssert formatSource(aligned) == aligned
 echo "formatter parity: ok"

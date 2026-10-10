@@ -82,6 +82,16 @@ proc select*(operation: string; options: Selection): Decision =
     specialization.candidate("c11", "@c", "ordered atomic operation",
       "C11 atomics preserve the requested memory ordering", 0,
       fallback = true)])
+  if operation == "vectorize":
+    return decide("ordered decimal lanes", [
+      specialization.candidate("scalar", "@foo", "ordered decimal lanes",
+        "the original checked loop preserves every input and failure", 0,
+        fallback = true),
+      specialization.candidate("simd", "@runtime", "ordered decimal lanes",
+        "runtime guards permit independent decimal lanes", 20,
+        compatible = arch in ["x86_64", "aarch64"],
+        backends = @["c", "zig"], modes = @["release"])
+    ])
   if operation == "table":
     return decide("text-keyed mutable table", [
       specialization.candidate("open-addressing", "@runtime",
@@ -133,6 +143,7 @@ proc `bind`*(input: Module; options: Selection): tuple[module: Module, decisions
         elif instruction.`func`.len > 0 and instruction.`func` in foreign:
           let declaration = foreign[instruction.`func`]
           if declaration.abi == "runtime.atomic": operation = "atomic"
+          elif declaration.abi == "runtime.cpu" and declaration.symbol == "vectorize": operation = "vectorize"
           elif declaration.abi in ["runtime", "runtime.task"]: operation = "task"
           elif declaration.abi == "runtime.table": operation = "table"
           elif declaration.abi == "runtime.sequence" and declaration.symbol in ["sized", "compact"]: operation = "sequence-transform"

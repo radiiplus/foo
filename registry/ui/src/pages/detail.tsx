@@ -1,46 +1,62 @@
-import { AlertTriangle, ArrowLeft, Braces, Check, CheckCircle2, Copy, ExternalLink, GitCompare, GitFork, Maximize2, Network, PackageOpen, Search, ShieldCheck, X, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, Code2, Copy, ExternalLink, FileCode2, GitFork, History, LayoutGrid, PackageOpen, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Code } from "../components/code";
+import { PackageArtwork } from "../components/package-artwork";
 import { Markdown } from "../components/markdown";
-import { item as loadItem, type Package, type VersionSummary } from "../utils/registry";
+import { item as loadItem, type Package, type PublicApiItem, type VersionSummary } from "../utils/registry";
 import { date, displayPackageName } from "../utils/format";
 import { seo } from "../utils/seo";
 
 type DetailProps = {
   name: string;
+  backLabel: string;
   onBack: () => void;
   onTag: (tag: string) => void;
 };
 
-export default function Detail({ name, onBack, onTag }: DetailProps) {
+type View = "api" | "docs" | "source" | "releases";
+type ApiRow = { id: string; module: string; path: string; entry: PublicApiItem };
+const views = [
+  { id: "api", label: "Cards", icon: LayoutGrid },
+  { id: "docs", label: "Documentation", icon: BookOpen },
+  { id: "source", label: "Source code", icon: Code2 },
+  { id: "releases", label: "Releases", icon: History },
+] satisfies { id: View; label: string; icon: typeof LayoutGrid }[];
+const kinds = ["all", "function", "type", "constant", "value"] as const;
+
+export default function Detail({ name, backLabel, onBack, onTag }: DetailProps) {
   const [item, setItem] = useState<Package>();
   const [previous, setPrevious] = useState<Package>();
   const [versions, setVersions] = useState<VersionSummary[]>([]);
   const [version, setVersion] = useState("");
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState("");
   const [apiQuery, setApiQuery] = useState("");
-  const [apiKind, setApiKind] = useState<"all" | "function" | "type" | "constant" | "value">("all");
-  const [readmeOpen, setReadmeOpen] = useState(false);
-  const [readmeOverflow, setReadmeOverflow] = useState(false);
-  const readmePreviewRef = useRef<HTMLDivElement>(null);
-  const readmeDialogRef = useRef<HTMLDialogElement>(null);
-  const readmeButtonRef = useRef<HTMLButtonElement>(null);
-  const readme = useMemo(() => item?.readme.join("\n") ?? "", [item?.readme]);
+  const [apiKind, setApiKind] = useState<(typeof kinds)[number]>("all");
+  const [view, setView] = useState<View>(() => locationView());
+  const [sourcePath, setSourcePath] = useState(() => new URLSearchParams(window.location.search).get("file") ?? "");
+  const [symbolId, setSymbolId] = useState(() => new URLSearchParams(window.location.search).get("api") ?? "");
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const sourceDialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const sourceTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     setItem(undefined);
     setError("");
-    setReadmeOpen(false);
     void loadItem(name, controller.signal, version || undefined)
       .then((result) => {
         setItem(result.package);
         setVersions(result.versions);
         const index = result.versions.findIndex((entry) => entry.version === result.package.version);
         const prior = result.versions[index + 1];
-        if (prior) void loadItem(name, controller.signal, prior.version).then((value) => setPrevious(value.package));
-        else setPrevious(undefined);
+        if (prior) {
+          void loadItem(name, controller.signal, prior.version)
+            .then((value) => setPrevious(value.package))
+            .catch(() => setPrevious(undefined));
+        } else setPrevious(undefined);
       })
       .catch((reason: unknown) => {
         if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(reason instanceof Error ? reason.message : "Package unavailable");
@@ -49,21 +65,14 @@ export default function Detail({ name, onBack, onTag }: DetailProps) {
   }, [name, version]);
 
   useEffect(() => {
-    const preview = readmePreviewRef.current;
-    if (!preview) return;
-    const measure = () => setReadmeOverflow(preview.scrollHeight > preview.clientHeight + 1);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(preview);
-    return () => observer.disconnect();
-  }, [readme]);
-
-  useEffect(() => {
-    const dialog = readmeDialogRef.current;
-    if (!dialog) return;
-    if (readmeOpen && !dialog.open) dialog.showModal();
-    if (!readmeOpen && dialog.open) dialog.close();
-  }, [readmeOpen]);
+    const sync = () => {
+      setView(locationView());
+      setSymbolId(new URLSearchParams(window.location.search).get("api") ?? "");
+      setSourcePath(new URLSearchParams(window.location.search).get("file") ?? "");
+    };
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
 
   useEffect(() => {
     if (!item) return;
@@ -74,199 +83,228 @@ export default function Detail({ name, onBack, onTag }: DetailProps) {
     });
   }, [item]);
 
-  if (error) {
-    return <div className="grid min-h-full place-items-center p-6 text-center"><div><PackageOpen className="mx-auto text-[#555]" /><p className="mt-3 text-sm text-[#aaa]">{error}</p><button className="mt-3 text-xs text-[#60D5DF]" type="button" onClick={onBack}>Return to packages</button></div></div>;
-  }
+  const rows = useMemo<ApiRow[]>(() => (item?.api.modules ?? []).flatMap((module) =>
+    module.items.map((entry, index) => ({
+      id: `${module.path}:${entry.kind}:${entry.name}:${index}`,
+      module: module.name,
+      path: module.path,
+      entry,
+    }))), [item]);
+  const selected = rows.find((row) => row.id === symbolId);
+  const matches = rows.filter((row) => {
+    const needle = apiQuery.trim().toLowerCase();
+    return (apiKind === "all" || row.entry.kind === apiKind) &&
+      (!needle || `${row.module} ${row.entry.kind} ${row.entry.name} ${row.entry.declaration} ${row.entry.documentation}`.toLowerCase().includes(needle));
+  });
+  const selectedSource = item?.source.files.find((file) => file.path === sourcePath);
 
-  if (!item) {
-    return <div className="mx-auto max-w-260 animate-pulse px-6 py-9"><div className="h-5 w-28 rounded bg-[#171717]" /><div className="mt-9 h-11 w-72 rounded bg-[#171717]" /><div className="mt-8 h-30 rounded-xl bg-[#111]" /></div>;
-  }
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (selected && view === "api" && !dialog.open) dialog.showModal();
+    if ((!selected || view !== "api") && dialog.open) dialog.close();
+  }, [selected, view]);
 
-  const copy = async () => {
-    await navigator.clipboard.writeText(item.install);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+  useEffect(() => {
+    const dialog = sourceDialogRef.current;
+    if (!dialog) return;
+    if (selectedSource && view === "source" && !dialog.open) dialog.showModal();
+    if ((!selectedSource || view !== "source") && dialog.open) dialog.close();
+  }, [selectedSource, view]);
+
+  const navigateView = (next: View, symbol = "", replace = false) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", next);
+    if (symbol) url.searchParams.set("api", symbol);
+    else url.searchParams.delete("api");
+    url.searchParams.delete("file");
+    window.history[replace ? "replaceState" : "pushState"](window.history.state ?? {}, "", `${url.pathname}${url.search}`);
+    setView(next);
+    setSymbolId(symbol);
+    setSourcePath("");
   };
+
+  const openSource = (path: string, button?: HTMLButtonElement) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", "source");
+    url.searchParams.delete("api");
+    url.searchParams.set("file", path);
+    window.history.pushState(window.history.state ?? {}, "", `${url.pathname}${url.search}`);
+    sourceTriggerRef.current = button ?? null;
+    setView("source");
+    setSymbolId("");
+    setSourcePath(path);
+  };
+
+  const closeSource = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("file");
+    window.history.replaceState(window.history.state ?? {}, "", `${url.pathname}${url.search}`);
+    setSourcePath("");
+    requestAnimationFrame(() => sourceTriggerRef.current?.focus());
+  };
+
+  const closeSymbol = () => {
+    navigateView("api", "", true);
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  };
+
+  const copy = async (value: string, key: string) => {
+    await navigator.clipboard.writeText(value);
+    setCopied(key);
+    window.setTimeout(() => setCopied((current) => current === key ? "" : current), 1500);
+  };
+
+  if (error) {
+    return <div className="registry-empty"><PackageOpen size={24} /><p>{error}</p><button type="button" onClick={onBack}>Return to libraries</button></div>;
+  }
+  if (!item) return <div className="registry-loading">Loading package...</div>;
+
+  const readme = item.readme.join("\n");
   const changes = previous ? differences(item, previous) : ["Initial indexed release"];
-  const normalizedApiQuery = apiQuery.trim().toLowerCase();
-  const apiModules = (item.api?.modules ?? []).map((module) => ({
-    ...module,
-    items: module.items.filter((entry) => (apiKind === "all" || entry.kind === apiKind) && (!normalizedApiQuery ||
-      `${module.name} ${entry.kind} ${entry.name} ${entry.declaration}`.toLowerCase().includes(normalizedApiQuery))),
-  })).filter((module) => module.items.length > 0 || (!normalizedApiQuery && module.summary));
-  const apiCount = (item.api?.modules ?? []).reduce((count, module) => count + module.items.length, 0);
 
   return (
     <>
-    <article className="mx-auto w-full max-w-260 px-4 py-6 sm:px-7 sm:py-9">
-      <button className="flex items-center gap-2 text-xs text-[#777] hover:text-[#f5f5f5]" type="button" onClick={onBack}>
-        <ArrowLeft size={14} /> Packages
-      </button>
+      <article className="registry-detail">
+        <button className="registry-back" type="button" onClick={onBack}><ArrowLeft size={15} /> {backLabel}</button>
 
-      <header className="mt-7 border-b border-[#242424] pb-7">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="flex items-center gap-2 font-mono text-[10px] tracking-[0.14em] text-[#60D5DF] uppercase">{item.category}{item.kind === "standard" && <span className="rounded border border-[#285A5E] px-1.5 py-0.5 text-[7px]">Bundled</span>}</p>
-            <h1 className="mt-2 font-mono text-3xl font-semibold text-[#f5f5f5]">{displayPackageName(item.name)}</h1>
-            <p className="mt-3 max-w-160 text-sm leading-6 text-[#929292]">{item.description}</p>
+        <header className="registry-package-head">
+          <div className="registry-package-main">
+            <div className={`registry-package-icon${item.icon ? " custom" : ""}`} aria-hidden="true"><PackageArtwork name={item.name} kind={item.kind} icon={item.icon} size={24} /></div>
+            <div className="registry-package-identity">
+            <p className="registry-kicker">{item.kind === "standard" ? "FOO / Standard library" : `FOO / ${item.category}`}</p>
+            <div className="registry-title-line">
+              <h1>{displayPackageName(item.name)}</h1>
+              <label className="registry-version-select">
+                <span className="sr-only">Package version</span>
+                <select value={item.version} onChange={(event) => setVersion(event.target.value)}>
+                  {versions.map((entry) => <option key={entry.version} value={entry.version}>{entry.version}</option>)}
+                </select>
+              </label>
+            </div>
+            <p className="registry-package-description">{item.description}</p>
+            </div>
           </div>
-          <label className="self-start">
-            <span className="sr-only">Package version</span>
-            <select className="rounded-lg border border-[#32747A] bg-[#112628] px-2.5 py-1.5 font-mono text-xs text-[#60D5DF] outline-none" value={item.version} onChange={(event) => setVersion(event.target.value)}>
-              {versions.map((entry) => <option key={entry.version} value={entry.version}>{entry.version}</option>)}
-            </select>
-          </label>
-        </div>
-        <div className="mt-5 flex flex-wrap gap-1.5">
-          {item.tags.map((tag) => <button key={tag} className="rounded-lg border border-[#292929] bg-[#141414] px-2 py-1 font-mono text-[10px] text-[#777] hover:text-[#60D5DF]" type="button" onClick={() => onTag(tag)}>{tag}</button>)}
-        </div>
-      </header>
-
-      {item.deprecated && (
-        <div className="mt-4 flex items-start gap-2 border-l-2 border-[#b78b2f] bg-[#17140d] px-3 py-2 text-xs text-[#c8ad73]">
-          <AlertTriangle className="mt-0.5 shrink-0" size={13} />
-          <span>{item.deprecated}</span>
-        </div>
-      )}
-
-      <div className="grid gap-3 py-7 md:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-xl border border-[#292929] bg-[#111] p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-[10px] font-semibold tracking-[0.14em] text-[#777] uppercase">{item.kind === "standard" ? "Import" : "Install"}</h2>
-            <span className="flex items-center gap-1.5 text-[10px] text-[#4EABB3]"><ShieldCheck size={11} /> Compatible</span>
+          <div className="registry-install">
+            <span>{item.kind === "standard" ? "IMPORT" : "INSTALL"}</span>
+            <div><code>{item.install}</code><button type="button" onClick={() => void copy(item.install, "install")} title="Copy install command" aria-label="Copy install command">{copied === "install" ? <Check size={15} /> : <Copy size={15} />}</button></div>
           </div>
-          <button className="flex w-full items-center justify-between rounded-lg border border-[#2b2b2b] bg-[#090909] px-3 py-2.5 text-left font-mono text-xs text-[#d6d6d6] hover:border-[#32747A]" type="button" onClick={() => void copy()} title="Copy install command">
-            <span>{item.install}</span>
-            {copied ? <Check size={14} className="text-[#60D5DF]" /> : <Copy size={14} className="text-[#666]" />}
-          </button>
-        </section>
-        <section className="rounded-xl border border-[#292929] bg-[#111] p-4">
-          <h2 className="text-[10px] font-semibold tracking-[0.14em] text-[#777] uppercase">Source</h2>
-          <a className="mt-4 flex items-center justify-between text-xs text-[#aaa] no-underline hover:text-[#60D5DF]" href={item.repository} target="_blank" rel="noreferrer">
-            <span className="flex items-center gap-2"><GitFork size={14} /> {item.owner.login}</span>
-            <ExternalLink size={13} />
-          </a>
-        </section>
-      </div>
-
-      <div className="grid gap-9 border-t border-[#242424] py-7 lg:grid-cols-[minmax(0,1fr)_220px]">
-        <section>
-          <h2 className="text-[10px] font-semibold tracking-[0.14em] text-[#777] uppercase">About</h2>
-          <div ref={readmePreviewRef} className={`package-readme-preview docs-prose ${readmeOverflow ? "is-truncated" : ""}`}>
-            <Markdown source={readme} />
-          </div>
-          {readmeOverflow && <button ref={readmeButtonRef} className="package-readme-more" type="button" aria-haspopup="dialog" aria-expanded={readmeOpen} onClick={() => setReadmeOpen(true)}><Maximize2 size={12} /> See more</button>}
-        </section>
-        <aside className="border-t border-[#242424] pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
-          <h2 className="text-[10px] font-semibold tracking-[0.14em] text-[#777] uppercase">Metadata</h2>
-          <dl className="mt-4 space-y-3 text-[11px]">
-            <div className="flex justify-between"><dt className="text-[#5f5f5f]">License</dt><dd className="font-mono text-[#aaa]">{item.license}</dd></div>
-            <div className="flex justify-between"><dt className="text-[#5f5f5f]">Updated</dt><dd className="font-mono text-[#aaa]">{date(item.updated)}</dd></div>
-          </dl>
-        </aside>
-      </div>
-
-      <section className="border-t border-[#242424] py-7">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-[#777] uppercase"><Braces size={12} /> Public API</h2>
-            <p className="mt-2 text-xs text-[#666]">{apiCount} public {apiCount === 1 ? "item" : "items"} across {item.api?.modules.length ?? 0} {(item.api?.modules.length ?? 0) === 1 ? "module" : "modules"}</p>
-          </div>
-          <label className="relative block w-full sm:w-64">
-            <Search className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[#5f5f5f]" size={13} />
-            <span className="sr-only">Search this package API</span>
-            <input className="h-9 w-full rounded-lg border border-[#292929] bg-[#101010] pr-3 pl-8 font-mono text-[11px] text-[#ddd] outline-none placeholder:text-[#555] focus:border-[#32747A]" type="search" value={apiQuery} onChange={(event) => setApiQuery(event.target.value)} placeholder="Search functions and types" />
-          </label>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-1" role="group" aria-label="Public API kind">
-          {(["all", "function", "type", "constant", "value"] as const).map((kind) => (
-            <button key={kind} className={`rounded border px-2 py-1 font-mono text-[8px] capitalize ${apiKind === kind ? "border-[#32747A] bg-[#112628] text-[#60D5DF]" : "border-[#292929] text-[#666] hover:text-[#bbb]"}`} type="button" onClick={() => setApiKind(kind)}>{kind}</button>
-          ))}
-        </div>
-
-        {apiModules.length ? (
-          <div className="mt-5 divide-y divide-[#242424] border-y border-[#242424]">
-            {apiModules.map((module) => (
-              <section key={module.path} className="grid gap-4 py-5 md:grid-cols-[180px_minmax(0,1fr)]">
-                <header>
-                  <h3 className="font-mono text-xs font-semibold text-[#d8d8d8]">{displayPackageName(module.name)}</h3>
-                  <p className="mt-1 break-all font-mono text-[9px] text-[#555]">{module.path}</p>
-                  {module.summary && <p className="mt-3 text-[11px] leading-5 text-[#777]">{module.summary}</p>}
-                </header>
-                <div className="min-w-0 divide-y divide-[#202020]">
-                  {module.items.map((entry) => (
-                    <article key={`${entry.kind}:${entry.name}:${entry.declaration}`} className="py-3 first:pt-0 last:pb-0">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded border border-[#285A5E] bg-[#102124] px-1.5 py-0.5 font-mono text-[8px] text-[#4EABB3] uppercase">{entry.kind}</span>
-                        <h4 className="font-mono text-xs text-[#ededed]">{entry.name}</h4>
-                      </div>
-                      <pre className="mt-2 overflow-x-auto rounded-md bg-[#0b0b0b] px-3 py-2 font-mono text-[10px] leading-5 text-[#aaa]"><code>{entry.declaration}</code></pre>
-                      {entry.documentation && <p className="mt-2 text-[11px] leading-5 text-[#777]">{entry.documentation}</p>}
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        ) : <p className="mt-5 border-y border-[#242424] py-6 text-xs text-[#5f5f5f]">{normalizedApiQuery ? "No public API items match this search." : "This release exposes no indexed public API."}</p>}
-      </section>
-
-      <section className="border-t border-[#242424] py-6">
-        <h2 className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-[#777] uppercase"><Network size={12} /> Dependency graph</h2>
-        {item.dependencies.length ? (
-          <div className="mt-4 divide-y divide-[#222] border-y border-[#222]">
-            {item.dependencies.map((dependency) => <div key={dependency.name} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 py-2.5 font-mono text-xs"><span className="text-[#555]">{displayPackageName(item.name)} <span className="text-[#60D5DF]">-&gt;</span> <span className="text-[#d4d4d4]">{displayPackageName(dependency.name)}</span></span><span className="text-[9px] text-[#666]">{dependency.kind ?? "runtime"}</span><span className="text-[#777]">{dependency.version}</span></div>)}
-          </div>
-        ) : <p className="mt-4 text-xs text-[#5f5f5f]">No runtime dependencies.</p>}
-      </section>
-
-      <div className="grid border-t border-[#242424] md:grid-cols-2 md:divide-x md:divide-[#242424]">
-        <section className="py-6 md:pr-6">
-          <h2 className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-[#777] uppercase"><ShieldCheck size={12} /> Platform compatibility</h2>
-          <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-[#242424] bg-[#242424]">
-            {["linux", "macos", "windows", "wasm"].map((platform) => {
-              const supported = item.platforms.includes("all") || item.platforms.includes(platform);
-              return <div key={platform} className="flex items-center justify-between bg-[#101010] px-3 py-2 text-[11px]"><span className="capitalize text-[#888]">{platform}</span>{supported ? <CheckCircle2 size={12} className="text-[#4EABB3]" /> : <XCircle size={12} className="text-[#4f4f4f]" />}</div>;
-            })}
-          </div>
-        </section>
-        <section className="border-t border-[#242424] py-6 md:border-t-0 md:pl-6">
-          <h2 className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.14em] text-[#777] uppercase"><GitCompare size={12} /> Version history</h2>
-          <div className="mt-4 space-y-2">
-            {versions.map((entry) => <button key={entry.version} className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left ${entry.version === item.version ? "bg-[#112628] text-[#60D5DF]" : "text-[#777] hover:bg-[#141414]"}`} type="button" onClick={() => setVersion(entry.version)}><span className="font-mono text-[11px]">{entry.version}</span><span className="text-[9px]">{entry.updated}</span></button>)}
-          </div>
-          <div className="mt-4 border-t border-[#222] pt-3">
-            {changes.map((change) => <p key={change} className="mt-1 text-[10px] text-[#777]"><span className="mr-2 text-[#60D5DF]">+</span>{change}</p>)}
-          </div>
-        </section>
-      </div>
-    </article>
-    <dialog
-      ref={readmeDialogRef}
-      className="package-readme-dialog"
-      aria-labelledby="package-readme-title"
-      onClose={() => {
-        setReadmeOpen(false);
-        requestAnimationFrame(() => readmeButtonRef.current?.focus());
-      }}
-      onClick={(event) => { if (event.target === event.currentTarget) setReadmeOpen(false); }}
-    >
-      <div className="package-readme-modal">
-        <header>
-          <div>
-            <p>Package README</p>
-            <h2 id="package-readme-title">{displayPackageName(item.name)} <span>{item.version}</span></h2>
-          </div>
-          <button type="button" onClick={() => setReadmeOpen(false)} title="Close README" aria-label="Close README"><X size={16} /></button>
         </header>
-        <div className="package-readme-body docs-prose">
-          <Markdown source={readme} />
-        </div>
-      </div>
-    </dialog>
+
+        {item.deprecated && <p className="registry-warning"><AlertTriangle size={15} />{item.deprecated}</p>}
+
+        <nav className="registry-view-tabs" aria-label="Package views">{views.map((option) => <button key={option.id} type="button" className={view === option.id ? "active" : ""} aria-current={view === option.id ? "page" : undefined} onClick={() => navigateView(option.id)}><option.icon size={14} /><span>{option.label}</span></button>)}</nav>
+
+        {view === "api" && <div className="registry-detail-grid registry-cards-view">
+          <section className="registry-api-view">
+            <div className="registry-section-heading"><div><h2>Public surface</h2><p className="registry-muted">{matches.length} of {rows.length} symbols</p></div></div>
+            <div className="registry-api-tools">
+              <label className="registry-api-search"><Search size={15} /><span className="sr-only">Search this package API</span><input type="search" value={apiQuery} onChange={(event) => setApiQuery(event.target.value)} placeholder="Find a symbol or signature" /></label>
+              <div className="registry-kind-control" role="group" aria-label="API symbol kind">{kinds.map((kind) => <button key={kind} type="button" className={apiKind === kind ? "active" : ""} aria-pressed={apiKind === kind} onClick={() => setApiKind(kind)}>{kind}</button>)}</div>
+            </div>
+            {matches.length ? <div className="registry-symbol-masonry">{matches.map((row) => <SymbolCard key={row.id} row={row} onOpen={(button) => { triggerRef.current = button; navigateView("api", row.id); }} />)}</div>
+              : <p className="registry-api-empty">{rows.length ? "No symbols match these filters." : "This release has no indexed public symbols."}</p>}
+          </section>
+          <aside className="registry-facts" aria-label="Package details">
+            <h2>Package details</h2>
+            <dl>
+              <div><dt>License</dt><dd>{item.license}</dd></div>
+              <div><dt>Updated</dt><dd>{date(item.updated)}</dd></div>
+              <div><dt>Platforms</dt><dd>{item.platforms.join(", ") || "Unspecified"}</dd></div>
+              <div><dt>Compatibility</dt><dd>{item.compatible ? "Compatible" : "Not verified"}</dd></div>
+            </dl>
+            <a href={item.repository} target="_blank" rel="noreferrer"><GitFork size={14} />{item.owner.login}<ExternalLink size={13} /></a>
+            {item.tags.length > 0 && <div className="registry-tags">{item.tags.map((tag) => <button key={tag} type="button" onClick={() => onTag(tag)}>{tag}</button>)}</div>}
+            {item.dependencies.length > 0 && <div className="registry-dependencies"><h3>Dependencies</h3>{item.dependencies.map((dependency) => <div key={`${dependency.name}:${dependency.kind}`}><span>{dependency.name}</span><code>{dependency.version}</code></div>)}</div>}
+          </aside>
+        </div>}
+
+        {view === "docs" && <div className="registry-docs-view">
+          {selected && <section className="registry-full-reference">
+            <div className="registry-section-heading"><div><p className="registry-kicker">{selected.module} / {selected.entry.kind}</p><h2>{selected.entry.name}</h2></div><button type="button" onClick={() => navigateView("api", selected.id)}>API index <ArrowRight size={15} /></button></div>
+            <SymbolReference row={selected} packageItem={item} copied={copied} onCopy={copy} onSource={openSource} showSource />
+          </section>}
+          <section className="registry-section"><p className="registry-kicker">Package documentation</p><h2>{displayPackageName(item.name)} README</h2>
+            {readme ? <div className="docs-prose registry-readme"><Markdown source={readme} /></div> : <p className="registry-muted">No README was published for this release.</p>}
+          </section>
+        </div>}
+
+        {view === "source" && <section className="registry-source-view">
+          <div className="registry-section-heading"><div><h2>Source code</h2><p className="registry-muted">{item.source.files.length} {item.source.files.length === 1 ? "file" : "files"} in this release</p></div></div>
+          {item.source.files.length ? <div className="registry-source-grid">{item.source.files.map((file) => <button key={file.path} className="registry-source-card" type="button" onClick={(event) => openSource(file.path, event.currentTarget)}><span><FileCode2 size={18} /><ArrowRight size={14} /></span><strong>{file.path}</strong><small>{file.content.split(/\r?\n/).length} lines</small></button>)}</div>
+            : <p className="registry-muted">No source files were published for this release.</p>}
+        </section>}
+
+        {view === "releases" && <div className="registry-releases-view">
+          <div className="registry-section-heading"><div><p className="registry-kicker">Release history</p><h2>Versions</h2></div></div>
+          <div className="registry-release-list">{versions.map((entry) => <button key={entry.version} type="button" className={item.version === entry.version ? "active" : ""} onClick={() => setVersion(entry.version)}><span><strong>{entry.version}</strong><small>{entry.deprecated || (entry.version === item.version ? "Selected release" : "")}</small></span><span>{date(entry.updated)}</span><ChevronRight size={15} /></button>)}</div>
+          <section className="registry-section"><p className="registry-kicker">Compared with previous release</p><h2>Indexed changes</h2>{changes.map((change) => <p className="registry-change" key={change}>{change}</p>)}</section>
+        </div>}
+      </article>
+
+      <dialog ref={dialogRef} className="registry-symbol-dialog" aria-labelledby="registry-symbol-title" onCancel={(event) => { event.preventDefault(); closeSymbol(); }} onClick={(event) => { if (event.target === event.currentTarget) closeSymbol(); }}>
+        {selected && <div className="registry-symbol-sheet">
+          <header><div><p className="registry-kicker">{selected.module} / {selected.entry.kind}</p><h2 id="registry-symbol-title">{selected.entry.name}</h2></div><button type="button" onClick={closeSymbol} title="Close symbol detail" aria-label="Close symbol detail"><X size={18} /></button></header>
+          <div className="registry-symbol-body"><SymbolReference row={selected} packageItem={item} copied={copied} onCopy={copy} onSource={openSource} /></div>
+          <footer><button type="button" onClick={() => navigateView("docs", selected.id)}><FileCode2 size={15} /> Full reference <ArrowRight size={15} /></button></footer>
+        </div>}
+      </dialog>
+      <dialog ref={sourceDialogRef} className="registry-source-dialog" aria-labelledby="registry-source-dialog-title" onCancel={(event) => { event.preventDefault(); closeSource(); }} onClick={(event) => { if (event.target === event.currentTarget) closeSource(); }}>
+        {selectedSource && <div className="registry-source-popup"><header><div><p className="registry-kicker">Source file</p><h2 id="registry-source-dialog-title">{selectedSource.path}</h2></div><button type="button" onClick={closeSource} title="Close source file" aria-label="Close source file"><X size={18} /></button></header><div className="registry-source-popup-code"><Code code={selectedSource.content} language="foo" /></div></div>}
+      </dialog>
     </>
   );
+}
+
+function SymbolCard({ row, onOpen }: { row: ApiRow; onOpen: (button: HTMLButtonElement) => void }) {
+  return <button className="registry-symbol-card" type="button" onClick={(event) => onOpen(event.currentTarget)}>
+    <span className="registry-symbol-card-top"><span className="registry-symbol-kind">{row.entry.kind}</span><ChevronRight size={14} /></span>
+    <strong>{row.entry.name}</strong>
+    <span className="registry-symbol-card-description">{row.entry.documentation || row.entry.declaration}</span>
+    <span className="registry-symbol-card-module">{displayPackageName(row.module)}</span>
+  </button>;
+}
+
+function SymbolReference({ row, packageItem, copied, onCopy, onSource, showSource = false }: {
+  row: ApiRow;
+  packageItem: Package;
+  copied: string;
+  onCopy: (value: string, key: string) => Promise<void>;
+  onSource: (path: string) => void;
+  showSource?: boolean;
+}) {
+  const example = readmeExample(packageItem.readme.join("\n"), row.entry.name);
+  const source = packageItem.source.files.find((file) => file.path === row.path);
+  const excerpt = source && sourceExcerpt(source.content, row.entry);
+  return <div className="registry-reference">
+    <section><div className="registry-reference-label"><h3>Declaration</h3><button type="button" title="Copy signature" aria-label="Copy signature" onClick={() => void onCopy(row.entry.declaration, `signature:${row.id}`)}>{copied === `signature:${row.id}` ? <Check size={15} /> : <Copy size={15} />}</button></div><pre><code>{row.entry.declaration}</code></pre></section>
+    <section><h3>Notes</h3><p>{row.entry.documentation || "No additional notes were published for this symbol."}</p></section>
+    {example && <section><div className="registry-reference-label"><h3>Example from README</h3><button type="button" title="Copy example" aria-label="Copy example" onClick={() => void onCopy(example.code, `example:${row.id}`)}>{copied === `example:${row.id}` ? <Check size={15} /> : <Copy size={15} />}</button></div><pre><code>{example.code}</code></pre></section>}
+    <section><h3>Source</h3><p className="registry-source-path">{row.path}</p>{!showSource && excerpt && <div className="registry-source-excerpt"><h4>Source excerpt</h4><Code code={excerpt} language="foo" /></div>}{source && <button className="registry-open-source" type="button" onClick={() => onSource(source.path)}>{showSource ? "Open source file" : "View full source"}<ArrowRight size={13} /></button>}</section>
+  </div>;
+}
+
+function readmeExample(readme: string, name: string) {
+  const blocks = [...readme.matchAll(/```([\w-]*)\s*\r?\n([\s\S]*?)```/g)];
+  const match = blocks.find((block) => block[2].includes(name));
+  return match ? { code: match[2].trim() } : undefined;
+}
+
+function sourceExcerpt(content: string, entry: PublicApiItem) {
+  const lines = content.split(/\r?\n/);
+  const lead = entry.declaration.split("\n")[0].replace(/\s*[.{]\s*$/, "").slice(0, 50);
+  const start = lines.findIndex((line) => line.trimStart().startsWith(lead));
+  if (start < 0) return "";
+  let end = start + 1;
+  while (end < lines.length && end < start + 45 && !/^public\s+(?:use\s+"[^"]+"\s+)?(?:function|define|constant|dynamic)\b/.test(lines[end].trimStart())) end += 1;
+  return lines.slice(start, end).join("\n").trim();
+}
+
+function locationView(): View {
+  const params = new URLSearchParams(window.location.search);
+  const value = params.get("view");
+  if (value === "docs" || value === "source" || value === "releases") return value;
+  return "api";
 }
 
 function differences(current: Package, previous: Package) {

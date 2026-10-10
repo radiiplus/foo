@@ -210,6 +210,32 @@ and continuous build artifacts are useful.
 
 ## Build backends
 
+Build tasks can generate a record from structured values before compilation:
+
+```json
+{
+  "build": {
+    "tasks": {
+      "schema": {
+        "kind": "record",
+        "output": "schema.iv",
+        "values": {
+          "name": "Schema",
+          "fields": [
+            { "name": "id", "type": "unsigned" },
+            { "name": "ready", "type": "boolean" }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+The task validates identifiers and primitive field types, writes under
+`.artifacts/build/generated/`, and generated source is parsed and checked
+when imported like any other FOO module.
+
 ```sh
 foo check
 foo build --backend zig
@@ -220,6 +246,15 @@ foo run --explain
 The default output shows meaningful stages, job count, cache reuse, elapsed
 time, and the selected fast or compatibility path. `--explain` adds diagnostic
 detail without dumping every backend command.
+The progress bar counts completed source checks, product builds, test runs, and
+benchmark samples according to the selected command. Its ETA uses the planned
+work and adjusts as jobs finish; it is an estimate, especially for the first
+long compilation. A completed command reaches 100%, while a failed command
+keeps the progress reached before the failure. `--json` includes numeric
+progress counts, percentage, and estimated remaining seconds in each progress
+event.
+Completed noncached work updates per-project timing estimates in
+`.artifacts/progress.json`; cache hits do not replace cold-build timings.
 
 Completed products are written to `output/` by default:
 

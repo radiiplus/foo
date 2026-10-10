@@ -1,0 +1,40 @@
+use "../../lib/topology.iv" as cpu.
+use task as jobs.
+use testing as check.
+
+function invalid(index unsigned) giving failable boolean {
+  constant placement is cpu.pin(index) try.
+  cpu.restore(placement) try.
+  give false.
+}
+
+function repeated(value pointer to cpu.placement) giving failable boolean {
+  cpu.restore(value) try.
+  give false.
+}
+
+test "logical processors and scoped affinity" {
+  check.expect((cpu.count try) greater than 0).
+  constant original is cpu.current try.
+  constant placement is cpu.pin(original) try.
+  check.number(cpu.current try, original).
+  cpu.restore(placement) try.
+  check.expect(repeated(placement) fallback true).
+  check.expect(invalid(999999) fallback true).
+  check.expect(jobs.affinity(999999) is false).
+}
+
+test "NUMA node discovery and placement" {
+  check.expect((cpu.nodes try) greater than 0).
+  constant original is cpu.current try.
+  constant home is cpu.node(original) try.
+  check.expect(home less than (cpu.nodes try)).
+  constant placement is cpu.place(home) try.
+  check.number(cpu.node(cpu.current try) try, home).
+  cpu.restore(placement) try.
+}
+
+test "calling thread has allowed processors" {
+  check.expect((cpu.allowed try) greater than 0).
+  check.expect((cpu.allowed try) less than or equal to (cpu.count try)).
+}

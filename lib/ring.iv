@@ -1,0 +1,13 @@
+-- Owned bounded byte ring. Calls may be shared across threads; synchronize close.
+public define ring as opaque.
+-- Capacity must be positive. Push returns false when full; pop fails when empty.
+public use "ring" function create(capacity unsigned) giving failable pointer to ring.
+public use "ring" function push(value pointer to ring, item byte) giving failable boolean.
+public use "ring" function prepend(value pointer to ring, item byte) giving failable boolean.
+public use "ring" function pop(value pointer to ring) giving failable byte.
+public use "ring" function remove(value pointer to ring) giving failable byte.
+public use "ring" function first(value pointer to ring) giving failable byte.
+public use "ring" function last(value pointer to ring) giving failable byte.
+public use "ring" function length(value pointer to ring) giving failable unsigned.
+public use "ring" function capacity(value pointer to ring) giving failable unsigned.
+public use "ring" function close(value pointer to ring) giving failable nothing.

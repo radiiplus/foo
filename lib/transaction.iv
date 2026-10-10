@@ -1,11 +1,11 @@
 -- Coordinates one-process transactions with rollback on propagated failure.
-public define Participant as record {
+public define participant as record {
   prepare of type function giving failable nothing.
   commit of type function giving failable nothing.
   rollback of type function giving nothing.
 }.
-public function execute(participant Participant, work function giving failable nothing) giving failable nothing {
-  constant Participant(prepare, commit, rollback) is participant.
+public function execute(handler participant, work function giving failable nothing) giving failable nothing {
+  constant participant(prepare, commit, rollback) is handler.
   prepare try.
   after error {
     rollback.

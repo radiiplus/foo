@@ -1,8 +1,8 @@
 # Types and Values
 
-FOO checks types before a program runs. A text value cannot accidentally become
-an integer, and a failable result (one that can contain either a value or an
-error) cannot be ignored.
+What happens if a program tries to use text as a number? FOO catches the
+mismatch before the program runs. Types also show when an operation can fail,
+so the caller has to handle that possibility.
 
 ## Primitive types (basic built-in kinds of values)
 
@@ -124,7 +124,7 @@ Records and choices define application-specific data. They are covered in
 ## Domain types instead of raw numbers
 
 Use a record when two values share a machine representation but have different
-meanings. The `time` module does this with `Instant` and `Duration`:
+meanings. The `time` module does this with `instant` and `duration`:
 
 ```foo
 use time as clock.
@@ -133,7 +133,7 @@ constant delay is clock.seconds(2).
 clock.wait(delay) try.
 ```
 
-`clock.wait` requires a `Duration`; it does not accept an unrelated raw count.
+`clock.wait` requires a `duration`; it does not accept an unrelated raw count.
 Use `nanos`, `millis`, or `seconds` at the boundary where the unit is known.
 This pattern also works for identifiers, distances, and prices.
 

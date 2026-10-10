@@ -1,0 +1,36 @@
+use resource as usage.
+use sequence as items.
+use task as jobs.
+use time as clock.
+use testing as check.
+
+function pause(value integer) giving nothing for c {
+  when value is 0 { clock.sleep(200000000) fallback nothing. }
+}
+
+test "live heap and task accounting" {
+  constant initial is usage.heap.
+  constant bytes is items.sized[byte](96) try.
+  check.expect(usage.heap greater than or equal to initial plus 96).
+  items.release[byte](bytes) try.
+  check.expect(usage.heap is initial).
+
+  constant work is usage.tasks.
+  constant scope is jobs.scope try.
+  check.expect(jobs.launch(scope, pause, 0)).
+  check.expect(usage.tasks greater than work).
+  jobs.join(scope).
+  check.expect(usage.tasks is work).
+
+  constant pool is jobs.pool try.
+  dynamic index of type unsigned is 0.
+  while index less than 64 {
+    check.expect(jobs.submit(pool, pause, 0)).
+    increase index by 1.
+  }
+  check.expect(usage.tasks greater than or equal to 64).
+  when jobs.backend is not 0 { check.expect(usage.pending greater than 0). }
+  jobs.wait(pool).
+  check.expect(usage.tasks is work).
+  check.expect(usage.pending is 0).
+}

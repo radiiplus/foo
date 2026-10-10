@@ -3,9 +3,9 @@ import std/sets
 import std/strutils
 
 let libraries = toHashSet([
-  "arch", "atomic", "buffer", "codec", "compress", "crypto", "http", "json",
+  "arch", "atomic", "binary", "buffer", "checksum", "codec", "compress", "cpu", "topology", "platform", "crypto", "gpu", "vulkan", "http", "json",
   "system", "testing", "unicode", "list", "memory", "stream", "sequence", "table",
-  "io", "fs", "net", "process", "thread", "time", "text"
+  "io", "fs", "vm", "net", "tls", "process", "resource", "ring", "bloom", "dylib", "thread", "time", "timer", "text", "metric", "trace", "limit"
 ])
 
 proc binding*(name: string): Option[string] =

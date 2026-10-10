@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.7.0 - 2026-10-09
+
+- Package the updated FOO language grammar and editor integration for the 0.8.0 release.
+
 ## 2.6.2 - 2026-10-02
 
 - Highlight machine clauses and exact-access modifiers in declarations.

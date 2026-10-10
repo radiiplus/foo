@@ -1,0 +1,45 @@
+-- A structured error description. Text fields borrow their source storage.
+public define issue as record {
+  category of type text.
+  operation of type text.
+  cause of type text.
+  context of type text.
+}.
+
+public function create(category text, operation text, cause text, context text) giving issue {
+  give issue(category, operation, cause, context).
+}
+
+public function wrap(value issue, operation text, context text) giving issue {
+  give issue(value.category, operation, value.cause, context).
+}
+
+-- Frames borrow their text fields. The trail owns only the frame sequence.
+use sequence as items.
+public define trail as record {
+  frames of type sequence of issue.
+}.
+
+public function begin(value issue) giving failable trail {
+  constant frames is items.sized[issue](1) try.
+  set frames at 0 to value.
+  give trail(frames).
+}
+
+public function push(value trail, frame issue) giving failable trail {
+  give trail(items.append[issue](value.frames, frame) try).
+}
+
+public function length(value trail) giving unsigned {
+  give items.length[issue](value.frames).
+}
+
+public function frame(value trail, index unsigned) giving failable issue {
+  when index greater than or equal to length(value) { give fail(Error.Bounds). }
+  give value.frames at index.
+}
+
+public function release(value trail) giving failable nothing {
+  items.release[issue](value.frames) try.
+  give nothing.
+}

@@ -1,16 +1,233 @@
--- Opens TCP connections and transfers bytes with explicit connection lifetimes.
-public define Connection as opaque.
-public use "net" function connect(host text, port unsigned) giving failable pointer to Connection.
-public use "net" function listen(host text, port unsigned) giving failable pointer to Connection.
-public use "net" function accept(listener pointer to Connection) giving failable pointer to Connection.
-public use "net" function port(listener pointer to Connection) giving failable unsigned.
+-- Opens TCP connections and UDP sockets with explicit resource lifetimes.
+use text as words.
+public define connection as opaque.
+public define endpoint as record {
+  host of type text.
+  port of type unsigned.
+}.
+public define address4 as record {
+  bits of type unsigned 32.
+}.
+public define address6 as record {
+  high of type unsigned.
+  low of type unsigned.
+}.
+public define endpoint4 as record {
+  ip of type address4.
+  port of type unsigned.
+}.
+public define endpoint6 as record {
+  ip of type address6.
+  port of type unsigned.
+  scope of type unsigned.
+}.
+public define datagram as opaque.
+public define packet as opaque.
+use "net" function parse4(host text) giving failable unsigned 32.
+use "net" function parse6high(host text) giving failable unsigned.
+use "net" function parse6low(host text) giving failable unsigned.
+use "net" function format4(bits unsigned 32) giving failable text.
+use "net" function format6(high unsigned, low unsigned) giving failable text.
+public function ipv4(host text) giving failable address4 {
+  give address4(parse4(host) try).
+}
+public function ipv6(host text) giving failable address6 {
+  give address6(parse6high(host) try, parse6low(host) try).
+}
+public function numeric4(ip address4) giving failable text {
+  give format4(ip.bits) try.
+}
+public function numeric6(ip address6) giving failable text {
+  give format6(ip.high, ip.low) try.
+}
+public function socket4(ip address4, port unsigned) giving endpoint4 {
+  give endpoint4(ip, port).
+}
+public function socket6(ip address6, port unsigned) giving endpoint6 {
+  give endpoint6(ip, port, 0).
+}
+public function scoped6(ip address6, port unsigned, scope unsigned) giving endpoint6 {
+  give endpoint6(ip, port, scope).
+}
+public function address(host text, port unsigned) giving endpoint {
+  give endpoint(host, port).
+}
+-- Returns a numeric IPv4 or IPv6 address owned by the caller. Release it with text.release.
+-- Family is "any", "ipv4", or "ipv6".
+public use "net" function lookup(host text, family text) giving failable text.
+public function resolve(host text, port unsigned, family text) giving failable endpoint {
+  give endpoint(lookup(host, family) try, port).
+}
+public function dial(target endpoint) giving failable pointer to connection {
+  give connect(target.host, target.port) try.
+}
+public function serve(target endpoint) giving failable pointer to connection {
+  give listen(target.host, target.port) try.
+}
+public function dial4(target endpoint4) giving failable pointer to connection {
+  constant host is numeric4(target.ip) try.
+  after { words.release(host) fallback nothing. }
+  give connect(host, target.port) try.
+}
+public function dial6(target endpoint6) giving failable pointer to connection {
+  give establish(target.ip.high, target.ip.low, target.port, target.scope) try.
+}
+public function serve4(target endpoint4) giving failable pointer to connection {
+  constant host is numeric4(target.ip) try.
+  after { words.release(host) fallback nothing. }
+  give listen(host, target.port) try.
+}
+public function serve6(target endpoint6) giving failable pointer to connection {
+  give host(target.ip.high, target.ip.low, target.port, target.scope) try.
+}
+use "net" function establish(high unsigned, low unsigned, port unsigned, scope unsigned) giving failable pointer to connection.
+use "net" function host(high unsigned, low unsigned, port unsigned, scope unsigned) giving failable pointer to connection.
+public use "net" function connect(host text, port unsigned) giving failable pointer to connection.
+public use "net" function listen(host text, port unsigned) giving failable pointer to connection.
+public use "net" function accept(listener pointer to connection) giving failable pointer to connection.
+public use "net" function port(listener pointer to connection) giving failable unsigned.
 -- Borrows the platform's native socket. It is valid only while the connection stays open.
-public use "net" function handle(connection pointer to Connection) giving failable unsigned.
-public use "net" function send(connection pointer to Connection, content text) giving failable unsigned.
-public use "net" function receive(connection pointer to Connection, size unsigned) giving failable text.
+public use "net" function handle(connection pointer to connection) giving failable unsigned.
+public use "net" function send(connection pointer to connection, content text) giving failable unsigned.
+public use "net" function receive(connection pointer to connection, size unsigned) giving failable text.
 -- Advanced socket controls. push may write fewer bytes than requested.
-public use "net" function push(connection pointer to Connection, content text) giving failable unsigned.
-public use "net" function shutdown(connection pointer to Connection, direction text) giving failable nothing.
-public use "net" function nodelay(connection pointer to Connection, enabled boolean) giving failable nothing.
-public use "net" function keepalive(connection pointer to Connection, enabled boolean) giving failable nothing.
-public use "net" function close(connection pointer to Connection) giving failable nothing.
+public use "net" function push(connection pointer to connection, content text) giving failable unsigned.
+public use "net" function shutdown(connection pointer to connection, direction text) giving failable nothing.
+public use "net" function latency(connection pointer to connection, enabled boolean) giving failable nothing.
+public use "net" function probe(connection pointer to connection, enabled boolean) giving failable nothing.
+-- Sets a TCP send or receive timeout in milliseconds (0..2147483647).
+-- Zero disables it; the result reports the effective OS value.
+public use "net" function timeout(connection pointer to connection, direction text, milliseconds unsigned) giving failable unsigned.
+-- Sets or queries a TCP socket's send or receive buffer; the OS may adjust its size.
+use "net" function supply(connection pointer to connection, direction text, size unsigned) giving failable unsigned.
+public function provision(socket pointer to connection, direction text, size unsigned) giving failable unsigned {
+  give supply(socket, direction, size) try.
+}
+use "net" function allocated(connection pointer to connection, direction text) giving failable unsigned.
+public function allocation(socket pointer to connection, direction text) giving failable unsigned {
+  give allocated(socket, direction) try.
+}
+-- Sets the IPv4 TTL or IPv6 unicast hop limit (1..255) and returns the effective value.
+use "net" function expire(connection pointer to connection, hops unsigned) giving failable unsigned.
+public function lifetime(socket pointer to connection, hops unsigned) giving failable unsigned {
+  give expire(socket, hops) try.
+}
+-- Sets the IPv4 TOS or IPv6 traffic class (0..255) and returns the effective value.
+use "net" function classify(connection pointer to connection, value unsigned) giving failable unsigned.
+public function priority(socket pointer to connection, value unsigned) giving failable unsigned {
+  give classify(socket, value) try.
+}
+public use "net" function close(connection pointer to connection) giving failable nothing.
+-- Binds a UDP socket. Port zero requests an ephemeral local port.
+public use "net" function bind(host text, port unsigned) giving failable pointer to datagram.
+public use "net" function local(socket pointer to datagram) giving failable unsigned.
+-- Selects an IPv4 UDP egress interface by OS adapter index. Zero clears it.
+public use "net" function egress(socket pointer to datagram, index unsigned) giving failable nothing.
+use "net" function affiliate(socket pointer to datagram, host text, port unsigned) giving failable nothing.
+public function associate(socket pointer to datagram, target endpoint) giving failable nothing {
+  affiliate(socket, target.host, target.port) try.
+}
+use "net" function affiliate6(socket pointer to datagram, high unsigned, low unsigned, port unsigned, scope unsigned) giving failable nothing.
+public function connect4(socket pointer to datagram, target endpoint4) giving failable nothing {
+  constant host is numeric4(target.ip) try.
+  after { words.release(host) fallback nothing. }
+  affiliate(socket, host, target.port) try.
+}
+public function connect6(socket pointer to datagram, target endpoint6) giving failable nothing {
+  affiliate6(socket, target.ip.high, target.ip.low, target.port, target.scope) try.
+}
+use "net" function submit(socket pointer to datagram, content sequence of constant byte) giving failable unsigned.
+public function emit(socket pointer to datagram, content sequence of constant byte) giving failable unsigned {
+  give submit(socket, content) try.
+}
+public use "net" function broadcast(socket pointer to datagram, enabled boolean) giving failable nothing.
+-- Returns the effective unicast hop limit after setting it (1..255).
+public use "net" function unicast(socket pointer to datagram, hops unsigned) giving failable unsigned.
+-- Sets the IPv4 TOS or IPv6 traffic class (0..255) and returns its effective value.
+public use "net" function traffic(socket pointer to datagram, value unsigned) giving failable unsigned.
+-- Direction is "send" or "receive"; the OS may adjust the requested size.
+public use "net" function buffer(socket pointer to datagram, direction text, size unsigned) giving failable unsigned.
+public use "net" function capacity(socket pointer to datagram, direction text) giving failable unsigned.
+-- Sets a UDP send or receive timeout in milliseconds (0..2147483647).
+-- Zero disables it; the result reports the effective OS value.
+use "net" function deadline(socket pointer to datagram, direction text, milliseconds unsigned) giving failable unsigned.
+public function expiry(socket pointer to datagram, direction text, milliseconds unsigned) giving failable unsigned {
+  give deadline(socket, direction, milliseconds) try.
+}
+use "net" function choose4(socket pointer to datagram, adapter unsigned 32) giving failable nothing.
+use "net" function choose6(socket pointer to datagram, adapter unsigned) giving failable nothing.
+use "net" function radius(socket pointer to datagram, hops unsigned) giving failable nothing.
+use "net" function recirculate(socket pointer to datagram, enabled boolean) giving failable nothing.
+public function outbound6(socket pointer to datagram, adapter unsigned) giving failable nothing {
+  choose6(socket, adapter) try.
+}
+public function hops(socket pointer to datagram, count unsigned) giving failable nothing {
+  radius(socket, count) try.
+}
+public function loop(socket pointer to datagram, enabled boolean) giving failable nothing {
+  recirculate(socket, enabled) try.
+}
+public function outbound4(socket pointer to datagram, adapter address4) giving failable nothing {
+  choose4(socket, adapter.bits) try.
+}
+use "net" function membership4(socket pointer to datagram, group unsigned 32, adapter unsigned 32, enabled boolean) giving failable nothing.
+use "net" function membership6(socket pointer to datagram, high unsigned, low unsigned, adapter unsigned, enabled boolean) giving failable nothing.
+public function join4(socket pointer to datagram, group address4, adapter address4) giving failable nothing {
+  membership4(socket, group.bits, adapter.bits, true) try.
+}
+public function leave4(socket pointer to datagram, group address4, adapter address4) giving failable nothing {
+  membership4(socket, group.bits, adapter.bits, false) try.
+}
+public function join6(socket pointer to datagram, group address6, adapter unsigned) giving failable nothing {
+  membership6(socket, group.high, group.low, adapter, true) try.
+}
+public function leave6(socket pointer to datagram, group address6, adapter unsigned) giving failable nothing {
+  membership6(socket, group.high, group.low, adapter, false) try.
+}
+-- A short send is an error; a successful send reports the whole datagram size.
+public use "net" function transmit(socket pointer to datagram, host text, port unsigned, content sequence of constant byte) giving failable unsigned.
+public function deliver(socket pointer to datagram, target endpoint, content sequence of constant byte) giving failable unsigned {
+  give transmit(socket, target.host, target.port, content) try.
+}
+public function send4(socket pointer to datagram, target endpoint4, content sequence of constant byte) giving failable unsigned {
+  constant host is numeric4(target.ip) try.
+  after { words.release(host) fallback nothing. }
+  give transmit(socket, host, target.port, content) try.
+}
+public function send6(socket pointer to datagram, target endpoint6, content sequence of constant byte) giving failable unsigned {
+  give transmit6(socket, target.ip.high, target.ip.low, target.port, target.scope, content) try.
+}
+use "net" function transmit6(socket pointer to datagram, high unsigned, low unsigned, port unsigned, scope unsigned, content sequence of constant byte) giving failable unsigned.
+-- Packet payload and sender text are borrowed until discard. Zero-length packets are valid.
+use "net" function collect(socket pointer to datagram, size unsigned) giving failable pointer to packet.
+public function capture(socket pointer to datagram, size unsigned) giving failable pointer to packet {
+  give collect(socket, size) try.
+}
+use "net" function raw(value pointer to packet) giving failable sequence of constant byte.
+use "net" function peer(value pointer to packet) giving failable text.
+public function payload(value pointer to packet) giving failable sequence of constant byte borrowing value {
+  give raw(value) try.
+}
+public function sender(value pointer to packet) giving failable text borrowing value {
+  give peer(value) try.
+}
+use "net" function peer4(value pointer to packet) giving failable unsigned 32.
+use "net" function peer6high(value pointer to packet) giving failable unsigned.
+use "net" function peer6low(value pointer to packet) giving failable unsigned.
+use "net" function zone(value pointer to packet) giving failable unsigned.
+public function sender4(value pointer to packet) giving failable endpoint4 {
+  give endpoint4(address4(peer4(value) try), source(value) try).
+}
+public function sender6(value pointer to packet) giving failable endpoint6 {
+  constant ip is address6(peer6high(value) try, peer6low(value) try).
+  give endpoint6(ip, source(value) try, zone(value) try).
+}
+use "net" function source(value pointer to packet) giving failable unsigned.
+public function origin(value pointer to packet) giving failable unsigned {
+  give source(value) try.
+}
+public use "net" function discard(value pointer to packet) giving failable nothing.
+use "net" function detach(socket pointer to datagram) giving failable nothing.
+public function dispose(socket pointer to datagram) giving failable nothing {
+  detach(socket) try.
+}

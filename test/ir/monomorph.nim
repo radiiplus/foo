@@ -1,6 +1,110 @@
-import std/sets
-import ../../src/ir/[kind, monomorph, node, print, valid]
+import std/[os, sequtils, sets]
+import ../../src/ir/[kind, monomorph, node, print, reach, valid]
+import ../../src/opt/gpu as gpuLower
+import ../../src/opt/spirv as spirvCompiler
+import ../../src/build/compiler
 
+let vectorCompiler = newCompiler(getCurrentDir(), backend = "c",
+  mode = "release", optimization = true, target = "x86_64-windows")
+let vectorModule = vectorCompiler.ir("test/library/hints.iv")
+var gpuCalls: seq[Instruction]
+for function in vectorModule.funcs:
+  for basicBlock in function.blocks:
+    for instruction in basicBlock.instrs:
+      if instruction.kind == InstrKind.Call and
+          instruction.abi == "runtime.gpu" and instruction.symbol == "prepared":
+        gpuCalls.add(instruction)
+doAssert gpuCalls.len == 5
+proc unpack(value: Value): string =
+  for item in bytes(value.name): result.add(char(item))
+
+proc word(code: string; offset: int): uint32 =
+  for shift in 0 .. 3:
+    result = result or (uint32(ord(code[offset + shift])) shl (shift * 8))
+
+proc operations(code: string): HashSet[uint32] =
+  doAssert code.len >= 20 and code.len mod 4 == 0
+  doAssert word(code, 0) == 0x07230203'u32
+  var offset = 20
+  while offset < code.len:
+    let header = word(code, offset)
+    let count = int(header shr 16)
+    doAssert count > 0 and offset + count * 4 <= code.len
+    result.incl(header and 0xffff'u32)
+    offset += count * 4
+
+var kernels = initHashSet[string]()
+for call in gpuCalls:
+  doAssert call.args.len == 7
+  let code = unpack(call.args[1])
+  let name = unpack(call.args[2])
+  let matches = vectorModule.funcs.filterIt(it.name == name and it.abi == "gpu")
+  doAssert matches.len == 1
+  doAssert code == spirvCompiler.compile(matches[0])
+  let ops = operations(code)
+  doAssert 15'u32 in ops and 331'u32 in ops and 54'u32 in ops
+  kernels.incl(name)
+  case name
+  of "shade":
+    doAssert 129'u32 in ops
+  of "tile":
+    doAssert 224'u32 in ops
+    doAssert call.args[4].name == "4"
+    doAssert call.args[5].name == "1"
+    doAssert call.args[6].name == "16"
+  of "stripe":
+    doAssert 132'u32 in ops
+  of "tally":
+    doAssert 234'u32 in ops
+    doAssert call.args[5].name == "2"
+  of "wave":
+    doAssert 338'u32 in ops
+    doAssert call.args[5].name == "4"
+  else:
+    doAssert false, name
+doAssert kernels == toHashSet(["shade", "tile", "stripe", "tally", "wave"])
+let gpuEntry = cloneModule(vectorModule)
+gpuEntry.funcs.add(Function(name: "main", ret: `Type`(kind: TypeKind.Void),
+  blocks: @[Block(label: "entry", instrs: @[
+    Instruction(kind: InstrKind.Call, `func`: "paint")],
+    term: Instruction(kind: InstrKind.Return))]))
+let gpuHost = reach(gpuEntry)
+doAssert gpuHost.funcs.anyIt(it.name == "paint")
+doAssert not gpuHost.funcs.anyIt(it.name == "shade")
+var rejected = false
+try:
+  discard gpuLower.apply(Module(name: "host", funcs: @[
+    Function(name: "main", ret: `Type`(kind: TypeKind.Void), blocks: @[
+      Block(label: "entry", instrs: @[
+        Instruction(kind: InstrKind.Call, abi: "runtime.gpu", symbol: "index")],
+        term: Instruction(kind: InstrKind.Return))])]))
+except ValueError:
+  rejected = true
+doAssert rejected
+let captured = cloneModule(vectorModule)
+captured.funcs.add(Function(name: "main", ret: `Type`(kind: TypeKind.Void),
+  blocks: @[Block(label: "entry", instrs: @[],
+    term: Instruction(kind: InstrKind.Return,
+      value: Value(kind: ValueKind.Global, name: "shade")))]))
+rejected = false
+try:
+  discard gpuLower.apply(captured)
+except ValueError:
+  rejected = true
+doAssert rejected
+doAssert vectorModule.optimization.vectors >= 15
+doAssert vectorModule.externs.anyIt(it.abi == "runtime.cpu" and it.symbol == "vectorize")
+var vectorized = initHashSet[string]()
+for function in vectorModule.funcs:
+  for basicBlock in function.blocks:
+    if basicBlock.instrs.anyIt(it.kind == InstrKind.Call and
+        it.symbol == "vectorize"):
+      vectorized.incl(function.name)
+for name in ["lane", "minus", "times", "quotient", "narrow", "scale",
+    "bias", "fill", "mirror", "shift", "affine", "magnify", "window",
+    "invert", "ratio"]:
+  doAssert name in vectorized, name
+doAssert "serial" notin vectorized
 let parameterType = `Type`(kind: TypeKind.Struct, name: "T")
 let identity = Function(name: "identity", typeParams: @["T"],
   params: @[Value(kind: ValueKind.Reg, name: "value", `type`: parameterType)],

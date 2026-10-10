@@ -1,7 +1,8 @@
 # Language Foundations
 
-This chapter answers the questions that determine how FOO behaves beneath its
-English surface. Every section labels its status. **Current** syntax is accepted
+What does FOO infer for you, and what must you state yourself? This chapter
+answers that question across types, absence, memory, and effects. Every section
+labels its status. **Current** syntax is accepted
 by the compiler today. **Library** behavior is supplied by the standard library
 or project tools. An explicit boundary says what the language deliberately does
 not promise. See [Patterns with today's language](patterns.md) for complete
@@ -126,8 +127,8 @@ for each item in items {
 ```
 
 The `iterator` module provides an explicit user-defined protocol.
-`Cursor[T, S]` pairs source state with a failable pull function, while
-`Step[T, S]` distinguishes an item from ordinary exhaustion with `finished`,
+`cursor[T, S]` pairs source state with a failable pull function, while
+`step[T, S]` distinguishes an item from ordinary exhaustion with `finished`,
 an optional `value`, and the next `state`. The `item` and `done` constructors
 keep those fields consistent. Borrowing and cleanup remain ordinary value and
 `after` rules. Custom cursors do not participate in `for each`; that loop stays
@@ -248,19 +249,19 @@ and ownership visible without adding hidden record behavior.
 
 ### State machines (Library)
 
-The `state` module provides `Machine[S, E]`, `create`, and `step` for an
+The `state` module provides `machine[S, E]`, `create`, and `step` for an
 immutable value plus an application-defined failable transition. This record
 and function API is the canonical form; FOO does not add a second `state`
 declaration that would hide ownership, persistence, or recovery policy.
 
 ### Serialization (turning values into storable or transferable data; current library)
 
-The `json` module parses, inspects, streams, and writes JSON. `Codec[T]` (a
+The `json` module parses, inspects, streams, and writes JSON. `codec[T]` (a
 paired encoder and decoder) groups
 an explicit text encoder and decoder so applications can pass a typed codec as
 one value. `codec.encode[T]` and `codec.decode[T]` generate concrete JSON code
 for supported scalars, optional values, sequences, choices, and records without runtime reflection. Byte buffers and
-text conversions remain explicit. Applications use an explicit `Codec[T]`
+text conversions remain explicit. Applications use an explicit `codec[T]`
 when field naming, versions, unknown fields, allocation, endianness (the byte
 order used to store a number), or input policy differs from that standard form.
 
@@ -346,7 +347,7 @@ constant offline is "offline".
 constant connection is primary fallback secondary fallback offline.
 ```
 
-The `transaction` module defines a `Participant` containing prepare, commit,
+The `transaction` module defines a `participant` containing prepare, commit,
 and rollback functions. `execute` registers rollback with `after error`, then
 runs application work and commits. It covers one-process coordination only.
 Nested transactions, irreversible side effects, cancellation, crash recovery,
@@ -377,12 +378,12 @@ inject clocks, seeds, inputs, and services.
 ### Time and units (Library)
 
 `time.current`, `time.sleep`, and `time.measure` use raw nanoseconds for
-compatibility. `time.Instant`, `time.Duration`, `nanos`, `millis`, `seconds`,
+compatibility. `time.instant`, `time.duration`, `nanos`, `millis`, `seconds`,
 `now`, `elapsed`, and `wait` provide typed monotonic time (time measured by a
 clock that does not move backward) for new code.
-`calendar.Date`, `Zone`, and `Moment` provide checked Gregorian dates, civil
+`calendar.civil`, `offset`, and `stamp` provide checked Gregorian dates, civil
 times, and fixed UTC offsets. Named political time zones require an external
-versioned database and are not guessed from an offset. `units.Quantity[D]`
+versioned database and are not guessed from an offset. `units.measure[D]`
 keeps addition and difference operations within one dimension; constructors
 provide length, mass, and temperature dimensions without unit-suffixed literals.
 
@@ -415,10 +416,13 @@ foo benchmark benchmark/lookup.iv
 
 Native `test "name"` blocks are current and each block runs in isolation.
 `testing.every(count, property)` checks a bounded deterministic property using
-indexes from zero through `count subtract 1`. `testing.Generator[T]` and
-`testing.generate` map those indexes to typed generated values. Compile-time checks can use
-supported `eval` computations and ordinary compiler errors; `verify at compile
-time` is not accepted syntax.
+indexes from zero through `count subtract 1`. `testing.generator[T]` and
+`testing.generate` map those indexes to typed generated values. Use
+`eval { verify condition. }` for compile-time assertions. `eval` can derive
+constants from `reflect[T].size` and `.alignment` for fixed-width scalar types
+and explicit C records with fixed-width scalar fields. C records also expose
+`.count` and `.offset("field")` inside `eval`. Other layouts depend
+on the target and are not folded there.
 
 ### Documentation and reflection (Current boundary)
 
