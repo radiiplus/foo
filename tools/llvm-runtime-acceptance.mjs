@@ -1,6 +1,6 @@
 // Run real providers and retain evidence. This never enables I/O batching.
-import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,17 +20,27 @@ save();
 async function run(name, command, args, env = {}) {
   console.log(`Checking ${name}`);
   let output = "";
+  const log = join(directory, `${name}.log`);
+  writeFileSync(log, "");
   const code = await new Promise((done, fail) => {
     const child = spawn(command, args, { cwd: root, windowsHide: true,
       env: { ...process.env, FOO_COMPILER: compiler, FOO_TEST_COMPILER: compiler,
         FOO_IO_BATCHING: "off", ...env }, stdio: ["ignore", "pipe", "pipe"] });
-    child.stdout.on("data", data => { output += data; });
-    child.stderr.on("data", data => { output += data; });
-    child.once("error", fail);
-    child.once("close", done);
+    let timedOut = false;
+    const milliseconds = Number(process.env.FOO_RUNTIME_TEST_TIMEOUT || 1800000);
+    const timer = setTimeout(() => {
+      timedOut = true;
+      appendFileSync(log, `\nAcceptance command timed out after ${milliseconds} ms\n`);
+      if (windows) spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"],
+        { windowsHide: true, stdio: "ignore" });
+      else child.kill("SIGKILL");
+    }, milliseconds);
+    for (const stream of [child.stdout, child.stderr])
+      stream.on("data", data => { output += data; appendFileSync(log, data); });
+    child.once("error", error => { clearTimeout(timer); fail(error); });
+    child.once("close", code => { clearTimeout(timer); done(timedOut ? 124 : code); });
   });
-  const log = join(directory, `${name}.log`);
-  writeFileSync(log, output);
+
   const checked = { name, passed: code === 0, code, log };
   report.checks.push(checked);
   save();

@@ -1,9 +1,9 @@
 # LLVM runtime migration
 
-Runtime development is retained on `llvm-runtime-batch4` in
-`.artifacts/batch4-worktree`. Integration with the updated core is on
-`llvm-runtime-batch4-integration` in `.artifacts/batch4-integration`.
-Do not purge either worktree while integration is pending.
+Runtime development and verification now take place in the main workspace.
+The isolated `llvm-runtime-batch4` and `llvm-runtime-batch4-integration`
+branches were merged into `main`; their artifact directories retain the
+earlier qualification evidence. Batch 4 acceptance is still incomplete.
 The [runtime ABI](../specs/llvm-runtime-abi.md) documents pointer marshalling,
 native callbacks, resource ownership, error identity and ordering contracts.
 

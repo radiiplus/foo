@@ -572,7 +572,7 @@ pub fn call(comptime module: []const u8, comptime name: []const u8, comptime Res
         };
         return;
     }
-    inline for (.{ "bloom", "cpu", "topology", "platform", "dylib", "fs", "vm", "gpu", "io", "net", "tls", "process", "resource", "ring", "thread", "time", "timer", "text", "metric", "trace", "limit" }) |namespace| {
+    inline for (.{ "bloom", "cpu", "topology", "platform", "dylib", "fs", "vm", "gpu", "vulkan", "io", "net", "tls", "process", "resource", "ring", "thread", "time", "timer", "text", "metric", "trace", "limit" }) |namespace| {
         if (comptime std.mem.eql(u8, module, namespace)) return @import("service.zig").call(module, name, Result, args);
     }
     if (comptime std.mem.eql(u8, module, "sequence")) return sequence(name, Result, args);
