@@ -141,7 +141,9 @@ proc synthesizeTests*(program: ast.Program; selected: TestSuite) : bool =
       start.body = target.body
     var filtered: seq[ast.Statement] = @[]
     for statement in unit.body.stmts:
-      if statement != ast.Statement(target): filtered.add(statement)
+      # Only the synthesized start is checked/lowered. Remaining test bodies
+      # have not been linked as functions and can retain unresolved imports.
+      if statement.tag != "test": filtered.add(statement)
     unit.body.stmts = filtered
     return true
   for unit in program.units:
