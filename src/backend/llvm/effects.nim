@@ -6,7 +6,8 @@ proc ioReport*(module: Module): JsonNode =
   var externs = initTable[string, Extern]()
   for external in module.externs: externs[external.name] = external
   result = %*{"enabled": false, "formedBatches": 0, "operations": 0,
-    "policy": "synchronous; differential and paired benchmark gates pending", "candidates": []}
+    "policy": "synchronous; differential and paired benchmark gates pending",
+    "threshold": "unqualified; no minimum count or size selected", "candidates": []}
   let report = result
   for fn in module.funcs:
     for blockValue in fn.blocks:
