@@ -162,3 +162,19 @@ denseBlocks[2].instrs.add(Instruction(kind: InstrKind.Add, dest: denseSeed,
   val: Value(kind: ValueKind.Const, name: "1", `type`: intType),
   val2: Value(kind: ValueKind.Const, name: "2", `type`: intType)))
 doAssert validate(denseModule).anyIt("does not dominate" in it.msg)
+
+# Effect sealing generates memory types whose defining tables live for only
+# one function. Deferred layout validation must keep them alive across a large
+# module, including collections triggered while validating later functions.
+var effectFunctions: seq[Function]
+for index in 0..<2048:
+  let value = Value(kind: ValueKind.Reg, name: "result", `type`: intType)
+  effectFunctions.add(Function(name: "effect" & $index, ret: intType,
+    blocks: @[Block(label: "entry", instrs: @[
+      Instruction(kind: InstrKind.Call, `func`: "identity", dest: value,
+        args: @[Value(kind: ValueKind.Const, name: "42", `type`: intType)])],
+      term: Instruction(kind: InstrKind.Return, value: value))]))
+let effectModule = Module(funcs: effectFunctions,
+  externs: @[Extern(name: "identity", abi: "c", params: @[intType], ret: intType)])
+discard seal(effectModule)
+doAssert validate(effectModule).len == 0

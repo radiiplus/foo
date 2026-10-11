@@ -135,12 +135,14 @@ proc validate*(module: Module): seq[ValidationError] =
       if not right.variants.hasKey(name) or not same(value, right.variants[name], depth + 1): return false
     true
 
-  var checkedTypes = initHashSet[pointer]()
+  # Validation may inspect temporary inferred types. Retain the objects until
+  # the deferred finite-layout check; a set of raw addresses is not a GC root.
+  var checkedTypes = initTable[pointer, `Type`]()
   proc checkType(value: `Type`) =
     if value == nil: fail("Unknown or missing IR type"); return
     let identity = cast[pointer](value)
     if identity in checkedTypes: return
-    checkedTypes.incl(identity)
+    checkedTypes[identity] = value
     case value.kind
     of TypeKind.Int, TypeKind.Uint:
       if value.width != 0 and (value.width < 1 or value.width > 128): fail("Integer width must be between 1 and 128")
@@ -604,8 +606,7 @@ proc validate*(module: Module): seq[ValidationError] =
       for variant in value.variants.values:
         if variant != nil and not finite(variant, active): result = false; break
     active.excl(identity)
-  for identity in checkedTypes:
-    let value = cast[`Type`](identity)
+  for value in checkedTypes.values:
     var active = initHashSet[pointer]()
     if not finite(value, active):
       fail("A type contains itself by value and has no finite layout")
