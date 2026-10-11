@@ -39,8 +39,10 @@ const output = option("--output") || join(root, ".artifacts", "native", process.
 const cache = option("--cache") || join(root, ".artifacts", "native", "nimcache");
 const host = `${process.platform === "win32" ? "windows" : process.platform}-${process.arch}`;
 const target = value("--target") || host;
+const memoryManager = value("--mm") || "orc";
+if (!["orc", "refc"].includes(memoryManager)) throw Error("--mm must be orc or refc");
 if (process.argv.includes("--help")) {
-  console.log("Usage: node tools/native.mjs [--check] [--target TARGET] [--output FILE] [--cache DIRECTORY]");
+  console.log("Usage: node tools/native.mjs [--check] [--target TARGET] [--output FILE] [--cache DIRECTORY] [--mm orc|refc]");
   console.log("Builds or checks the Nim compiler in src.");
   process.exit(0);
 }
@@ -65,6 +67,7 @@ const embedded = [
   "src/backend/c/memory.c", "src/backend/c/trace.c", "src/backend/c/copy.c",
 ];
 const embeddedDigest = createHash("sha256");
+embeddedDigest.update(`memory-manager:${memoryManager}\0`);
 for (const name of embedded) {
   embeddedDigest.update(name);
   embeddedDigest.update("\0");
@@ -81,6 +84,7 @@ const cross = crossArm ? ["--os:linux", "--cpu:arm64", "--cc:gcc",
 const args = checking
   ? ["check", ...ssl, ...cross, "--path:" + root, "--nimcache:" + cache, source]
   : ["c", "-d:release", ...ssl, ...cross, "--opt:size", "--nimcache:" + cache, "-o:" + output];
+args.push(`--mm:${memoryManager}`);
 if (embeddedChanged) args.splice(1, 0, "-f");
 if (!checking && process.platform === "win32") {
   const resource = join(cache, "foo.res");
