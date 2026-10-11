@@ -45,7 +45,6 @@ proc comparison*(s: Support; t: node.Type; operation: string): string =
 proc code*(s: Support; module: Module; target = ""; hosted = true): string =
   var adapters: seq[string]
   proc ctype(t: node.Type): string = s.ctype(t)
-  for declaration in module.types: discard ctype(declaration.type)
   var runtimeExterns: seq[Extern]
   # Force the common allocation/text runtime even for an otherwise pure module.
   if hosted:
