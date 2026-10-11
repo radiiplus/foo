@@ -303,6 +303,7 @@ proc main*(input: seq[string]): int =
         if index + 1 < args.len: passthrough = args[index + 1 .. ^1]
         break
       elif argument in ["--verbose", "--explain"]: verbose = true
+      elif argument == "--no-batching": putEnv("FOO_IO_BATCHING", "off")
       elif argument == "--json": jsonOutput = true
       elif argument == "--compact":
         if command notin ["check", "build", "run", "release", "sign",
