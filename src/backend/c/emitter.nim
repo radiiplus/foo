@@ -49,6 +49,7 @@ const
   memoryCode = staticRead("memory.c")
   traceCode = staticRead("trace.c")
   copyCode = staticRead("copy.c")
+  wideCode = staticRead("../native/wide.c")
   bareCode = """
 static float foo_f32(uint32_t bits) {
   union { uint32_t bits; float value; } converted = { bits };
@@ -321,7 +322,7 @@ proc equality(state: EmitState; typ: `Type`; left, right: string): string =
 
 proc ordering(state: EmitState; typ: `Type`; left, right: string): string =
   if typ.kind == TypeKind.Void: return "0"
-  if typ.kind in {TypeKind.Int, TypeKind.Uint, TypeKind.Bool}:
+  if typ.kind in {TypeKind.Int, TypeKind.Uint, TypeKind.Bool, TypeKind.Float}:
     return "(((" & left & ") > (" & right & ")) - ((" & left & ") < (" & right & ")))"
   let signature = state.types.get(typ)
   if state.orders.hasKey(signature):
@@ -359,6 +360,34 @@ proc ordering(state: EmitState; typ: `Type`; left, right: string): string =
   state.functions.add("static int " & id & "(" & signature & " a, " & signature &
     " b) { " & body & " }")
   id & "(" & left & ", " & right & ")"
+
+type ComparisonSupport* = ref object
+  state: EmitState
+  adapters: seq[string]
+
+proc newComparisonSupport*(types: Types): ComparisonSupport =
+  ComparisonSupport(state: EmitState(types: types))
+
+proc comparison*(support: ComparisonSupport; typ: `Type`; operation: string): string =
+  ## Runtime-only pointer boundary; no FOO function is lowered by this API.
+  let state = support.state
+  let signature = state.types.get(typ)
+  result = "foo_llvm_comparison_" & $support.adapters.len
+  let expression = if operation in ["equals", "does-not-equal"]:
+      (if operation == "does-not-equal": "!" else: "") & state.equality(typ, "a", "b")
+    else:
+      "(" & state.ordering(typ, "a", "b") & " " &
+        (case operation
+         of "less-than": "<"
+         of "less-or-equal": "<="
+         of "greater-than": ">"
+         of "greater-or-equal": ">="
+         else: raise newException(ValueError, "unknown comparison " & operation)) & " 0)"
+  support.adapters.add("uint8_t " & result & "(const void *left, const void *right) { " &
+    signature & " a, b; memcpy(&a, left, sizeof(a)); memcpy(&b, right, sizeof(b)); return " & expression & "; }")
+
+proc code*(support: ComparisonSupport): string =
+  support.state.prototypes.join("\n") & "\n" & support.state.functions.join("\n") & "\n" & support.adapters.join("\n")
 
 proc instr(ctx: FunctionState; instruction: Instruction): string
 
@@ -1052,7 +1081,8 @@ struct foo_interrupt_frame { uintptr_t instruction; uintptr_t segment; uintptr_t
   result.code = "/* FOO IR -> ISO C11 */\n#include <stdint.h>\n#include <stddef.h>\n" &
     "#include <stdbool.h>\n#include <stdatomic.h>\n#include <limits.h>\n" &
     (if hosted: "#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\n" else: "") &
-    wideTypes &
+    wideTypes & (if wideTypes.len > 0 and options.target in ["", "x86_64-windows-msvc", "x86_64-pc-windows-msvc"]:
+      "#if defined(_WIN32) && defined(__clang__) && defined(__x86_64__)\n" & wideCode & "\n#endif\n" else: "") &
     attributes & "\nstatic _Noreturn void foo_panic(const char *message) " &
     (if hosted: "{ fprintf(stderr, \"%s\\n\", message); exit(1); }\n"
       else: "{ (void)message; __builtin_trap(); }\n") &

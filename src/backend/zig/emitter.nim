@@ -185,7 +185,13 @@ proc emitInstr(instruction: Instruction; used: HashSet[string];
   of InstrKind.Alloc:
     if instruction.op == "slot": finish(destination & "&cell_" & instruction.dest.name & ";")
     else: finish(destination & "shim.allocScope(" & typeStr(instruction.dest.type.elem) & ") catch shim.panic(\"out of memory\");")
-  of InstrKind.Remainder: finish(destination & "@rem(" & valueStr(instruction.val) & ", " & valueStr(instruction.val2) & ");")
+  of InstrKind.Remainder:
+    let left = valueStr(instruction.val)
+    let right = valueStr(instruction.val2)
+    # FOO remainder is zero for a signed minimum divided by -1. Zig's
+    # machine remainder otherwise traps even though the result is representable.
+    finish(destination & (if instruction.val.type.kind == TypeKind.Int:
+      "if (" & right & " == -1) 0 else " else: "") & "@rem(" & left & ", " & right & ");")
   of InstrKind.Not: finish(destination & "!" & valueStr(instruction.val) & ";")
   of InstrKind.Convert:
     let value = valueStr(instruction.val)
