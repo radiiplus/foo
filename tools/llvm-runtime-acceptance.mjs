@@ -10,7 +10,13 @@ const compiler = resolve(process.env.FOO_COMPILER || join(root, ".artifacts/nati
 const directory = join(root, ".artifacts", "llvm-runtime-acceptance");
 mkdirSync(directory, { recursive: true });
 if (!existsSync(compiler)) throw Error("Build FOO first: node tools/native.mjs --mm refc");
-const report = { format: "foo.llvm.runtime.acceptance.v1", passed: false,
+const selection = process.argv.find(arg => arg.startsWith("--backends="))?.slice(11);
+const backends = selection ? selection.split(",") : ["c", "zig", "llvm"];
+if (!backends.length || new Set(backends).size !== backends.length ||
+    backends.some(backend => !["c", "zig", "llvm"].includes(backend)))
+  throw Error("--backends requires a comma-separated selection of c,zig,llvm");
+const fullMatrix = backends.length === 3;
+const report = { fullMatrix, selectedBackends: backends, format: "foo.llvm.runtime.acceptance.v1", passed: false,
   host: `${process.platform}-${process.arch}`, compiler, checks: [],
   ioBatching: { enabled: false, reason: "Existing stream writes flush individually; no coalescing proof or qualified threshold." } };
 function save() {
@@ -30,15 +36,20 @@ async function run(name, command, args, env = {}) {
       detached: !windows, env: { ...process.env, FOO_COMPILER: compiler, FOO_TEST_COMPILER: compiler,
         FOO_IO_BATCHING: "off", ...env }, stdio: ["ignore", "pipe", "pipe"] });
     let timedOut = false;
-    const timer = setTimeout(() => {
+    let timer;
+    function activity() {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
       timedOut = true;
       appendFileSync(log, `\nAcceptance command timed out after ${milliseconds} ms\n`);
       if (windows) spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"],
         { windowsHide: true, stdio: "ignore" });
       else { try { process.kill(-child.pid, "SIGKILL"); } catch { child.kill("SIGKILL"); } }
-    }, milliseconds);
+      }, milliseconds);
+    }
+    activity();
     for (const stream of [child.stdout, child.stderr])
-      stream.on("data", data => { output += data; appendFileSync(log, data); });
+      stream.on("data", data => { activity(); output += data; appendFileSync(log, data); });
     child.once("error", error => { clearTimeout(timer); fail(error); });
     child.once("close", code => { clearTimeout(timer); done(timedOut ? 124 : code); });
   });
@@ -55,7 +66,7 @@ const source = join(directory, "increment.c");
 const library = join(directory, windows ? "increment.dll" : "increment.so");
 writeFileSync(source, "#include <stdint.h>\n#ifdef _WIN32\n__declspec(dllexport)\n#endif\nuint64_t increment(uint64_t value) { return value + 1; }\n");
 await run("dynamic-library-fixture", "clang", ["-shared", ...(windows ? [] : ["-fPIC"]), source, "-o", library]);
-for (const backend of ["c", "zig", "llvm"]) {
+for (const backend of backends) {
   const { checked, output } = await run(`library-${backend}`, compiler,
     ["test", "test/library", "--backend", backend, "--json", "--no-batching"],
     { FOO_DYLIB_TEST_PATH: library });
@@ -93,7 +104,9 @@ for (const backend of ["c", "zig", "llvm"]) {
 await run("tls-llvm", process.execPath, ["test/library/tls.mjs", "--backend=llvm"]);
 // This includes aggregate FFI, source/result slots, io_uring failure injection,
 // SPIR-V/Vulkan execution, naked startup/interrupts and legacy backend gates.
-await run("native", process.execPath, ["test/native/run.mjs", "--jobs=2"]);
-report.passed = true;
+await run("native", process.execPath, ["test/native/run.mjs", "--jobs=2"],
+  { FOO_TEST_TIMEOUT: process.env.FOO_TEST_TIMEOUT || "3600000" });
+report.selectedPassed = true;
+report.passed = fullMatrix;
 save();
-console.log(`Runtime acceptance passed; evidence: ${join(directory, "acceptance.json")}`);
+console.log(`${fullMatrix ? "Runtime acceptance passed" : "Selected checks passed; full matrix was not requested"}; evidence: ${join(directory, "acceptance.json")}`);

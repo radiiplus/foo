@@ -148,3 +148,12 @@ Evidence is saved under `.artifacts/llvm-runtime-acceptance`; `passed` stays
 false until all checks succeed. This command does not qualify I/O batching.
 The current main toolchain policy pins LLVM 18.1.3; the earlier isolated Linux
 LLVM 14 results are historical evidence and do not override that policy.
+
+The acceptance command streams stage logs while running. Set
+`FOO_RUNTIME_TEST_TIMEOUT` to the maximum **inactivity** interval in milliseconds
+(default 30 minutes). `--backends=zig,llvm` selects library families for a retry;
+a selected run records `fullMatrix: false` and cannot claim full acceptance.
+Keep completed reports before retrying. The main-workspace C library run passed
+all 147 cases; a later Zig attempt reached its total-time limit without a test
+failure, prompting the inactivity watchdog. That interrupted report is retained
+under `.artifacts/batch4-main/acceptance-timeout`.
