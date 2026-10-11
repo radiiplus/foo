@@ -627,7 +627,9 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
                 result.variants[variant] = if variantType == nil: nil else: replaceType(variantType)
             sig = replaceType(sig)
           var args: seq[Value]
-          for index, argument in call.args: args.add(expression(argument, if index < sig.params.len: sig.params[index] else: nil))
+          for index, argument in call.args:
+            let parameter = if index < sig.params.len: sig.params[index] else: nil
+            args.add(adapt(expression(argument, parameter), parameter))
           let dest = if sig.ret.kind == TypeKind.Void: Value() else: fresh(sig.ret)
           emit(Instruction(kind: InstrKind.Call, dest: dest,
             `func`: if indirect.name.len == 0: name else: "", callee: indirect,
@@ -637,7 +639,9 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       if callee.type == nil or callee.type.kind != TypeKind.Function:
         raise newException(ValueError, "An indirect call needs a function value")
       var args: seq[Value]
-      for index, argument in call.args: args.add(expression(argument, if index < callee.type.params.len: callee.type.params[index] else: nil))
+      for index, argument in call.args:
+        let parameter = if index < callee.type.params.len: callee.type.params[index] else: nil
+        args.add(adapt(expression(argument, parameter), parameter))
       let dest = if callee.type.ret.kind == TypeKind.Void: Value() else: fresh(callee.type.ret)
       emit(Instruction(kind: InstrKind.Call, dest: dest, callee: callee, abi: callee.type.abi, args: args))
       return if callee.type.ret.kind == TypeKind.Void: Value(kind: ValueKind.Const, name: "{}", `type`: callee.type.ret) else: dest

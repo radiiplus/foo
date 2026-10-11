@@ -1,0 +1,13 @@
+use gpu as graphics.
+use testing as check.
+
+function open giving failable boolean {
+  constant device is graphics.open try.
+  graphics.close(device) try.
+  give false.
+}
+
+test "LLVM GPU unavailable adapter is an explicit failure" {
+  check.expect(not graphics.available).
+  check.expect(open fallback true).
+}

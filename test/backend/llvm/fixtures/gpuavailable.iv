@@ -1,0 +1,6 @@
+use gpu as graphics.
+use testing as check.
+
+test "LLVM GPU qualification requires an available adapter" {
+  check.expect(graphics.available).
+}

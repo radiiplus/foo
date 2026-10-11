@@ -1,5 +1,8 @@
 import std/[os, strutils]
 import ../src/test/runner
+import ../src/diag/engine
+import ../src/lex/lexer
+import ../src/parse/parser
 
 let root = getTempDir() / "foo-test-discovery"
 if dirExists(root): removeDir(root)
@@ -12,6 +15,15 @@ doAssert suites[0].name == "addition"
 doAssert suites[0].file.endsWith("suite.iv")
 let withStarts = discoverTests(root, includeStarts = true)
 doAssert withStarts.len == 2
+
+let isolatedSource = "test \"selected\" { give. }\ntest \"other\" { give undefinedName. }\n"
+let isolatedDiagnostics = newEngine()
+let isolatedProgram = newParser(newLexer(isolatedSource, isolatedDiagnostics).lex(), isolatedDiagnostics).parse()
+doAssert not isolatedDiagnostics.failed
+doAssert synthesizeTests(isolatedProgram, TestSuite(name: "selected", line: 1))
+for unit in isolatedProgram.units:
+  for statement in unit.body.stmts:
+    doAssert statement.tag != "test"
 
 var called = 0
 var events: seq[string]
