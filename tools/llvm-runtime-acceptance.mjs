@@ -66,6 +66,11 @@ for (const backend of ["c", "zig", "llvm"]) {
   const executions = events.filter(event => event.event === "run");
   if (!executions.length) throw Error(`No generated artifacts executed: ${backend}`);
   checked.executions = executions.length;
+  const observations = events.filter(event => event.event === "test-result");
+  if (observations.length !== executions.length || observations.some(result =>
+    !result.executed || !result.passed || result.exitCode !== 0))
+    throw Error(`Missing successful per-test execution observations: ${backend}`);
+  checked.observations = observations.length;
   if (backend === "llvm") {
     for (const execution of executions) {
       const artifact = execution.file;

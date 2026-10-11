@@ -1,4 +1,4 @@
-import std/[os, sequtils, sets]
+import std/[os, sequtils, sets, strutils]
 import ../../src/ir/[kind, monomorph, node, print, reach, valid]
 import ../../src/opt/gpu as gpuLower
 import ../../src/opt/spirv as spirvCompiler
@@ -41,6 +41,7 @@ for call in gpuCalls:
   let matches = vectorModule.funcs.filterIt(it.name == name and it.abi == "gpu")
   doAssert matches.len == 1
   doAssert code == spirvCompiler.compile(matches[0])
+  doAssert code == gpuLower.compile(matches[0])
   let ops = operations(code)
   doAssert 15'u32 in ops and 331'u32 in ops and 54'u32 in ops
   kernels.incl(name)
@@ -63,6 +64,14 @@ for call in gpuCalls:
   else:
     doAssert false, name
 doAssert kernels == toHashSet(["shade", "tile", "stripe", "tally", "wave"])
+let publicKernel = cloneModule(vectorModule).funcs.filterIt(it.name == "shade")[0]
+publicKernel.public = true
+var publicFailure = ""
+try:
+  discard gpuLower.compile(publicKernel)
+except ValueError as error:
+  publicFailure = error.msg
+doAssert publicFailure.contains("private"), publicFailure
 let gpuEntry = cloneModule(vectorModule)
 gpuEntry.funcs.add(Function(name: "main", ret: `Type`(kind: TypeKind.Void),
   blocks: @[Block(label: "entry", instrs: @[

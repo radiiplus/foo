@@ -170,6 +170,12 @@ proc validate(function: Function): Kernel =
         basicBlock.term == nil or basicBlock.term.kind != InstrKind.Panic:
       function.fail("contains unsupported control flow")
 
+proc compile*(function: Function): string =
+  ## Direct artifact emission must enforce the same contract as GPU lowering.
+  if function.abi != "gpu": function.fail("requires a GPU function")
+  discard function.validate()
+  spirv.compile(function)
+
 proc apply*(module: Module): int =
   var kernels = initTable[string, Kernel]()
   for function in module.funcs:
