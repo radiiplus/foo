@@ -3,6 +3,8 @@ import ../../../src/build/compiler
 import ../../../src/build/project as projects
 import ../../../src/build/options
 import ../../../src/backend/llvm/driver
+import ../../../src/backend/llvm/emitter as llvmEmitter
+import ../../../src/backend/llvm/runtime as llvmRuntime
 import ../../../src/ir/[node, kind]
 import ../../../src/ir/print
 import ../../../src/ir/valid
@@ -51,14 +53,19 @@ when defined(windows):
     quoteShell(root / "invalid.ll") & " -o " & quoteShell(root / "invalid-verified.ll"))
   doAssert rejected.exitCode != 0
   doAssert rejected.output.contains("does not dominate"), rejected.output
-  module.native.add(NativeContract(id: "unsupported_native", stage: "@c", abi: "c", code: "operation();", effects: @["unknown"]))
-  module.funcs[0].blocks[0].instrs.add(Instruction(kind: InstrKind.Native,
-    symbol:"unsupported_native", span: SourceSpan(file: file, start: 12)))
-  discard seal(module)
-  let unsupported = build(module, "dev", root / "unsupported", nativeOptions, file)
-  doAssert not unsupported.success
-  doAssert unsupported.error.contains("unsupported instruction Native")
-  doAssert unsupported.error.contains(":12")
+  # Native calls are supported through the driver's qualified escape boundary;
+  # the LLVM emitter itself must reject an unlowered native body with its span.
+  let unlowered = Module(funcs: @[Function(name: "main", ret: node.Type(kind: TypeKind.Void),
+    blocks: @[node.Block(label: "entry", instrs: @[
+      Instruction(kind: InstrKind.Native, span: SourceSpan(file: file, start: 12))],
+      term: Instruction(kind: InstrKind.Return))])])
+  var unsupported = ""
+  try:
+    discard llvmEmitter.emit(unlowered, metadata["triple"].getStr(),
+      metadata["layout"].getStr(), llvmRuntime.newSupport(), file)
+  except ValueError as error: unsupported = error.msg
+  doAssert unsupported.contains("unsupported instruction Native"), unsupported
+  doAssert unsupported.contains(":12"), unsupported
   echo "LLVM slice verifies, links and preserves hosted entry exit semantics (O0 and O2)"
 else:
   echo "LLVM Batch 1 execution gate is Windows x64 only"

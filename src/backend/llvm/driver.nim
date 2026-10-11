@@ -55,11 +55,16 @@ proc identity*(mode: string; options: Native): string =
   let triple = query(clang & " -dumpmachine")
   let profile = targetArch.profile(triple, options.cpu)
   if profile.cpu != "x86-64": raise newException(ValueError, "LLVM CPU execution is qualified only for x86-64 baseline; selected " & profile.cpu)
-  if triple != "x86_64-pc-windows-msvc":
-    raise newException(ValueError, "LLVM Batch 1 is verified only for x86_64-pc-windows-msvc; selected " & triple)
-  if options.target.len > 0 and options.target notin [triple, "x86_64-windows-msvc"]:
-    raise newException(ValueError, "LLVM Batch 1 does not support cross targets: " & options.target)
-  let linker = query(quoteShell(parentDir(findExe(clangPath(options))) / "lld-link.exe") & " --version")
+  let windows = triple == "x86_64-pc-windows-msvc"
+  let linux = triple in ["x86_64-pc-linux-gnu", "x86_64-unknown-linux-gnu"]
+  if not windows and not linux:
+    raise newException(ValueError, "LLVM host is qualified only for Windows/Linux x64; selected " & triple)
+  let targetAlias = if windows: "x86_64-windows-msvc" else: "x86_64-linux-gnu"
+  if options.target.len > 0 and options.target notin [triple, targetAlias]:
+    raise newException(ValueError, "LLVM does not support cross targets: " & options.target)
+  let linker = query(quoteShell(parentDir(findExe(clangPath(options))) / (if windows: "lld-link.exe" else: "ld.lld")) & " --version")
+  let legacyVerifier = version.contains("clang version 14.")
+  let verifier = if legacyVerifier: query(quoteShell(parentDir(findExe(clangPath(options))) / "opt") & " --version") else: "Clang LLVM verifier"
   let probe = execCmdEx(clang & " -x c - -S -emit-llvm -o -", input = "int foo_layout_probe;\n")
   if probe.exitCode != 0: raise newException(IOError, "LLVM target layout probe failed: " & probe.output)
   var effectiveTriple, layout: string
@@ -72,6 +77,7 @@ proc identity*(mode: string; options: Native): string =
     "triple": effectiveTriple, "layout": layout,
     "optimization": (if mode == "release": "O2" else: "O0"),
     "features": profile.features.join(",") & "; llvm-verify-each; lld; io-probe-v1", "cpu": profile.cpu, "linker": linker,
+    "verifier": verifier, "legacyVerifier": legacyVerifier,
     "runtimeAbi": runtimeAbi,
     "runtime": (if options.runtime == "none": "none; freestanding; trap failures" else: "hosted"),
     "ioBatching": "off; differential and paired benchmark gates pending",
@@ -129,7 +135,7 @@ proc build*(module: Module; mode, outDir: string; options = Native();
       raise newException(ValueError, "Invalid typed IR: " & invalid[0].msg)
     let useRuntime = options.runtime != "none"
     let support = newSupport()
-    writeFile(source, emit(prepared, metadata["triple"].getStr(), metadata["layout"].getStr(), support, sourceFile, hosted = useRuntime, cpu = options.cpu))
+    writeFile(source, emit(prepared, metadata["triple"].getStr(), metadata["layout"].getStr(), support, sourceFile, hosted = useRuntime, cpu = options.cpu, modernMemory = not metadata["legacyVerifier"].getBool()))
     writeFile(outDir / "runtime.c", support.code(prepared, metadata["triple"].getStr(), hosted = useRuntime))
     if hosted(prepared):
       writeFile(outDir / "service.h", serviceHeader)
@@ -157,8 +163,13 @@ proc build*(module: Module; mode, outDir: string; options = Native();
           "; see " & outDir / (stage & ".diagnostics") & "\n" & response.output)
     # Clang's LLVM pass manager runs the LLVM verifier after every pass.
     # This separate stage is mandatory even for emit-only builds.
-    run(clang & " -x ir -S -emit-llvm -Xclang -llvm-verify-each" & level &
-      " " & quoteShell(source) & " -o " & quoteShell(absolutePath(outDir / "verified.ll")), "verify")
+    let verificationFlags = if metadata["legacyVerifier"].getBool(): " -mllvm -opaque-pointers" else: " -Xclang -llvm-verify-each"
+    if metadata["legacyVerifier"].getBool():
+      run(quoteShell(parentDir(findExe(clangPath(options))) / "opt") & " -opaque-pointers -verify-each -S " & quoteShell(source) &
+        " -o " & quoteShell(absolutePath(outDir / "verified.ll")), "verify")
+    else:
+      run(clang & " -x ir -S -emit-llvm" & verificationFlags & level &
+        " " & quoteShell(source) & " -o " & quoteShell(absolutePath(outDir / "verified.ll")), "verify")
     result.artifact = absolutePath(outDir / artifact(options))
     if options.compile:
       let libraries = support.libraries & options.libs
@@ -185,7 +196,7 @@ proc build*(module: Module; mode, outDir: string; options = Native();
         writeFile(outDir / "gpu.c", gpuSource)
         runtimeSources.add(directory / "volk.c")
       let objectPath = absolutePath(outDir / "main.obj")
-      run(clang & " -x ir -c -Xclang -llvm-verify-each" & level & " " & quoteShell(source) &
+      run(clang & " -x ir -c" & verificationFlags & level & " " & quoteShell(source) &
         " -o " & quoteShell(objectPath), "compile")
       let runtimeObject = absolutePath(outDir / "runtime.obj")
       run(clang & " -std=c11 -c" & level & common & " " & quoteShell(absolutePath(outDir / "runtime.c")) &
@@ -211,7 +222,10 @@ proc build*(module: Module; mode, outDir: string; options = Native();
       var links: string
       if not useRuntime:
         let entry = if prepared.funcs.anyIt("start" in it.attributes): "_start" else: "main"
-        links.add(" -nostdlib -Wl,/entry:" & entry & ",/subsystem:console,/nodefaultlib")
+        if metadata["triple"].getStr().contains("windows"):
+          links.add(" -nostdlib -Wl,/entry:" & entry & ",/subsystem:console,/nodefaultlib")
+        else:
+          raise newException(ValueError, "Linux runtime-none startup is not yet qualified; use the hosted runtime")
       for library in linked:
         var found = false
         for entry in supplied.links:

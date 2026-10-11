@@ -44,6 +44,13 @@ proc comparison*(s: Support; t: node.Type; operation: string): string =
 
 proc code*(s: Support; module: Module; target = ""; hosted = true): string =
   var adapters: seq[string]
+  if target.contains("linux"):
+    for external in module.externs:
+      if external.abi notin ["", "c", "system"] and not external.abi.startsWith("runtime"):
+        raise newException(ValueError, "Linux foreign convention is qualified only for c/system: " & external.name & " uses " & external.abi)
+    for fn in module.funcs:
+      if fn.abi notin ["", "foo", "foo:1", "c", "system"]:
+        raise newException(ValueError, "Linux export convention is qualified only for c/system: " & fn.name & " uses " & fn.abi)
   proc ctype(t: node.Type): string = s.ctype(t)
   var runtimeExterns: seq[Extern]
   # Force the common allocation/text runtime even for an otherwise pure module.
@@ -108,7 +115,7 @@ proc code*(s: Support; module: Module; target = ""; hosted = true): string =
     let params = if parameters.len == 0: "void" else: parameters.join(", ")
     adapters.add(ctype(fn.ret) & " " & convention(if fn.abi in ["foo", "foo:1"]: "" else: fn.abi) & callbackName(fn.name) & "(" & params & ") { " & body & " }")
     if fn.abi notin ["", "foo", "foo:1"]:
-      adapters.add((if fn.public: "__declspec(dllexport) " else: "") & ctype(fn.ret) & " " &
+      adapters.add((if fn.public: "FOO_LLVM_EXPORT " else: "") & ctype(fn.ret) & " " &
         convention(if fn.abi in ["foo", "foo:1"]: "" else: fn.abi) & cTypes.symbol(fn.name) & "(" & params & ") { " & body & " }")
   var indirects = initTable[string, bool]()
   proc indirect(i: Instruction) =
@@ -138,13 +145,14 @@ proc code*(s: Support; module: Module; target = ""; hosted = true): string =
     if s.hasComparisons:
       raise newException(ValueError, "runtime none aggregate comparison needs hosted comparison support")
     return "#include <stdint.h>\n#include <stddef.h>\n#include <stdbool.h>\n" &
-      "#define FOO_SYSTEM __stdcall\n#define FOO_STDCALL __stdcall\n#define FOO_FASTCALL __fastcall\n#define FOO_VECTORCALL __vectorcall\n#define FOO_THISCALL __thiscall\n" &
+      "#if defined(_WIN32)\n#define FOO_SYSTEM __stdcall\n#else\n#define FOO_SYSTEM\n#endif\n#define FOO_STDCALL __stdcall\n#define FOO_FASTCALL __fastcall\n#define FOO_VECTORCALL __vectorcall\n#define FOO_THISCALL __thiscall\n" &
       "typedef __int128 foo_i128; typedef unsigned __int128 foo_u128;\n" &
       s.types.declarations.join("\n") & "\n" & s.assertions.join("\n") & "\n" &
       foreignDeclarations.join("\n") & "\n" & adapters.join("\n")
-  result = "#include <stdint.h>\n#include <stddef.h>\n#include <stdbool.h>\n#include <stdatomic.h>\n#include <limits.h>\n#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\n" &
+  let platform = "#if defined(_WIN32)\n#define FOO_LLVM_EXPORT __declspec(dllexport)\n#else\n#define FOO_LLVM_EXPORT __attribute__((visibility(\"default\")))\n#define _aligned_malloc(size, alignment) aligned_alloc(alignment, ((size) + (alignment) - 1) / (alignment) * (alignment))\n#define _aligned_free free\n#endif\n"
+  result = "#define _GNU_SOURCE\n#include <stdint.h>\n#include <stddef.h>\n#include <stdbool.h>\n#include <stdatomic.h>\n#include <limits.h>\n#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\n" & platform &
     "#include <malloc.h>\ntypedef __int128 foo_i128; typedef unsigned __int128 foo_u128;\n" &
-    "#define FOO_SYSTEM __stdcall\n#define FOO_STDCALL __stdcall\n#define FOO_FASTCALL __fastcall\n#define FOO_VECTORCALL __vectorcall\n#define FOO_THISCALL __thiscall\n" &
+    "#if defined(_WIN32)\n#define FOO_SYSTEM __stdcall\n#else\n#define FOO_SYSTEM\n#endif\n#define FOO_STDCALL __stdcall\n#define FOO_FASTCALL __fastcall\n#define FOO_VECTORCALL __vectorcall\n#define FOO_THISCALL __thiscall\n" &
     "static _Noreturn void foo_panic(const char *message) { fprintf(stderr, \"%s\\n\",message); exit(1); }\n" &
     memoryCode & "\n" & traceCode & "\n" & copyCode & "\n" &
     ioCode & "\n" & wideCode & "\n" & s.types.declarations.join("\n") & "\n" & s.assertions.join("\n") & "\n" & generated.code & "\n" &

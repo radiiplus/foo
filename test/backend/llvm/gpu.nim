@@ -1,8 +1,8 @@
 ## Re-execute the produced artifact even if the public test runner uses its cache.
 import std/[os, osproc, json, strutils]
 
-when defined(windows):
-  let compiler = absolutePath(getEnv("FOO_TEST_COMPILER", ".artifacts/native/foo.exe"))
+when defined(windows) or defined(linux):
+  let compiler = absolutePath(getEnv("FOO_TEST_COMPILER", (if defined(windows): ".artifacts/native/foo.exe" else: ".artifacts/linuxfoo")))
   doAssert fileExists(compiler), "Build the compiler with node tools/native.mjs first"
   let fixture = "test/backend/llvm/fixtures/runtimegpu.iv"
   for mode in ["dev", "release"]:
@@ -12,6 +12,8 @@ when defined(windows):
     var executed = false
     let artifacts = ".artifacts/test/llvm/" & mode
     for directory in walkDirs(artifacts / "runtimegpu_*"):
+      let artifact = directory / (if defined(windows): "test.exe" else: "test")
+      if not fileExists(artifact): continue
       let metadata = parseFile(directory / "llvm.json")
       doAssert metadata["backend"].getStr() == "llvm"
       doAssert metadata["runtimeAbi"].getStr() == "foo.runtime.pointer.v1"
@@ -21,7 +23,7 @@ when defined(windows):
       doAssert fileExists(directory / "verified.ll")
       doAssert readFile(directory / "verify.diagnostics").contains("exitCode=0")
       doAssert not readFile(directory / "runtime.c").contains("clBuildProgram")
-      let run = execCmdEx(quoteShell(absolutePath(directory / "test.exe")))
+      let run = execCmdEx(quoteShell(absolutePath(artifact)))
       doAssert run.exitCode == 0, run.output
       executed = true
     doAssert executed, "LLVM GPU artifact was not found"

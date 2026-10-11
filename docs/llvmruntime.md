@@ -1,13 +1,15 @@
 # LLVM runtime migration
 
-Work takes place on `llvm-runtime-batch4` in `.artifacts/batch4-worktree` while
-the other LLVM task continues in the main checkout. Do not purge that worktree.
+Runtime development is retained on `llvm-runtime-batch4` in
+`.artifacts/batch4-worktree`. Integration with the updated core is on
+`llvm-runtime-batch4-integration` in `.artifacts/batch4-integration`.
+Do not purge either worktree while integration is pending.
 The [runtime ABI](../specs/llvm-runtime-abi.md) documents pointer marshalling,
 native callbacks, resource ownership, error identity and ordering contracts.
 
 ## Prerequisites
 
-The verified host is Windows x64 with Nim 2.2.12, Node 22.13 or later,
+The Windows qualification host uses Nim 2.2.12, Node 22.13 or later,
 Clang/LLD 18.1.3 and the MSVC x64 libraries/Windows SDK. Keep the checkout's
 `vendor/libsodium/windows-x64`, `vendor/zlib/windows-x64`, `vendor/blake3/c`
 and `vendor/vulkan` directories intact. Crypto uses the existing sodium/BLAKE3
@@ -16,8 +18,14 @@ with a working Vulkan driver required for actual device execution.
 The TLS integration test needs OpenSSL's executable and matching shared
 library; on this Windows host it uses Git's `mingw64/bin/openssl.exe` and
 `libssl-3-x64.dll`. Override `FOO_OPENSSL` and `FOO_TLS_LIBRARY` when needed.
-There is no OpenCL source compiler dependency. LLVM host cross-compilation,
-other host targets remain unqualified and fail explicitly.
+Linux x64 is also exercised under Ubuntu 22.04/WSL with Nim 2.2.12 and
+Clang/LLVM/LLD 14.0.0. LLVM 14 uses the matching standalone `opt` verifier,
+opaque-pointer mode and `readnone` rather than the newer `memory(none)` syntax.
+The selected verifier version is recorded in compiler identity. Hosted Linux
+uses GNU libc and the existing pthread/resolver/dynamic-loader providers.
+There is no OpenCL source compiler dependency. Cross-compilation, macOS,
+other architectures and Linux runtime-none startup remain unqualified and
+fail explicitly. Linux foreign calls/exports currently accept C/system only.
 Windows x64 runtime-free PE linking, direct setup-free startup assembly and
 interrupt object emission are verified by `test/backend/llvm/machine.nim`.
 Interrupt handlers are verified as objects and are not invoked from user mode.
@@ -30,7 +38,7 @@ operations remain unsupported and fail at their source operation.
 From the worktree root:
 
 ```powershell
-node tools/native.mjs
+node tools/native.mjs --mm refc
 nim c -r --cc:clang --path:. --nimcache:.artifacts/ffi-nimcache --out:.artifacts/ffi-test.exe test/backend/llvm/ffi.nim
 nim c -r --cc:clang --path:. --nimcache:.artifacts/gpu-nimcache --out:.artifacts/gpu-test.exe test/backend/llvm/gpu.nim
 nim c -r --cc:clang --path:. --nimcache:.artifacts/effects-nimcache --out:.artifacts/effects-test.exe test/backend/llvm/effects.nim
@@ -40,7 +48,9 @@ node test/library/tls.mjs --backend=llvm
 ```
 
 The FFI gate verifies LLVM IR and executes aggregate native calls/callbacks
-at O0/O2, asserting exit code 42 and reciprocal LLVM gates in the emitted IR.
+at O0/O2, asserting returned values of 42 in native checks and reciprocal LLVM
+gates in the emitted IR. Hosted entry values retain the updated workspace's
+discard-value/zero-exit convention. Runtime-free machine tests check exit 42.
 Both FOO functions and imported native functions can be passed as callbacks.
 The test calls an exported stdcall FOO aggregate function from native code and
 checks its actual PE export symbol.
@@ -54,6 +64,11 @@ per-stage command/diagnostic files and `io-batches.json` in its existing artifac
 directory. Test outputs are under `test/library/.artifacts/test/llvm/<mode>/`.
 The actual Clang target triple/data layout, tool versions and ABI version are
 recorded in diagnostics/cache identity.
+The explicit `--mm refc` compiler build matches the retained core acceptance
+runner. Nim 2.2.12's default ORC configuration reproduced memory-collector
+crashes during repeated frontend compilations; this option does not change
+generated-program ABI or the default build mode. Its setting participates in
+the native compiler build stamp.
 
 ## Current evidence
 
@@ -80,6 +95,10 @@ The focused gate checks embedded direct SPIR-V and LLVM verification and
 re-executes artifacts at O0/O2. Subgroup execution follows the adapter's
 capability check; unsupported devices take the explicit failure path.
 This is not certification of other GPU adapters or operating systems.
+Linux/WSL clocks, the broad native-service fixture, virtual memory, mappings,
+processes, cancellation, atomics, SHA-256 and compression have executed successfully through verified LLVM IR and LLD. Linux aggregate
+FFI/callback/export tests pass at O0/O2. Windows calling-convention/export
+inspection uses PE exports; Linux inspects ELF symbols with `nm`.
 
 I/O currently remains synchronous. The effect report identifies consecutive
 same-register stream writes, retains their source/result slots, and rejects
@@ -94,7 +113,7 @@ formed batches, measured thresholds or speedup claims yet.
 
 ## Outstanding Batch 4 gates
 
-Linux/macOS LLVM execution and broader hardware-target verification;
+Additional Linux/macOS and hardware-target verification;
 additional GPU portability/capability tests; complete success/failure,
 ownership/cleanup/ordering/platform coverage for every audited service family;
 paired batching benchmarks and differential crash/failure tests; and the
