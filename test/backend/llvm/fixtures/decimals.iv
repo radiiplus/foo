@@ -6,7 +6,8 @@ start {
   constant left is Point(1.5, 3.0).
   check.expect(left is Point(1.5, 3.0)).
   check.expect(left is less than Point(1.5, 4.0)).
-  check.expect(widen(1.25) is 1.25).
+  constant narrow of type decimal 32 is 1.
+  check.expect(widen(narrow) is 1.0).
   check.expect(fromInteger(7) is 7.0).
   check.expect(4.5 divide 1.5 is 3.0).
 }
