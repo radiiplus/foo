@@ -382,7 +382,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
           field: ast.Field(node).field.text))
       if node.tag == "field" and ast.Field(node).invoke:
         return invokeZero(dest)
-      return dest
+      return adapt(dest, expected)
     of "embed":
       let embedded = ast.Embed(node)
       let target = if expected != nil: expected elif embedded.type != nil: lowerType(embedded.type, aliases) else: `Type`(kind: TypeKind.Slice, constant: true, elem: `Type`(kind: TypeKind.Uint, width: 8))
@@ -391,7 +391,10 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       return dest
     of "reflect":
       let reflected = ast.Reflect(node)
-      let dest = fresh(if expected != nil: expected else: `Type`(kind: TypeKind.Opaque, name: "Description"))
+      let target = if expected != nil: expected
+        elif typed.hasKey(cast[pointer](node)): semanticType(typed[cast[pointer](node)], aliases)
+        else: `Type`(kind: TypeKind.Opaque, name: "Description")
+      let dest = fresh(target)
       emit(Instruction(kind: InstrKind.Reflect, dest: dest, typeArg: lowerType(reflected.type, aliases)))
       return dest
     of "unreachable":
@@ -443,11 +446,16 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         emit(Instruction(kind: InstrKind.Phi, dest: dest,
           blocks: @[(label: predecessor, value: fallback), (label: success, value: value)]))
         return dest
-      let hint = if typed.hasKey(cast[pointer](binary.left)):
+      var hint = if typed.hasKey(cast[pointer](binary.left)):
         semanticType(typed[cast[pointer](binary.left)], aliases)
         elif expected != nil and expected.kind in {TypeKind.Failable, TypeKind.Optional}:
           expected.elem
         else: expected
+      if binary.op in ["equals", "does not equal", "is greater than", "is less than", "is at least", "is at most"] and
+          typed.hasKey(cast[pointer](binary.left)) and typed[cast[pointer](binary.left)].kind == "literal" and
+          typed.hasKey(cast[pointer](binary.right)):
+        let numericHint = semanticType(typed[cast[pointer](binary.right)],aliases)
+        if numericHint.kind in {TypeKind.Int,TypeKind.Uint,TypeKind.Float}: hint = numericHint
       var left = expression(binary.left, hint)
       var right = expression(binary.right, left.type)
       let comparison = binary.op in ["equals", "does not equal", "is greater than", "is less than", "is at least", "is at most"]

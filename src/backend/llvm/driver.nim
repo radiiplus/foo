@@ -1,16 +1,34 @@
-import std/[json, os, osproc, strutils, tempfiles]
+import std/[json, os, osproc, strutils, sequtils]
 import ../../build/options
 import ../../build/execute as execute
 import ../../ir/node
 import ../../ir/reach
 import ../../ir/monomorph
 import ../../ir/valid as irValid
+import ../../ir/print as irPrint
+import ../../opt/arch as targetArch
+import ../native/service
+import ../native/escape as nativeEscape
+import ../substrate
+import ../../toolchain/native as nativeSupply
 import ./emitter
 import ./runtime
+import ./abi
+import ./effects
 
 const
   serviceHeader = staticRead("../native/service.h")
   serviceSource = staticRead("../native/service.c")
+  vulkanSource = staticRead("../native/vulkan.c")
+  gpuSource = staticRead("../native/gpu.c")
+
+proc bundled(relative, marker: string): string =
+  var directory = getAppDir()
+  for depth in 0..4:
+    let candidate = directory / "vendor" / relative
+    if fileExists(candidate / marker): return candidate
+    directory = parentDir(directory)
+  raise newException(IOError, "LLVM runtime needs vendor/" & relative & "/" & marker & "; build from a complete checkout")
 
 type Result* = object
   success*, cached*: bool
@@ -30,63 +48,68 @@ proc query(command: string): string =
 
 proc identity*(mode: string; options: Native): string =
   ## Query the selected tools before the project cache lookup.
+  if getEnv("FOO_IO_BATCHING", "off") != "off":
+    raise newException(ValueError, "LLVM I/O batching is not qualified; use --no-batching or FOO_IO_BATCHING=off")
   let clang = quoteShell(clangPath(options))
   let version = query(clang & " --version")
   let triple = query(clang & " -dumpmachine")
+  let profile = targetArch.profile(triple, options.cpu)
+  if profile.cpu != "x86-64": raise newException(ValueError, "LLVM CPU execution is qualified only for x86-64 baseline; selected " & profile.cpu)
   if triple != "x86_64-pc-windows-msvc":
     raise newException(ValueError, "LLVM Batch 1 is verified only for x86_64-pc-windows-msvc; selected " & triple)
   if options.target.len > 0 and options.target notin [triple, "x86_64-windows-msvc"]:
     raise newException(ValueError, "LLVM Batch 1 does not support cross targets: " & options.target)
-  # Ask the selected LLVM target machine for its effective ABI, including
-  # Clang's detected MSVC version. The probe is LLVM IR, never C or Zig.
-  let probe = createTempFile("foo-llvm-target-", ".ll")
-  var effectiveTriple, layout: string
-  try:
-    probe.cfile.write("define void @foo_target_probe() { ret void }\n")
-    probe.cfile.close()
-    let ir = query(clang & " -x ir -S -emit-llvm " & quoteShell(probe.path) & " -o -")
-    for line in ir.splitLines():
-      if line.startsWith("target triple = "):
-        effectiveTriple = line.split('"')[1]
-      elif line.startsWith("target datalayout = "):
-        layout = line.split('"')[1]
-    if effectiveTriple.len == 0 or layout.len == 0:
-      raise newException(IOError, "Clang did not report an LLVM target triple and data layout")
-  finally:
-    if fileExists(probe.path): removeFile(probe.path)
   let linker = query(quoteShell(parentDir(findExe(clangPath(options))) / "lld-link.exe") & " --version")
+  let probe = execCmdEx(clang & " -x c - -S -emit-llvm -o -", input = "int foo_layout_probe;\n")
+  if probe.exitCode != 0: raise newException(IOError, "LLVM target layout probe failed: " & probe.output)
+  var effectiveTriple, layout: string
+  for line in probe.output.splitLines():
+    if line.startsWith("target triple = "): effectiveTriple = line.split('"')[1]
+    elif line.startsWith("target datalayout = "): layout = line.split('"')[1]
+  if layout.len == 0 or effectiveTriple.len == 0:
+    raise newException(IOError, "LLVM did not report its effective target triple and data layout")
   $(%*{"backend": "llvm", "clang": clangPath(options), "version": version,
     "triple": effectiveTriple, "layout": layout,
     "optimization": (if mode == "release": "O2" else: "O0"),
-    "features": "generic; llvm-verify-each; lld", "linker": linker,
-    "runtimeAbi": "llvm.core.pointer.v1",
-    "semanticPolicy": "foo-llvm-core-v2; checked-width-1-128; pointer-runtime-abi; scalar-proof-memory-none",
+    "features": profile.features.join(",") & "; llvm-verify-each; lld; io-probe-v1", "cpu": profile.cpu, "linker": linker,
+    "runtimeAbi": runtimeAbi,
+    "runtime": (if options.runtime == "none": "none; freestanding; trap failures" else: "hosted"),
+    "ioBatching": "off; differential and paired benchmark gates pending",
+    "semanticPolicy": "foo-evidence-v2; shared-proof-call-free-memory-none; foo-inline-budget; scalar-fallback",
     "vectorization": "disabled: LLVM specialization has no backend parity/benchmark evidence"})
 
 proc build*(module: Module; mode, outDir: string; options = Native();
     sourceFile = "main.iv"; progress: BuildProgress = nil): Result =
   try:
     validate(options)
+    if getEnv("FOO_IO_BATCHING", "off") != "off":
+      raise newException(ValueError, "LLVM I/O batching is not qualified; use --no-batching or FOO_IO_BATCHING=off")
     createDir(outDir)
-    let errors = irValid.validate(module)
-    if errors.len > 0:
-      var messages: seq[string]
-      for error in errors: messages.add(error.msg)
-      raise newException(ValueError, "Invalid typed IR before LLVM lowering: " & messages.join("\n"))
-    if options.kind notin ["", "exe"] or options.cpu.len > 0 or
-        options.sources.len > 0 or options.objects.len > 0 or options.flags.len > 0 or
-        options.libs.len > 0 or options.frameworks.len > 0 or options.cpp or
+    if options.kind notin ["", "exe"] or
+        options.frameworks.len > 0 or options.cpp or
         options.sanitize.len > 0 or options.coverage.len > 0 or options.benchmark or
-        options.threads or options.runtime == "none" or options.icon.len > 0 or
+        options.threads or options.icon.len > 0 or
         options.exports.len > 0 or options.script.len > 0 or options.rpath.len > 0 or
-        options.docs or options.debug or options.profile.len > 0 or options.includePaths.len > 0 or
-        options.substrate notin ["", "auto"] or options.native.substrate.len > 0 or
-        options.native.clobbers.len > 0:
-      raise newException(ValueError, "LLVM Batch 1 supports only hosted executables without runtime, CPU, instrumentation or custom linking features")
+        options.docs or options.profile.len > 0:
+      raise newException(ValueError, "LLVM currently supports executable products without CPU, instrumentation, framework or custom linker-script features")
     let stamp = identity(mode, options)
     let metadata = parseJson(stamp)
-    let selected = prepare(reach(module))
-    let decisions = selected.optimization
+
+    if progress != nil: progress("path", options.name, stamp, false)
+    let source = absolutePath(outDir / "main.ll")
+    let escaped = nativeEscape.escape(reach(module), Selection(backend: "llvm",
+      target: metadata["triple"].getStr(), cpu: options.cpu, level: options.level,
+      mode: mode, substrate: options.substrate,
+      native: NativeSelection(substrate: options.native.substrate, clobbers: options.native.clobbers)))
+    let selected = escaped.module
+    writeFile(outDir / "typed-ir.json", irPrint.encode(selected))
+    let prepared = prepare(selected)
+    let batching = ioReport(prepared)
+    writeFile(outDir / "io-batches.json", pretty(batching) & "\n")
+    if progress != nil:
+      progress("path", options.name, "I/O batches / 0 formed; " & $batching["operations"].getInt() &
+        " writes retain their own result/error slots; see " & outDir / "io-batches.json", false)
+    let decisions = prepared.optimization
     metadata["semanticDecisions"] = %*{
       "generics": decisions.generics, "bounds": decisions.bounds,
       "expressions": decisions.expressions, "functions": decisions.functions,
@@ -99,29 +122,30 @@ proc build*(module: Module; mode, outDir: string; options = Native();
       progress("path", options.name,
         "semantic / shared FOO proofs; retained call boundaries use noinline; " &
         "vectorization / scalar fallback: LLVM evidence is not established", false)
-    if progress != nil: progress("path", options.name, stamp, false)
-    let source = absolutePath(outDir / "main.ll")
+    # Validate semantic successors before prepare removes panic-only blocks;
+    # LLVM numeric lowering emits the checked runtime failure path itself.
+    let invalid = irValid.validate(selected)
+    if invalid.len > 0:
+      raise newException(ValueError, "Invalid typed IR: " & invalid[0].msg)
+    let useRuntime = options.runtime != "none"
     let support = newSupport()
-    writeFile(source, emit(selected, metadata["triple"].getStr(), metadata["layout"].getStr(), support, sourceFile))
-    let runtimePath = absolutePath(outDir / "runtime.c")
-    let runtimeCode = support.code(selected)
-    writeFile(runtimePath, runtimeCode)
-    if runtimeCode.contains("#define FOO_SERVICE"):
+    writeFile(source, emit(prepared, metadata["triple"].getStr(), metadata["layout"].getStr(), support, sourceFile, hosted = useRuntime, cpu = options.cpu))
+    writeFile(outDir / "runtime.c", support.code(prepared, metadata["triple"].getStr(), hosted = useRuntime))
+    if hosted(prepared):
       writeFile(outDir / "service.h", serviceHeader)
-      writeFile(outDir / "service.c", serviceSource)
     var locations = newJArray()
     proc record(i: Instruction; function, label: string) =
       if i == nil: return
-      locations.add(%*{"function":function,"block":label,"operation": $i.kind,
-        "file":i.span.file,"start":i.span.start,"end":i.span.end,"trace":i.trace})
+      locations.add(%*{"function": function, "block": label, "operation": $i.kind,
+        "file": i.span.file, "start": i.span.start, "end": i.span.end, "trace": i.trace})
       if i.fallback != nil:
-        for child in i.fallback.instrs: record(child,function,i.fallback.label)
-        record(i.fallback.term,function,i.fallback.label)
-    for function in selected.funcs:
+        for child in i.fallback.instrs: record(child, function, i.fallback.label)
+        record(i.fallback.term, function, i.fallback.label)
+    for function in prepared.funcs:
       for basicBlock in function.blocks:
-        for i in basicBlock.instrs: record(i,function.name,basicBlock.label)
-        record(basicBlock.term,function.name,basicBlock.label)
-    writeFile(outDir / "source.json", pretty(%*{"source": sourceFile,"locations":locations}))
+        for i in basicBlock.instrs: record(i, function.name, basicBlock.label)
+        record(basicBlock.term, function.name, basicBlock.label)
+    writeFile(outDir / "source.json", pretty(%*{"source": sourceFile, "locations": locations}))
     let clang = quoteShell(clangPath(options))
     let level = " -" & metadata["optimization"].getStr() & " -fno-vectorize -fno-slp-vectorize"
     proc run(command, stage: string) =
@@ -137,18 +161,64 @@ proc build*(module: Module; mode, outDir: string; options = Native();
       " " & quoteShell(source) & " -o " & quoteShell(absolutePath(outDir / "verified.ll")), "verify")
     result.artifact = absolutePath(outDir / artifact(options))
     if options.compile:
+      let libraries = support.libraries & options.libs
+      let supplied = nativeSupply.prepare(libraries, options.includePaths, clangPath(options), metadata["triple"].getStr(), progress)
+      var common = " -I " & quoteShell(absolutePath(outDir))
+      if not useRuntime: common.add(" -ffreestanding -fno-stack-protector")
+      for directory in supplied.headers & options.includePaths:
+        common.add(" -I " & quoteShell(absolutePath(directory)))
+      for define in supplied.defines: common.add(" -D" & quoteShell(define))
+      var runtimeSources = options.sources
+      if escaped.code.len > 0:
+        let nativePath = absolutePath(outDir / "native-escape.c")
+        writeFile(nativePath, (if useRuntime: "" else: "#define abort() __builtin_trap()\n") & escaped.code)
+        runtimeSources.add(nativePath)
+      if "sodium" in libraries:
+        let directory = bundled("blake3/c", "blake3.c")
+        common.add(" -I " & quoteShell(directory) & " -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512")
+        for name in ["blake3.c", "blake3_dispatch.c", "blake3_portable.c", "blake3_sse2.c"]:
+          runtimeSources.add(directory / name)
+      if prepared.externs.anyIt(it.abi in ["runtime.gpu", "runtime.vulkan"]):
+        let directory = bundled("vulkan", "volk.c")
+        common.add(" -I " & quoteShell(directory) & " -I " & quoteShell(directory / "include"))
+        writeFile(outDir / "vulkan.c", vulkanSource)
+        writeFile(outDir / "gpu.c", gpuSource)
+        runtimeSources.add(directory / "volk.c")
       let objectPath = absolutePath(outDir / "main.obj")
       run(clang & " -x ir -c -Xclang -llvm-verify-each" & level & " " & quoteShell(source) &
         " -o " & quoteShell(objectPath), "compile")
       let runtimeObject = absolutePath(outDir / "runtime.obj")
-      run(clang & " -std=c11 -c" & level & " " & quoteShell(runtimePath) & " -o " & quoteShell(runtimeObject), "runtime")
-      var inputs = quoteShell(objectPath) & " " & quoteShell(runtimeObject)
-      if runtimeCode.contains("#define FOO_SERVICE"):
+      run(clang & " -std=c11 -c" & level & common & " " & quoteShell(absolutePath(outDir / "runtime.c")) &
+        " -I " & quoteShell(absolutePath(outDir)) & " -o " & quoteShell(runtimeObject), "runtime")
+      var objects = " " & quoteShell(objectPath) & " " & quoteShell(runtimeObject)
+      for index, sourcePath in runtimeSources:
+        let nativeObject = absolutePath(outDir / ("foreign" & $index & ".obj"))
+        var includes: string
+        for directory in options.includePaths: includes.add(" -I " & quoteShell(absolutePath(directory)))
+        run(clang & " -std=c11 -c" & level & common & includes & " " & options.flags.join(" ") & " " & quoteShell(absolutePath(sourcePath)) & " -o " & quoteShell(nativeObject), "foreign" & $index)
+        objects.add(" " & quoteShell(nativeObject))
+      for objectPath in options.objects: objects.add(" " & quoteShell(absolutePath(objectPath)))
+      var linked = libraries
+      if hosted(prepared):
+        writeFile(outDir / "service.c", serviceSource)
         let serviceObject = absolutePath(outDir / "service.obj")
-        run(clang & " -std=c11 -c" & level & " " & quoteShell(absolutePath(outDir / "service.c")) & " -o " & quoteShell(serviceObject), "service")
-        inputs.add(" " & quoteShell(serviceObject) & " -lws2_32 -ldnsapi -liphlpapi")
-      for library in support.libraries: inputs.add(" -l" & library)
-      run(clang & " -fuse-ld=lld " & inputs & " -o " & quoteShell(result.artifact), "link")
+        var serviceFlags = resourceDefines(prepared)
+        if not selective(options, escaped.code.len > 0): serviceFlags.delete(0)
+        run(clang & " -std=c11 -c" & level & common & " " & serviceFlags.join(" ") &
+          " " & quoteShell(absolutePath(outDir / "service.c")) & " -o " & quoteShell(serviceObject), "service")
+        objects.add(" " & quoteShell(serviceObject))
+        linked.add(service.libraries(metadata["triple"].getStr()))
+      var links: string
+      if not useRuntime:
+        let entry = if prepared.funcs.anyIt("start" in it.attributes): "_start" else: "main"
+        links.add(" -nostdlib -Wl,/entry:" & entry & ",/subsystem:console,/nodefaultlib")
+      for library in linked:
+        var found = false
+        for entry in supplied.links:
+          if entry.name == library:
+            links.add(" " & quoteShell(entry.path)); found = true; break
+        if not found: links.add(" -l" & quoteShell(library))
+      run(clang & " -fuse-ld=lld" & objects & links & " -o " & quoteShell(result.artifact), "link")
       if options.run:
         let executed = execCmdEx(quoteShell(result.artifact))
         result.output = executed.output
