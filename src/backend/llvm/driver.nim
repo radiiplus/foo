@@ -1,18 +1,33 @@
-import std/[json, os, osproc, strutils]
+import std/[json, os, osproc, strutils, sequtils]
 import ../../build/options
 import ../../build/execute as execute
 import ../../ir/node
 import ../../ir/reach
 import ../../ir/monomorph
 import ../../ir/valid as irValid
+import ../../ir/print as irPrint
 import ../native/service
+import ../native/escape as nativeEscape
+import ../substrate
+import ../../toolchain/native as nativeSupply
 import ./emitter
 import ./runtime
 import ./abi
+import ./effects
 
 const
   serviceHeader = staticRead("../native/service.h")
   serviceSource = staticRead("../native/service.c")
+  vulkanSource = staticRead("../native/vulkan.c")
+  gpuSource = staticRead("../native/gpu.c")
+
+proc bundled(relative, marker: string): string =
+  var directory = getAppDir()
+  for depth in 0..4:
+    let candidate = directory / "vendor" / relative
+    if fileExists(candidate / marker): return candidate
+    directory = parentDir(directory)
+  raise newException(IOError, "LLVM runtime needs vendor/" & relative & "/" & marker & "; build from a complete checkout")
 
 type Result* = object
   success*, cached*: bool
@@ -40,11 +55,20 @@ proc identity*(mode: string; options: Native): string =
   if options.target.len > 0 and options.target notin [triple, "x86_64-windows-msvc"]:
     raise newException(ValueError, "LLVM Batch 1 does not support cross targets: " & options.target)
   let linker = query(quoteShell(parentDir(findExe(clangPath(options))) / "lld-link.exe") & " --version")
+  let probe = execCmdEx(clang & " -x c - -S -emit-llvm -o -", input = "int foo_layout_probe;\n")
+  if probe.exitCode != 0: raise newException(IOError, "LLVM target layout probe failed: " & probe.output)
+  var effectiveTriple, layout: string
+  for line in probe.output.splitLines():
+    if line.startsWith("target triple = "): effectiveTriple = line.split('"')[1]
+    elif line.startsWith("target datalayout = "): layout = line.split('"')[1]
+  if layout.len == 0 or effectiveTriple.len == 0:
+    raise newException(IOError, "LLVM did not report its effective target triple and data layout")
   $(%*{"backend": "llvm", "clang": clangPath(options), "version": version,
-    "triple": triple, "layout": "e-m:w-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128",
+    "triple": effectiveTriple, "layout": layout,
     "optimization": (if mode == "release": "O2" else: "O0"),
     "features": "generic; llvm-verify-each; lld", "linker": linker,
     "runtimeAbi": runtimeAbi,
+    "ioBatching": "off; differential and paired benchmark gates pending",
     "semanticPolicy": "foo-evidence-v2; shared-proof-call-free-memory-none; foo-inline-budget; scalar-fallback",
     "vectorization": "disabled: LLVM specialization has no backend parity/benchmark evidence"})
 
@@ -52,6 +76,8 @@ proc build*(module: Module; mode, outDir: string; options = Native();
     sourceFile = "main.iv"; progress: BuildProgress = nil): Result =
   try:
     validate(options)
+    if getEnv("FOO_IO_BATCHING", "off") != "off":
+      raise newException(ValueError, "LLVM I/O batching is not qualified; use --no-batching or FOO_IO_BATCHING=off")
     createDir(outDir)
     if options.kind notin ["", "exe"] or options.cpu.len > 0 or
         options.frameworks.len > 0 or options.cpp or
@@ -65,8 +91,18 @@ proc build*(module: Module; mode, outDir: string; options = Native();
 
     if progress != nil: progress("path", options.name, stamp, false)
     let source = absolutePath(outDir / "main.ll")
-    let selected = reach(module)
+    let escaped = nativeEscape.escape(reach(module), Selection(backend: "llvm",
+      target: metadata["triple"].getStr(), cpu: options.cpu, level: options.level,
+      mode: mode, substrate: options.substrate,
+      native: NativeSelection(substrate: options.native.substrate, clobbers: options.native.clobbers)))
+    let selected = escaped.module
+    writeFile(outDir / "typed-ir.json", irPrint.encode(selected))
     let prepared = prepare(selected)
+    let batching = ioReport(prepared)
+    writeFile(outDir / "io-batches.json", pretty(batching) & "\n")
+    if progress != nil:
+      progress("path", options.name, "I/O batches / 0 formed; " & $batching["operations"].getInt() &
+        " writes retain their own result/error slots; see " & outDir / "io-batches.json", false)
     let decisions = prepared.optimization
     metadata["semanticDecisions"] = %*{
       "generics": decisions.generics, "bounds": decisions.bounds,
@@ -107,30 +143,59 @@ proc build*(module: Module; mode, outDir: string; options = Native();
       " " & quoteShell(source) & " -o " & quoteShell(absolutePath(outDir / "verified.ll")), "verify")
     result.artifact = absolutePath(outDir / artifact(options))
     if options.compile:
+      let libraries = support.libraries & options.libs
+      let supplied = nativeSupply.prepare(libraries, options.includePaths, clangPath(options), metadata["triple"].getStr(), progress)
+      var common = " -I " & quoteShell(absolutePath(outDir))
+      for directory in supplied.headers & options.includePaths:
+        common.add(" -I " & quoteShell(absolutePath(directory)))
+      for define in supplied.defines: common.add(" -D" & quoteShell(define))
+      var runtimeSources = options.sources
+      if escaped.code.len > 0:
+        let nativePath = absolutePath(outDir / "native-escape.c")
+        writeFile(nativePath, escaped.code)
+        runtimeSources.add(nativePath)
+      if "sodium" in libraries:
+        let directory = bundled("blake3/c", "blake3.c")
+        common.add(" -I " & quoteShell(directory) & " -DBLAKE3_NO_SSE41 -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512")
+        for name in ["blake3.c", "blake3_dispatch.c", "blake3_portable.c", "blake3_sse2.c"]:
+          runtimeSources.add(directory / name)
+      if prepared.externs.anyIt(it.abi in ["runtime.gpu", "runtime.vulkan"]):
+        let directory = bundled("vulkan", "volk.c")
+        common.add(" -I " & quoteShell(directory) & " -I " & quoteShell(directory / "include"))
+        writeFile(outDir / "vulkan.c", vulkanSource)
+        writeFile(outDir / "gpu.c", gpuSource)
+        runtimeSources.add(directory / "volk.c")
       let objectPath = absolutePath(outDir / "main.obj")
       run(clang & " -x ir -c -Xclang -llvm-verify-each" & level & " " & quoteShell(source) &
         " -o " & quoteShell(objectPath), "compile")
       let runtimeObject = absolutePath(outDir / "runtime.obj")
-      run(clang & " -std=c11 -c" & level & " " & quoteShell(absolutePath(outDir / "runtime.c")) &
+      run(clang & " -std=c11 -c" & level & common & " " & quoteShell(absolutePath(outDir / "runtime.c")) &
         " -I " & quoteShell(absolutePath(outDir)) & " -o " & quoteShell(runtimeObject), "runtime")
       var objects = " " & quoteShell(objectPath) & " " & quoteShell(runtimeObject)
-      for index, sourcePath in options.sources:
+      for index, sourcePath in runtimeSources:
         let nativeObject = absolutePath(outDir / ("foreign" & $index & ".obj"))
         var includes: string
         for directory in options.includePaths: includes.add(" -I " & quoteShell(absolutePath(directory)))
-        run(clang & " -std=c11 -c" & level & includes & " " & options.flags.join(" ") & " " & quoteShell(absolutePath(sourcePath)) & " -o " & quoteShell(nativeObject), "foreign" & $index)
+        run(clang & " -std=c11 -c" & level & common & includes & " " & options.flags.join(" ") & " " & quoteShell(absolutePath(sourcePath)) & " -o " & quoteShell(nativeObject), "foreign" & $index)
         objects.add(" " & quoteShell(nativeObject))
       for objectPath in options.objects: objects.add(" " & quoteShell(absolutePath(objectPath)))
-      var libraries = support.libraries & options.libs
+      var linked = libraries
       if hosted(prepared):
         writeFile(outDir / "service.c", serviceSource)
         let serviceObject = absolutePath(outDir / "service.obj")
-        run(clang & " -std=c11 -c" & level & " " & resourceDefines(prepared).join(" ") &
+        var serviceFlags = resourceDefines(prepared)
+        if not selective(options, escaped.code.len > 0): serviceFlags.delete(0)
+        run(clang & " -std=c11 -c" & level & common & " " & serviceFlags.join(" ") &
           " " & quoteShell(absolutePath(outDir / "service.c")) & " -o " & quoteShell(serviceObject), "service")
         objects.add(" " & quoteShell(serviceObject))
-        libraries.add(service.libraries(metadata["triple"].getStr()))
+        linked.add(service.libraries(metadata["triple"].getStr()))
       var links: string
-      for library in libraries: links.add(" -l" & library)
+      for library in linked:
+        var found = false
+        for entry in supplied.links:
+          if entry.name == library:
+            links.add(" " & quoteShell(entry.path)); found = true; break
+        if not found: links.add(" -l" & quoteShell(library))
       run(clang & " -fuse-ld=lld" & objects & links & " -o " & quoteShell(result.artifact), "link")
       if options.run:
         let executed = execCmdEx(quoteShell(result.artifact))

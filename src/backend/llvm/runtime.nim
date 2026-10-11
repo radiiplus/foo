@@ -1,6 +1,6 @@
 ## Runtime-only C adapters. No FOO function or control flow is emitted as C.
 ## Pointer arguments avoid importing Clang's aggregate procedure-call ABI.
-import std/[sequtils, strutils, tables]
+import std/[strutils, tables]
 import ../../ir/[node, kind]
 import ../../pkg/hash
 import ../c/emitter as cTypes
@@ -106,7 +106,7 @@ proc support*(module: Module; target: string): Support =
   var indirects = initTable[string, bool]()
   proc indirect(i: Instruction) =
     if i == nil: return
-    if i.kind == InstrKind.Call and i.callee.type != nil:
+    if i.kind in {InstrKind.Call, InstrKind.Thread} and i.callee.type != nil:
       let t = i.callee.type
       let name = indirectName(t)
       if not indirects.hasKey(name):
@@ -218,6 +218,7 @@ proc support*(module: Module; target: string): Support =
 #include <stdio.h>
 #include <string.h>
 #define FOO_STDCALL __stdcall
+#define FOO_SYSTEM __stdcall
 #define FOO_FASTCALL __fastcall
 #define FOO_VECTORCALL __vectorcall
 #define FOO_THISCALL __thiscall
