@@ -160,7 +160,7 @@ proc copyLabel(value: string): string =
 proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`];
     aliases: Table[string, `Type`]; constants: Table[string, ast.Constant];
     bindings: Table[string, ast.Expression]; storage: seq[Storage];
-    symbols: Table[string, string]; typed: Table[pointer, semantic.Type]): node.Function =
+    symbols: Table[string, string]; typed: Table[pointer, semantic.Type]; sourcePath: string): node.Function =
   let signature = signatures[functionNode.name.text]
   var params: seq[Value]
   for index, parameter in functionNode.params:
@@ -179,7 +179,10 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
   proc fresh(typ: `Type`): Value =
     inc serial
     Value(kind: ValueKind.Reg, name: "tmp_" & $serial, `type`: typ)
-  proc emit(instruction: Instruction) = instructions.add(instruction)
+  var sourceSpan = SourceSpan(file: sourcePath, start: functionNode.span.start, `end`: functionNode.span.end)
+  proc emit(instruction: Instruction) =
+    if instruction.span.file.len == 0: instruction.span = sourceSpan
+    instructions.add(instruction)
   proc adapt(value: Value; expected: `Type`): Value =
     if expected == nil or value.type == nil: return value
     let numeric = {TypeKind.Int, TypeKind.Uint, TypeKind.Float}
@@ -194,6 +197,11 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       value.type.kind != expected.kind
     let view = expected.kind == TypeKind.Slice and value.type.kind == TypeKind.Slice and
       expected.constant != value.type.constant
+    if wrap:
+      let inner = adapt(value,expected.elem)
+      let dest = fresh(expected)
+      emit(Instruction(kind: InstrKind.Convert,dest:dest,val:inner))
+      return dest
     if widen or wrap or view:
       let dest = fresh(expected)
       emit(Instruction(kind: InstrKind.Convert, dest: dest, val: value))
@@ -204,6 +212,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
   var term: Instruction
   var loops: seq[tuple[head: string, exit: string, depth: int]]
   proc finish(ending: Instruction) =
+    if ending != nil and ending.span.file.len == 0: ending.span = sourceSpan
     blocks.add(node.Block(label: label, instrs: instructions, term: ending))
   proc begin(name: string) =
     label = name
@@ -245,11 +254,14 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       let dest = fresh(`Type`(kind: TypeKind.Ptr,
         elem: pointer.type.elem.fields[field.field.text]))
       emit(Instruction(kind: InstrKind.Extract, op: "address", dest: dest,
-        `ptr`: pointer, field: field.field.text))
+        val: pointer, field: field.field.text))
       return dest
     raise newException(ValueError, "Assignment requires a dynamic place")
   proc expression(node: ast.Expression; expected: `Type` = nil): Value =
     if node == nil: return Value(kind: ValueKind.Const, name: "null", `type`: expected)
+    let savedSpan = sourceSpan
+    sourceSpan = SourceSpan(file: sourcePath, start: node.span.start, `end`: node.span.end)
+    defer: sourceSpan = savedSpan
     proc invokeZero(callee: Value; name = "";
         arguments: seq[ast.Expression] = @[]): Value =
       let signature = if name.len > 0: signatures.getOrDefault(name) else: callee.type
@@ -289,7 +301,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
           expected.elem
         elif expected != nil: expected
         else: inferred
-      return literalValue(node, target)
+      return adapt(literalValue(node, target), expected)
     of "uninitialized": return Value(kind: ValueKind.Const, name: "undefined", `type`: if expected != nil: expected else: `Type`(kind: TypeKind.Void))
     of "name":
       if ast.Name(node).invoke and closures.hasKey(ast.Name(node).text):
@@ -436,9 +448,14 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         elif expected != nil and expected.kind in {TypeKind.Failable, TypeKind.Optional}:
           expected.elem
         else: expected
-      let left = expression(binary.left, hint)
-      let right = expression(binary.right, left.type)
+      var left = expression(binary.left, hint)
+      var right = expression(binary.right, left.type)
       let comparison = binary.op in ["equals", "does not equal", "is greater than", "is less than", "is at least", "is at most"]
+      if comparison:
+        if left.type.kind == TypeKind.Optional and right.type.kind != TypeKind.Optional:
+          right = adapt(right,left.type)
+        elif right.type.kind == TypeKind.Optional and left.type.kind != TypeKind.Optional:
+          left = adapt(left,right.type)
       let resultType = if comparison and left.type.kind == TypeKind.Vector: `Type`(kind: TypeKind.Vector, width: left.type.width, elem: `Type`(kind: TypeKind.Bool)) elif comparison: `Type`(kind: TypeKind.Bool) else: left.type
       let dest = fresh(resultType)
       let operation = if comparison: InstrKind.Compare elif binary.op in ["plus", "+"]: InstrKind.Add elif binary.op in ["minus", "-"]: InstrKind.Sub elif binary.op in ["times", "*"]: InstrKind.Mul elif binary.op == "remainder": InstrKind.Remainder elif binary.op == "divided by": InstrKind.Div else: raise newException(ValueError, "lowering for binary operator '" & binary.op & "' is not implemented")
@@ -658,10 +675,13 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       return if machine.operation == "system": dest else: Value(kind: ValueKind.Const, name: "void", `type`: unit)
     else: raise newException(ValueError, "lowering for expression '" & node.tag & "' is not implemented")
   proc statements(body: seq[ast.Statement]) =
+    let savedSpan = sourceSpan
+    defer: sourceSpan = savedSpan
     let outer = snapshot(environment)
     let saved = snapshot(slots)
     scopes.add(@[])
     for statement in body:
+      sourceSpan = SourceSpan(file: sourcePath, start: statement.span.start, `end`: statement.span.end)
       case statement.tag
       of "unsafe":
         statements(ast.Unsafe(statement).body.stmts)
@@ -875,7 +895,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
           cleanup(0, failed, 0)
         else:
           cleanup(0, status = -1)
-        term = Instruction(kind: InstrKind.Return, value: value)
+        term = Instruction(kind: InstrKind.Return, value: value, span: sourceSpan)
         break
       of "action":
         let action = ast.Action(statement)
@@ -1043,7 +1063,7 @@ proc lower*(program: ast.Program; typed: Table[pointer, semantic.Type] = initTab
     for statement in unit.body.stmts:
       if statement.tag == "function":
         funcs.add(lowerFunction(ast.Function(statement), signatures, aliases,
-          constants, bindings, storage, symbols, typed))
+          constants, bindings, storage, symbols, typed, unit.file))
   result = Module(name: program.units[0].name.text, version: 1, stage: "@foo",
     unitPackage: program.units[0].name.text, unitPath: program.units[0].file,
     requires: "base", types: declarations, externs: externs, funcs: funcs,
