@@ -6,6 +6,7 @@ import ../../pkg/hash
 import ../c/emitter as cTypes
 import ../c/runtime as cRuntime
 import ./layout
+import ./abi
 
 type Support* = object
   code*: string
@@ -55,22 +56,77 @@ proc support*(module: Module; target: string): Support =
   # Force the common allocation/text runtime even for an otherwise pure module.
   runtimeExterns.add(Extern(name: "$llvm_anchor", abi: "runtime.testing", symbol: "expect",
     params: @[node.Type(kind: TypeKind.Bool)], ret: node.Type(kind: TypeKind.Void)))
+  var foreignDeclarations: seq[string]
   for external in module.externs:
-    if not external.abi.startsWith("runtime"):
-      raise newException(ValueError, "foreign ABI is not yet qualified: " & external.name)
-    runtimeExterns.add(external)
+    if external.abi.startsWith("runtime"):
+      runtimeExterns.add(external)
+    else:
+      var parameters: seq[string]
+      for t in external.params: parameters.add(ctype(t))
+      foreignDeclarations.add("extern " & ctype(external.ret) & " " & convention(external.abi) &
+        cTypes.symbol(if external.symbol.len > 0: external.symbol else: external.name) &
+        "(" & (if parameters.len == 0: "void" else: parameters.join(", ")) & ");")
   let generated = cRuntime.runtime(runtimeExterns, ctype, cTypes.name, target)
   result.libraries = generated.libraries
-  for external in runtimeExterns:
+  var boundaries = module.externs
+  boundaries.add(runtimeExterns[0])
+  for external in boundaries:
     var params = @["void *out"]
     var args: seq[string]
     for index, t in external.params:
       params.add("const void *p" & $index)
       args.add("*(const " & ctype(t) & " *)p" & $index)
-    let call = cTypes.name(external.name) & "(" & args.join(", ") & ")"
+    let target = if external.abi.startsWith("runtime"): cTypes.name(external.name)
+      else: cTypes.symbol(if external.symbol.len > 0: external.symbol else: external.name)
+    let call = target & "(" & args.join(", ") & ")"
     adapters.add("void " & bridgeName(external.name) & "(" & params.join(", ") & ") { " &
       (if external.ret == nil or external.ret.kind == TypeKind.Void:
         "(void)out; " & call & ";" else: "*(" & ctype(external.ret) & " *)out = " & call & ";") & " }")
+  # C owns the native calling convention; language bodies remain LLVM IR.
+  # The reciprocal gate avoids guessing Clang's aggregate return convention.
+  for fn in module.funcs:
+    if "naked" in fn.attributes: continue
+    var pointers = @["void *out"]
+    var parameters, args: seq[string]
+    for index, parameter in fn.params:
+      pointers.add("const void *p" & $index)
+      parameters.add(ctype(parameter.type) & " p" & $index)
+      args.add("&p" & $index)
+    foreignDeclarations.add("extern void " & gateName(fn.name) & "(" & pointers.join(", ") & ");")
+    let returns = fn.ret != nil and fn.ret.kind != TypeKind.Void
+    let call = gateName(fn.name) & "(" & (if returns: "&result" else: "NULL") &
+      (if args.len > 0: ", " & args.join(", ") else: "") & ");"
+    let body = (if returns: ctype(fn.ret) & " result; " else: "") & call &
+      (if returns: " return result;" else: "")
+    let params = if parameters.len == 0: "void" else: parameters.join(", ")
+    adapters.add(ctype(fn.ret) & " " & convention(fn.abi) & callbackName(fn.name) & "(" & params & ") { " & body & " }")
+    if fn.abi.len > 0:
+      adapters.add((if fn.public: "__declspec(dllexport) " else: "") & ctype(fn.ret) & " " &
+        convention(fn.abi) & cTypes.symbol(fn.name) & "(" & params & ") { " & body & " }")
+  var indirects = initTable[string, bool]()
+  proc indirect(i: Instruction) =
+    if i == nil: return
+    if i.kind == InstrKind.Call and i.callee.type != nil:
+      let t = i.callee.type
+      let name = indirectName(t)
+      if not indirects.hasKey(name):
+        indirects[name] = true
+        var params = @["void *out", "void *callee"]
+        var args: seq[string]
+        for index, parameter in t.params:
+          params.add("const void *p" & $index)
+          args.add("*(const " & ctype(parameter) & " *)p" & $index)
+        let call = "((" & ctype(t) & ")callee)(" & args.join(", ") & ")"
+        adapters.add("void " & name & "(" & params.join(", ") & ") { " &
+          (if t.ret == nil or t.ret.kind == TypeKind.Void: "(void)out; " & call & ";"
+           else: "*(" & ctype(t.ret) & " *)out = " & call & ";") & " }")
+    if i.fallback != nil:
+      for child in i.fallback.instrs: indirect(child)
+      indirect(i.fallback.term)
+  for fn in module.funcs:
+    for b in fn.blocks:
+      for i in b.instrs: indirect(i)
+      indirect(b.term)
   var comparisons: Table[string, string]
   proc comparator(t: node.Type; relation: string): string =
     result = comparisonName(t, relation)
@@ -161,13 +217,24 @@ proc support*(module: Module; target: string): Support =
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#define FOO_STDCALL __stdcall
+#define FOO_FASTCALL __fastcall
+#define FOO_VECTORCALL __vectorcall
+#define FOO_THISCALL __thiscall
 typedef unsigned __int128 foo_u128;
 typedef __int128 foo_i128;
 static _Noreturn void foo_panic(const char *message) { fprintf(stderr, "%s\n", message); exit(1); }
 """ & memoryCode & "\n" & traceCode & "\n" & copyCode & "\n" & types.declarations.join("\n") & "\n" &
-    checks.join("\n") & "\n" & generated.code & "\n" & adapters.join("\n") & "\n" &
+    checks.join("\n") & "\n" & generated.code & "\n" & foreignDeclarations.join("\n") & "\n" & adapters.join("\n") & "\n" &
     prototypes.join("\n") & "\n" & comparisonCode.join("\n") & "\n" & exports.join("\n") & "\n" & """
 void foo_llvm_panic(const char *message) { foo_panic(message); }
+void foo_llvm_init(int argc, char **argv) {
+#ifdef FOO_SERVICE
+  foo_service_init(argc, argv);
+#else
+  (void)argc; (void)argv;
+#endif
+}
 void foo_llvm_trace(const char *slot, const char *file, uint64_t offset) { foo_trace(slot, file, (size_t)offset); }
 void foo_llvm_finish(const char *error) { if (error) fprintf(stderr, "%s\n", error); foo_shutdown(); }
 void foo_llvm_close(void *region) { foo_close(region); }

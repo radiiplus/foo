@@ -1,8 +1,9 @@
 ## Typed IR lowering; typing, specialization and ownership stay in the frontend.
 import std/[algorithm, json, os, sequtils, strutils, tables, sets]
-import ../../ir/[node, kind]
+import ../../ir/[node, kind, monomorph]
 import ./layout
 import ./runtime
+import ./abi
 
 type
   State = ref object
@@ -43,11 +44,13 @@ proc literal(state: State; text: string): string = state.literal(text.toOpenArra
 proc gep(ctx: Context; pointer: string; offset: int): string =
   if offset == 0: return pointer
   result = ctx.fresh(); ctx.add(result & " = getelementptr i8, ptr " & pointer & ", i64 " & $offset)
-proc load(ctx: Context; t: node.Type; pointer: string): string =
+proc load(ctx: Context; t: node.Type; pointer: string; volatileAccess = false): string =
   if llvmType(t) == "void": return "zeroinitializer"
-  result = ctx.fresh(); ctx.add(result & " = load " & llvmType(t) & ", ptr " & pointer & ", align 1")
-proc store(ctx: Context; t: node.Type; text, pointer: string) =
-  if llvmType(t) != "void": ctx.add("store " & llvmType(t) & " " & text & ", ptr " & pointer & ", align 1")
+  let qualifier = if volatileAccess: "volatile " else: ""
+  result = ctx.fresh(); ctx.add(result & " = load " & qualifier & llvmType(t) & ", ptr " & pointer & ", align 1")
+proc store(ctx: Context; t: node.Type; text, pointer: string; volatileAccess = false) =
+  let qualifier = if volatileAccess: "volatile " else: ""
+  if llvmType(t) != "void": ctx.add("store " & qualifier & llvmType(t) & " " & text & ", ptr " & pointer & ", align 1")
 proc boxed(ctx: Context; t: node.Type; text: string): string =
   result = ctx.temporary(t); ctx.store(t, text, result)
 proc value(ctx: Context; v: Value): string
@@ -62,7 +65,8 @@ proc value(ctx: Context; v: Value): string =
     if not ctx.registers.hasKey(v.name): raise newException(ValueError, "undefined IR register " & v.name)
     return ctx.load(t, ctx.registers[v.name])
   of ValueKind.Global:
-    if t.kind in {TypeKind.Function, TypeKind.Ptr}: return symbol(v.name)
+    if t.kind == TypeKind.Function: return "@" & callbackName(v.name)
+    if t.kind == TypeKind.Ptr: return symbol(v.name)
     return ctx.load(t, symbol(v.name))
   of ValueKind.Const:
     let text = if v.name.len > 0: v.name else: v.bits
@@ -220,8 +224,8 @@ proc instruction(ctx: Context; i: Instruction) =
       let owned = ctx.temporary(t)
       ctx.prologue.add("  store ptr null, ptr " & owned & ", align 1")
       ctx.store(t, pointer, owned); ctx.allocations.add(owned)
-  of InstrKind.Load: ctx.put(i.dest, ctx.load(t, ctx.value(i.ptr)))
-  of InstrKind.Store: ctx.store(i.ptr.type.elem, ctx.assign(i.ptr.type.elem, i.val), ctx.value(i.ptr))
+  of InstrKind.Load: ctx.put(i.dest, ctx.load(t, ctx.value(i.ptr), i.ptr.type.volatile or i.ptr.type.elem.volatile))
+  of InstrKind.Store: ctx.store(i.ptr.type.elem, ctx.assign(i.ptr.type.elem, i.val), ctx.value(i.ptr), i.ptr.type.volatile or i.ptr.type.elem.volatile)
   of InstrKind.Add, InstrKind.Sub, InstrKind.Mul, InstrKind.Div, InstrKind.Remainder:
     if t.kind == TypeKind.Slice and i.kind == InstrKind.Add:
       let a = ctx.boxed(t, ctx.value(i.val)); let b = ctx.boxed(t, ctx.value(i.val2))
@@ -238,8 +242,16 @@ proc instruction(ctx: Context; i: Instruction) =
       var args = @["ptr " & (if t == nil or t.kind == TypeKind.Void: "null" else: ctx.registers[i.dest.name])]
       for index, arg in i.args: args.add("ptr " & ctx.boxed(external.params[index], ctx.assign(external.params[index], arg)))
       ctx.add("call void @" & bridgeName(external.name) & "(" & args.join(", ") & ")")
+    elif i.callee.type != nil:
+      let name = indirectName(i.callee.type)
+      ctx.state.intrinsics.incl("indirect:" & name & ":" & $(i.args.len + 2))
+      var args = @["ptr " & (if t == nil or t.kind == TypeKind.Void: "null" else: ctx.registers[i.dest.name]), "ptr " & ctx.value(i.callee)]
+      for index, arg in i.args:
+        let parameter = i.callee.type.params[index]
+        args.add("ptr " & ctx.boxed(parameter, ctx.assign(parameter, arg)))
+      ctx.add("call void @" & name & "(" & args.join(", ") & ")")
     else:
-      let called = if i.callee.type != nil: ctx.value(i.callee) else: symbol(i.func)
+      let called = symbol(i.func)
       var args: seq[string]
       for arg in i.args: args.add(llvmType(arg.type) & " " & ctx.value(arg))
       let resultType = if t == nil: "void" else: llvmType(t)
@@ -393,7 +405,9 @@ proc emit*(module: Module; triple, layout: string; source = "main.iv"): string =
   for fn in module.funcs:
     if fn.name == "main": entry = fn
     if fn.typeParams.len > 0: raise newException(ValueError, "generic function must be specialized by IR prepare: " & fn.name)
-    if fn.abi.len > 0 or fn.attributes.anyIt(it in ["naked", "interrupt", "start"]): raise newException(ValueError, "foreign/machine convention outside core gate: " & fn.name)
+    discard convention(fn.abi)
+    if fn.attributes.anyIt(it in ["naked", "interrupt", "start"]): raise newException(ValueError, "machine convention outside hosted runtime gate: " & fn.name)
+    state.declarations.add("declare void @" & callbackName(fn.name) & "(...)")
     let ctx = Context(state: state, fn: fn, registers: initTable[string, string](), cells: initTable[string, string](), regions: initTable[string, string](), blocks: initTable[string, Block]())
     proc register(v: Value) =
       if v.kind == ValueKind.Reg and v.type != nil and v.type.kind notin {TypeKind.Void, TypeKind.Memory, TypeKind.Region, TypeKind.Trace} and not ctx.registers.hasKey(v.name): ctx.registers[v.name] = ctx.temporary(v.type)
@@ -418,10 +432,27 @@ proc emit*(module: Module; triple, layout: string; source = "main.iv"): string =
         try: ctx.instruction(i)
         except ValueError as error:
           raise newException(ValueError, i.span.file & ":" & $i.span.start & ".." & $i.span.end & " (source offsets) in " & fn.name & ": LLVM " & error.msg)
-    state.functions.add("define " & llvmType(fn.ret) & " " & symbol(fn.name) & "(" & parameters.join(", ") & ") {\nprologue:\n" & ctx.prologue.join("\n") & "\n  br label %" & label(fn.blocks[0].label) & "\n" & ctx.lines.join("\n") & "\n}")
+    # FOO's shared proof/budget owns call-boundary elimination. A pure IR
+    # operation can still introduce runtime calls in this lowering (e.g. an
+    # aggregate comparison), so metadata also requires call-free lowering.
+    let attributes = " noinline" & (if pureFunction(fn) and
+      not ctx.lines.anyIt(it.contains("call ")): " memory(none)" else: "")
+    state.functions.add("define " & llvmType(fn.ret) & " " & symbol(fn.name) & "(" & parameters.join(", ") & ")" & attributes & " {\nprologue:\n" & ctx.prologue.join("\n") & "\n  br label %" & label(fn.blocks[0].label) & "\n" & ctx.lines.join("\n") & "\n}")
+    var gateParameters = @["ptr %out"]
+    var gateLines, gateArgs: seq[string]
+    for index, parameter in fn.params:
+      let typ = llvmType(parameter.type)
+      gateParameters.add("ptr %p" & $index)
+      gateLines.add("  %v" & $index & " = load " & typ & ", ptr %p" & $index & ", align 1")
+      gateArgs.add(typ & " %v" & $index)
+    let returns = fn.ret != nil and fn.ret.kind != TypeKind.Void
+    gateLines.add("  " & (if returns: "%result = " else: "") & "call " & llvmType(fn.ret) & " " & symbol(fn.name) & "(" & gateArgs.join(", ") & ")")
+    if returns: gateLines.add("  store " & llvmType(fn.ret) & " %result, ptr %out, align 1")
+    gateLines.add("  ret void")
+    state.functions.add("define void @" & gateName(fn.name) & "(" & gateParameters.join(", ") & ") {\nentry:\n" & gateLines.join("\n") & "\n}")
   if entry == nil: raise newException(ValueError, "LLVM executable requires an entry point")
   if entry.params.len > 0: raise newException(ValueError, "entry must be parameterless")
-  let ty = llvmType(entry.ret); var main = "define i32 @main() {\nentry:\n"
+  let ty = llvmType(entry.ret); var main = "define i32 @main(i32 %argc, ptr %argv) {\nentry:\n  call void @foo_llvm_init(i32 %argc, ptr %argv)\n"
   if ty == "void": main.add("  call void " & symbol(entry.name) & "()\n  call void @foo_llvm_finish(ptr null)\n  ret i32 0\n")
   elif entry.ret.kind == TypeKind.Failable:
     main.add("  %result = call " & ty & " " & symbol(entry.name) & "()\n  %memory = alloca " & ty & "\n  store " & ty & " %result, ptr %memory, align 1\n  %error = load ptr, ptr %memory, align 1\n  call void @foo_llvm_finish(ptr %error)\n  %failed = icmp ne ptr %error, null\n  %status = zext i1 %failed to i32\n  ret i32 %status\n")
@@ -433,13 +464,17 @@ proc emit*(module: Module; triple, layout: string; source = "main.iv"): string =
   state.functions.add(main & "}")
   var intrinsicNames = toSeq(state.intrinsics); intrinsicNames.sort()
   for intrinsic in intrinsicNames:
-    if intrinsic.startsWith("compare:"): state.declarations.add("declare i8 @" & intrinsic[8..^1] & "(ptr, ptr)")
+    if intrinsic.startsWith("indirect:"):
+      let parts = intrinsic.split(':')
+      state.declarations.add("declare void @" & parts[1] & "(" & newSeqWith(parseInt(parts[2]), "ptr").join(", ") & ")")
+    elif intrinsic.startsWith("compare:"): state.declarations.add("declare i8 @" & intrinsic[8..^1] & "(ptr, ptr)")
     else:
       let ty = intrinsic.split('.')[^1]; state.declarations.add("declare { " & ty & ", i1 } @" & intrinsic & "(" & ty & ", " & ty & ")")
   result = "; FOO LLVM backend\ntarget triple = " & escape(triple) & "\ntarget datalayout = " & escape(layout) & "\n" & state.globals.join("\n") & "\n" & state.declarations.join("\n") & "\n" & """
 declare void @foo_llvm_panic(ptr)
 declare void @foo_llvm_trace(ptr, ptr, i64)
 declare void @foo_llvm_finish(ptr)
+declare void @foo_llvm_init(i32, ptr)
 declare void @foo_llvm_close(ptr)
 declare ptr @foo_llvm_reserve(ptr, i64)
 declare ptr @foo_llvm_alloc(i64)
