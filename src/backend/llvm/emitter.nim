@@ -16,7 +16,7 @@ proc llvmString(value: string): string =
 proc quotedName(name: string): string = "\"" & name.replace("\\", "\\5C").replace("\"", "\\22") & "\""
 proc functionName(name: string): string = "@" & quotedName("foo." & name)
 
-proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceFile = "main.iv"; hosted = true; cpu = ""): string =
+proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceFile = "main.iv"; hosted = true; cpu = ""; modernMemory = true): string =
   let profile = targetArch.profile(triple,cpu)
   var startup = false
   var contracts = initTable[string,NativeContract]()
@@ -309,6 +309,42 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
             if edge.label == predecessor: pending.add((i.dest,assigned(edge.value,i.dest.type)))
       for pair in pending: save(pair.dest,pair.expression)
       branch(label)
+    proc packedComparison(typ: node.Type; left, right, operation: string): string =
+      # Logical fields determine order; padding and backing integer order do not.
+      let backing = "i" & $max(1,packedBits(typ))
+      let a = temp(); let b = temp()
+      line(a & " = load " & backing & ", ptr " & left & ", align 1")
+      line(b & " = load " & backing & ", ptr " & right & ", align 1")
+      var leaves: seq[tuple[typ: node.Type, bit: int]]
+      proc fields(t: node.Type; bit: int) =
+        if t.kind == TypeKind.PackedStruct:
+          var at = bit
+          for field in t.fields.values:
+            fields(field,at); at += packedBits(field)
+        else: leaves.add((t,bit))
+      fields(typ,0)
+      var order = "0"
+      for index in countdown(leaves.high,0):
+        let field = leaves[index]
+        let fieldType = "i" & $packedBits(field.typ)
+        proc extract(input: string): string =
+          result = input
+          if field.bit > 0:
+            result = temp(); line(result & " = lshr " & backing & " " & input & ", " & $field.bit)
+          if fieldType != backing:
+            let narrowed = temp(); line(narrowed & " = trunc " & backing & " " & result & " to " & fieldType); result = narrowed
+        let x = extract(a); let y = extract(b)
+        let same = temp(); let less = temp(); let difference = temp(); let next = temp()
+        line(same & " = icmp eq " & fieldType & " " & x & ", " & y)
+        line(less & " = icmp " & (if field.typ.kind == TypeKind.Int: "slt" else:"ult") & " " & fieldType & " " & x & ", " & y)
+        line(difference & " = select i1 " & less & ", i32 -1, i32 1")
+        line(next & " = select i1 " & same & ", i32 " & order & ", i32 " & difference)
+        order = next
+      let predicate = {"equals":"eq", "does-not-equal":"ne", "less-than":"slt",
+        "less-or-equal":"sle", "greater-than":"sgt", "greater-or-equal":"sge"}.toTable[operation]
+      let comparison = temp(); result = temp()
+      line(comparison & " = icmp " & predicate & " i32 " & order & ", 0")
+      line(result & " = zext i1 " & comparison & " to i8")
     proc arithmetic(i: Instruction) =
       let t = i.dest.type; let ty = llvmType(t)
       if t.kind == TypeKind.Vector:
@@ -534,6 +570,9 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
           var typ = i.val.type
           if i.val2.type.kind == TypeKind.Optional: typ = i.val2.type
           let output = temp()
+          if typ.kind == TypeKind.PackedStruct:
+            save(i.dest,packedComparison(typ,box(i.val),box(i.val2),operation))
+            return
           if aggregate(typ):
             let helper = support.comparison(typ,operation)
             declarations[helper] = "declare i8 @" & helper & "(ptr, ptr)"
@@ -698,7 +737,7 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
       start(b.label)
       for i in b.instrs: instruction(i)
       instruction(b.term)
-    definitions.add("define " & (if "interrupt" in fn.attributes: "x86_intrcc " else: "") & llvmType(fn.ret) & " " & functionName(fn.name) & "(" & params.join(", ") & ") noinline" & (if pureFunction(fn) and not code.anyIt(it.contains("call ")): " memory(none)" else: "") & (if "interrupt" in fn.attributes: " \"target-features\"=\"-sse,-sse2,-mmx\"" else: featureClause) & " {\nfoo.prologue:\n" &
+    definitions.add("define " & (if "interrupt" in fn.attributes: "x86_intrcc " else: "") & llvmType(fn.ret) & " " & functionName(fn.name) & "(" & params.join(", ") & ") noinline" & (if pureFunction(fn) and not code.anyIt(it.contains("call ")): (if modernMemory: " memory(none)" else: " readnone") else: "") & (if "interrupt" in fn.attributes: " \"target-features\"=\"-sse,-sse2,-mmx\"" else: featureClause) & " {\nfoo.prologue:\n" &
       allocas.join("\n") & "\n" & initializers.join("\n") & "\n  br label %" & quotedName(fn.blocks[0].label) & "\n" & code.join("\n") & "\n}")
     if "interrupt" in fn.attributes: continue
     var gateParams = @["ptr %out"]
@@ -722,7 +761,7 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
     if entry.ret.kind == TypeKind.Void: entrypoint.add("  call void " & functionName("main") & "()\n")
     elif entry.ret.kind == TypeKind.Failable:
       entrypoint.add("  %result = call " & llvmType(entry.ret) & " " & functionName("main") & "()\n  %cell = alloca " & llvmType(entry.ret) & ", align " & $measure(entry.ret).alignment &
-        "\n  store " & llvmType(entry.ret) & " %result, ptr %cell, align 1\n  %error = load ptr, ptr %cell, align 1\n  %failed = icmp ne ptr %error, null\n  br i1 %failed, label %failure, label %success\nfailure:\n  call void @foo_llvm_panic(ptr %error)\n  unreachable\nsuccess:\n")
+        "\n  store " & llvmType(entry.ret) & " %result, ptr %cell, align 1\n  %error = load ptr, ptr %cell, align 1\n  %failed = icmp ne ptr %error, null\n  br i1 %failed, label %failure, label %success\nfailure:\n  call void @foo_llvm_entry_error(ptr %error)\n  unreachable\nsuccess:\n")
     else: entrypoint.add("  %ignored = call " & llvmType(entry.ret) & " " & functionName("main") & "()\n")
     var exitValue = "0"
     if entry.ret.kind in {TypeKind.Int, TypeKind.Uint}:
