@@ -511,7 +511,10 @@ proc validate*(module: Module): seq[ValidationError] =
           if instruction.args.len != signature.params.len: fail("Call argument count does not match its signature")
           for argumentIndex, argument in instruction.args:
             if argumentIndex < signature.params.len and not compatible(argument, signature.params[argumentIndex]):
-              fail("Call argument " & $(argumentIndex + 1) & " has the wrong type")
+              fail("Call " & instruction.func & " argument " & $(argumentIndex + 1) &
+                " has the wrong type: " & argument.`type`.label & " instead of " &
+                signature.params[argumentIndex].label & " at " & instruction.span.file &
+                ":" & $instruction.span.start)
           if instruction.dest.`type` != nil and not same(instruction.dest.`type`, signature.ret):
             fail("Call result does not match its signature")
       if instruction.kind == InstrKind.Cjump and

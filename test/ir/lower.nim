@@ -3,7 +3,7 @@ import ../../src/ast/node as ast
 import ../../src/diag/span
 import ../../src/ir/[kind, lower, monomorph, node, valid]
 
-let position = Span(start: 0, `end`: 1, line: 1, col: 1)
+let position = Span(start: 0, `end`: 1, line: 1, col: 1, file: "lower.iv")
 proc name(value: string): ast.Name = ast.Name(tag: "name", span: position, text: value)
 let function = ast.Function(tag: "function", span: position, name: name("main"),
   returnType: ast.Primitive(tag: "primitive", span: position, name: "integer"),
@@ -27,6 +27,10 @@ doAssert module.funcs[0].blocks[0].instrs.len == 1
 doAssert module.funcs[0].blocks[0].instrs[0].kind == InstrKind.Add
 doAssert module.funcs[0].blocks[0].instrs[0].val.name == "40"
 doAssert module.funcs[0].blocks[0].instrs[0].val2.name == "2"
+doAssert module.funcs[0].blocks[0].instrs[0].span.file == "lower.iv"
+doAssert module.funcs[0].blocks[0].instrs[0].span.start == 0
+doAssert module.funcs[0].blocks[0].instrs[0].span.`end` == 1
+doAssert module.funcs[0].blocks[0].term.span.file == "lower.iv"
 
 let increment = ast.Function(tag: "function", span: position, name: name("increment"),
   params: @[ast.Parameter(tag: "parameter", span: position, name: name("value"),

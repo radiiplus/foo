@@ -176,10 +176,15 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
   var pending = initHashSet[string]()
   var instructions: seq[Instruction]
   var serial = 0
+  var activeSpan = SourceSpan(file: functionNode.span.file,
+    start: functionNode.span.start, `end`: functionNode.span.`end`)
   proc fresh(typ: `Type`): Value =
     inc serial
     Value(kind: ValueKind.Reg, name: "tmp_" & $serial, `type`: typ)
-  proc emit(instruction: Instruction) = instructions.add(instruction)
+  proc emit(instruction: Instruction) =
+    if instruction.span.file.len == 0 and instruction.span.start == 0:
+      instruction.span = activeSpan
+    instructions.add(instruction)
   proc adapt(value: Value; expected: `Type`): Value =
     if expected == nil or value.type == nil: return value
     let numeric = {TypeKind.Int, TypeKind.Uint, TypeKind.Float}
@@ -204,6 +209,8 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
   var term: Instruction
   var loops: seq[tuple[head: string, exit: string, depth: int]]
   proc finish(ending: Instruction) =
+    if ending != nil and ending.span.file.len == 0 and ending.span.start == 0:
+      ending.span = activeSpan
     blocks.add(node.Block(label: label, instrs: instructions, term: ending))
   proc begin(name: string) =
     label = name
@@ -219,6 +226,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
     result = initTable[string, Value]()
     for key, value in source: result[key] = value
   proc expression(node: ast.Expression; expected: `Type` = nil): Value
+  proc expressionImpl(node: ast.Expression; expected: `Type`): Value
   proc statements(body: seq[ast.Statement])
   proc cleanup(first: int; failed: Value = Value(); status = -1)
   proc propagate(value: Value): Value
@@ -249,6 +257,12 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       return dest
     raise newException(ValueError, "Assignment requires a dynamic place")
   proc expression(node: ast.Expression; expected: `Type` = nil): Value =
+    let previous = activeSpan
+    if node != nil:
+      activeSpan = SourceSpan(file: node.span.file, start: node.span.start, `end`: node.span.`end`)
+    defer: activeSpan = previous
+    expressionImpl(node, expected)
+  proc expressionImpl(node: ast.Expression; expected: `Type`): Value =
     if node == nil: return Value(kind: ValueKind.Const, name: "null", `type`: expected)
     proc invokeZero(callee: Value; name = "";
         arguments: seq[ast.Expression] = @[]): Value =
@@ -263,7 +277,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       emit(Instruction(kind: InstrKind.Call, dest: dest,
         `func`: name, callee: if name.len == 0: callee else: Value(),
         abi: signature.abi, symbol: if name.len > 0: symbols.getOrDefault(name) else: "",
-        args: args))
+        args: args, span: SourceSpan(file: node.span.file, start: node.span.start, `end`: node.span.`end`)))
       if signature.ret.kind == TypeKind.Void:
         Value(kind: ValueKind.Const, name: "{}", `type`: signature.ret)
       else:
@@ -370,7 +384,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
           field: ast.Field(node).field.text))
       if node.tag == "field" and ast.Field(node).invoke:
         return invokeZero(dest)
-      return dest
+      return adapt(dest, expected)
     of "embed":
       let embedded = ast.Embed(node)
       let target = if expected != nil: expected elif embedded.type != nil: lowerType(embedded.type, aliases) else: `Type`(kind: TypeKind.Slice, constant: true, elem: `Type`(kind: TypeKind.Uint, width: 8))
@@ -613,7 +627,8 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
           let dest = if sig.ret.kind == TypeKind.Void: Value() else: fresh(sig.ret)
           emit(Instruction(kind: InstrKind.Call, dest: dest,
             `func`: if indirect.name.len == 0: name else: "", callee: indirect,
-            abi: sig.abi, symbol: symbols.getOrDefault(name), args: args, typeArgs: typeArgs))
+            abi: sig.abi, symbol: symbols.getOrDefault(name), args: args, typeArgs: typeArgs,
+            span: SourceSpan(file: node.span.file, start: node.span.start, `end`: node.span.`end`)))
           return if sig.ret.kind == TypeKind.Void: Value(kind: ValueKind.Const, name: "{}", `type`: sig.ret) else: dest
       let callee = expression(call.callee)
       if callee.type == nil or callee.type.kind != TypeKind.Function:
@@ -665,10 +680,13 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       return if machine.operation == "system": dest else: Value(kind: ValueKind.Const, name: "void", `type`: unit)
     else: raise newException(ValueError, "lowering for expression '" & node.tag & "' is not implemented")
   proc statements(body: seq[ast.Statement]) =
+    let previousSpan = activeSpan
+    defer: activeSpan = previousSpan
     let outer = snapshot(environment)
     let saved = snapshot(slots)
     scopes.add(@[])
     for statement in body:
+      activeSpan = SourceSpan(file: statement.span.file, start: statement.span.start, `end`: statement.span.`end`)
       case statement.tag
       of "unsafe":
         statements(ast.Unsafe(statement).body.stmts)
