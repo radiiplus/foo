@@ -227,7 +227,13 @@ proc instruction(ctx: Context; i: Instruction) =
   of InstrKind.Load: ctx.put(i.dest, ctx.load(t, ctx.value(i.ptr), i.ptr.type.volatile or i.ptr.type.elem.volatile))
   of InstrKind.Store: ctx.store(i.ptr.type.elem, ctx.assign(i.ptr.type.elem, i.val), ctx.value(i.ptr), i.ptr.type.volatile or i.ptr.type.elem.volatile)
   of InstrKind.Add, InstrKind.Sub, InstrKind.Mul, InstrKind.Div, InstrKind.Remainder:
-    if t.kind == TypeKind.Slice and i.kind == InstrKind.Add:
+    if t.kind == TypeKind.Vector:
+      let left = ctx.boxed(t, ctx.value(i.val)); let right = ctx.boxed(t, ctx.value(i.val2))
+      let scalar = Instruction(kind: i.kind, dest: Value(type: t.elem))
+      for lane in 0..<t.width:
+        let offset = lane * measure(t.elem).size
+        ctx.store(t.elem, ctx.numeric(scalar, ctx.load(t.elem, ctx.gep(left, offset)), ctx.load(t.elem, ctx.gep(right, offset))), ctx.gep(ctx.registers[i.dest.name], offset))
+    elif t.kind == TypeKind.Slice and i.kind == InstrKind.Add:
       let a = ctx.boxed(t, ctx.value(i.val)); let b = ctx.boxed(t, ctx.value(i.val2))
       ctx.add("call void @foo_llvm_join(ptr " & ctx.registers[i.dest.name] & ", ptr " & a & ", ptr " & b & ")")
     else: ctx.put(i.dest, ctx.numeric(i, ctx.assign(t, i.val), ctx.assign(t, i.val2)))
@@ -235,8 +241,90 @@ proc instruction(ctx: Context; i: Instruction) =
   of InstrKind.Convert: ctx.put(i.dest, ctx.assign(t, i.val))
   of InstrKind.Compare:
     let typ = if i.val2.type.kind == TypeKind.Optional: i.val2.type else: i.val.type
-    ctx.put(i.dest, ctx.byteBool(ctx.compare(typ, ctx.assign(typ, i.val), ctx.assign(typ, i.val2), i.op)))
-  of InstrKind.Call:
+    if typ.kind == TypeKind.Vector:
+      let left = ctx.boxed(typ, ctx.value(i.val)); let right = ctx.boxed(typ, ctx.value(i.val2))
+      for lane in 0..<typ.width:
+        let offset = lane * measure(typ.elem).size
+        ctx.store(t.elem, ctx.byteBool(ctx.compare(typ.elem, ctx.load(typ.elem, ctx.gep(left, offset)), ctx.load(typ.elem, ctx.gep(right, offset)), i.op)), ctx.gep(ctx.registers[i.dest.name], lane))
+    else: ctx.put(i.dest, ctx.byteBool(ctx.compare(typ, ctx.assign(typ, i.val), ctx.assign(typ, i.val2), i.op)))
+  of InstrKind.Splat:
+    let value = ctx.assign(t.elem, i.val)
+    for lane in 0..<t.width: ctx.store(t.elem, value, ctx.gep(ctx.registers[i.dest.name], lane * measure(t.elem).size))
+  of InstrKind.Shuffle:
+    let left = ctx.boxed(i.val.type, ctx.value(i.val)); let right = ctx.boxed(i.val2.type, ctx.value(i.val2))
+    for index, lane in i.mask:
+      if lane < 0 or lane >= i.val.type.width + i.val2.type.width: raise newException(ValueError, "shuffle lane out of bounds")
+      let source = if lane < i.val.type.width: left else: right
+      let position = if lane < i.val.type.width: lane else: lane - i.val.type.width
+      ctx.store(t.elem, ctx.load(t.elem, ctx.gep(source, position * measure(t.elem).size)), ctx.gep(ctx.registers[i.dest.name], index * measure(t.elem).size))
+  of InstrKind.Select:
+    let mask = ctx.boxed(i.cond.type, ctx.value(i.cond))
+    let left = ctx.boxed(t, ctx.value(i.val)); let right = ctx.boxed(t, ctx.value(i.val2))
+    for lane in 0..<t.width:
+      let offset = lane * measure(t.elem).size
+      let condition = ctx.op("icmp ne", "i8", ctx.load(i.cond.type.elem, ctx.gep(mask, lane)), "0")
+      let value = ctx.fresh()
+      ctx.add(value & " = select i1 " & condition & ", " & llvmType(t.elem) & " " & ctx.load(t.elem, ctx.gep(left, offset)) & ", " & llvmType(t.elem) & " " & ctx.load(t.elem, ctx.gep(right, offset)))
+      ctx.store(t.elem, value, ctx.gep(ctx.registers[i.dest.name], offset))
+  of InstrKind.Gather, InstrKind.Scatter:
+    let sourceType = i.val.type
+    let source = ctx.boxed(sourceType, ctx.value(i.val))
+    let indices = ctx.boxed(i.val2.type, ctx.value(i.val2))
+    let output = ctx.registers[i.dest.name]
+    if i.kind == InstrKind.Scatter: ctx.store(t, ctx.value(i.val), output)
+    let values = if i.kind == InstrKind.Scatter: ctx.boxed(i.args[0].type, ctx.value(i.args[0])) else: ""
+    for lane in 0..<i.val2.type.width:
+      let indexType = i.val2.type.elem
+      var index = ctx.load(indexType, ctx.gep(indices, lane * measure(indexType).size))
+      index = ctx.converted(index, indexType, node.Type(kind: indexType.kind, width: 64))
+      ctx.guard(ctx.op("icmp uge", "i64", index, $sourceType.width), "IndexOutOfBounds")
+      let offset = ctx.op("mul", "i64", index, $measure(sourceType.elem).size)
+      let pointer = ctx.fresh()
+      ctx.add(pointer & " = getelementptr i8, ptr " & (if i.kind == InstrKind.Scatter: output else: source) & ", i64 " & offset)
+      if i.kind == InstrKind.Gather: ctx.store(t.elem, ctx.load(t.elem, pointer), ctx.gep(output, lane * measure(t.elem).size))
+      else: ctx.store(t.elem, ctx.load(t.elem, ctx.gep(values, lane * measure(t.elem).size)), pointer)
+  of InstrKind.Reduce:
+    let source = ctx.boxed(i.val.type, ctx.value(i.val))
+    var value = ctx.load(t, source)
+    let operation = if i.reduceOp.len == 0: "Add" else: i.reduceOp
+    for lane in 1..<i.val.type.width:
+      let next = ctx.load(t, ctx.gep(source, lane * measure(t).size))
+      if operation in ["Add", "Mul"]:
+        value = ctx.numeric(Instruction(kind: (if operation == "Add": InstrKind.Add else: InstrKind.Mul), dest: Value(type: t)), value, next)
+      elif operation in ["Min", "Max"]:
+        let chosen = ctx.compare(t, value, next, if operation == "Min": "is less than" else: "is greater than")
+        let selected = ctx.fresh()
+        ctx.add(selected & " = select i1 " & chosen & ", " & llvmType(t) & " " & value & ", " & llvmType(t) & " " & next)
+        value = selected
+      elif operation in ["And", "Or", "Xor"]: value = ctx.op(operation.toLowerAscii(), llvmType(t), value, next)
+      else: raise newException(ValueError, "unknown vector reduction " & operation)
+    ctx.put(i.dest, value)
+  of InstrKind.Atomic:
+    let order = case i.field
+      of "relaxed": "monotonic"
+      of "consume": "acquire"
+      of "acquire", "release", "acq_rel", "seq_cst": i.field
+      else: raise newException(ValueError, "unknown atomic ordering " & i.field)
+    if i.op == "fence":
+      if order == "monotonic": raise newException(ValueError, "a relaxed fence has no LLVM synchronization contract")
+      ctx.add("fence " & order)
+    else:
+      let element = i.ptr.type.elem
+      if element.kind notin {TypeKind.Int, TypeKind.Uint, TypeKind.Bool, TypeKind.Ptr} or measure(element).size > 8:
+        raise newException(ValueError, "atomic representation not qualified: " & element.label)
+      let typ = llvmType(element)
+      let alignment = $measure(element).alignment
+      let pointer = ctx.value(i.ptr)
+      if i.op == "store":
+        ctx.add("store atomic " & typ & " " & ctx.assign(element, i.val) & ", ptr " & pointer & " " & order & ", align " & alignment)
+      else:
+        let value = ctx.fresh()
+        if i.op == "load": ctx.add(value & " = load atomic " & typ & ", ptr " & pointer & " " & order & ", align " & alignment)
+        elif i.op in ["add", "swap"]:
+          ctx.add(value & " = atomicrmw " & (if i.op == "add": "add" else: "xchg") & " ptr " & pointer & ", " & typ & " " & ctx.assign(element, i.val) & " " & order & ", align " & alignment)
+        else: raise newException(ValueError, "unsupported atomic operation " & i.op)
+        if t != nil and t.kind != TypeKind.Void: ctx.put(i.dest, value)
+  of InstrKind.Call, InstrKind.Thread:
     if ctx.state.externs.hasKey(i.func):
       let external = ctx.state.externs[i.func]
       var args = @["ptr " & (if t == nil or t.kind == TypeKind.Void: "null" else: ctx.registers[i.dest.name])]

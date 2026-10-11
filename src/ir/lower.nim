@@ -436,9 +436,16 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
         elif expected != nil and expected.kind in {TypeKind.Failable, TypeKind.Optional}:
           expected.elem
         else: expected
-      let left = expression(binary.left, hint)
+      var left = expression(binary.left, hint)
       let right = expression(binary.right, left.type)
       let comparison = binary.op in ["equals", "does not equal", "is greater than", "is less than", "is at least", "is at most"]
+      # The checker can coerce a literal on the left to the typed right side.
+      # Preserve that decision instead of producing mixed signed/unsigned IR.
+      let checkedLeft = typed.getOrDefault(cast[pointer](binary.left))
+      if comparison and checkedLeft != nil and checkedLeft.kind == "literal" and
+          left.kind == ValueKind.Const and right.type != nil and
+          right.type.kind in {TypeKind.Int, TypeKind.Uint, TypeKind.Float}:
+        left = adapt(left, right.type)
       let resultType = if comparison and left.type.kind == TypeKind.Vector: `Type`(kind: TypeKind.Vector, width: left.type.width, elem: `Type`(kind: TypeKind.Bool)) elif comparison: `Type`(kind: TypeKind.Bool) else: left.type
       let dest = fresh(resultType)
       let operation = if comparison: InstrKind.Compare elif binary.op in ["plus", "+"]: InstrKind.Add elif binary.op in ["minus", "-"]: InstrKind.Sub elif binary.op in ["times", "*"]: InstrKind.Mul elif binary.op == "remainder": InstrKind.Remainder elif binary.op == "divided by": InstrKind.Div else: raise newException(ValueError, "lowering for binary operator '" & binary.op & "' is not implemented")
