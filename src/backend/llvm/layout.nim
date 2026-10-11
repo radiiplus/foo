@@ -52,8 +52,12 @@ proc measure*(t: node.Type): Layout =
       let measured = measure(member)
       payload.size = max(payload.size, measured.size); payload.alignment = max(payload.alignment, measured.alignment)
     result.alignment = max(if t.kind == TypeKind.TaggedUnion: 4 else: 1, payload.alignment)
-    result.offsets = @[0, if t.kind == TypeKind.TaggedUnion: rounded(4, payload.alignment) else: 0]
-    result.size = result.offsets[1] + rounded(payload.size, payload.alignment)
+    if t.kind == TypeKind.ExternUnion:
+      for field in t.fields.values: result.offsets.add(0)
+      result.size = rounded(payload.size, payload.alignment)
+    else:
+      result.offsets = @[0, rounded(4, payload.alignment)]
+      result.size = result.offsets[1] + rounded(payload.size, payload.alignment)
   of TypeKind.Array, TypeKind.Vector:
     let member = measure(t.elem)
     result = Layout(size: member.size * t.width, alignment: member.alignment)

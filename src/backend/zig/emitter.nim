@@ -207,13 +207,17 @@ proc emitInstr(instruction: Instruction; used: HashSet[string];
     let composite = instruction.val.type.kind in {TypeKind.Bool, TypeKind.Struct,
       TypeKind.PackedStruct, TypeKind.ExternStruct, TypeKind.TaggedUnion,
       TypeKind.Optional, TypeKind.Slice}
+    let commonType = if instruction.val2.type.kind == TypeKind.Optional:
+        instruction.val2.type else: instruction.val.type
+    let left = "@as(" & typeStr(commonType) & ", " & valueStr(instruction.val) & ")"
+    let right = "@as(" & typeStr(commonType) & ", " & valueStr(instruction.val2) & ")"
     if operation notin ["==", "!="] and composite:
       let relations = {"<": "== .lt", ">": "== .gt", "<=": "!= .gt", ">=": "!= .lt"}.toTable
-      return finish(destination & "shim.library.order(" & valueStr(instruction.val) & ", " &
-        valueStr(instruction.val2) & ") " & relations[operation] & ";")
+      return finish(destination & "shim.library.order(" & left & ", " &
+        right & ") " & relations[operation] & ";")
     if operation in ["==", "!="] and composite:
       return finish(destination & (if operation == "!=": "!" else: "") &
-        "shim.library.equal(" & valueStr(instruction.val) & ", " & valueStr(instruction.val2) & ");")
+        "shim.library.equal(" & left & ", " & right & ");")
     finish(destination & valueStr(instruction.val) & " " & operation & " " & valueStr(instruction.val2) & ";")
   of InstrKind.Length:
     finish(destination & "@as(" & typeStr(instruction.dest.type) & ", @intCast(" & valueStr(instruction.val) & ".len));")
@@ -229,6 +233,9 @@ proc emitInstr(instruction: Instruction; used: HashSet[string];
       for item in instruction.args: items.add(valueStr(item))
       return finish(destination & "&[_]" & typeStr(target.elem) &
         "{ " & items.join(", ") & " };")
+    if target.kind == TypeKind.Array:
+      return finish(destination & typeStr(target) & "{ " &
+        instruction.args.mapIt(valueStr(it)).join(", ") & " };")
     var fields: seq[string]
     if target.kind == TypeKind.TaggedUnion:
       fields.add("." & instruction.field & " = " &

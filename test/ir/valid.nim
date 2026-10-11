@@ -106,3 +106,33 @@ let invalidIndex = Module(funcs: @[Function(name: "index", ret: `Type`(kind: Typ
 ])])
 doAssert validate(invalidIndex).anyIt("matching element result" in it.msg)
 echo "IR validation parity: ok"
+
+# Static storage uses the same exact width proof as frontend literals.
+for entry in [
+    (kind: TypeKind.Uint,width: 128,value: "340282366920938463463374607431768211455",ok: true),
+    (kind: TypeKind.Uint,width: 128,value: "340282366920938463463374607431768211456",ok: false),
+    (kind: TypeKind.Int,width: 128,value: "-170141183460469231731687303715884105728",ok: true),
+    (kind: TypeKind.Int,width: 128,value: "-170141183460469231731687303715884105729",ok: false),
+    (kind: TypeKind.Int,width: 64,value: "-9223372036854775808",ok: true),
+    (kind: TypeKind.Uint,width: 64,value: "18446744073709551615",ok: true),
+    (kind: TypeKind.Int,width: 1,value: "-1",ok: true),
+    (kind: TypeKind.Int,width: 1,value: "1",ok: false)]:
+  let storage=Module(storage: @[Storage(name: "boundary",value: Value(kind: ValueKind.Const,name: entry.value,
+    `type`: `Type`(kind: entry.kind,width: entry.width)))])
+  doAssert (validate(storage).len == 0) == entry.ok
+
+let optionalStorage=Module(storage: @[Storage(name: "present",value: Value(kind: ValueKind.Const,name: "42",
+  `type`: `Type`(kind: TypeKind.Optional,elem: intType)))])
+doAssert validate(optionalStorage).len == 0
+optionalStorage.storage[0].value.name="2147483648"
+doAssert validate(optionalStorage).anyIt("Invalid static initializer" in it.msg)
+
+let arrayType=`Type`(kind: TypeKind.Array,elem: intType,width: 2)
+let arrayInstruction=Instruction(kind: InstrKind.Construct,
+  dest: Value(kind: ValueKind.Reg,name: "array",`type`: arrayType),args: @[
+    Value(kind: ValueKind.Const,name: "1",`type`: intType),Value(kind: ValueKind.Const,name: "2",`type`: intType)])
+let arrayModule=Module(funcs: @[Function(name: "array",ret: `Type`(kind: TypeKind.Void),blocks: @[
+  Block(label: "entry",instrs: @[arrayInstruction],term: Instruction(kind: InstrKind.Return))])])
+doAssert validate(arrayModule).len == 0
+arrayInstruction.args.setLen(1)
+doAssert validate(arrayModule).anyIt("Construction does not match" in it.msg)

@@ -245,6 +245,11 @@ proc value(state: EmitState; item: Value): string =
     return "(" & state.types.get(item.type) & "){" & id & ", " & $data.len & "}"
   if item.type != nil and item.type.kind == TypeKind.Optional and item.name == "null":
     return "(" & state.types.get(item.type) & "){0}"
+  if item.type != nil and item.type.kind in {TypeKind.Optional, TypeKind.Failable}:
+    var inner = item; inner.type = item.type.elem
+    return "(" & state.types.get(item.type) & "){ " &
+      (if item.type.kind == TypeKind.Optional: ".present = true" else: ".error = NULL") &
+      ", .value = " & state.value(inner) & " }"
   if item.type != nil and item.type.kind == TypeKind.Void: return "0"
   if item.name notin ["true", "false", "null"] and
       item.name.anyIt(not (it.isDigit or it in {'-', '+', '.', 'x', 'X', 'e', 'E', 'a'..'f', 'A'..'F'})):
@@ -709,6 +714,9 @@ proc instr(ctx: FunctionState; instruction: Instruction): string =
         (if instruction.args.len > 0: ", .payload." & name(instruction.field) &
           " = " & state.assigned(typ.variants[instruction.field],
             instruction.args[0]) else: "") & " };"
+    if typ.kind == TypeKind.Array:
+      return d & "(" & state.types.get(typ) & "){ .lane = { " &
+        instruction.args.mapIt(state.assigned(typ.elem,it)).join(", ") & " } };"
     if typ.kind notin {TypeKind.Struct, TypeKind.ExternStruct}:
       raise newException(ValueError, "Unsupported aggregate construction")
     var fields: seq[string]

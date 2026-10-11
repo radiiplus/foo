@@ -52,9 +52,38 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
     of TypeKind.Ptr, TypeKind.Function: (if v.name == "null": "null" else: raise newException(ValueError,"non-null pointer literal"))
     of TypeKind.Error: cstring(v.name)
     else: raise newException(ValueError,"non-scalar constant " & v.type.label)
+  proc initializer(v: Value): tuple[typ, literal: string] =
+    # Storage is addressed through opaque pointers. A constant's physical LLVM
+    # struct can therefore retain relocations while ordinary loads use the FOO
+    # byte-array representation. Padding is explicit and checked by layout tests.
+    if v.name == "undefined" or (v.type.kind == TypeKind.Optional and v.name == "null") or
+        (v.type.kind == TypeKind.Void and v.name in ["void", "{}"]):
+      return (llvmType(v.type), "zeroinitializer")
+    if v.type.kind == TypeKind.Slice:
+      let data = bytes(v.name)
+      return ("{ ptr, i64 }", "{ ptr " & stringPointer(data) & ", i64 " & $data.len & " }")
+    if v.type.kind in {TypeKind.Optional, TypeKind.Failable}:
+      let layout = measure(v.type)
+      let tagType = if v.type.kind == TypeKind.Optional: "i8" else: "ptr"
+      let tag = if v.type.kind == TypeKind.Optional: "1" else: "null"
+      let tagSize = if v.type.kind == TypeKind.Optional: 1 else: 8
+      var inner = v; inner.type = v.type.elem
+      let payload = if inner.type.kind == TypeKind.Void: (typ: "i8", literal: "0") else: initializer(inner)
+      let payloadSize = if inner.type.kind == TypeKind.Void: 1 else: measure(inner.type).size
+      var types = @[tagType]; var values = @[tagType & " " & tag]
+      proc padding(count: int) =
+        if count > 0:
+          let typ = "[" & $count & " x i8]"
+          types.add(typ); values.add(typ & " zeroinitializer")
+      padding(layout.offsets[1] - tagSize)
+      types.add(payload.typ); values.add(payload.typ & " " & payload.literal)
+      padding(layout.size - layout.offsets[1] - payloadSize)
+      return ("{ " & types.join(", ") & " }", "{ " & values.join(", ") & " }")
+    if aggregate(v.type): raise newException(ValueError,"LLVM global initializer is not representable by the frontend constant: " & v.type.label)
+    (llvmType(v.type), scalar(v))
   for item in module.storage:
-    if aggregate(item.value.type): raise newException(ValueError,"LLVM aggregate global initializer needs a constant serializer: " & item.name)
-    globals.add("@" & quotedName("storage." & item.name) & " = global " & llvmType(item.value.type) & " " & scalar(item.value) & ", align " & $measure(item.value.type).alignment)
+    let constant = initializer(item.value)
+    globals.add("@" & quotedName("storage." & item.name) & " = global " & constant.typ & " " & constant.literal & ", align " & $measure(item.value.type).alignment)
   for functionIndex in 0 ..< module.funcs.len:
     let fn = module.funcs[functionIndex]
     if fn.blocks.len == 0: raise newException(ValueError,"function has no blocks: " & fn.name)
@@ -95,9 +124,11 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
       for i in b.instrs: collect(i)
       collect(b.term)
     proc load(t: node.Type; address: string; volatile = false): string =
+      if t.kind == TypeKind.Void: return "zeroinitializer"
       result = temp()
       line(result & " = load " & (if volatile: "volatile " else: "") & llvmType(t) & ", ptr " & address & ", align 1")
     proc store(t: node.Type; value, address: string; volatile = false) =
+      if t.kind == TypeKind.Void: return
       line("store " & (if volatile: "volatile " else: "") & llvmType(t) & " " & value & ", ptr " & address & ", align 1")
     proc offset(address: string; bytes: string): string =
       result = temp(); line(result & " = getelementptr i8, ptr " & address & ", i64 " & bytes)
@@ -106,18 +137,29 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
       if v.kind == ValueKind.Reg and v.name in slots: return slots[v.name]
       result = stack(v.type); store(v.type,value(v),result)
     proc value(v: Value): string =
+      if v.type != nil and v.type.kind == TypeKind.Void: return "zeroinitializer"
+      if v.kind == ValueKind.Const and v.name == "undefined": return "zeroinitializer"
       case v.kind
       of ValueKind.Reg:
         if v.name notin slots: raise newException(ValueError,"undefined typed register " & v.name)
         return load(v.type, slots[v.name])
       of ValueKind.Global:
         if v.name in functions: return functionName(v.name)
+        if v.name in externs: return functionName(v.name)
         for item in module.storage:
           if item.name == v.name: return "@" & quotedName("storage." & v.name)
         raise newException(ValueError,"undefined global " & v.name)
       of ValueKind.Const: discard
       if aggregate(v.type):
         if v.type.kind == TypeKind.Optional and v.name == "null": return "zeroinitializer"
+        if v.type.kind in {TypeKind.Optional,TypeKind.Failable}:
+          let address = stack(v.type); store(v.type,"zeroinitializer",address)
+          if v.type.kind == TypeKind.Optional: store(node.Type(kind:TypeKind.Bool),"1",address)
+          if v.type.elem.kind != TypeKind.Void:
+            var inner = v; inner.type = v.type.elem
+            store(inner.type,value(inner),offset(address,$measure(v.type).offsets[1]))
+          return load(v.type,address)
+        if v.name in ["void", "{}"]: return "zeroinitializer"
         if v.type.kind == TypeKind.Slice:
           let data = bytes(v.name); let address = stack(v.type)
           store(node.Type(kind: TypeKind.Ptr),stringPointer(data),address)
@@ -195,7 +237,7 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
       var pending: seq[tuple[dest:Value, expression:string]]
       var index = 0
       for p in target.params:
-        if p.type.kind != TypeKind.Memory:
+        if p.type.kind notin {TypeKind.Memory, TypeKind.Void}:
           while index < args.len and args[index].type.kind == TypeKind.Memory: inc index
           if index >= args.len: raise newException(ValueError,"missing block argument")
           pending.add((p,assigned(args[index],p.type))); inc index
@@ -308,7 +350,9 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
             else: raise newException(ValueError,"unbound call " & i.func)
             if parameters.len != i.args.len: raise newException(ValueError,"call arity mismatch")
             var args: seq[string]
-            for index, arg in i.args: args.add(llvmType(parameters[index]) & " " & assigned(arg,parameters[index]))
+            for index, arg in i.args:
+              if parameters[index].kind != TypeKind.Void:
+                args.add(llvmType(parameters[index]) & " " & assigned(arg,parameters[index]))
             let output = if ret.kind == TypeKind.Void: "" else: temp()
             line((if output.len == 0: "" else: output & " = ") & "call " & llvmType(ret) & " " & target & "(" & args.join(", ") & ")")
             if output.len > 0: save(i.dest,output)
@@ -474,6 +518,7 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
         raise newException(ValueError,i.span.file & ":" & $i.span.start & " (source offset), " & fn.name & ": LLVM " & error.msg)
     var params: seq[string]
     for index, p in fn.params:
+      if p.type.kind == TypeKind.Void: continue
       params.add(llvmType(p.type) & " %arg" & $index)
       initializers.add("  store " & llvmType(p.type) & " %arg" & $index & ", ptr " & slots[p.name] & ", align 1")
     for b in fn.blocks:
@@ -483,6 +528,32 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
       instruction(b.term)
     definitions.add("define " & llvmType(fn.ret) & " " & functionName(fn.name) & "(" & params.join(", ") & ") noinline" & (if scalarMemoryProof(fn): " memory(none)" else: "") & " {\nfoo.prologue:\n" &
       allocas.join("\n") & "\n" & initializers.join("\n") & "\n  br label %" & quotedName(fn.blocks[0].label) & "\n" & code.join("\n") & "\n}")
+  # First-class runtime functions use the same internal ABI as FOO functions.
+  # The body boxes arguments at the pointer adapter; a C ABI function pointer
+  # must never masquerade as an internal aggregate function value.
+  for external in module.externs:
+    let adapter = bridgeName(external)
+    declarations[adapter] = "declare void @" & adapter & "(" & newSeqWith(external.params.len + 1,"ptr").join(", ") & ")"
+    var parameters, body: seq[string]
+    var arguments = @["ptr " & (if external.ret.kind == TypeKind.Void: "null" else:"%out")]
+    if external.ret.kind != TypeKind.Void:
+      body.add("  %out = alloca " & llvmType(external.ret) & ", align " & $measure(external.ret).alignment)
+    for index, typ in external.params:
+      if typ.kind == TypeKind.Void:
+        arguments.add("ptr null")
+        continue
+      let slot = "%cell" & $index
+      parameters.add(llvmType(typ) & " %arg" & $index)
+      body.add("  " & slot & " = alloca " & llvmType(typ) & ", align " & $measure(typ).alignment)
+      body.add("  store " & llvmType(typ) & " %arg" & $index & ", ptr " & slot & ", align 1")
+      arguments.add("ptr " & slot)
+    body.add("  call void @" & adapter & "(" & arguments.join(", ") & ")")
+    if external.ret.kind == TypeKind.Void: body.add("  ret void")
+    else:
+      body.add("  %value = load " & llvmType(external.ret) & ", ptr %out, align 1")
+      body.add("  ret " & llvmType(external.ret) & " %value")
+    definitions.add("define " & llvmType(external.ret) & " " & functionName(external.name) &
+      "(" & parameters.join(", ") & ") noinline {\nentry:\n" & body.join("\n") & "\n}")
   if "main" notin functions: raise newException(ValueError,"LLVM executable requires an entry point")
   let entry = functions["main"]
   if entry.params.len > 0: raise newException(ValueError,"entry point must be parameterless")

@@ -1,6 +1,10 @@
 import std/[json, sets, strutils, tables, sequtils]
 import ./node
 import ./kind
+import ../types/coerce as typeCoerce
+import ../types/type as semantic
+
+type Type = node.Type
 
 type ValidationError* = object
   msg*: string
@@ -160,6 +164,27 @@ proc validate*(module: Module): seq[ValidationError] =
   for declaration in module.types: checkType(declaration.`type`)
   var globals = initTable[string, `Type`]()
   var signatures = initTable[string, tuple[params: seq[`Type`], ret: `Type`]]()
+  proc staticInitializer(value: Value): bool =
+    if value.type == nil: return false
+    case value.type.kind
+    of TypeKind.Int, TypeKind.Uint:
+      # Use the frontend's exact decimal range proof, including widths >64.
+      typeCoerce.canCoerce(semantic.Type(kind:"literal",value:value.name),
+        semantic.Type(kind:"primitive",name:(if value.type.kind == TypeKind.Int: "integer" else:"unsigned"),
+          width:(if value.type.width > 0: value.type.width else:32))).ok
+    of TypeKind.Float:
+      if value.bits.len == 0: discard parseFloat(value.name)
+      true
+    of TypeKind.Bool: value.name in ["true", "false"]
+    of TypeKind.Slice:
+      discard bytes(value.name)
+      true
+    of TypeKind.Optional, TypeKind.Failable:
+      if value.type.kind == TypeKind.Optional and value.name == "null": return true
+      var inner = value; inner.type = value.type.elem
+      staticInitializer(inner)
+    of TypeKind.Void: value.name in ["void", "{}"]
+    else: false
   for item in module.storage:
     if globals.hasKey(item.name) or module.funcs.anyIt(it.name == item.name) or module.externs.anyIt(it.name == item.name):
       fail("Duplicate storage symbol '" & item.name & "'")
@@ -168,21 +193,7 @@ proc validate*(module: Module): seq[ValidationError] =
       fail("Static storage needs a defined compile-time initializer")
     else:
       try:
-        case item.value.`type`.kind
-        of TypeKind.Int, TypeKind.Uint:
-          let number = parseBiggestInt(item.value.name.replace("_", ""))
-          let width = if item.value.`type`.width > 0: item.value.`type`.width else: 32
-          let minimum = if item.value.`type`.kind == TypeKind.Uint: 0'i64 else: -(1'i64 shl min(width - 1, 62))
-          let maximum = if item.value.`type`.kind == TypeKind.Uint: (if width >= 63: high(int64) else: (1'i64 shl width) - 1) else: (if width >= 63: high(int64) else: (1'i64 shl (width - 1)) - 1)
-          if number < minimum or number > maximum: fail("Invalid static initializer for '" & item.name & "'")
-        of TypeKind.Float:
-          if item.value.bits.len == 0: discard parseFloat(item.value.name)
-        of TypeKind.Bool:
-          if item.value.name notin ["true", "false"]: fail("Invalid static initializer for '" & item.name & "'")
-        of TypeKind.Slice: discard bytes(item.value.name)
-        of TypeKind.Optional:
-          if item.value.name != "null": fail("Invalid static initializer for '" & item.name & "'")
-        else: fail("Invalid static initializer for '" & item.name & "'")
+        if not staticInitializer(item.value): fail("Invalid static initializer for '" & item.name & "'")
       except CatchableError: fail("Invalid static initializer for '" & item.name & "'")
     globals[item.name] = item.value.`type`
 
@@ -442,6 +453,9 @@ proc validate*(module: Module): seq[ValidationError] =
         elif target != nil and target.kind == TypeKind.Slice and instruction.op == "sequence":
           found = true
           for _ in instruction.args: fields.add(target.elem)
+        elif target != nil and target.kind == TypeKind.Array:
+          found = true
+          for _ in 0 ..< target.width: fields.add(target.elem)
         elif target != nil and target.kind == TypeKind.TaggedUnion and target.variants.hasKey(instruction.field):
           found = true
           if target.variants[instruction.field] != nil: fields.add(target.variants[instruction.field])
