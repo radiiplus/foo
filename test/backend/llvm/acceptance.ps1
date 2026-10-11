@@ -80,8 +80,8 @@ try {
     $hash = (Get-FileHash -Algorithm SHA1 -LiteralPath "test/backend/llvm/fixtures/$($fixture.name).iv").Hash
     foreach ($mode in @('dev', 'release')) {
       foreach ($backend in @('c', 'zig', 'llvm')) {
-        $matches = @($rows | Where-Object { $_.fixture -eq $fixture.name -and $_.mode -eq $mode -and $_.backend -eq $backend })
-        if ($matches.Count -ne 1 -or $matches[0].sourceHash -ne $hash) { throw "Stale or incomplete fixture: $($fixture.name)/$mode/$backend" }
+        $matchingRows = @($rows | Where-Object { $_.fixture -eq $fixture.name -and $_.mode -eq $mode -and $_.backend -eq $backend })
+        if ($matchingRows.Count -ne 1 -or $matchingRows[0].sourceHash -ne $hash) { throw "Stale or incomplete fixture: $($fixture.name)/$mode/$backend" }
       }
     }
   }

@@ -294,3 +294,33 @@ During qualification record full actual Clang/LLD identities, triple, data layou
 | 8 optimization/performance/cutover | all advertised features above | differential suite remains green; benchmark evidence; remove only superseded generated-source assertions, then deprecate/remove old backends in a later authorized batch |
 
 Critical risks: ABI mismatches hidden by C wrappers; odd-width versus storage-width overflow; LLVM poison on division/remainder/shift; padding leakage in equality/codecs; source-span loss; cleanup missed on CFG exits; functions borrowing temporary slice storage; unchecked attributes; missing compiler-rt wide division; target sysroot/CRT assumptions; source-only vendoring mistaken for installed dependencies; cache reuse after policy/tool upgrades; stale spec claims. A simplistic host LLVM emitter would lose every cross preset, runtime-free/hardware path, foreign aggregate ABI, GPU pipeline, release integration and most runtime services. Those losses must be explicit failing gates, never silently filtered tests.
+
+## Batch 2 implementation and retained acceptance
+
+The main workspace now contains the shared typed IR core LLVM emitter, layout
+and pointer-runtime adapters. `specs/llvmcore.md` maps each lowering to frontend
+representations and exact fixtures. Core qualification includes widths 1–128,
+runtime arithmetic and decimal edge cases, aggregate/function/unit values,
+relocation-bearing globals, specialization, layout/reflection, logical packed
+comparisons, JSON/error behavior and ownership/cleanup exits. Shared lowering
+uses the checker's actual reflection record for inline projections; static
+initializers reuse its arbitrary-width range proof.
+
+Run `./test/backend/llvm/acceptance.ps1` from the repository root. It requires
+the installed Clang/LLD and managed Zig, installs nothing, and retains 16
+prerequisite checks plus the complete 42-fixture, three-backend, two-mode
+source matrix (252 observations) and 24 typed IR observations. Reports count
+frontend rejections and concrete legacy restrictions separately from executable
+results. Fixture hashes and every backend/mode row are verified before the
+acceptance report can pass. `-VerifyReportsOnly` revalidates complete retained
+reports; it requires every prerequisite to have passed and cannot validate a
+filtered, stale or incomplete source matrix. `-Root` selects artifact storage
+and `-Cache` allows serial reuse of a Nim compilation cache.
+
+The qualified host is still Windows x64 with LLVM/LLD 18.1.3, Nim 2.2.12 and
+Zig 0.16.0. Existing C/Zig tests remain intact. Their nested-packed, unit-parameter
+and integer-entry restrictions, shared frontend rejections, typed block-argument
+limitations, packed JSON runtime rejection and future ABI/platform requirements
+are listed with concrete tests in `llvmcore.md`. Completing this core gate does
+not qualify the separate target, runtime-free, native ABI, concurrency, GPU,
+toolchain packaging or release gates above.
