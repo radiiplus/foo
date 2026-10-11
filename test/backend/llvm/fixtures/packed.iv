@@ -4,6 +4,10 @@ define Packet as packed record { prefix of type byte. bits of type Bits. suffix 
 start {
   constant bits is Bits(5, true, 0 subtract 3).
   check.expect(bits.low is 5 and bits.enabled and bits.signed is (0 subtract 3)).
+  check.expect(bits is Bits(5, true, 0 subtract 3)).
+  check.expect(bits is less than Bits(5, true, 0 subtract 2)).
   constant packet is Packet(42, bits, 77).
   check.expect(packet.prefix is 42 and packet.bits.low is 5 and packet.suffix is 77).
+  check.expect(packet is Packet(42, bits, 77)).
+  check.expect(packet is greater than Packet(41, Bits(7, true, 15), 127)).
 }

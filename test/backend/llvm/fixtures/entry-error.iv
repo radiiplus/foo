@@ -1,0 +1,5 @@
+start {
+  after { display "closed". }
+  after error { display "error". }
+  give fail(Error.InvalidInput).
+}

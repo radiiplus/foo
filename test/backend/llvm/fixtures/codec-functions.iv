@@ -1,0 +1,20 @@
+use codec as codecs.
+use text as words.
+use testing as check.
+define Pair as record { value of type integer 9. }.
+use "codec" function encode(value Pair) giving failable text.
+function encodePair(value Pair) giving failable text keeping call { give codecs.encode[Pair](value) try. }
+function decodePair(source text) giving failable Pair keeping call { give codecs.decode[Pair](source) try. }
+start {
+  constant nativeEncoder is encode.
+  constant nativeText is nativeEncoder(Pair(17)) try.
+  after { words.release(nativeText) fallback nothing. }
+  check.same(nativeText,"{\"value\":17}").
+  constant serializer of type codecs.codec[Pair] is codecs.codec[Pair](encodePair,decodePair).
+  constant encoded is serializer.encode(Pair(42)) try.
+  after { words.release(encoded) fallback nothing. }
+  check.same(encoded,"{\"value\":42}").
+  constant decoded is serializer.decode(encoded) try.
+  check.expect(decoded.value is 42).
+  display encoded.
+}

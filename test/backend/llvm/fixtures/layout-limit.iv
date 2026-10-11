@@ -1,0 +1,3 @@
+start {
+  eval { constant bytes is reflect[integer 128].size. verify bytes is 16. }
+}

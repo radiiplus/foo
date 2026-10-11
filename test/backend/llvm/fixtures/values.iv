@@ -26,4 +26,12 @@ start {
   constant description is reflect[Header].
   check.expect(description.size is 32 and description.alignment is 32).
   eval { constant bytes is reflect[Header].size. verify bytes is 32. }
+  eval {
+    constant offset is reflect[Header].offset("value").
+    verify offset is 4.
+    constant field is reflect[Header].fieldname(1).
+    verify field is "value".
+    verify reflect[Header].alignment is 32.
+    verify reflect[Header].count is 2.
+  }
 }
