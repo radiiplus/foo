@@ -764,7 +764,7 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
         "\n  store " & llvmType(entry.ret) & " %result, ptr %cell, align 1\n  %error = load ptr, ptr %cell, align 1\n  %failed = icmp ne ptr %error, null\n  br i1 %failed, label %failure, label %success\nfailure:\n  call void @foo_llvm_entry_error(ptr %error)\n  unreachable\nsuccess:\n")
     else: entrypoint.add("  %ignored = call " & llvmType(entry.ret) & " " & functionName("main") & "()\n")
     var exitValue = "0"
-    if entry.ret.kind in {TypeKind.Int, TypeKind.Uint}:
+    if not hosted and entry.ret.kind in {TypeKind.Int, TypeKind.Uint}:
       if storageWidth(entry.ret) == 32: exitValue = "%ignored"
       else:
         entrypoint.add("  %exit = " & (if storageWidth(entry.ret) > 32: "trunc" else: "zext") & " " & llvmType(entry.ret) & " %ignored to i32\n")

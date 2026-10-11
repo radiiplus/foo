@@ -82,7 +82,7 @@ when defined(windows):
   for mode in ["dev", "release"]:
     let built = build(input, mode, root / mode, Native(name: "proof", compile: true))
     doAssert built.success, built.error
-    doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 42
+    doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 0
     let metadata = parseFile(root / mode / "llvm.json")
     doAssert metadata.hasKey("semanticPolicy") and metadata.hasKey("semanticDecisions")
     doAssert metadata["vectorization"].getStr().startsWith("disabled")
@@ -104,7 +104,7 @@ when defined(windows):
   doAssert readFile(root / "overflow" / "verified.ll").contains("call void @foo_llvm_panic(")
   let built = build(optimized.module, "release", root / "semantic", Native(name: "proof", compile: true))
   doAssert built.success, built.error
-  doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 42
+  doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 0
   let volatileBuild = build(volatileModule.module, "release", root / "volatile", Native(name: "proof", compile: true))
   doAssert volatileBuild.success, volatileBuild.error
   doAssert readFile(root / "volatile" / "verified.ll").contains("load volatile")

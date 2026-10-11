@@ -138,17 +138,18 @@ for mode in ["dev","release"]:
   report.add(%*{"fixture":"block-parameters","mode":mode,"backend":"llvm","exit":executed.exitCode,"bytes":executed.output.toHex()})
   writeFile(root/"results.json",pretty(report))
 
-# Attributes and foreign callback ABI work belong to later migration gates.
-let foreign=program("foreign-entry",@[],@[Function(name: "foreign",abi: "c",ret: nothing,
+# Known foreign conventions and aggregate callbacks are exercised by ffi.nim.
+# Unknown conventions must still produce an actionable failure.
+let foreign=program("foreign-entry",@[],@[Function(name: "foreign",abi: "unknown",ret: nothing,
   blocks: @[Block(label: "entry",term: returns())])])
 let rejected=driver.build(foreign,"dev",root/"foreign",Native(name: "foreign"))
 doAssert not rejected.success and rejected.error.contains("ABI/attribute needs qualification"),rejected.error
 let callback=Type(kind: TypeKind.Function,params: @[overlay],ret: nothing)
 var rejectedCallback=""
 try:
-  discard newSupport().code(Module(externs: @[Extern(name: "foreign_callback",abi: "runtime.task",params: @[callback],ret: nothing)]))
+  discard newSupport().code(Module(externs: @[Extern(name: "foreign_callback",abi: "unknown",params: @[callback],ret: nothing)]))
 except ValueError as error: rejectedCallback=error.msg
-doAssert rejectedCallback.contains("aggregate/wide runtime callback needs a foreign ABI thunk"),rejectedCallback
+doAssert rejectedCallback.contains("Unqualified foreign calling convention"),rejectedCallback
 let packedRecord=Type(kind: TypeKind.PackedStruct,name: "PackedCodec")
 packedRecord.fields["value"]=i9
 var rejectedPackedCodec=""

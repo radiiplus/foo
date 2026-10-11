@@ -27,7 +27,7 @@ when defined(windows):
   doAssert fileExists(root / "main.obj")
   doAssert not fileExists(root / "main.c")
   doAssert not fileExists(root / "main.zig")
-  doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 42
+  doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 0
   let metadata = parseJson(readFile(root / "llvm.json"))
   doAssert metadata["backend"].getStr() == "llvm"
   doAssert metadata["optimization"].getStr() == "O0"
@@ -35,7 +35,7 @@ when defined(windows):
   doAssert identity("release", nativeOptions) != identity("dev", nativeOptions)
   let optimized = build(module, "release", root / "release", nativeOptions, file)
   doAssert optimized.success, optimized.error
-  doAssert execCmdEx(quoteShell(optimized.artifact)).exitCode == 42
+  doAssert execCmdEx(quoteShell(optimized.artifact)).exitCode == 0
   var reused = false
   let project = projects.newProject(root, projects.ProjectOptions(backend: "llvm", target: "windows-x64",
     progress: proc(phase, name, detail: string; cached: bool) =
