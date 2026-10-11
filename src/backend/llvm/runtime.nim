@@ -58,12 +58,27 @@ proc comparison*(s: Support; t: node.Type; operation: string): string =
 proc code*(s: Support; module: Module; target = ""; hosted = true): string =
   var adapters: seq[string]
   if target.contains("linux"):
+    var visited = initHashSet[pointer]()
+    proc boundaryType(t: node.Type) =
+      if t == nil or cast[pointer](t) in visited: return
+      visited.incl(cast[pointer](t))
+      if t.kind == TypeKind.Function and t.abi notin ["", "foo", "foo:1", "c", "system"]:
+        raise newException(ValueError, "Linux callback convention is qualified only for c/system: " & t.abi)
+      boundaryType(t.elem)
+      boundaryType(t.ret)
+      for parameter in t.params: boundaryType(parameter)
+      for field in t.fields.values: boundaryType(field)
+      for variant in t.variants.values: boundaryType(variant)
     for external in module.externs:
       if external.abi notin ["", "c", "system"] and not external.abi.startsWith("runtime"):
         raise newException(ValueError, "Linux foreign convention is qualified only for c/system: " & external.name & " uses " & external.abi)
+      for parameter in external.params: boundaryType(parameter)
+      boundaryType(external.ret)
     for fn in module.funcs:
       if fn.abi notin ["", "foo", "foo:1", "c", "system"]:
         raise newException(ValueError, "Linux export convention is qualified only for c/system: " & fn.name & " uses " & fn.abi)
+      for parameter in fn.params: boundaryType(parameter.type)
+      boundaryType(fn.ret)
   proc ctype(t: node.Type): string = s.ctype(t)
   var runtimeExterns: seq[Extern]
   # Force the common allocation/text runtime even for an otherwise pure module.
