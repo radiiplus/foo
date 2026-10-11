@@ -391,7 +391,10 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
       return dest
     of "reflect":
       let reflected = ast.Reflect(node)
-      let dest = fresh(if expected != nil: expected else: `Type`(kind: TypeKind.Opaque, name: "Description"))
+      let target = if expected != nil: expected
+        elif typed.hasKey(cast[pointer](node)): semanticType(typed[cast[pointer](node)], aliases)
+        else: `Type`(kind: TypeKind.Opaque, name: "Description")
+      let dest = fresh(target)
       emit(Instruction(kind: InstrKind.Reflect, dest: dest, typeArg: lowerType(reflected.type, aliases)))
       return dest
     of "unreachable":

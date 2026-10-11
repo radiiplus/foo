@@ -2,6 +2,10 @@ import std/[sequtils, strutils, tables]
 import ../../src/ast/node as ast
 import ../../src/diag/span
 import ../../src/ir/[kind, lower, monomorph, node, valid]
+import ../../src/diag/engine
+import ../../src/lex/lexer
+import ../../src/parse/parser
+import ../../src/types/checker as typeChecker
 
 let position = Span(start: 0, `end`: 1, line: 1, col: 1)
 proc name(value: string): ast.Name = ast.Name(tag: "name", span: position, text: value)
@@ -228,5 +232,18 @@ let loweredAbsent = lower(program)
 let absentValue = loweredAbsent.funcs[0].blocks[0].term.value
 doAssert absentValue.name == "null"
 doAssert absentValue.type.kind == TypeKind.Optional
+
+# Inline reflection needs the actual checker-provided record, rather than an
+# opaque fallback. Test the full shared parse/check/lower boundary.
+let reflectionSource = "function width giving unsigned { give reflect[unsigned 128].size. }"
+let reflectionDiagnostics = newEngine()
+reflectionDiagnostics.setSource(reflectionSource,"reflection.iv")
+let reflectionProgram = newParser(newLexer(reflectionSource,reflectionDiagnostics).lex(),reflectionDiagnostics).parse()
+let reflectionChecker = typeChecker.newChecker(reflectionDiagnostics)
+reflectionChecker.check(reflectionProgram)
+doAssert not reflectionDiagnostics.failed
+let reflectedModule = lower(reflectionProgram,reflectionChecker.types)
+doAssert validate(reflectedModule).len == 0
+doAssert reflectedModule.funcs[0].blocks[0].instrs.anyIt(it.kind == InstrKind.Reflect and it.dest.type.kind == TypeKind.Struct)
 
 echo "IR lower parity: ok"
