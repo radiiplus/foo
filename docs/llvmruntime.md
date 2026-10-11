@@ -14,7 +14,13 @@ and `vendor/vulkan` directories intact. Crypto uses the existing sodium/BLAKE3
 providers; compression uses zlib. GPU uses bundled Vulkan headers and volk,
 with a working Vulkan driver required for actual device execution.
 There is no OpenCL source compiler dependency. LLVM host cross-compilation,
-runtime-free/startup/interrupt/naked modes remain unqualified and fail explicitly.
+other host targets remain unqualified and fail explicitly.
+Windows x64 runtime-free PE linking, direct setup-free startup assembly and
+interrupt object emission are verified by `test/backend/llvm/machine.nim`.
+Interrupt handlers are verified as objects and are not invoked from user mode.
+Baseline SSE2 feature clauses are checked; advanced CPU profiles are rejected
+until separately qualified. Runtime-none allocation, text joining and issue-trail
+operations remain unsupported and fail at their source operation.
 
 ## Reproduce
 
@@ -44,7 +50,10 @@ The following existing suites have passed with LLVM on this Windows host:
 `services` (files, directories, streams, DNS, network interfaces, sockets,
 processes, clocks, threads, task callbacks and native failure injection),
 `clocks`, `virtual`, `mapping`, `ring`, `crypto`, `compression`, `cancellation`,
-`simd`, `resource`, `timer` and `atomic`. This is suite execution evidence;
+`simd`, `resource`, `timer`, `atomic`, `process`, `quotas`, `topology`, `ordering`,
+`platform` and `dylib`. The dynamic-library test used an actual compiled DLL
+and configured `FOO_DYLIB_TEST_PATH` so its lifetime checks were executed.
+This is suite execution evidence;
 it does not certify every service operation or every required acceptance case.
 The vector implementation preserves ordered scalar operations and checked
 integer failures. No SIMD performance specialization is claimed.
@@ -63,9 +72,15 @@ formed batches, measured thresholds or speedup claims yet.
 
 ## Outstanding Batch 4 gates
 
-Linux/macOS LLVM execution and an io_uring runtime probe/fallback;
-runtime-free/hardware/startup/interrupt/naked lowering with direct assembly;
+Linux/macOS LLVM execution and broader hardware-target verification;
 unconditional GPU execution/capability tests; complete success/failure,
 ownership/cleanup/ordering/platform coverage for every audited service family;
 paired batching benchmarks and differential crash/failure tests; and the
 complete C/Zig regression suite. Batch 4 is not complete until those gates pass.
+
+The io_uring capability probe has Windows and Linux/WSL tests. Linux failure
+injection covers EPERM/EACCES, ENOSYS and resource-limit failures, preserves
+`errno`, and closes successful probe descriptors. Capability availability does
+not enable an asynchronous path or batching. The current provider stays
+synchronous on every platform. Run `clang -std=c11 test/backend/llvm/ioprobe.c`
+and execute its output on the host to reproduce the probe gate.

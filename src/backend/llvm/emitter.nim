@@ -4,6 +4,7 @@ import ../../ir/[node, kind, monomorph]
 import ./layout
 import ./runtime
 import ./abi
+import ../../opt/arch as targetArch
 
 type
   State = ref object
@@ -11,6 +12,9 @@ type
     externs: Table[string, Extern]
     intrinsics: HashSet[string]
     source: string
+    hosted: bool
+    contracts: Table[string, NativeContract]
+    machineFunctions: HashSet[string]
   Context = ref object
     state: State
     fn: Function
@@ -23,7 +27,14 @@ type
     current: string
     location: SourceSpan
 
-proc symbol(name: string): string = "@" & escape("foo." & name)
+proc llvmString(value: string): string =
+  result = "\""
+  for character in value:
+    if character < ' ' or character > '~' or character in {'\"', '\\'}:
+      result.add("\\" & toHex(ord(character), 2))
+    else: result.add(character)
+  result.add('"')
+proc symbol(name: string): string = "@" & llvmString("foo." & name)
 proc label(name: string): string = "b" & name.toHex()
 proc fresh(ctx: Context): string =
   inc ctx.serial
@@ -65,6 +76,7 @@ proc value(ctx: Context; v: Value): string =
     if not ctx.registers.hasKey(v.name): raise newException(ValueError, "undefined IR register " & v.name)
     return ctx.load(t, ctx.registers[v.name])
   of ValueKind.Global:
+    if v.name in ctx.state.machineFunctions: return symbol(v.name)
     if t.kind == TypeKind.Function: return "@" & callbackName(v.name)
     if t.kind == TypeKind.Ptr: return symbol(v.name)
     return ctx.load(t, symbol(v.name))
@@ -95,8 +107,10 @@ proc byteBool(ctx: Context; text: string): string =
 proc guard(ctx: Context; failed, message: string) =
   let failure = "failure" & $ctx.serial; let success = "continue" & $ctx.serial
   ctx.add("br i1 " & failed & ", label %" & failure & ", label %" & success); ctx.mark(failure)
-  ctx.add("call void @foo_llvm_trace(ptr " & ctx.state.literal(ctx.fn.name) & ", ptr " & ctx.state.literal(ctx.location.file) & ", i64 " & $ctx.location.start & ")")
-  ctx.add("call void @foo_llvm_panic(ptr " & ctx.state.literal(message) & ")")
+  if ctx.state.hosted:
+    ctx.add("call void @foo_llvm_trace(ptr " & ctx.state.literal(ctx.fn.name) & ", ptr " & ctx.state.literal(ctx.location.file) & ", i64 " & $ctx.location.start & ")")
+    ctx.add("call void @foo_llvm_panic(ptr " & ctx.state.literal(message) & ")")
+  else: ctx.add("call void @llvm.trap()")
   ctx.add("unreachable"); ctx.mark(success)
 proc converted(ctx: Context; text: string; source, target: node.Type): string =
   if target.kind in {TypeKind.Optional, TypeKind.Failable} and (source == nil or source.kind != target.kind):
@@ -211,6 +225,10 @@ proc instruction(ctx: Context; i: Instruction) =
   if i == nil: return
   ctx.location = i.span
   ctx.lines.add("  ; " & $i.kind & " " & escape(i.span.file) & ":" & $i.span.start & ".." & $i.span.end)
+  if not ctx.state.hosted and (i.kind in {InstrKind.Allocate, InstrKind.Region, InstrKind.Trace} or
+      (i.kind == InstrKind.Alloc and i.op != "slot") or
+      (i.kind == InstrKind.Add and i.dest.type.kind == TypeKind.Slice)):
+    raise newException(ValueError, "runtime none cannot lower hosted allocation/text/issue-trail operation " & $i.kind)
   let t = i.dest.type
   case i.kind
   of InstrKind.Phi: discard
@@ -306,8 +324,7 @@ proc instruction(ctx: Context; i: Instruction) =
       of "acquire", "release", "acq_rel", "seq_cst": i.field
       else: raise newException(ValueError, "unknown atomic ordering " & i.field)
     if i.op == "fence":
-      if order == "monotonic": raise newException(ValueError, "a relaxed fence has no LLVM synchronization contract")
-      ctx.add("fence " & order)
+      if order != "monotonic": ctx.add("fence " & order)
     else:
       let element = i.ptr.type.elem
       if element.kind notin {TypeKind.Int, TypeKind.Uint, TypeKind.Bool, TypeKind.Ptr} or measure(element).size > 8:
@@ -458,6 +475,8 @@ proc instruction(ctx: Context; i: Instruction) =
     ctx.add("br label %" & done); ctx.mark(done)
   of InstrKind.Trace: ctx.add("call void @foo_llvm_trace(ptr " & ctx.state.literal(i.trace) & ", ptr " & ctx.state.literal(i.span.file) & ", i64 " & $i.span.start & ")")
   of InstrKind.Panic:
+    if not ctx.state.hosted:
+      ctx.add("call void @llvm.trap()"); ctx.add("unreachable"); return
     ctx.add("call void @foo_llvm_trace(ptr " & ctx.state.literal(ctx.fn.name) & ", ptr " & ctx.state.literal(i.span.file) & ", i64 " & $i.span.start & ")")
     ctx.add("call void @foo_llvm_panic(ptr " & ctx.state.literal(i.msg) & ")"); ctx.add("unreachable")
   of InstrKind.Reflect:
@@ -477,9 +496,15 @@ proc instruction(ctx: Context; i: Instruction) =
     ctx.put(i.dest, ctx.value(Value(kind: ValueKind.Const, name: node.quoted(data.toOpenArrayByte(0, data.high)), type: t)))
   else: raise newException(ValueError, "unsupported instruction " & $i.kind)
 
-proc emit*(module: Module; triple, layout: string; source = "main.iv"): string =
-  let state = State(externs: initTable[string, Extern](), intrinsics: initHashSet[string](), source: source)
-  if module.native.len > 0: raise newException(ValueError, "native contracts are outside LLVM core qualification")
+proc emit*(module: Module; triple, layout: string; source = "main.iv"; hosted = true; cpu = ""): string =
+  let profile = targetArch.profile(triple, cpu)
+  let state = State(externs: initTable[string, Extern](), intrinsics: initHashSet[string](), source: source, hosted: hosted,
+    contracts: initTable[string, NativeContract](), machineFunctions: initHashSet[string]())
+  for fn in module.funcs:
+    if fn.attributes.anyIt(it in ["naked", "interrupt", "start"]): state.machineFunctions.incl(fn.name)
+  for contract in module.native:
+    if contract.stage != "@asm": raise newException(ValueError, "unlowered native contract " & contract.id)
+    state.contracts[contract.id] = contract
   for external in module.externs:
     state.externs[external.name] = external
     state.declarations.add("declare void @" & bridgeName(external.name) & "(" & newSeqWith(external.params.len + 1, "ptr").join(", ") & ")")
@@ -494,7 +519,47 @@ proc emit*(module: Module; triple, layout: string; source = "main.iv"): string =
     if fn.name == "main": entry = fn
     if fn.typeParams.len > 0: raise newException(ValueError, "generic function must be specialized by IR prepare: " & fn.name)
     discard convention(fn.abi)
-    if fn.attributes.anyIt(it in ["naked", "interrupt", "start"]): raise newException(ValueError, "machine convention outside hosted runtime gate: " & fn.name)
+    var featureAttributes: seq[string]
+    for attribute in fn.attributes:
+      if attribute.startsWith("target_feature(\"") and attribute.endsWith("\")"):
+        let feature = attribute[16 ..< attribute.len - 2]
+        if feature.len == 0 or feature.anyIt(not (it.isLowerAscii or it.isDigit or it == '_')):
+          raise newException(ValueError, "invalid target feature on " & fn.name)
+        let normalized = feature.replace('_', '.')
+        if normalized notin profile.features:
+          raise newException(ValueError, "CPU feature " & feature & " is not enabled for " & profile.cpu & " in " & fn.name)
+        if "interrupt" in fn.attributes:
+          raise newException(ValueError, "x64 interrupt feature clauses need a separately verified register-preservation contract: " & fn.name)
+        featureAttributes.add("+" & normalized)
+    let featureClause = if featureAttributes.len > 0: " \"target-features\"=" & llvmString(featureAttributes.join(",")) else: ""
+    if "start" in fn.attributes:
+      if hosted: raise newException(ValueError, "startup requires runtime none: " & fn.name)
+      state.globals.add("@_start = alias " & llvmType(fn.ret) & " (" & fn.params.mapIt(llvmType(it.type)).join(", ") & "), ptr " & symbol(fn.name))
+    if "naked" in fn.attributes:
+      if fn.params.len > 0 or fn.ret.kind != TypeKind.Void or fn.blocks.len != 1:
+        raise newException(ValueError, "setup-free bodies require a parameterless unit function and one native block: " & fn.name)
+      var lines: seq[string]
+      for instruction in fn.blocks[0].instrs:
+        if instruction.kind != InstrKind.Native or instruction.args.len > 0 or not state.contracts.hasKey(instruction.symbol):
+          raise newException(ValueError, "setup-free body may contain only direct assembly, never helper calls: " & fn.name)
+        let contract = state.contracts[instruction.symbol]
+        var assembly = contract.code.strip()
+        if assembly.startsWith("\""):
+          try: assembly = parseJson(assembly).getStr()
+          except CatchableError: raise newException(ValueError, "setup-free assembly cannot contain C constraints or output bindings: " & fn.name)
+        assembly = assembly.replace("$", "$$")
+        lines.add("  call void asm sideeffect " & llvmString(assembly) & ", \"~{memory}\"()")
+      if fn.blocks[0].term.kind != InstrKind.Return:
+        raise newException(ValueError, "setup-free control flow must be owned by assembly: " & fn.name)
+      lines.add("  unreachable")
+      state.functions.add("define " & llvmType(fn.ret) & " " & symbol(fn.name) & "() naked noinline" & featureClause & " {\nentry:\n" & lines.join("\n") & "\n}")
+      continue
+    if "interrupt" in fn.attributes:
+      if not triple.startsWith("x86_64-") or fn.ret.kind != TypeKind.Void or fn.params.len > 1 or
+          (fn.params.len == 1 and llvmType(fn.params[0].type) != "i64"):
+        raise newException(ValueError, "qualified x64 interrupt ABI requires unit result and optional 64-bit error code: " & fn.name)
+      state.globals.add("@" & llvmString(fn.name) & " = alias void (ptr" &
+        (if fn.params.len == 1: ", i64" else: "") & "), ptr " & symbol(fn.name))
     state.declarations.add("declare void @" & callbackName(fn.name) & "(...)")
     let ctx = Context(state: state, fn: fn, registers: initTable[string, string](), cells: initTable[string, string](), regions: initTable[string, string](), blocks: initTable[string, Block]())
     proc register(v: Value) =
@@ -508,6 +573,7 @@ proc emit*(module: Module; triple, layout: string; source = "main.iv"): string =
     for index, parameter in fn.params:
       register(parameter); parameters.add(llvmType(parameter.type) & " %arg" & $index)
       ctx.prologue.add("  store " & llvmType(parameter.type) & " %arg" & $index & ", ptr " & ctx.registers[parameter.name] & ", align 1")
+    if "interrupt" in fn.attributes: parameters.insert("ptr byval([5 x i64]) align 8 %interrupt_frame", 0)
     for basicBlock in fn.blocks:
       ctx.blocks[basicBlock.label] = basicBlock
       for parameter in basicBlock.params: register(parameter)
@@ -525,7 +591,9 @@ proc emit*(module: Module; triple, layout: string; source = "main.iv"): string =
     # aggregate comparison), so metadata also requires call-free lowering.
     let attributes = " noinline" & (if pureFunction(fn) and
       not ctx.lines.anyIt(it.contains("call ")): " memory(none)" else: "")
-    state.functions.add("define " & llvmType(fn.ret) & " " & symbol(fn.name) & "(" & parameters.join(", ") & ")" & attributes & " {\nprologue:\n" & ctx.prologue.join("\n") & "\n  br label %" & label(fn.blocks[0].label) & "\n" & ctx.lines.join("\n") & "\n}")
+    state.functions.add("define " & (if "interrupt" in fn.attributes: "x86_intrcc " else: "") & llvmType(fn.ret) & " " & symbol(fn.name) & "(" & parameters.join(", ") & ")" & attributes &
+      (if "interrupt" in fn.attributes: " \"target-features\"=\"-sse,-sse2,-mmx\"" else: featureClause) & " {\nprologue:\n" & ctx.prologue.join("\n") & "\n  br label %" & label(fn.blocks[0].label) & "\n" & ctx.lines.join("\n") & "\n}")
+    if "interrupt" in fn.attributes: continue
     var gateParameters = @["ptr %out"]
     var gateLines, gateArgs: seq[string]
     for index, parameter in fn.params:
@@ -538,18 +606,21 @@ proc emit*(module: Module; triple, layout: string; source = "main.iv"): string =
     if returns: gateLines.add("  store " & llvmType(fn.ret) & " %result, ptr %out, align 1")
     gateLines.add("  ret void")
     state.functions.add("define void @" & gateName(fn.name) & "(" & gateParameters.join(", ") & ") {\nentry:\n" & gateLines.join("\n") & "\n}")
-  if entry == nil: raise newException(ValueError, "LLVM executable requires an entry point")
-  if entry.params.len > 0: raise newException(ValueError, "entry must be parameterless")
-  let ty = llvmType(entry.ret); var main = "define i32 @main(i32 %argc, ptr %argv) {\nentry:\n  call void @foo_llvm_init(i32 %argc, ptr %argv)\n"
-  if ty == "void": main.add("  call void " & symbol(entry.name) & "()\n  call void @foo_llvm_finish(ptr null)\n  ret i32 0\n")
-  elif entry.ret.kind == TypeKind.Failable:
-    main.add("  %result = call " & ty & " " & symbol(entry.name) & "()\n  %memory = alloca " & ty & "\n  store " & ty & " %result, ptr %memory, align 1\n  %error = load ptr, ptr %memory, align 1\n  call void @foo_llvm_finish(ptr %error)\n  %failed = icmp ne ptr %error, null\n  %status = zext i1 %failed to i32\n  ret i32 %status\n")
-  elif entry.ret.kind in {TypeKind.Int, TypeKind.Uint}:
-    main.add("  %result = call " & ty & " " & symbol(entry.name) & "()\n  call void @foo_llvm_finish(ptr null)\n")
-    if ty == "i32": main.add("  ret i32 %result\n")
-    else: main.add("  %exit = " & (if storageWidth(entry.ret) > 32: "trunc" elif entry.ret.kind == TypeKind.Int: "sext" else: "zext") & " " & ty & " %result to i32\n  ret i32 %exit\n")
-  else: raise newException(ValueError, "entry result must be unit, failable or integer")
-  state.functions.add(main & "}")
+  if entry == nil and hosted: raise newException(ValueError, "LLVM executable requires an entry point")
+  if entry != nil:
+    if entry.params.len > 0: raise newException(ValueError, "entry must be parameterless")
+    let ty = llvmType(entry.ret); var main = "define i32 @main(i32 %argc, ptr %argv) {\nentry:\n  call void @foo_llvm_init(i32 %argc, ptr %argv)\n"
+    if ty == "void": main.add("  call void " & symbol(entry.name) & "()\n  call void @foo_llvm_finish(ptr null)\n  ret i32 0\n")
+    elif entry.ret.kind == TypeKind.Failable:
+      main.add("  %result = call " & ty & " " & symbol(entry.name) & "()\n  %memory = alloca " & ty & "\n  store " & ty & " %result, ptr %memory, align 1\n  %error = load ptr, ptr %memory, align 1\n  call void @foo_llvm_finish(ptr %error)\n  %failed = icmp ne ptr %error, null\n  %status = zext i1 %failed to i32\n  ret i32 %status\n")
+    elif entry.ret.kind in {TypeKind.Int, TypeKind.Uint}:
+      main.add("  %result = call " & ty & " " & symbol(entry.name) & "()\n  call void @foo_llvm_finish(ptr null)\n")
+      if ty == "i32": main.add("  ret i32 %result\n")
+      else: main.add("  %exit = " & (if storageWidth(entry.ret) > 32: "trunc" elif entry.ret.kind == TypeKind.Int: "sext" else: "zext") & " " & ty & " %result to i32\n  ret i32 %exit\n")
+    else: raise newException(ValueError, "entry result must be unit, failable or integer")
+    if not hosted:
+      main = main.replace("  call void @foo_llvm_init(i32 %argc, ptr %argv)\n", "").replace("  call void @foo_llvm_finish(ptr null)\n", "").replace("  call void @foo_llvm_finish(ptr %error)\n", "")
+    state.functions.add(main & "}")
   var intrinsicNames = toSeq(state.intrinsics); intrinsicNames.sort()
   for intrinsic in intrinsicNames:
     if intrinsic.startsWith("indirect:"):
@@ -568,4 +639,5 @@ declare ptr @foo_llvm_reserve(ptr, i64)
 declare ptr @foo_llvm_alloc(i64)
 declare void @foo_llvm_join(ptr, ptr, ptr)
 declare void @free(ptr)
+declare void @llvm.trap()
 """ & state.functions.join("\n") & "\n"

@@ -6,6 +6,7 @@ import ../../ir/reach
 import ../../ir/monomorph
 import ../../ir/valid as irValid
 import ../../ir/print as irPrint
+import ../../opt/arch as targetArch
 import ../native/service
 import ../native/escape as nativeEscape
 import ../substrate
@@ -50,6 +51,8 @@ proc identity*(mode: string; options: Native): string =
   let clang = quoteShell(clangPath(options))
   let version = query(clang & " --version")
   let triple = query(clang & " -dumpmachine")
+  let profile = targetArch.profile(triple, options.cpu)
+  if profile.cpu != "x86-64": raise newException(ValueError, "LLVM CPU execution is qualified only for x86-64 baseline; selected " & profile.cpu)
   if triple != "x86_64-pc-windows-msvc":
     raise newException(ValueError, "LLVM Batch 1 is verified only for x86_64-pc-windows-msvc; selected " & triple)
   if options.target.len > 0 and options.target notin [triple, "x86_64-windows-msvc"]:
@@ -66,8 +69,9 @@ proc identity*(mode: string; options: Native): string =
   $(%*{"backend": "llvm", "clang": clangPath(options), "version": version,
     "triple": effectiveTriple, "layout": layout,
     "optimization": (if mode == "release": "O2" else: "O0"),
-    "features": "generic; llvm-verify-each; lld", "linker": linker,
+    "features": profile.features.join(",") & "; llvm-verify-each; lld; io-probe-v1", "cpu": profile.cpu, "linker": linker,
     "runtimeAbi": runtimeAbi,
+    "runtime": (if options.runtime == "none": "none; freestanding; trap failures" else: "hosted"),
     "ioBatching": "off; differential and paired benchmark gates pending",
     "semanticPolicy": "foo-evidence-v2; shared-proof-call-free-memory-none; foo-inline-budget; scalar-fallback",
     "vectorization": "disabled: LLVM specialization has no backend parity/benchmark evidence"})
@@ -79,13 +83,13 @@ proc build*(module: Module; mode, outDir: string; options = Native();
     if getEnv("FOO_IO_BATCHING", "off") != "off":
       raise newException(ValueError, "LLVM I/O batching is not qualified; use --no-batching or FOO_IO_BATCHING=off")
     createDir(outDir)
-    if options.kind notin ["", "exe"] or options.cpu.len > 0 or
+    if options.kind notin ["", "exe"] or
         options.frameworks.len > 0 or options.cpp or
         options.sanitize.len > 0 or options.coverage.len > 0 or options.benchmark or
-        options.threads or options.runtime == "none" or options.icon.len > 0 or
+        options.threads or options.icon.len > 0 or
         options.exports.len > 0 or options.script.len > 0 or options.rpath.len > 0 or
         options.docs or options.profile.len > 0:
-      raise newException(ValueError, "LLVM Batch 1 supports only hosted executables without runtime, CPU, instrumentation or custom linking features")
+      raise newException(ValueError, "LLVM currently supports executable products without CPU, instrumentation, framework or custom linker-script features")
     let stamp = identity(mode, options)
     let metadata = parseJson(stamp)
 
@@ -121,8 +125,9 @@ proc build*(module: Module; mode, outDir: string; options = Native();
     let invalid = irValid.validate(selected)
     if invalid.len > 0:
       raise newException(ValueError, "Invalid typed IR: " & invalid[0].msg)
-    writeFile(source, emit(prepared, metadata["triple"].getStr(), metadata["layout"].getStr(), sourceFile))
-    let support = runtime.support(prepared, metadata["triple"].getStr())
+    let useRuntime = options.runtime != "none"
+    writeFile(source, emit(prepared, metadata["triple"].getStr(), metadata["layout"].getStr(), sourceFile, hosted = useRuntime, cpu = options.cpu))
+    let support = runtime.support(prepared, metadata["triple"].getStr(), hosted = useRuntime)
     writeFile(outDir / "runtime.c", support.code)
     if hosted(prepared):
       writeFile(outDir / "service.h", serviceHeader)
@@ -146,13 +151,14 @@ proc build*(module: Module; mode, outDir: string; options = Native();
       let libraries = support.libraries & options.libs
       let supplied = nativeSupply.prepare(libraries, options.includePaths, clangPath(options), metadata["triple"].getStr(), progress)
       var common = " -I " & quoteShell(absolutePath(outDir))
+      if not useRuntime: common.add(" -ffreestanding -fno-stack-protector")
       for directory in supplied.headers & options.includePaths:
         common.add(" -I " & quoteShell(absolutePath(directory)))
       for define in supplied.defines: common.add(" -D" & quoteShell(define))
       var runtimeSources = options.sources
       if escaped.code.len > 0:
         let nativePath = absolutePath(outDir / "native-escape.c")
-        writeFile(nativePath, escaped.code)
+        writeFile(nativePath, (if useRuntime: "" else: "#define abort() __builtin_trap()\n") & escaped.code)
         runtimeSources.add(nativePath)
       if "sodium" in libraries:
         let directory = bundled("blake3/c", "blake3.c")
@@ -190,6 +196,9 @@ proc build*(module: Module; mode, outDir: string; options = Native();
         objects.add(" " & quoteShell(serviceObject))
         linked.add(service.libraries(metadata["triple"].getStr()))
       var links: string
+      if not useRuntime:
+        let entry = if prepared.funcs.anyIt("start" in it.attributes): "_start" else: "main"
+        links.add(" -nostdlib -Wl,/entry:" & entry & ",/subsystem:console,/nodefaultlib")
       for library in linked:
         var found = false
         for entry in supplied.links:

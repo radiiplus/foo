@@ -16,6 +16,7 @@ const
   memoryCode = staticRead("../c/memory.c")
   traceCode = staticRead("../c/trace.c")
   copyCode = staticRead("../c/copy.c")
+  ioCode = staticRead("io.c")
 
 proc bridgeName*(name: string): string = "llvm_" & cTypes.name(name)
 
@@ -33,7 +34,7 @@ proc comparisonName*(t: node.Type; relation: string): string =
   var active: seq[pointer]
   "foo_llvm_compare_" & sha256Hex(typeIdentity(t, active) & relation)[0..<24]
 
-proc support*(module: Module; target: string): Support =
+proc support*(module: Module; target: string; hosted = true): Support =
   let types = cTypes.newTypes()
   var checks, adapters: seq[string]
   proc ctype(t: node.Type): string =
@@ -54,11 +55,13 @@ proc support*(module: Module; target: string): Support =
   for declaration in module.types: discard ctype(declaration.type)
   var runtimeExterns: seq[Extern]
   # Force the common allocation/text runtime even for an otherwise pure module.
-  runtimeExterns.add(Extern(name: "$llvm_anchor", abi: "runtime.testing", symbol: "expect",
-    params: @[node.Type(kind: TypeKind.Bool)], ret: node.Type(kind: TypeKind.Void)))
+  if hosted:
+    runtimeExterns.add(Extern(name: "$llvm_anchor", abi: "runtime.testing", symbol: "expect",
+      params: @[node.Type(kind: TypeKind.Bool)], ret: node.Type(kind: TypeKind.Void)))
   var foreignDeclarations: seq[string]
   for external in module.externs:
     if external.abi.startsWith("runtime"):
+      if not hosted: raise newException(ValueError, "runtime none cannot call hosted provider " & external.abi & " at " & external.name)
       runtimeExterns.add(external)
     else:
       var parameters: seq[string]
@@ -69,7 +72,7 @@ proc support*(module: Module; target: string): Support =
   let generated = cRuntime.runtime(runtimeExterns, ctype, cTypes.name, target)
   result.libraries = generated.libraries
   var boundaries = module.externs
-  boundaries.add(runtimeExterns[0])
+  if hosted: boundaries.add(runtimeExterns[0])
   for external in boundaries:
     var params = @["void *out"]
     var args: seq[string]
@@ -85,7 +88,7 @@ proc support*(module: Module; target: string): Support =
   # C owns the native calling convention; language bodies remain LLVM IR.
   # The reciprocal gate avoids guessing Clang's aggregate return convention.
   for fn in module.funcs:
-    if "naked" in fn.attributes: continue
+    if "naked" in fn.attributes or "interrupt" in fn.attributes or "start" in fn.attributes: continue
     var pointers = @["void *out"]
     var parameters, args: seq[string]
     for index, parameter in fn.params:
@@ -208,7 +211,26 @@ proc support*(module: Module; target: string): Support =
   # Calls between comparator helpers refer to their private implementations.
   for index in 0..<comparisonCode.len:
     for name in comparisons.keys: comparisonCode[index] = comparisonCode[index].replace(name & "(", name & "_impl(")
+  if not hosted:
+    if comparisons.len > 0: raise newException(ValueError, "runtime none aggregate comparison is not qualified")
+    result.code = """
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+#define FOO_SYSTEM __stdcall
+#define FOO_STDCALL __stdcall
+#define FOO_FASTCALL __fastcall
+#define FOO_VECTORCALL __vectorcall
+#define FOO_THISCALL __thiscall
+typedef unsigned __int128 foo_u128;
+typedef __int128 foo_i128;
+""" & types.declarations.join("\n") & "\n" & checks.join("\n") & "\n" &
+      foreignDeclarations.join("\n") & "\n" & adapters.join("\n") & "\n"
+    return
   result.code = """
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -225,11 +247,12 @@ proc support*(module: Module; target: string): Support =
 typedef unsigned __int128 foo_u128;
 typedef __int128 foo_i128;
 static _Noreturn void foo_panic(const char *message) { fprintf(stderr, "%s\n", message); exit(1); }
-""" & memoryCode & "\n" & traceCode & "\n" & copyCode & "\n" & types.declarations.join("\n") & "\n" &
+""" & memoryCode & "\n" & traceCode & "\n" & copyCode & "\n" & ioCode & "\n" & types.declarations.join("\n") & "\n" &
     checks.join("\n") & "\n" & generated.code & "\n" & foreignDeclarations.join("\n") & "\n" & adapters.join("\n") & "\n" &
     prototypes.join("\n") & "\n" & comparisonCode.join("\n") & "\n" & exports.join("\n") & "\n" & """
 void foo_llvm_panic(const char *message) { foo_panic(message); }
 void foo_llvm_init(int argc, char **argv) {
+  foo_llvm_io_probe();
 #ifdef FOO_SERVICE
   foo_service_init(argc, argv);
 #else
