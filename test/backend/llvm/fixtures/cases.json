@@ -1,0 +1,8 @@
+[
+  {"name":"control", "status":0, "output":""},
+  {"name":"values", "status":0, "output":""},
+  {"name":"json", "status":0, "output":""},
+  {"name":"cleanup", "status":0, "output":""},
+  {"name":"overflow", "status":1, "error":"overflow"},
+  {"name":"division", "status":1, "error":"zero"}
+]

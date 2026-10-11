@@ -1,0 +1,25 @@
+use testing as check.
+define Pair as record { left of type integer. right of type decimal. }.
+define Box[T] as record { value of type T. }.
+define Flag as choice { absent. present(integer). }.
+define Header as c record { tag of type byte. value of type unsigned 32. } aligned to 32.
+start {
+  constant pair is Pair(42, 1.5).
+  check.expect(pair is Pair(42, 1.5)).
+  check.expect(Pair(1, 9.0) less than Pair(2, 0.0)).
+  constant box is Box[integer](pair.left).
+  check.expect(box.value is 42).
+  constant words is [1, 2, 3].
+  check.expect(words at 1 is 2).
+  check.expect(words is [1, 2, 3]).
+  constant answer of type optional integer is 42.
+  constant empty of type optional integer is null.
+  check.expect(answer is 42 and empty is null).
+  check.expect(present(42) is present(42)).
+  check.expect(absent is absent).
+  check.expect("a" plus "b" is "ab").
+  check.expect("a" less than "b").
+  eval { constant expected is reflect[Header].size. verify expected is 32. }
+  constant actual is reflect[Header].
+  check.expect(actual.size is 32 and actual.alignment is 32).
+}

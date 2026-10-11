@@ -1,0 +1,4 @@
+start {
+  dynamic value of type integer 8 is 127.
+  set value to value plus 1.
+}

@@ -1,0 +1,5 @@
+start {
+  dynamic value of type integer is 42.
+  dynamic divisor of type integer is 0.
+  set value to value divided by divisor.
+}
