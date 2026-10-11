@@ -1,0 +1,4 @@
+start {
+  dynamic value of type integer is uninitialized.
+  display value.
+}

@@ -1,132 +1,164 @@
 use testing as check.
-function signed17(value integer 17) giving integer 17 { give value plus 0. }
-function productsigned17(value integer 17) giving integer 17 { give value multiply 1. }
-function subtractsigned17(value integer 17) giving integer 17 { give value subtract 0. }
-function dividesigned17(value integer 17) giving integer 17 { give value divide 1. }
-function unsigned17(value unsigned 17) giving unsigned 17 { give value plus 0. }
-function productunsigned17(value unsigned 17) giving unsigned 17 { give value multiply 1. }
-function subtractunsigned17(value unsigned 17) giving unsigned 17 { give value subtract 0. }
-function divideunsigned17(value unsigned 17) giving unsigned 17 { give value divide 1. }
-function signed18(value integer 18) giving integer 18 { give value plus 0. }
-function productsigned18(value integer 18) giving integer 18 { give value multiply 1. }
-function subtractsigned18(value integer 18) giving integer 18 { give value subtract 0. }
-function dividesigned18(value integer 18) giving integer 18 { give value divide 1. }
-function unsigned18(value unsigned 18) giving unsigned 18 { give value plus 0. }
-function productunsigned18(value unsigned 18) giving unsigned 18 { give value multiply 1. }
-function subtractunsigned18(value unsigned 18) giving unsigned 18 { give value subtract 0. }
-function divideunsigned18(value unsigned 18) giving unsigned 18 { give value divide 1. }
-function signed19(value integer 19) giving integer 19 { give value plus 0. }
-function productsigned19(value integer 19) giving integer 19 { give value multiply 1. }
-function subtractsigned19(value integer 19) giving integer 19 { give value subtract 0. }
-function dividesigned19(value integer 19) giving integer 19 { give value divide 1. }
-function unsigned19(value unsigned 19) giving unsigned 19 { give value plus 0. }
-function productunsigned19(value unsigned 19) giving unsigned 19 { give value multiply 1. }
-function subtractunsigned19(value unsigned 19) giving unsigned 19 { give value subtract 0. }
-function divideunsigned19(value unsigned 19) giving unsigned 19 { give value divide 1. }
-function signed20(value integer 20) giving integer 20 { give value plus 0. }
-function productsigned20(value integer 20) giving integer 20 { give value multiply 1. }
-function subtractsigned20(value integer 20) giving integer 20 { give value subtract 0. }
-function dividesigned20(value integer 20) giving integer 20 { give value divide 1. }
-function unsigned20(value unsigned 20) giving unsigned 20 { give value plus 0. }
-function productunsigned20(value unsigned 20) giving unsigned 20 { give value multiply 1. }
-function subtractunsigned20(value unsigned 20) giving unsigned 20 { give value subtract 0. }
-function divideunsigned20(value unsigned 20) giving unsigned 20 { give value divide 1. }
-function signed21(value integer 21) giving integer 21 { give value plus 0. }
-function productsigned21(value integer 21) giving integer 21 { give value multiply 1. }
-function subtractsigned21(value integer 21) giving integer 21 { give value subtract 0. }
-function dividesigned21(value integer 21) giving integer 21 { give value divide 1. }
-function unsigned21(value unsigned 21) giving unsigned 21 { give value plus 0. }
-function productunsigned21(value unsigned 21) giving unsigned 21 { give value multiply 1. }
-function subtractunsigned21(value unsigned 21) giving unsigned 21 { give value subtract 0. }
-function divideunsigned21(value unsigned 21) giving unsigned 21 { give value divide 1. }
-function signed22(value integer 22) giving integer 22 { give value plus 0. }
-function productsigned22(value integer 22) giving integer 22 { give value multiply 1. }
-function subtractsigned22(value integer 22) giving integer 22 { give value subtract 0. }
-function dividesigned22(value integer 22) giving integer 22 { give value divide 1. }
-function unsigned22(value unsigned 22) giving unsigned 22 { give value plus 0. }
-function productunsigned22(value unsigned 22) giving unsigned 22 { give value multiply 1. }
-function subtractunsigned22(value unsigned 22) giving unsigned 22 { give value subtract 0. }
-function divideunsigned22(value unsigned 22) giving unsigned 22 { give value divide 1. }
-function signed23(value integer 23) giving integer 23 { give value plus 0. }
-function productsigned23(value integer 23) giving integer 23 { give value multiply 1. }
-function subtractsigned23(value integer 23) giving integer 23 { give value subtract 0. }
-function dividesigned23(value integer 23) giving integer 23 { give value divide 1. }
-function unsigned23(value unsigned 23) giving unsigned 23 { give value plus 0. }
-function productunsigned23(value unsigned 23) giving unsigned 23 { give value multiply 1. }
-function subtractunsigned23(value unsigned 23) giving unsigned 23 { give value subtract 0. }
-function divideunsigned23(value unsigned 23) giving unsigned 23 { give value divide 1. }
-function signed24(value integer 24) giving integer 24 { give value plus 0. }
-function productsigned24(value integer 24) giving integer 24 { give value multiply 1. }
-function subtractsigned24(value integer 24) giving integer 24 { give value subtract 0. }
-function dividesigned24(value integer 24) giving integer 24 { give value divide 1. }
-function unsigned24(value unsigned 24) giving unsigned 24 { give value plus 0. }
-function productunsigned24(value unsigned 24) giving unsigned 24 { give value multiply 1. }
-function subtractunsigned24(value unsigned 24) giving unsigned 24 { give value subtract 0. }
-function divideunsigned24(value unsigned 24) giving unsigned 24 { give value divide 1. }
-function signed25(value integer 25) giving integer 25 { give value plus 0. }
-function productsigned25(value integer 25) giving integer 25 { give value multiply 1. }
-function subtractsigned25(value integer 25) giving integer 25 { give value subtract 0. }
-function dividesigned25(value integer 25) giving integer 25 { give value divide 1. }
-function unsigned25(value unsigned 25) giving unsigned 25 { give value plus 0. }
-function productunsigned25(value unsigned 25) giving unsigned 25 { give value multiply 1. }
-function subtractunsigned25(value unsigned 25) giving unsigned 25 { give value subtract 0. }
-function divideunsigned25(value unsigned 25) giving unsigned 25 { give value divide 1. }
-function signed26(value integer 26) giving integer 26 { give value plus 0. }
-function productsigned26(value integer 26) giving integer 26 { give value multiply 1. }
-function subtractsigned26(value integer 26) giving integer 26 { give value subtract 0. }
-function dividesigned26(value integer 26) giving integer 26 { give value divide 1. }
-function unsigned26(value unsigned 26) giving unsigned 26 { give value plus 0. }
-function productunsigned26(value unsigned 26) giving unsigned 26 { give value multiply 1. }
-function subtractunsigned26(value unsigned 26) giving unsigned 26 { give value subtract 0. }
-function divideunsigned26(value unsigned 26) giving unsigned 26 { give value divide 1. }
-function signed27(value integer 27) giving integer 27 { give value plus 0. }
-function productsigned27(value integer 27) giving integer 27 { give value multiply 1. }
-function subtractsigned27(value integer 27) giving integer 27 { give value subtract 0. }
-function dividesigned27(value integer 27) giving integer 27 { give value divide 1. }
-function unsigned27(value unsigned 27) giving unsigned 27 { give value plus 0. }
-function productunsigned27(value unsigned 27) giving unsigned 27 { give value multiply 1. }
-function subtractunsigned27(value unsigned 27) giving unsigned 27 { give value subtract 0. }
-function divideunsigned27(value unsigned 27) giving unsigned 27 { give value divide 1. }
-function signed28(value integer 28) giving integer 28 { give value plus 0. }
-function productsigned28(value integer 28) giving integer 28 { give value multiply 1. }
-function subtractsigned28(value integer 28) giving integer 28 { give value subtract 0. }
-function dividesigned28(value integer 28) giving integer 28 { give value divide 1. }
-function unsigned28(value unsigned 28) giving unsigned 28 { give value plus 0. }
-function productunsigned28(value unsigned 28) giving unsigned 28 { give value multiply 1. }
-function subtractunsigned28(value unsigned 28) giving unsigned 28 { give value subtract 0. }
-function divideunsigned28(value unsigned 28) giving unsigned 28 { give value divide 1. }
-function signed29(value integer 29) giving integer 29 { give value plus 0. }
-function productsigned29(value integer 29) giving integer 29 { give value multiply 1. }
-function subtractsigned29(value integer 29) giving integer 29 { give value subtract 0. }
-function dividesigned29(value integer 29) giving integer 29 { give value divide 1. }
-function unsigned29(value unsigned 29) giving unsigned 29 { give value plus 0. }
-function productunsigned29(value unsigned 29) giving unsigned 29 { give value multiply 1. }
-function subtractunsigned29(value unsigned 29) giving unsigned 29 { give value subtract 0. }
-function divideunsigned29(value unsigned 29) giving unsigned 29 { give value divide 1. }
-function signed30(value integer 30) giving integer 30 { give value plus 0. }
-function productsigned30(value integer 30) giving integer 30 { give value multiply 1. }
-function subtractsigned30(value integer 30) giving integer 30 { give value subtract 0. }
-function dividesigned30(value integer 30) giving integer 30 { give value divide 1. }
-function unsigned30(value unsigned 30) giving unsigned 30 { give value plus 0. }
-function productunsigned30(value unsigned 30) giving unsigned 30 { give value multiply 1. }
-function subtractunsigned30(value unsigned 30) giving unsigned 30 { give value subtract 0. }
-function divideunsigned30(value unsigned 30) giving unsigned 30 { give value divide 1. }
-function signed31(value integer 31) giving integer 31 { give value plus 0. }
-function productsigned31(value integer 31) giving integer 31 { give value multiply 1. }
-function subtractsigned31(value integer 31) giving integer 31 { give value subtract 0. }
-function dividesigned31(value integer 31) giving integer 31 { give value divide 1. }
-function unsigned31(value unsigned 31) giving unsigned 31 { give value plus 0. }
-function productunsigned31(value unsigned 31) giving unsigned 31 { give value multiply 1. }
-function subtractunsigned31(value unsigned 31) giving unsigned 31 { give value subtract 0. }
-function divideunsigned31(value unsigned 31) giving unsigned 31 { give value divide 1. }
-function signed32(value integer 32) giving integer 32 { give value plus 0. }
-function productsigned32(value integer 32) giving integer 32 { give value multiply 1. }
-function subtractsigned32(value integer 32) giving integer 32 { give value subtract 0. }
-function dividesigned32(value integer 32) giving integer 32 { give value divide 1. }
-function unsigned32(value unsigned 32) giving unsigned 32 { give value plus 0. }
-function productunsigned32(value unsigned 32) giving unsigned 32 { give value multiply 1. }
-function subtractunsigned32(value unsigned 32) giving unsigned 32 { give value subtract 0. }
-function divideunsigned32(value unsigned 32) giving unsigned 32 { give value divide 1. }
+function signed17(value integer 17) giving integer 17 keeping call { give value plus 0. }
+function productsigned17(value integer 17) giving integer 17 keeping call { give value multiply 1. }
+function subtractsigned17(value integer 17) giving integer 17 keeping call { give value subtract 0. }
+function dividesigned17(value integer 17) giving integer 17 keeping call { give value divide 1. }
+function unsigned17(value unsigned 17) giving unsigned 17 keeping call { give value plus 0. }
+function productunsigned17(value unsigned 17) giving unsigned 17 keeping call { give value multiply 1. }
+function subtractunsigned17(value unsigned 17) giving unsigned 17 keeping call { give value subtract 0. }
+function divideunsigned17(value unsigned 17) giving unsigned 17 keeping call { give value divide 1. }
+function widenSigned17(value integer 17) giving integer 128 keeping call { give value. }
+function widenUnsigned17(value unsigned 17) giving unsigned 128 keeping call { give value. }
+function signed18(value integer 18) giving integer 18 keeping call { give value plus 0. }
+function productsigned18(value integer 18) giving integer 18 keeping call { give value multiply 1. }
+function subtractsigned18(value integer 18) giving integer 18 keeping call { give value subtract 0. }
+function dividesigned18(value integer 18) giving integer 18 keeping call { give value divide 1. }
+function unsigned18(value unsigned 18) giving unsigned 18 keeping call { give value plus 0. }
+function productunsigned18(value unsigned 18) giving unsigned 18 keeping call { give value multiply 1. }
+function subtractunsigned18(value unsigned 18) giving unsigned 18 keeping call { give value subtract 0. }
+function divideunsigned18(value unsigned 18) giving unsigned 18 keeping call { give value divide 1. }
+function widenSigned18(value integer 18) giving integer 128 keeping call { give value. }
+function widenUnsigned18(value unsigned 18) giving unsigned 128 keeping call { give value. }
+function signed19(value integer 19) giving integer 19 keeping call { give value plus 0. }
+function productsigned19(value integer 19) giving integer 19 keeping call { give value multiply 1. }
+function subtractsigned19(value integer 19) giving integer 19 keeping call { give value subtract 0. }
+function dividesigned19(value integer 19) giving integer 19 keeping call { give value divide 1. }
+function unsigned19(value unsigned 19) giving unsigned 19 keeping call { give value plus 0. }
+function productunsigned19(value unsigned 19) giving unsigned 19 keeping call { give value multiply 1. }
+function subtractunsigned19(value unsigned 19) giving unsigned 19 keeping call { give value subtract 0. }
+function divideunsigned19(value unsigned 19) giving unsigned 19 keeping call { give value divide 1. }
+function widenSigned19(value integer 19) giving integer 128 keeping call { give value. }
+function widenUnsigned19(value unsigned 19) giving unsigned 128 keeping call { give value. }
+function signed20(value integer 20) giving integer 20 keeping call { give value plus 0. }
+function productsigned20(value integer 20) giving integer 20 keeping call { give value multiply 1. }
+function subtractsigned20(value integer 20) giving integer 20 keeping call { give value subtract 0. }
+function dividesigned20(value integer 20) giving integer 20 keeping call { give value divide 1. }
+function unsigned20(value unsigned 20) giving unsigned 20 keeping call { give value plus 0. }
+function productunsigned20(value unsigned 20) giving unsigned 20 keeping call { give value multiply 1. }
+function subtractunsigned20(value unsigned 20) giving unsigned 20 keeping call { give value subtract 0. }
+function divideunsigned20(value unsigned 20) giving unsigned 20 keeping call { give value divide 1. }
+function widenSigned20(value integer 20) giving integer 128 keeping call { give value. }
+function widenUnsigned20(value unsigned 20) giving unsigned 128 keeping call { give value. }
+function signed21(value integer 21) giving integer 21 keeping call { give value plus 0. }
+function productsigned21(value integer 21) giving integer 21 keeping call { give value multiply 1. }
+function subtractsigned21(value integer 21) giving integer 21 keeping call { give value subtract 0. }
+function dividesigned21(value integer 21) giving integer 21 keeping call { give value divide 1. }
+function unsigned21(value unsigned 21) giving unsigned 21 keeping call { give value plus 0. }
+function productunsigned21(value unsigned 21) giving unsigned 21 keeping call { give value multiply 1. }
+function subtractunsigned21(value unsigned 21) giving unsigned 21 keeping call { give value subtract 0. }
+function divideunsigned21(value unsigned 21) giving unsigned 21 keeping call { give value divide 1. }
+function widenSigned21(value integer 21) giving integer 128 keeping call { give value. }
+function widenUnsigned21(value unsigned 21) giving unsigned 128 keeping call { give value. }
+function signed22(value integer 22) giving integer 22 keeping call { give value plus 0. }
+function productsigned22(value integer 22) giving integer 22 keeping call { give value multiply 1. }
+function subtractsigned22(value integer 22) giving integer 22 keeping call { give value subtract 0. }
+function dividesigned22(value integer 22) giving integer 22 keeping call { give value divide 1. }
+function unsigned22(value unsigned 22) giving unsigned 22 keeping call { give value plus 0. }
+function productunsigned22(value unsigned 22) giving unsigned 22 keeping call { give value multiply 1. }
+function subtractunsigned22(value unsigned 22) giving unsigned 22 keeping call { give value subtract 0. }
+function divideunsigned22(value unsigned 22) giving unsigned 22 keeping call { give value divide 1. }
+function widenSigned22(value integer 22) giving integer 128 keeping call { give value. }
+function widenUnsigned22(value unsigned 22) giving unsigned 128 keeping call { give value. }
+function signed23(value integer 23) giving integer 23 keeping call { give value plus 0. }
+function productsigned23(value integer 23) giving integer 23 keeping call { give value multiply 1. }
+function subtractsigned23(value integer 23) giving integer 23 keeping call { give value subtract 0. }
+function dividesigned23(value integer 23) giving integer 23 keeping call { give value divide 1. }
+function unsigned23(value unsigned 23) giving unsigned 23 keeping call { give value plus 0. }
+function productunsigned23(value unsigned 23) giving unsigned 23 keeping call { give value multiply 1. }
+function subtractunsigned23(value unsigned 23) giving unsigned 23 keeping call { give value subtract 0. }
+function divideunsigned23(value unsigned 23) giving unsigned 23 keeping call { give value divide 1. }
+function widenSigned23(value integer 23) giving integer 128 keeping call { give value. }
+function widenUnsigned23(value unsigned 23) giving unsigned 128 keeping call { give value. }
+function signed24(value integer 24) giving integer 24 keeping call { give value plus 0. }
+function productsigned24(value integer 24) giving integer 24 keeping call { give value multiply 1. }
+function subtractsigned24(value integer 24) giving integer 24 keeping call { give value subtract 0. }
+function dividesigned24(value integer 24) giving integer 24 keeping call { give value divide 1. }
+function unsigned24(value unsigned 24) giving unsigned 24 keeping call { give value plus 0. }
+function productunsigned24(value unsigned 24) giving unsigned 24 keeping call { give value multiply 1. }
+function subtractunsigned24(value unsigned 24) giving unsigned 24 keeping call { give value subtract 0. }
+function divideunsigned24(value unsigned 24) giving unsigned 24 keeping call { give value divide 1. }
+function widenSigned24(value integer 24) giving integer 128 keeping call { give value. }
+function widenUnsigned24(value unsigned 24) giving unsigned 128 keeping call { give value. }
+function signed25(value integer 25) giving integer 25 keeping call { give value plus 0. }
+function productsigned25(value integer 25) giving integer 25 keeping call { give value multiply 1. }
+function subtractsigned25(value integer 25) giving integer 25 keeping call { give value subtract 0. }
+function dividesigned25(value integer 25) giving integer 25 keeping call { give value divide 1. }
+function unsigned25(value unsigned 25) giving unsigned 25 keeping call { give value plus 0. }
+function productunsigned25(value unsigned 25) giving unsigned 25 keeping call { give value multiply 1. }
+function subtractunsigned25(value unsigned 25) giving unsigned 25 keeping call { give value subtract 0. }
+function divideunsigned25(value unsigned 25) giving unsigned 25 keeping call { give value divide 1. }
+function widenSigned25(value integer 25) giving integer 128 keeping call { give value. }
+function widenUnsigned25(value unsigned 25) giving unsigned 128 keeping call { give value. }
+function signed26(value integer 26) giving integer 26 keeping call { give value plus 0. }
+function productsigned26(value integer 26) giving integer 26 keeping call { give value multiply 1. }
+function subtractsigned26(value integer 26) giving integer 26 keeping call { give value subtract 0. }
+function dividesigned26(value integer 26) giving integer 26 keeping call { give value divide 1. }
+function unsigned26(value unsigned 26) giving unsigned 26 keeping call { give value plus 0. }
+function productunsigned26(value unsigned 26) giving unsigned 26 keeping call { give value multiply 1. }
+function subtractunsigned26(value unsigned 26) giving unsigned 26 keeping call { give value subtract 0. }
+function divideunsigned26(value unsigned 26) giving unsigned 26 keeping call { give value divide 1. }
+function widenSigned26(value integer 26) giving integer 128 keeping call { give value. }
+function widenUnsigned26(value unsigned 26) giving unsigned 128 keeping call { give value. }
+function signed27(value integer 27) giving integer 27 keeping call { give value plus 0. }
+function productsigned27(value integer 27) giving integer 27 keeping call { give value multiply 1. }
+function subtractsigned27(value integer 27) giving integer 27 keeping call { give value subtract 0. }
+function dividesigned27(value integer 27) giving integer 27 keeping call { give value divide 1. }
+function unsigned27(value unsigned 27) giving unsigned 27 keeping call { give value plus 0. }
+function productunsigned27(value unsigned 27) giving unsigned 27 keeping call { give value multiply 1. }
+function subtractunsigned27(value unsigned 27) giving unsigned 27 keeping call { give value subtract 0. }
+function divideunsigned27(value unsigned 27) giving unsigned 27 keeping call { give value divide 1. }
+function widenSigned27(value integer 27) giving integer 128 keeping call { give value. }
+function widenUnsigned27(value unsigned 27) giving unsigned 128 keeping call { give value. }
+function signed28(value integer 28) giving integer 28 keeping call { give value plus 0. }
+function productsigned28(value integer 28) giving integer 28 keeping call { give value multiply 1. }
+function subtractsigned28(value integer 28) giving integer 28 keeping call { give value subtract 0. }
+function dividesigned28(value integer 28) giving integer 28 keeping call { give value divide 1. }
+function unsigned28(value unsigned 28) giving unsigned 28 keeping call { give value plus 0. }
+function productunsigned28(value unsigned 28) giving unsigned 28 keeping call { give value multiply 1. }
+function subtractunsigned28(value unsigned 28) giving unsigned 28 keeping call { give value subtract 0. }
+function divideunsigned28(value unsigned 28) giving unsigned 28 keeping call { give value divide 1. }
+function widenSigned28(value integer 28) giving integer 128 keeping call { give value. }
+function widenUnsigned28(value unsigned 28) giving unsigned 128 keeping call { give value. }
+function signed29(value integer 29) giving integer 29 keeping call { give value plus 0. }
+function productsigned29(value integer 29) giving integer 29 keeping call { give value multiply 1. }
+function subtractsigned29(value integer 29) giving integer 29 keeping call { give value subtract 0. }
+function dividesigned29(value integer 29) giving integer 29 keeping call { give value divide 1. }
+function unsigned29(value unsigned 29) giving unsigned 29 keeping call { give value plus 0. }
+function productunsigned29(value unsigned 29) giving unsigned 29 keeping call { give value multiply 1. }
+function subtractunsigned29(value unsigned 29) giving unsigned 29 keeping call { give value subtract 0. }
+function divideunsigned29(value unsigned 29) giving unsigned 29 keeping call { give value divide 1. }
+function widenSigned29(value integer 29) giving integer 128 keeping call { give value. }
+function widenUnsigned29(value unsigned 29) giving unsigned 128 keeping call { give value. }
+function signed30(value integer 30) giving integer 30 keeping call { give value plus 0. }
+function productsigned30(value integer 30) giving integer 30 keeping call { give value multiply 1. }
+function subtractsigned30(value integer 30) giving integer 30 keeping call { give value subtract 0. }
+function dividesigned30(value integer 30) giving integer 30 keeping call { give value divide 1. }
+function unsigned30(value unsigned 30) giving unsigned 30 keeping call { give value plus 0. }
+function productunsigned30(value unsigned 30) giving unsigned 30 keeping call { give value multiply 1. }
+function subtractunsigned30(value unsigned 30) giving unsigned 30 keeping call { give value subtract 0. }
+function divideunsigned30(value unsigned 30) giving unsigned 30 keeping call { give value divide 1. }
+function widenSigned30(value integer 30) giving integer 128 keeping call { give value. }
+function widenUnsigned30(value unsigned 30) giving unsigned 128 keeping call { give value. }
+function signed31(value integer 31) giving integer 31 keeping call { give value plus 0. }
+function productsigned31(value integer 31) giving integer 31 keeping call { give value multiply 1. }
+function subtractsigned31(value integer 31) giving integer 31 keeping call { give value subtract 0. }
+function dividesigned31(value integer 31) giving integer 31 keeping call { give value divide 1. }
+function unsigned31(value unsigned 31) giving unsigned 31 keeping call { give value plus 0. }
+function productunsigned31(value unsigned 31) giving unsigned 31 keeping call { give value multiply 1. }
+function subtractunsigned31(value unsigned 31) giving unsigned 31 keeping call { give value subtract 0. }
+function divideunsigned31(value unsigned 31) giving unsigned 31 keeping call { give value divide 1. }
+function widenSigned31(value integer 31) giving integer 128 keeping call { give value. }
+function widenUnsigned31(value unsigned 31) giving unsigned 128 keeping call { give value. }
+function signed32(value integer 32) giving integer 32 keeping call { give value plus 0. }
+function productsigned32(value integer 32) giving integer 32 keeping call { give value multiply 1. }
+function subtractsigned32(value integer 32) giving integer 32 keeping call { give value subtract 0. }
+function dividesigned32(value integer 32) giving integer 32 keeping call { give value divide 1. }
+function unsigned32(value unsigned 32) giving unsigned 32 keeping call { give value plus 0. }
+function productunsigned32(value unsigned 32) giving unsigned 32 keeping call { give value multiply 1. }
+function subtractunsigned32(value unsigned 32) giving unsigned 32 keeping call { give value subtract 0. }
+function divideunsigned32(value unsigned 32) giving unsigned 32 keeping call { give value divide 1. }
+function widenSigned32(value integer 32) giving integer 128 keeping call { give value. }
+function widenUnsigned32(value unsigned 32) giving unsigned 128 keeping call { give value. }
 start {
   check.expect(signed17(1) is 1).
   check.expect(productsigned17(1) is 1).
@@ -136,6 +168,17 @@ start {
   check.expect(productunsigned17(1) is 1).
   check.expect(subtractunsigned17(1) is 1).
   check.expect(divideunsigned17(1) is 1).
+  constant minimum17 of type integer 17 is 0 subtract 65535 subtract 1.
+  check.expect(signed17(minimum17) is minimum17).
+  check.expect(signed17(65535) is 65535).
+  check.expect(subtractsigned17(minimum17) is minimum17).
+  check.expect(unsigned17(131071) is 131071).
+  check.expect(productunsigned17(131071) is 131071).
+  check.expect(divideunsigned17(131071) is 131071).
+  check.expect(widenSigned17(minimum17) is minimum17).
+  check.expect(widenUnsigned17(131071) is 131071).
+  check.expect(productsigned17(minimum17) is minimum17).
+  check.expect(dividesigned17(minimum17) is minimum17).
   check.expect(signed18(1) is 1).
   check.expect(productsigned18(1) is 1).
   check.expect(subtractsigned18(1) is 1).
@@ -144,6 +187,17 @@ start {
   check.expect(productunsigned18(1) is 1).
   check.expect(subtractunsigned18(1) is 1).
   check.expect(divideunsigned18(1) is 1).
+  constant minimum18 of type integer 18 is 0 subtract 131071 subtract 1.
+  check.expect(signed18(minimum18) is minimum18).
+  check.expect(signed18(131071) is 131071).
+  check.expect(subtractsigned18(minimum18) is minimum18).
+  check.expect(unsigned18(262143) is 262143).
+  check.expect(productunsigned18(262143) is 262143).
+  check.expect(divideunsigned18(262143) is 262143).
+  check.expect(widenSigned18(minimum18) is minimum18).
+  check.expect(widenUnsigned18(262143) is 262143).
+  check.expect(productsigned18(minimum18) is minimum18).
+  check.expect(dividesigned18(minimum18) is minimum18).
   check.expect(signed19(1) is 1).
   check.expect(productsigned19(1) is 1).
   check.expect(subtractsigned19(1) is 1).
@@ -152,6 +206,17 @@ start {
   check.expect(productunsigned19(1) is 1).
   check.expect(subtractunsigned19(1) is 1).
   check.expect(divideunsigned19(1) is 1).
+  constant minimum19 of type integer 19 is 0 subtract 262143 subtract 1.
+  check.expect(signed19(minimum19) is minimum19).
+  check.expect(signed19(262143) is 262143).
+  check.expect(subtractsigned19(minimum19) is minimum19).
+  check.expect(unsigned19(524287) is 524287).
+  check.expect(productunsigned19(524287) is 524287).
+  check.expect(divideunsigned19(524287) is 524287).
+  check.expect(widenSigned19(minimum19) is minimum19).
+  check.expect(widenUnsigned19(524287) is 524287).
+  check.expect(productsigned19(minimum19) is minimum19).
+  check.expect(dividesigned19(minimum19) is minimum19).
   check.expect(signed20(1) is 1).
   check.expect(productsigned20(1) is 1).
   check.expect(subtractsigned20(1) is 1).
@@ -160,6 +225,17 @@ start {
   check.expect(productunsigned20(1) is 1).
   check.expect(subtractunsigned20(1) is 1).
   check.expect(divideunsigned20(1) is 1).
+  constant minimum20 of type integer 20 is 0 subtract 524287 subtract 1.
+  check.expect(signed20(minimum20) is minimum20).
+  check.expect(signed20(524287) is 524287).
+  check.expect(subtractsigned20(minimum20) is minimum20).
+  check.expect(unsigned20(1048575) is 1048575).
+  check.expect(productunsigned20(1048575) is 1048575).
+  check.expect(divideunsigned20(1048575) is 1048575).
+  check.expect(widenSigned20(minimum20) is minimum20).
+  check.expect(widenUnsigned20(1048575) is 1048575).
+  check.expect(productsigned20(minimum20) is minimum20).
+  check.expect(dividesigned20(minimum20) is minimum20).
   check.expect(signed21(1) is 1).
   check.expect(productsigned21(1) is 1).
   check.expect(subtractsigned21(1) is 1).
@@ -168,6 +244,17 @@ start {
   check.expect(productunsigned21(1) is 1).
   check.expect(subtractunsigned21(1) is 1).
   check.expect(divideunsigned21(1) is 1).
+  constant minimum21 of type integer 21 is 0 subtract 1048575 subtract 1.
+  check.expect(signed21(minimum21) is minimum21).
+  check.expect(signed21(1048575) is 1048575).
+  check.expect(subtractsigned21(minimum21) is minimum21).
+  check.expect(unsigned21(2097151) is 2097151).
+  check.expect(productunsigned21(2097151) is 2097151).
+  check.expect(divideunsigned21(2097151) is 2097151).
+  check.expect(widenSigned21(minimum21) is minimum21).
+  check.expect(widenUnsigned21(2097151) is 2097151).
+  check.expect(productsigned21(minimum21) is minimum21).
+  check.expect(dividesigned21(minimum21) is minimum21).
   check.expect(signed22(1) is 1).
   check.expect(productsigned22(1) is 1).
   check.expect(subtractsigned22(1) is 1).
@@ -176,6 +263,17 @@ start {
   check.expect(productunsigned22(1) is 1).
   check.expect(subtractunsigned22(1) is 1).
   check.expect(divideunsigned22(1) is 1).
+  constant minimum22 of type integer 22 is 0 subtract 2097151 subtract 1.
+  check.expect(signed22(minimum22) is minimum22).
+  check.expect(signed22(2097151) is 2097151).
+  check.expect(subtractsigned22(minimum22) is minimum22).
+  check.expect(unsigned22(4194303) is 4194303).
+  check.expect(productunsigned22(4194303) is 4194303).
+  check.expect(divideunsigned22(4194303) is 4194303).
+  check.expect(widenSigned22(minimum22) is minimum22).
+  check.expect(widenUnsigned22(4194303) is 4194303).
+  check.expect(productsigned22(minimum22) is minimum22).
+  check.expect(dividesigned22(minimum22) is minimum22).
   check.expect(signed23(1) is 1).
   check.expect(productsigned23(1) is 1).
   check.expect(subtractsigned23(1) is 1).
@@ -184,6 +282,17 @@ start {
   check.expect(productunsigned23(1) is 1).
   check.expect(subtractunsigned23(1) is 1).
   check.expect(divideunsigned23(1) is 1).
+  constant minimum23 of type integer 23 is 0 subtract 4194303 subtract 1.
+  check.expect(signed23(minimum23) is minimum23).
+  check.expect(signed23(4194303) is 4194303).
+  check.expect(subtractsigned23(minimum23) is minimum23).
+  check.expect(unsigned23(8388607) is 8388607).
+  check.expect(productunsigned23(8388607) is 8388607).
+  check.expect(divideunsigned23(8388607) is 8388607).
+  check.expect(widenSigned23(minimum23) is minimum23).
+  check.expect(widenUnsigned23(8388607) is 8388607).
+  check.expect(productsigned23(minimum23) is minimum23).
+  check.expect(dividesigned23(minimum23) is minimum23).
   check.expect(signed24(1) is 1).
   check.expect(productsigned24(1) is 1).
   check.expect(subtractsigned24(1) is 1).
@@ -192,6 +301,17 @@ start {
   check.expect(productunsigned24(1) is 1).
   check.expect(subtractunsigned24(1) is 1).
   check.expect(divideunsigned24(1) is 1).
+  constant minimum24 of type integer 24 is 0 subtract 8388607 subtract 1.
+  check.expect(signed24(minimum24) is minimum24).
+  check.expect(signed24(8388607) is 8388607).
+  check.expect(subtractsigned24(minimum24) is minimum24).
+  check.expect(unsigned24(16777215) is 16777215).
+  check.expect(productunsigned24(16777215) is 16777215).
+  check.expect(divideunsigned24(16777215) is 16777215).
+  check.expect(widenSigned24(minimum24) is minimum24).
+  check.expect(widenUnsigned24(16777215) is 16777215).
+  check.expect(productsigned24(minimum24) is minimum24).
+  check.expect(dividesigned24(minimum24) is minimum24).
   check.expect(signed25(1) is 1).
   check.expect(productsigned25(1) is 1).
   check.expect(subtractsigned25(1) is 1).
@@ -200,6 +320,17 @@ start {
   check.expect(productunsigned25(1) is 1).
   check.expect(subtractunsigned25(1) is 1).
   check.expect(divideunsigned25(1) is 1).
+  constant minimum25 of type integer 25 is 0 subtract 16777215 subtract 1.
+  check.expect(signed25(minimum25) is minimum25).
+  check.expect(signed25(16777215) is 16777215).
+  check.expect(subtractsigned25(minimum25) is minimum25).
+  check.expect(unsigned25(33554431) is 33554431).
+  check.expect(productunsigned25(33554431) is 33554431).
+  check.expect(divideunsigned25(33554431) is 33554431).
+  check.expect(widenSigned25(minimum25) is minimum25).
+  check.expect(widenUnsigned25(33554431) is 33554431).
+  check.expect(productsigned25(minimum25) is minimum25).
+  check.expect(dividesigned25(minimum25) is minimum25).
   check.expect(signed26(1) is 1).
   check.expect(productsigned26(1) is 1).
   check.expect(subtractsigned26(1) is 1).
@@ -208,6 +339,17 @@ start {
   check.expect(productunsigned26(1) is 1).
   check.expect(subtractunsigned26(1) is 1).
   check.expect(divideunsigned26(1) is 1).
+  constant minimum26 of type integer 26 is 0 subtract 33554431 subtract 1.
+  check.expect(signed26(minimum26) is minimum26).
+  check.expect(signed26(33554431) is 33554431).
+  check.expect(subtractsigned26(minimum26) is minimum26).
+  check.expect(unsigned26(67108863) is 67108863).
+  check.expect(productunsigned26(67108863) is 67108863).
+  check.expect(divideunsigned26(67108863) is 67108863).
+  check.expect(widenSigned26(minimum26) is minimum26).
+  check.expect(widenUnsigned26(67108863) is 67108863).
+  check.expect(productsigned26(minimum26) is minimum26).
+  check.expect(dividesigned26(minimum26) is minimum26).
   check.expect(signed27(1) is 1).
   check.expect(productsigned27(1) is 1).
   check.expect(subtractsigned27(1) is 1).
@@ -216,6 +358,17 @@ start {
   check.expect(productunsigned27(1) is 1).
   check.expect(subtractunsigned27(1) is 1).
   check.expect(divideunsigned27(1) is 1).
+  constant minimum27 of type integer 27 is 0 subtract 67108863 subtract 1.
+  check.expect(signed27(minimum27) is minimum27).
+  check.expect(signed27(67108863) is 67108863).
+  check.expect(subtractsigned27(minimum27) is minimum27).
+  check.expect(unsigned27(134217727) is 134217727).
+  check.expect(productunsigned27(134217727) is 134217727).
+  check.expect(divideunsigned27(134217727) is 134217727).
+  check.expect(widenSigned27(minimum27) is minimum27).
+  check.expect(widenUnsigned27(134217727) is 134217727).
+  check.expect(productsigned27(minimum27) is minimum27).
+  check.expect(dividesigned27(minimum27) is minimum27).
   check.expect(signed28(1) is 1).
   check.expect(productsigned28(1) is 1).
   check.expect(subtractsigned28(1) is 1).
@@ -224,6 +377,17 @@ start {
   check.expect(productunsigned28(1) is 1).
   check.expect(subtractunsigned28(1) is 1).
   check.expect(divideunsigned28(1) is 1).
+  constant minimum28 of type integer 28 is 0 subtract 134217727 subtract 1.
+  check.expect(signed28(minimum28) is minimum28).
+  check.expect(signed28(134217727) is 134217727).
+  check.expect(subtractsigned28(minimum28) is minimum28).
+  check.expect(unsigned28(268435455) is 268435455).
+  check.expect(productunsigned28(268435455) is 268435455).
+  check.expect(divideunsigned28(268435455) is 268435455).
+  check.expect(widenSigned28(minimum28) is minimum28).
+  check.expect(widenUnsigned28(268435455) is 268435455).
+  check.expect(productsigned28(minimum28) is minimum28).
+  check.expect(dividesigned28(minimum28) is minimum28).
   check.expect(signed29(1) is 1).
   check.expect(productsigned29(1) is 1).
   check.expect(subtractsigned29(1) is 1).
@@ -232,6 +396,17 @@ start {
   check.expect(productunsigned29(1) is 1).
   check.expect(subtractunsigned29(1) is 1).
   check.expect(divideunsigned29(1) is 1).
+  constant minimum29 of type integer 29 is 0 subtract 268435455 subtract 1.
+  check.expect(signed29(minimum29) is minimum29).
+  check.expect(signed29(268435455) is 268435455).
+  check.expect(subtractsigned29(minimum29) is minimum29).
+  check.expect(unsigned29(536870911) is 536870911).
+  check.expect(productunsigned29(536870911) is 536870911).
+  check.expect(divideunsigned29(536870911) is 536870911).
+  check.expect(widenSigned29(minimum29) is minimum29).
+  check.expect(widenUnsigned29(536870911) is 536870911).
+  check.expect(productsigned29(minimum29) is minimum29).
+  check.expect(dividesigned29(minimum29) is minimum29).
   check.expect(signed30(1) is 1).
   check.expect(productsigned30(1) is 1).
   check.expect(subtractsigned30(1) is 1).
@@ -240,6 +415,17 @@ start {
   check.expect(productunsigned30(1) is 1).
   check.expect(subtractunsigned30(1) is 1).
   check.expect(divideunsigned30(1) is 1).
+  constant minimum30 of type integer 30 is 0 subtract 536870911 subtract 1.
+  check.expect(signed30(minimum30) is minimum30).
+  check.expect(signed30(536870911) is 536870911).
+  check.expect(subtractsigned30(minimum30) is minimum30).
+  check.expect(unsigned30(1073741823) is 1073741823).
+  check.expect(productunsigned30(1073741823) is 1073741823).
+  check.expect(divideunsigned30(1073741823) is 1073741823).
+  check.expect(widenSigned30(minimum30) is minimum30).
+  check.expect(widenUnsigned30(1073741823) is 1073741823).
+  check.expect(productsigned30(minimum30) is minimum30).
+  check.expect(dividesigned30(minimum30) is minimum30).
   check.expect(signed31(1) is 1).
   check.expect(productsigned31(1) is 1).
   check.expect(subtractsigned31(1) is 1).
@@ -248,6 +434,17 @@ start {
   check.expect(productunsigned31(1) is 1).
   check.expect(subtractunsigned31(1) is 1).
   check.expect(divideunsigned31(1) is 1).
+  constant minimum31 of type integer 31 is 0 subtract 1073741823 subtract 1.
+  check.expect(signed31(minimum31) is minimum31).
+  check.expect(signed31(1073741823) is 1073741823).
+  check.expect(subtractsigned31(minimum31) is minimum31).
+  check.expect(unsigned31(2147483647) is 2147483647).
+  check.expect(productunsigned31(2147483647) is 2147483647).
+  check.expect(divideunsigned31(2147483647) is 2147483647).
+  check.expect(widenSigned31(minimum31) is minimum31).
+  check.expect(widenUnsigned31(2147483647) is 2147483647).
+  check.expect(productsigned31(minimum31) is minimum31).
+  check.expect(dividesigned31(minimum31) is minimum31).
   check.expect(signed32(1) is 1).
   check.expect(productsigned32(1) is 1).
   check.expect(subtractsigned32(1) is 1).
@@ -256,4 +453,15 @@ start {
   check.expect(productunsigned32(1) is 1).
   check.expect(subtractunsigned32(1) is 1).
   check.expect(divideunsigned32(1) is 1).
+  constant minimum32 of type integer 32 is 0 subtract 2147483647 subtract 1.
+  check.expect(signed32(minimum32) is minimum32).
+  check.expect(signed32(2147483647) is 2147483647).
+  check.expect(subtractsigned32(minimum32) is minimum32).
+  check.expect(unsigned32(4294967295) is 4294967295).
+  check.expect(productunsigned32(4294967295) is 4294967295).
+  check.expect(divideunsigned32(4294967295) is 4294967295).
+  check.expect(widenSigned32(minimum32) is minimum32).
+  check.expect(widenUnsigned32(4294967295) is 4294967295).
+  check.expect(productsigned32(minimum32) is minimum32).
+  check.expect(dividesigned32(minimum32) is minimum32).
 }

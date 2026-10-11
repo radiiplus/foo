@@ -1,0 +1,5 @@
+function narrow(value integer 8) giving integer 8 { give value. }
+start {
+  constant wide of type integer 16 is 256.
+  narrow(wide).
+}

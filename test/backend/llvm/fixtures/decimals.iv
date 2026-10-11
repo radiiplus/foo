@@ -1,7 +1,11 @@
 use testing as check.
 define Point as record { x of type decimal. y of type decimal. } derives Equatable, Ord.
-function widen(value decimal 32) giving decimal { give value. }
-function fromInteger(value integer 32) giving decimal { give value. }
+function widen(value decimal 32) giving decimal keeping call { give value. }
+function fromInteger(value integer 32) giving decimal keeping call { give value. }
+function sum32(left decimal 32, right decimal 32) giving decimal 32 keeping call { give left plus right. }
+function product(left decimal, right decimal) giving decimal keeping call { give left multiply right. }
+function difference(left decimal, right decimal) giving decimal keeping call { give left subtract right. }
+function quotient(left decimal, right decimal) giving decimal keeping call { give left divide right. }
 start {
   constant left is Point(1.5, 3.0).
   check.expect(left is Point(1.5, 3.0)).
@@ -10,4 +14,14 @@ start {
   check.expect(widen(narrow) is 1.0).
   check.expect(fromInteger(7) is 7.0).
   check.expect(4.5 divide 1.5 is 3.0).
+  constant two of type decimal 32 is 2.
+  check.expect(sum32(narrow, two) is 3).
+  check.expect(product(1.5, 2.0) is 3.0).
+  check.expect(difference(1.5, 2.0) is (0.0 subtract 0.5)).
+  check.expect(quotient(4.5, 1.5) is 3.0).
+  constant invalid is quotient(0.0, 0.0).
+  check.expect(invalid is not invalid and not (invalid is less than 1.0)).
+  constant infinite is quotient(1.0, 0.0).
+  check.expect(infinite is greater than 1.0 and infinite is infinite).
+  check.expect(quotient(0.0, 0.0 subtract 1.0) is 0.0).
 }

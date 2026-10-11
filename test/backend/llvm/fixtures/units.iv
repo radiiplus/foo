@@ -1,0 +1,11 @@
+use testing as check.
+function ignore(value nothing) giving nothing keeping call { give value. }
+function some giving optional nothing keeping call { give nothing. }
+start {
+  ignore(nothing).
+  constant apply is ignore.
+  apply(nothing).
+  constant present of type optional nothing is some.
+  constant empty of type optional nothing is null.
+  check.expect(present is not null and empty is null).
+}

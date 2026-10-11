@@ -1,131 +1,163 @@
 use testing as check.
-function signed1(value integer 1) giving integer 1 { give value plus 0. }
-function productsigned1(value integer 1) giving integer 1 { give value multiply 0. }
-function subtractsigned1(value integer 1) giving integer 1 { give value subtract 0. }
-function unsigned1(value unsigned 1) giving unsigned 1 { give value plus 0. }
-function productunsigned1(value unsigned 1) giving unsigned 1 { give value multiply 1. }
-function subtractunsigned1(value unsigned 1) giving unsigned 1 { give value subtract 0. }
-function divideunsigned1(value unsigned 1) giving unsigned 1 { give value divide 1. }
-function signed2(value integer 2) giving integer 2 { give value plus 0. }
-function productsigned2(value integer 2) giving integer 2 { give value multiply 1. }
-function subtractsigned2(value integer 2) giving integer 2 { give value subtract 0. }
-function dividesigned2(value integer 2) giving integer 2 { give value divide 1. }
-function unsigned2(value unsigned 2) giving unsigned 2 { give value plus 0. }
-function productunsigned2(value unsigned 2) giving unsigned 2 { give value multiply 1. }
-function subtractunsigned2(value unsigned 2) giving unsigned 2 { give value subtract 0. }
-function divideunsigned2(value unsigned 2) giving unsigned 2 { give value divide 1. }
-function signed3(value integer 3) giving integer 3 { give value plus 0. }
-function productsigned3(value integer 3) giving integer 3 { give value multiply 1. }
-function subtractsigned3(value integer 3) giving integer 3 { give value subtract 0. }
-function dividesigned3(value integer 3) giving integer 3 { give value divide 1. }
-function unsigned3(value unsigned 3) giving unsigned 3 { give value plus 0. }
-function productunsigned3(value unsigned 3) giving unsigned 3 { give value multiply 1. }
-function subtractunsigned3(value unsigned 3) giving unsigned 3 { give value subtract 0. }
-function divideunsigned3(value unsigned 3) giving unsigned 3 { give value divide 1. }
-function signed4(value integer 4) giving integer 4 { give value plus 0. }
-function productsigned4(value integer 4) giving integer 4 { give value multiply 1. }
-function subtractsigned4(value integer 4) giving integer 4 { give value subtract 0. }
-function dividesigned4(value integer 4) giving integer 4 { give value divide 1. }
-function unsigned4(value unsigned 4) giving unsigned 4 { give value plus 0. }
-function productunsigned4(value unsigned 4) giving unsigned 4 { give value multiply 1. }
-function subtractunsigned4(value unsigned 4) giving unsigned 4 { give value subtract 0. }
-function divideunsigned4(value unsigned 4) giving unsigned 4 { give value divide 1. }
-function signed5(value integer 5) giving integer 5 { give value plus 0. }
-function productsigned5(value integer 5) giving integer 5 { give value multiply 1. }
-function subtractsigned5(value integer 5) giving integer 5 { give value subtract 0. }
-function dividesigned5(value integer 5) giving integer 5 { give value divide 1. }
-function unsigned5(value unsigned 5) giving unsigned 5 { give value plus 0. }
-function productunsigned5(value unsigned 5) giving unsigned 5 { give value multiply 1. }
-function subtractunsigned5(value unsigned 5) giving unsigned 5 { give value subtract 0. }
-function divideunsigned5(value unsigned 5) giving unsigned 5 { give value divide 1. }
-function signed6(value integer 6) giving integer 6 { give value plus 0. }
-function productsigned6(value integer 6) giving integer 6 { give value multiply 1. }
-function subtractsigned6(value integer 6) giving integer 6 { give value subtract 0. }
-function dividesigned6(value integer 6) giving integer 6 { give value divide 1. }
-function unsigned6(value unsigned 6) giving unsigned 6 { give value plus 0. }
-function productunsigned6(value unsigned 6) giving unsigned 6 { give value multiply 1. }
-function subtractunsigned6(value unsigned 6) giving unsigned 6 { give value subtract 0. }
-function divideunsigned6(value unsigned 6) giving unsigned 6 { give value divide 1. }
-function signed7(value integer 7) giving integer 7 { give value plus 0. }
-function productsigned7(value integer 7) giving integer 7 { give value multiply 1. }
-function subtractsigned7(value integer 7) giving integer 7 { give value subtract 0. }
-function dividesigned7(value integer 7) giving integer 7 { give value divide 1. }
-function unsigned7(value unsigned 7) giving unsigned 7 { give value plus 0. }
-function productunsigned7(value unsigned 7) giving unsigned 7 { give value multiply 1. }
-function subtractunsigned7(value unsigned 7) giving unsigned 7 { give value subtract 0. }
-function divideunsigned7(value unsigned 7) giving unsigned 7 { give value divide 1. }
-function signed8(value integer 8) giving integer 8 { give value plus 0. }
-function productsigned8(value integer 8) giving integer 8 { give value multiply 1. }
-function subtractsigned8(value integer 8) giving integer 8 { give value subtract 0. }
-function dividesigned8(value integer 8) giving integer 8 { give value divide 1. }
-function unsigned8(value unsigned 8) giving unsigned 8 { give value plus 0. }
-function productunsigned8(value unsigned 8) giving unsigned 8 { give value multiply 1. }
-function subtractunsigned8(value unsigned 8) giving unsigned 8 { give value subtract 0. }
-function divideunsigned8(value unsigned 8) giving unsigned 8 { give value divide 1. }
-function signed9(value integer 9) giving integer 9 { give value plus 0. }
-function productsigned9(value integer 9) giving integer 9 { give value multiply 1. }
-function subtractsigned9(value integer 9) giving integer 9 { give value subtract 0. }
-function dividesigned9(value integer 9) giving integer 9 { give value divide 1. }
-function unsigned9(value unsigned 9) giving unsigned 9 { give value plus 0. }
-function productunsigned9(value unsigned 9) giving unsigned 9 { give value multiply 1. }
-function subtractunsigned9(value unsigned 9) giving unsigned 9 { give value subtract 0. }
-function divideunsigned9(value unsigned 9) giving unsigned 9 { give value divide 1. }
-function signed10(value integer 10) giving integer 10 { give value plus 0. }
-function productsigned10(value integer 10) giving integer 10 { give value multiply 1. }
-function subtractsigned10(value integer 10) giving integer 10 { give value subtract 0. }
-function dividesigned10(value integer 10) giving integer 10 { give value divide 1. }
-function unsigned10(value unsigned 10) giving unsigned 10 { give value plus 0. }
-function productunsigned10(value unsigned 10) giving unsigned 10 { give value multiply 1. }
-function subtractunsigned10(value unsigned 10) giving unsigned 10 { give value subtract 0. }
-function divideunsigned10(value unsigned 10) giving unsigned 10 { give value divide 1. }
-function signed11(value integer 11) giving integer 11 { give value plus 0. }
-function productsigned11(value integer 11) giving integer 11 { give value multiply 1. }
-function subtractsigned11(value integer 11) giving integer 11 { give value subtract 0. }
-function dividesigned11(value integer 11) giving integer 11 { give value divide 1. }
-function unsigned11(value unsigned 11) giving unsigned 11 { give value plus 0. }
-function productunsigned11(value unsigned 11) giving unsigned 11 { give value multiply 1. }
-function subtractunsigned11(value unsigned 11) giving unsigned 11 { give value subtract 0. }
-function divideunsigned11(value unsigned 11) giving unsigned 11 { give value divide 1. }
-function signed12(value integer 12) giving integer 12 { give value plus 0. }
-function productsigned12(value integer 12) giving integer 12 { give value multiply 1. }
-function subtractsigned12(value integer 12) giving integer 12 { give value subtract 0. }
-function dividesigned12(value integer 12) giving integer 12 { give value divide 1. }
-function unsigned12(value unsigned 12) giving unsigned 12 { give value plus 0. }
-function productunsigned12(value unsigned 12) giving unsigned 12 { give value multiply 1. }
-function subtractunsigned12(value unsigned 12) giving unsigned 12 { give value subtract 0. }
-function divideunsigned12(value unsigned 12) giving unsigned 12 { give value divide 1. }
-function signed13(value integer 13) giving integer 13 { give value plus 0. }
-function productsigned13(value integer 13) giving integer 13 { give value multiply 1. }
-function subtractsigned13(value integer 13) giving integer 13 { give value subtract 0. }
-function dividesigned13(value integer 13) giving integer 13 { give value divide 1. }
-function unsigned13(value unsigned 13) giving unsigned 13 { give value plus 0. }
-function productunsigned13(value unsigned 13) giving unsigned 13 { give value multiply 1. }
-function subtractunsigned13(value unsigned 13) giving unsigned 13 { give value subtract 0. }
-function divideunsigned13(value unsigned 13) giving unsigned 13 { give value divide 1. }
-function signed14(value integer 14) giving integer 14 { give value plus 0. }
-function productsigned14(value integer 14) giving integer 14 { give value multiply 1. }
-function subtractsigned14(value integer 14) giving integer 14 { give value subtract 0. }
-function dividesigned14(value integer 14) giving integer 14 { give value divide 1. }
-function unsigned14(value unsigned 14) giving unsigned 14 { give value plus 0. }
-function productunsigned14(value unsigned 14) giving unsigned 14 { give value multiply 1. }
-function subtractunsigned14(value unsigned 14) giving unsigned 14 { give value subtract 0. }
-function divideunsigned14(value unsigned 14) giving unsigned 14 { give value divide 1. }
-function signed15(value integer 15) giving integer 15 { give value plus 0. }
-function productsigned15(value integer 15) giving integer 15 { give value multiply 1. }
-function subtractsigned15(value integer 15) giving integer 15 { give value subtract 0. }
-function dividesigned15(value integer 15) giving integer 15 { give value divide 1. }
-function unsigned15(value unsigned 15) giving unsigned 15 { give value plus 0. }
-function productunsigned15(value unsigned 15) giving unsigned 15 { give value multiply 1. }
-function subtractunsigned15(value unsigned 15) giving unsigned 15 { give value subtract 0. }
-function divideunsigned15(value unsigned 15) giving unsigned 15 { give value divide 1. }
-function signed16(value integer 16) giving integer 16 { give value plus 0. }
-function productsigned16(value integer 16) giving integer 16 { give value multiply 1. }
-function subtractsigned16(value integer 16) giving integer 16 { give value subtract 0. }
-function dividesigned16(value integer 16) giving integer 16 { give value divide 1. }
-function unsigned16(value unsigned 16) giving unsigned 16 { give value plus 0. }
-function productunsigned16(value unsigned 16) giving unsigned 16 { give value multiply 1. }
-function subtractunsigned16(value unsigned 16) giving unsigned 16 { give value subtract 0. }
-function divideunsigned16(value unsigned 16) giving unsigned 16 { give value divide 1. }
+function signed1(value integer 1) giving integer 1 keeping call { give value plus 0. }
+function productsigned1(value integer 1) giving integer 1 keeping call { give value multiply 0. }
+function subtractsigned1(value integer 1) giving integer 1 keeping call { give value subtract 0. }
+function unsigned1(value unsigned 1) giving unsigned 1 keeping call { give value plus 0. }
+function productunsigned1(value unsigned 1) giving unsigned 1 keeping call { give value multiply 1. }
+function subtractunsigned1(value unsigned 1) giving unsigned 1 keeping call { give value subtract 0. }
+function divideunsigned1(value unsigned 1) giving unsigned 1 keeping call { give value divide 1. }
+function widenSigned1(value integer 1) giving integer 128 keeping call { give value. }
+function widenUnsigned1(value unsigned 1) giving unsigned 128 keeping call { give value. }
+function signed2(value integer 2) giving integer 2 keeping call { give value plus 0. }
+function productsigned2(value integer 2) giving integer 2 keeping call { give value multiply 1. }
+function subtractsigned2(value integer 2) giving integer 2 keeping call { give value subtract 0. }
+function dividesigned2(value integer 2) giving integer 2 keeping call { give value divide 1. }
+function unsigned2(value unsigned 2) giving unsigned 2 keeping call { give value plus 0. }
+function productunsigned2(value unsigned 2) giving unsigned 2 keeping call { give value multiply 1. }
+function subtractunsigned2(value unsigned 2) giving unsigned 2 keeping call { give value subtract 0. }
+function divideunsigned2(value unsigned 2) giving unsigned 2 keeping call { give value divide 1. }
+function widenSigned2(value integer 2) giving integer 128 keeping call { give value. }
+function widenUnsigned2(value unsigned 2) giving unsigned 128 keeping call { give value. }
+function signed3(value integer 3) giving integer 3 keeping call { give value plus 0. }
+function productsigned3(value integer 3) giving integer 3 keeping call { give value multiply 1. }
+function subtractsigned3(value integer 3) giving integer 3 keeping call { give value subtract 0. }
+function dividesigned3(value integer 3) giving integer 3 keeping call { give value divide 1. }
+function unsigned3(value unsigned 3) giving unsigned 3 keeping call { give value plus 0. }
+function productunsigned3(value unsigned 3) giving unsigned 3 keeping call { give value multiply 1. }
+function subtractunsigned3(value unsigned 3) giving unsigned 3 keeping call { give value subtract 0. }
+function divideunsigned3(value unsigned 3) giving unsigned 3 keeping call { give value divide 1. }
+function widenSigned3(value integer 3) giving integer 128 keeping call { give value. }
+function widenUnsigned3(value unsigned 3) giving unsigned 128 keeping call { give value. }
+function signed4(value integer 4) giving integer 4 keeping call { give value plus 0. }
+function productsigned4(value integer 4) giving integer 4 keeping call { give value multiply 1. }
+function subtractsigned4(value integer 4) giving integer 4 keeping call { give value subtract 0. }
+function dividesigned4(value integer 4) giving integer 4 keeping call { give value divide 1. }
+function unsigned4(value unsigned 4) giving unsigned 4 keeping call { give value plus 0. }
+function productunsigned4(value unsigned 4) giving unsigned 4 keeping call { give value multiply 1. }
+function subtractunsigned4(value unsigned 4) giving unsigned 4 keeping call { give value subtract 0. }
+function divideunsigned4(value unsigned 4) giving unsigned 4 keeping call { give value divide 1. }
+function widenSigned4(value integer 4) giving integer 128 keeping call { give value. }
+function widenUnsigned4(value unsigned 4) giving unsigned 128 keeping call { give value. }
+function signed5(value integer 5) giving integer 5 keeping call { give value plus 0. }
+function productsigned5(value integer 5) giving integer 5 keeping call { give value multiply 1. }
+function subtractsigned5(value integer 5) giving integer 5 keeping call { give value subtract 0. }
+function dividesigned5(value integer 5) giving integer 5 keeping call { give value divide 1. }
+function unsigned5(value unsigned 5) giving unsigned 5 keeping call { give value plus 0. }
+function productunsigned5(value unsigned 5) giving unsigned 5 keeping call { give value multiply 1. }
+function subtractunsigned5(value unsigned 5) giving unsigned 5 keeping call { give value subtract 0. }
+function divideunsigned5(value unsigned 5) giving unsigned 5 keeping call { give value divide 1. }
+function widenSigned5(value integer 5) giving integer 128 keeping call { give value. }
+function widenUnsigned5(value unsigned 5) giving unsigned 128 keeping call { give value. }
+function signed6(value integer 6) giving integer 6 keeping call { give value plus 0. }
+function productsigned6(value integer 6) giving integer 6 keeping call { give value multiply 1. }
+function subtractsigned6(value integer 6) giving integer 6 keeping call { give value subtract 0. }
+function dividesigned6(value integer 6) giving integer 6 keeping call { give value divide 1. }
+function unsigned6(value unsigned 6) giving unsigned 6 keeping call { give value plus 0. }
+function productunsigned6(value unsigned 6) giving unsigned 6 keeping call { give value multiply 1. }
+function subtractunsigned6(value unsigned 6) giving unsigned 6 keeping call { give value subtract 0. }
+function divideunsigned6(value unsigned 6) giving unsigned 6 keeping call { give value divide 1. }
+function widenSigned6(value integer 6) giving integer 128 keeping call { give value. }
+function widenUnsigned6(value unsigned 6) giving unsigned 128 keeping call { give value. }
+function signed7(value integer 7) giving integer 7 keeping call { give value plus 0. }
+function productsigned7(value integer 7) giving integer 7 keeping call { give value multiply 1. }
+function subtractsigned7(value integer 7) giving integer 7 keeping call { give value subtract 0. }
+function dividesigned7(value integer 7) giving integer 7 keeping call { give value divide 1. }
+function unsigned7(value unsigned 7) giving unsigned 7 keeping call { give value plus 0. }
+function productunsigned7(value unsigned 7) giving unsigned 7 keeping call { give value multiply 1. }
+function subtractunsigned7(value unsigned 7) giving unsigned 7 keeping call { give value subtract 0. }
+function divideunsigned7(value unsigned 7) giving unsigned 7 keeping call { give value divide 1. }
+function widenSigned7(value integer 7) giving integer 128 keeping call { give value. }
+function widenUnsigned7(value unsigned 7) giving unsigned 128 keeping call { give value. }
+function signed8(value integer 8) giving integer 8 keeping call { give value plus 0. }
+function productsigned8(value integer 8) giving integer 8 keeping call { give value multiply 1. }
+function subtractsigned8(value integer 8) giving integer 8 keeping call { give value subtract 0. }
+function dividesigned8(value integer 8) giving integer 8 keeping call { give value divide 1. }
+function unsigned8(value unsigned 8) giving unsigned 8 keeping call { give value plus 0. }
+function productunsigned8(value unsigned 8) giving unsigned 8 keeping call { give value multiply 1. }
+function subtractunsigned8(value unsigned 8) giving unsigned 8 keeping call { give value subtract 0. }
+function divideunsigned8(value unsigned 8) giving unsigned 8 keeping call { give value divide 1. }
+function widenSigned8(value integer 8) giving integer 128 keeping call { give value. }
+function widenUnsigned8(value unsigned 8) giving unsigned 128 keeping call { give value. }
+function signed9(value integer 9) giving integer 9 keeping call { give value plus 0. }
+function productsigned9(value integer 9) giving integer 9 keeping call { give value multiply 1. }
+function subtractsigned9(value integer 9) giving integer 9 keeping call { give value subtract 0. }
+function dividesigned9(value integer 9) giving integer 9 keeping call { give value divide 1. }
+function unsigned9(value unsigned 9) giving unsigned 9 keeping call { give value plus 0. }
+function productunsigned9(value unsigned 9) giving unsigned 9 keeping call { give value multiply 1. }
+function subtractunsigned9(value unsigned 9) giving unsigned 9 keeping call { give value subtract 0. }
+function divideunsigned9(value unsigned 9) giving unsigned 9 keeping call { give value divide 1. }
+function widenSigned9(value integer 9) giving integer 128 keeping call { give value. }
+function widenUnsigned9(value unsigned 9) giving unsigned 128 keeping call { give value. }
+function signed10(value integer 10) giving integer 10 keeping call { give value plus 0. }
+function productsigned10(value integer 10) giving integer 10 keeping call { give value multiply 1. }
+function subtractsigned10(value integer 10) giving integer 10 keeping call { give value subtract 0. }
+function dividesigned10(value integer 10) giving integer 10 keeping call { give value divide 1. }
+function unsigned10(value unsigned 10) giving unsigned 10 keeping call { give value plus 0. }
+function productunsigned10(value unsigned 10) giving unsigned 10 keeping call { give value multiply 1. }
+function subtractunsigned10(value unsigned 10) giving unsigned 10 keeping call { give value subtract 0. }
+function divideunsigned10(value unsigned 10) giving unsigned 10 keeping call { give value divide 1. }
+function widenSigned10(value integer 10) giving integer 128 keeping call { give value. }
+function widenUnsigned10(value unsigned 10) giving unsigned 128 keeping call { give value. }
+function signed11(value integer 11) giving integer 11 keeping call { give value plus 0. }
+function productsigned11(value integer 11) giving integer 11 keeping call { give value multiply 1. }
+function subtractsigned11(value integer 11) giving integer 11 keeping call { give value subtract 0. }
+function dividesigned11(value integer 11) giving integer 11 keeping call { give value divide 1. }
+function unsigned11(value unsigned 11) giving unsigned 11 keeping call { give value plus 0. }
+function productunsigned11(value unsigned 11) giving unsigned 11 keeping call { give value multiply 1. }
+function subtractunsigned11(value unsigned 11) giving unsigned 11 keeping call { give value subtract 0. }
+function divideunsigned11(value unsigned 11) giving unsigned 11 keeping call { give value divide 1. }
+function widenSigned11(value integer 11) giving integer 128 keeping call { give value. }
+function widenUnsigned11(value unsigned 11) giving unsigned 128 keeping call { give value. }
+function signed12(value integer 12) giving integer 12 keeping call { give value plus 0. }
+function productsigned12(value integer 12) giving integer 12 keeping call { give value multiply 1. }
+function subtractsigned12(value integer 12) giving integer 12 keeping call { give value subtract 0. }
+function dividesigned12(value integer 12) giving integer 12 keeping call { give value divide 1. }
+function unsigned12(value unsigned 12) giving unsigned 12 keeping call { give value plus 0. }
+function productunsigned12(value unsigned 12) giving unsigned 12 keeping call { give value multiply 1. }
+function subtractunsigned12(value unsigned 12) giving unsigned 12 keeping call { give value subtract 0. }
+function divideunsigned12(value unsigned 12) giving unsigned 12 keeping call { give value divide 1. }
+function widenSigned12(value integer 12) giving integer 128 keeping call { give value. }
+function widenUnsigned12(value unsigned 12) giving unsigned 128 keeping call { give value. }
+function signed13(value integer 13) giving integer 13 keeping call { give value plus 0. }
+function productsigned13(value integer 13) giving integer 13 keeping call { give value multiply 1. }
+function subtractsigned13(value integer 13) giving integer 13 keeping call { give value subtract 0. }
+function dividesigned13(value integer 13) giving integer 13 keeping call { give value divide 1. }
+function unsigned13(value unsigned 13) giving unsigned 13 keeping call { give value plus 0. }
+function productunsigned13(value unsigned 13) giving unsigned 13 keeping call { give value multiply 1. }
+function subtractunsigned13(value unsigned 13) giving unsigned 13 keeping call { give value subtract 0. }
+function divideunsigned13(value unsigned 13) giving unsigned 13 keeping call { give value divide 1. }
+function widenSigned13(value integer 13) giving integer 128 keeping call { give value. }
+function widenUnsigned13(value unsigned 13) giving unsigned 128 keeping call { give value. }
+function signed14(value integer 14) giving integer 14 keeping call { give value plus 0. }
+function productsigned14(value integer 14) giving integer 14 keeping call { give value multiply 1. }
+function subtractsigned14(value integer 14) giving integer 14 keeping call { give value subtract 0. }
+function dividesigned14(value integer 14) giving integer 14 keeping call { give value divide 1. }
+function unsigned14(value unsigned 14) giving unsigned 14 keeping call { give value plus 0. }
+function productunsigned14(value unsigned 14) giving unsigned 14 keeping call { give value multiply 1. }
+function subtractunsigned14(value unsigned 14) giving unsigned 14 keeping call { give value subtract 0. }
+function divideunsigned14(value unsigned 14) giving unsigned 14 keeping call { give value divide 1. }
+function widenSigned14(value integer 14) giving integer 128 keeping call { give value. }
+function widenUnsigned14(value unsigned 14) giving unsigned 128 keeping call { give value. }
+function signed15(value integer 15) giving integer 15 keeping call { give value plus 0. }
+function productsigned15(value integer 15) giving integer 15 keeping call { give value multiply 1. }
+function subtractsigned15(value integer 15) giving integer 15 keeping call { give value subtract 0. }
+function dividesigned15(value integer 15) giving integer 15 keeping call { give value divide 1. }
+function unsigned15(value unsigned 15) giving unsigned 15 keeping call { give value plus 0. }
+function productunsigned15(value unsigned 15) giving unsigned 15 keeping call { give value multiply 1. }
+function subtractunsigned15(value unsigned 15) giving unsigned 15 keeping call { give value subtract 0. }
+function divideunsigned15(value unsigned 15) giving unsigned 15 keeping call { give value divide 1. }
+function widenSigned15(value integer 15) giving integer 128 keeping call { give value. }
+function widenUnsigned15(value unsigned 15) giving unsigned 128 keeping call { give value. }
+function signed16(value integer 16) giving integer 16 keeping call { give value plus 0. }
+function productsigned16(value integer 16) giving integer 16 keeping call { give value multiply 1. }
+function subtractsigned16(value integer 16) giving integer 16 keeping call { give value subtract 0. }
+function dividesigned16(value integer 16) giving integer 16 keeping call { give value divide 1. }
+function unsigned16(value unsigned 16) giving unsigned 16 keeping call { give value plus 0. }
+function productunsigned16(value unsigned 16) giving unsigned 16 keeping call { give value multiply 1. }
+function subtractunsigned16(value unsigned 16) giving unsigned 16 keeping call { give value subtract 0. }
+function divideunsigned16(value unsigned 16) giving unsigned 16 keeping call { give value divide 1. }
+function widenSigned16(value integer 16) giving integer 128 keeping call { give value. }
+function widenUnsigned16(value unsigned 16) giving unsigned 128 keeping call { give value. }
 start {
   check.expect(signed1(0) is 0).
   check.expect(productsigned1(0) is 0).
@@ -134,6 +166,15 @@ start {
   check.expect(productunsigned1(1) is 1).
   check.expect(subtractunsigned1(1) is 1).
   check.expect(divideunsigned1(1) is 1).
+  eval { constant minimum1 of type integer 1 is 0 subtract 1. }
+  check.expect(signed1(minimum1) is minimum1).
+  check.expect(signed1(0) is 0).
+  check.expect(subtractsigned1(minimum1) is minimum1).
+  check.expect(unsigned1(1) is 1).
+  check.expect(productunsigned1(1) is 1).
+  check.expect(divideunsigned1(1) is 1).
+  check.expect(widenSigned1(minimum1) is minimum1).
+  check.expect(widenUnsigned1(1) is 1).
   check.expect(signed2(1) is 1).
   check.expect(productsigned2(1) is 1).
   check.expect(subtractsigned2(1) is 1).
@@ -142,6 +183,17 @@ start {
   check.expect(productunsigned2(1) is 1).
   check.expect(subtractunsigned2(1) is 1).
   check.expect(divideunsigned2(1) is 1).
+  constant minimum2 of type integer 2 is 0 subtract 1 subtract 1.
+  check.expect(signed2(minimum2) is minimum2).
+  check.expect(signed2(1) is 1).
+  check.expect(subtractsigned2(minimum2) is minimum2).
+  check.expect(unsigned2(3) is 3).
+  check.expect(productunsigned2(3) is 3).
+  check.expect(divideunsigned2(3) is 3).
+  check.expect(widenSigned2(minimum2) is minimum2).
+  check.expect(widenUnsigned2(3) is 3).
+  check.expect(productsigned2(minimum2) is minimum2).
+  check.expect(dividesigned2(minimum2) is minimum2).
   check.expect(signed3(1) is 1).
   check.expect(productsigned3(1) is 1).
   check.expect(subtractsigned3(1) is 1).
@@ -150,6 +202,17 @@ start {
   check.expect(productunsigned3(1) is 1).
   check.expect(subtractunsigned3(1) is 1).
   check.expect(divideunsigned3(1) is 1).
+  constant minimum3 of type integer 3 is 0 subtract 3 subtract 1.
+  check.expect(signed3(minimum3) is minimum3).
+  check.expect(signed3(3) is 3).
+  check.expect(subtractsigned3(minimum3) is minimum3).
+  check.expect(unsigned3(7) is 7).
+  check.expect(productunsigned3(7) is 7).
+  check.expect(divideunsigned3(7) is 7).
+  check.expect(widenSigned3(minimum3) is minimum3).
+  check.expect(widenUnsigned3(7) is 7).
+  check.expect(productsigned3(minimum3) is minimum3).
+  check.expect(dividesigned3(minimum3) is minimum3).
   check.expect(signed4(1) is 1).
   check.expect(productsigned4(1) is 1).
   check.expect(subtractsigned4(1) is 1).
@@ -158,6 +221,17 @@ start {
   check.expect(productunsigned4(1) is 1).
   check.expect(subtractunsigned4(1) is 1).
   check.expect(divideunsigned4(1) is 1).
+  constant minimum4 of type integer 4 is 0 subtract 7 subtract 1.
+  check.expect(signed4(minimum4) is minimum4).
+  check.expect(signed4(7) is 7).
+  check.expect(subtractsigned4(minimum4) is minimum4).
+  check.expect(unsigned4(15) is 15).
+  check.expect(productunsigned4(15) is 15).
+  check.expect(divideunsigned4(15) is 15).
+  check.expect(widenSigned4(minimum4) is minimum4).
+  check.expect(widenUnsigned4(15) is 15).
+  check.expect(productsigned4(minimum4) is minimum4).
+  check.expect(dividesigned4(minimum4) is minimum4).
   check.expect(signed5(1) is 1).
   check.expect(productsigned5(1) is 1).
   check.expect(subtractsigned5(1) is 1).
@@ -166,6 +240,17 @@ start {
   check.expect(productunsigned5(1) is 1).
   check.expect(subtractunsigned5(1) is 1).
   check.expect(divideunsigned5(1) is 1).
+  constant minimum5 of type integer 5 is 0 subtract 15 subtract 1.
+  check.expect(signed5(minimum5) is minimum5).
+  check.expect(signed5(15) is 15).
+  check.expect(subtractsigned5(minimum5) is minimum5).
+  check.expect(unsigned5(31) is 31).
+  check.expect(productunsigned5(31) is 31).
+  check.expect(divideunsigned5(31) is 31).
+  check.expect(widenSigned5(minimum5) is minimum5).
+  check.expect(widenUnsigned5(31) is 31).
+  check.expect(productsigned5(minimum5) is minimum5).
+  check.expect(dividesigned5(minimum5) is minimum5).
   check.expect(signed6(1) is 1).
   check.expect(productsigned6(1) is 1).
   check.expect(subtractsigned6(1) is 1).
@@ -174,6 +259,17 @@ start {
   check.expect(productunsigned6(1) is 1).
   check.expect(subtractunsigned6(1) is 1).
   check.expect(divideunsigned6(1) is 1).
+  constant minimum6 of type integer 6 is 0 subtract 31 subtract 1.
+  check.expect(signed6(minimum6) is minimum6).
+  check.expect(signed6(31) is 31).
+  check.expect(subtractsigned6(minimum6) is minimum6).
+  check.expect(unsigned6(63) is 63).
+  check.expect(productunsigned6(63) is 63).
+  check.expect(divideunsigned6(63) is 63).
+  check.expect(widenSigned6(minimum6) is minimum6).
+  check.expect(widenUnsigned6(63) is 63).
+  check.expect(productsigned6(minimum6) is minimum6).
+  check.expect(dividesigned6(minimum6) is minimum6).
   check.expect(signed7(1) is 1).
   check.expect(productsigned7(1) is 1).
   check.expect(subtractsigned7(1) is 1).
@@ -182,6 +278,17 @@ start {
   check.expect(productunsigned7(1) is 1).
   check.expect(subtractunsigned7(1) is 1).
   check.expect(divideunsigned7(1) is 1).
+  constant minimum7 of type integer 7 is 0 subtract 63 subtract 1.
+  check.expect(signed7(minimum7) is minimum7).
+  check.expect(signed7(63) is 63).
+  check.expect(subtractsigned7(minimum7) is minimum7).
+  check.expect(unsigned7(127) is 127).
+  check.expect(productunsigned7(127) is 127).
+  check.expect(divideunsigned7(127) is 127).
+  check.expect(widenSigned7(minimum7) is minimum7).
+  check.expect(widenUnsigned7(127) is 127).
+  check.expect(productsigned7(minimum7) is minimum7).
+  check.expect(dividesigned7(minimum7) is minimum7).
   check.expect(signed8(1) is 1).
   check.expect(productsigned8(1) is 1).
   check.expect(subtractsigned8(1) is 1).
@@ -190,6 +297,17 @@ start {
   check.expect(productunsigned8(1) is 1).
   check.expect(subtractunsigned8(1) is 1).
   check.expect(divideunsigned8(1) is 1).
+  constant minimum8 of type integer 8 is 0 subtract 127 subtract 1.
+  check.expect(signed8(minimum8) is minimum8).
+  check.expect(signed8(127) is 127).
+  check.expect(subtractsigned8(minimum8) is minimum8).
+  check.expect(unsigned8(255) is 255).
+  check.expect(productunsigned8(255) is 255).
+  check.expect(divideunsigned8(255) is 255).
+  check.expect(widenSigned8(minimum8) is minimum8).
+  check.expect(widenUnsigned8(255) is 255).
+  check.expect(productsigned8(minimum8) is minimum8).
+  check.expect(dividesigned8(minimum8) is minimum8).
   check.expect(signed9(1) is 1).
   check.expect(productsigned9(1) is 1).
   check.expect(subtractsigned9(1) is 1).
@@ -198,6 +316,17 @@ start {
   check.expect(productunsigned9(1) is 1).
   check.expect(subtractunsigned9(1) is 1).
   check.expect(divideunsigned9(1) is 1).
+  constant minimum9 of type integer 9 is 0 subtract 255 subtract 1.
+  check.expect(signed9(minimum9) is minimum9).
+  check.expect(signed9(255) is 255).
+  check.expect(subtractsigned9(minimum9) is minimum9).
+  check.expect(unsigned9(511) is 511).
+  check.expect(productunsigned9(511) is 511).
+  check.expect(divideunsigned9(511) is 511).
+  check.expect(widenSigned9(minimum9) is minimum9).
+  check.expect(widenUnsigned9(511) is 511).
+  check.expect(productsigned9(minimum9) is minimum9).
+  check.expect(dividesigned9(minimum9) is minimum9).
   check.expect(signed10(1) is 1).
   check.expect(productsigned10(1) is 1).
   check.expect(subtractsigned10(1) is 1).
@@ -206,6 +335,17 @@ start {
   check.expect(productunsigned10(1) is 1).
   check.expect(subtractunsigned10(1) is 1).
   check.expect(divideunsigned10(1) is 1).
+  constant minimum10 of type integer 10 is 0 subtract 511 subtract 1.
+  check.expect(signed10(minimum10) is minimum10).
+  check.expect(signed10(511) is 511).
+  check.expect(subtractsigned10(minimum10) is minimum10).
+  check.expect(unsigned10(1023) is 1023).
+  check.expect(productunsigned10(1023) is 1023).
+  check.expect(divideunsigned10(1023) is 1023).
+  check.expect(widenSigned10(minimum10) is minimum10).
+  check.expect(widenUnsigned10(1023) is 1023).
+  check.expect(productsigned10(minimum10) is minimum10).
+  check.expect(dividesigned10(minimum10) is minimum10).
   check.expect(signed11(1) is 1).
   check.expect(productsigned11(1) is 1).
   check.expect(subtractsigned11(1) is 1).
@@ -214,6 +354,17 @@ start {
   check.expect(productunsigned11(1) is 1).
   check.expect(subtractunsigned11(1) is 1).
   check.expect(divideunsigned11(1) is 1).
+  constant minimum11 of type integer 11 is 0 subtract 1023 subtract 1.
+  check.expect(signed11(minimum11) is minimum11).
+  check.expect(signed11(1023) is 1023).
+  check.expect(subtractsigned11(minimum11) is minimum11).
+  check.expect(unsigned11(2047) is 2047).
+  check.expect(productunsigned11(2047) is 2047).
+  check.expect(divideunsigned11(2047) is 2047).
+  check.expect(widenSigned11(minimum11) is minimum11).
+  check.expect(widenUnsigned11(2047) is 2047).
+  check.expect(productsigned11(minimum11) is minimum11).
+  check.expect(dividesigned11(minimum11) is minimum11).
   check.expect(signed12(1) is 1).
   check.expect(productsigned12(1) is 1).
   check.expect(subtractsigned12(1) is 1).
@@ -222,6 +373,17 @@ start {
   check.expect(productunsigned12(1) is 1).
   check.expect(subtractunsigned12(1) is 1).
   check.expect(divideunsigned12(1) is 1).
+  constant minimum12 of type integer 12 is 0 subtract 2047 subtract 1.
+  check.expect(signed12(minimum12) is minimum12).
+  check.expect(signed12(2047) is 2047).
+  check.expect(subtractsigned12(minimum12) is minimum12).
+  check.expect(unsigned12(4095) is 4095).
+  check.expect(productunsigned12(4095) is 4095).
+  check.expect(divideunsigned12(4095) is 4095).
+  check.expect(widenSigned12(minimum12) is minimum12).
+  check.expect(widenUnsigned12(4095) is 4095).
+  check.expect(productsigned12(minimum12) is minimum12).
+  check.expect(dividesigned12(minimum12) is minimum12).
   check.expect(signed13(1) is 1).
   check.expect(productsigned13(1) is 1).
   check.expect(subtractsigned13(1) is 1).
@@ -230,6 +392,17 @@ start {
   check.expect(productunsigned13(1) is 1).
   check.expect(subtractunsigned13(1) is 1).
   check.expect(divideunsigned13(1) is 1).
+  constant minimum13 of type integer 13 is 0 subtract 4095 subtract 1.
+  check.expect(signed13(minimum13) is minimum13).
+  check.expect(signed13(4095) is 4095).
+  check.expect(subtractsigned13(minimum13) is minimum13).
+  check.expect(unsigned13(8191) is 8191).
+  check.expect(productunsigned13(8191) is 8191).
+  check.expect(divideunsigned13(8191) is 8191).
+  check.expect(widenSigned13(minimum13) is minimum13).
+  check.expect(widenUnsigned13(8191) is 8191).
+  check.expect(productsigned13(minimum13) is minimum13).
+  check.expect(dividesigned13(minimum13) is minimum13).
   check.expect(signed14(1) is 1).
   check.expect(productsigned14(1) is 1).
   check.expect(subtractsigned14(1) is 1).
@@ -238,6 +411,17 @@ start {
   check.expect(productunsigned14(1) is 1).
   check.expect(subtractunsigned14(1) is 1).
   check.expect(divideunsigned14(1) is 1).
+  constant minimum14 of type integer 14 is 0 subtract 8191 subtract 1.
+  check.expect(signed14(minimum14) is minimum14).
+  check.expect(signed14(8191) is 8191).
+  check.expect(subtractsigned14(minimum14) is minimum14).
+  check.expect(unsigned14(16383) is 16383).
+  check.expect(productunsigned14(16383) is 16383).
+  check.expect(divideunsigned14(16383) is 16383).
+  check.expect(widenSigned14(minimum14) is minimum14).
+  check.expect(widenUnsigned14(16383) is 16383).
+  check.expect(productsigned14(minimum14) is minimum14).
+  check.expect(dividesigned14(minimum14) is minimum14).
   check.expect(signed15(1) is 1).
   check.expect(productsigned15(1) is 1).
   check.expect(subtractsigned15(1) is 1).
@@ -246,6 +430,17 @@ start {
   check.expect(productunsigned15(1) is 1).
   check.expect(subtractunsigned15(1) is 1).
   check.expect(divideunsigned15(1) is 1).
+  constant minimum15 of type integer 15 is 0 subtract 16383 subtract 1.
+  check.expect(signed15(minimum15) is minimum15).
+  check.expect(signed15(16383) is 16383).
+  check.expect(subtractsigned15(minimum15) is minimum15).
+  check.expect(unsigned15(32767) is 32767).
+  check.expect(productunsigned15(32767) is 32767).
+  check.expect(divideunsigned15(32767) is 32767).
+  check.expect(widenSigned15(minimum15) is minimum15).
+  check.expect(widenUnsigned15(32767) is 32767).
+  check.expect(productsigned15(minimum15) is minimum15).
+  check.expect(dividesigned15(minimum15) is minimum15).
   check.expect(signed16(1) is 1).
   check.expect(productsigned16(1) is 1).
   check.expect(subtractsigned16(1) is 1).
@@ -254,4 +449,15 @@ start {
   check.expect(productunsigned16(1) is 1).
   check.expect(subtractunsigned16(1) is 1).
   check.expect(divideunsigned16(1) is 1).
+  constant minimum16 of type integer 16 is 0 subtract 32767 subtract 1.
+  check.expect(signed16(minimum16) is minimum16).
+  check.expect(signed16(32767) is 32767).
+  check.expect(subtractsigned16(minimum16) is minimum16).
+  check.expect(unsigned16(65535) is 65535).
+  check.expect(productunsigned16(65535) is 65535).
+  check.expect(divideunsigned16(65535) is 65535).
+  check.expect(widenSigned16(minimum16) is minimum16).
+  check.expect(widenUnsigned16(65535) is 65535).
+  check.expect(productsigned16(minimum16) is minimum16).
+  check.expect(dividesigned16(minimum16) is minimum16).
 }
