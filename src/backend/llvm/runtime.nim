@@ -85,6 +85,15 @@ proc support*(module: Module; target: string; hosted = true): Support =
     adapters.add("void " & bridgeName(external.name) & "(" & params.join(", ") & ") { " &
       (if external.ret == nil or external.ret.kind == TypeKind.Void:
         "(void)out; " & call & ";" else: "*(" & ctype(external.ret) & " *)out = " & call & ";") & " }")
+    if external.name != "$llvm_anchor":
+      var typedParameters, typedArguments: seq[string]
+      for index, parameter in external.params:
+        typedParameters.add(ctype(parameter) & " p" & $index)
+        typedArguments.add("p" & $index)
+      let nativeCall = target & "(" & typedArguments.join(", ") & ")"
+      adapters.add(ctype(external.ret) & " " & (if external.abi.startsWith("runtime"): "" else: convention(external.abi)) &
+        callbackName(external.name) & "(" & (if typedParameters.len == 0: "void" else: typedParameters.join(", ")) & ") { " &
+        (if external.ret == nil or external.ret.kind == TypeKind.Void: nativeCall & ";" else: "return " & nativeCall & ";") & " }")
   # C owns the native calling convention; language bodies remain LLVM IR.
   # The reciprocal gate avoids guessing Clang's aggregate return convention.
   for fn in module.funcs:

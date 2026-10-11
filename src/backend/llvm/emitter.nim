@@ -507,6 +507,7 @@ proc emit*(module: Module; triple, layout: string; source = "main.iv"; hosted = 
     state.contracts[contract.id] = contract
   for external in module.externs:
     state.externs[external.name] = external
+    state.declarations.add("declare void @" & callbackName(external.name) & "(...)")
     state.declarations.add("declare void @" & bridgeName(external.name) & "(" & newSeqWith(external.params.len + 1, "ptr").join(", ") & ")")
   for storage in module.storage:
     let t = storage.value.type

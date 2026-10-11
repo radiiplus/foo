@@ -15,6 +15,7 @@ when defined(windows):
   let input = reg("input", pair)
   let made = reg("made", pair)
   let answer = reg("answer", integer)
+  let nativeAnswer = reg("nativeAnswer", integer)
   let module = Module(funcs: @[
     Function(name: "echoPair", params: @[input], ret: pair, blocks: @[
       node.Block(label: "entry", term: Instruction(kind: InstrKind.Return, value: input))]),
@@ -22,15 +23,21 @@ when defined(windows):
       node.Block(label: "entry", instrs: @[
         Instruction(kind: InstrKind.Construct, dest: made, args: @[number(19), number(23)]),
         Instruction(kind: InstrKind.Call, `func`: "foreignInvoke", dest: answer, args: @[
-          Value(kind: ValueKind.Global, name: "echoPair", type: callback), made])],
-        term: Instruction(kind: InstrKind.Return, value: answer))])],
-    externs: @[Extern(name: "foreignInvoke", symbol: "foreign_invoke", abi: "c", params: @[callback, pair], ret: integer)])
+          Value(kind: ValueKind.Global, name: "echoPair", type: callback), made]),
+        Instruction(kind: InstrKind.Call, `func`: "foreignInvoke", dest: nativeAnswer, args: @[
+          Value(kind: ValueKind.Global, name: "foreignIdentity", type: callback), made])],
+        term: Instruction(kind: InstrKind.Return, value: nativeAnswer))])],
+    externs: @[Extern(name: "foreignInvoke", symbol: "foreign_invoke", abi: "c", params: @[callback, pair], ret: integer),
+      Extern(name: "foreignIdentity", symbol: "foreign_identity", abi: "c", params: @[pair], ret: pair)])
   let source = root / "foreign.c"
   writeFile(source, """
 #include <stdint.h>
+#include <assert.h>
 typedef struct { int32_t left, right; } Pair;
+Pair foreign_identity(Pair value) { return value; }
 int32_t foreign_invoke(Pair (*callback)(Pair), Pair value) {
   Pair returned = callback(value);
+  assert(returned.left == 19 && returned.right == 23);
   return returned.left + returned.right;
 }
 """)
