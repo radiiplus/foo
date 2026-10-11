@@ -127,3 +127,24 @@ injection covers EPERM/EACCES, ENOSYS and resource-limit failures, preserves
 not enable an asynchronous path or batching. The current provider stays
 synchronous on every platform. Run `clang -std=c11 test/backend/llvm/ioprobe.c`
 and execute its output on the host to reproduce the probe gate.
+
+## Main workspace integration
+
+Batch 4 commits are integrated into `main`; development and verification now
+run from the main workspace. The updated target/linker pipeline is retained,
+including pinned LLVM tool identities, SDK fingerprints, inspected objects,
+static/shared products and offline verified native dependencies. Runtime
+callbacks and exports use the v1 pointer gates rather than a second guessed
+aggregate ABI. Windows x64 runtime-free PE startup/naked/interrupt contracts
+remain covered by `test/backend/llvm/machine.nim`.
+
+Build the current workspace compiler with
+`node tools/native.mjs --mm refc --output .artifacts/batch4-main/foo.exe`.
+Set `FOO_COMPILER` to that absolute executable path and run
+`node tools/llvm-runtime-acceptance.mjs` for the C/Zig/LLVM library matrix,
+real dynamic-library fixture, TLS and native tests. On a host with a Vulkan
+adapter, set `FOO_REQUIRE_GPU=1` to require actual adapter execution.
+Evidence is saved under `.artifacts/llvm-runtime-acceptance`; `passed` stays
+false until all checks succeed. This command does not qualify I/O batching.
+The current main toolchain policy pins LLVM 18.1.3; the earlier isolated Linux
+LLVM 14 results are historical evidence and do not override that policy.
