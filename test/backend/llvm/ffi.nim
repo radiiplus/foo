@@ -11,14 +11,18 @@ when defined(windows) or defined(linux):
   let unit = node.Type(kind: TypeKind.Void)
   let pair = node.Type(kind: TypeKind.Struct, name: "Pair", fields: {"left": integer, "right": integer}.toOrderedTable)
   let callback = node.Type(kind: TypeKind.Function, params: @[pair], ret: pair)
+  let unitCallback = node.Type(kind: TypeKind.Function, params: @[unit, pair], ret: pair)
   proc reg(name: string; t: node.Type): Value = Value(kind: ValueKind.Reg, name: name, type: t)
   proc number(n: int): Value = Value(kind: ValueKind.Const, name: $n, bits: $n, type: integer)
   let input = reg("input", pair)
   let made = reg("made", pair)
   let answer = reg("answer", integer)
   let nativeAnswer = reg("nativeAnswer", integer)
+  let unitAnswer = reg("unitAnswer", integer)
   let module = Module(funcs: @[
     Function(name: "echoPair", public: true, abi: (if defined(windows): "stdcall" else: "c"), params: @[input], ret: pair, blocks: @[
+      node.Block(label: "entry", term: Instruction(kind: InstrKind.Return, value: input))]),
+    Function(name: "echoUnitPair", params: @[reg("empty", unit), input], ret: pair, blocks: @[
       node.Block(label: "entry", term: Instruction(kind: InstrKind.Return, value: input))]),
     Function(name: "main", ret: integer, blocks: @[
       node.Block(label: "entry", instrs: @[
@@ -28,11 +32,15 @@ when defined(windows) or defined(linux):
         Instruction(kind: InstrKind.Call, `func`: "foreignInvoke", dest: nativeAnswer, args: @[
           Value(kind: ValueKind.Global, name: "foreignIdentity", type: callback), made]),
         Instruction(kind: InstrKind.Call, `func`: "verifyAnswer", args: @[answer]),
-        Instruction(kind: InstrKind.Call, `func`: "verifyAnswer", args: @[nativeAnswer])],
+        Instruction(kind: InstrKind.Call, `func`: "verifyAnswer", args: @[nativeAnswer]),
+        Instruction(kind: InstrKind.Call, `func`: "foreignUnitInvoke", dest: unitAnswer, args: @[
+          Value(kind: ValueKind.Global, name: "echoUnitPair", type: unitCallback), made]),
+        Instruction(kind: InstrKind.Call, `func`: "verifyAnswer", args: @[unitAnswer])],
         term: Instruction(kind: InstrKind.Return, value: nativeAnswer))])],
     externs: @[Extern(name: "foreignInvoke", symbol: "foreign_invoke", abi: "c", params: @[callback, pair], ret: integer),
       Extern(name: "foreignIdentity", symbol: "foreign_identity", abi: "c", params: @[pair], ret: pair),
-      Extern(name: "verifyAnswer", symbol: "foreign_verify", abi: "c", params: @[integer], ret: unit)])
+      Extern(name: "verifyAnswer", symbol: "foreign_verify", abi: "c", params: @[integer], ret: unit),
+      Extern(name: "foreignUnitInvoke", symbol: "foreign_invoke", abi: "c", params: @[unitCallback, pair], ret: integer)])
   let source = root / "foreign.c"
   writeFile(source, """
 #include <stdint.h>

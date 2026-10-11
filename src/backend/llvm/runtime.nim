@@ -1,5 +1,5 @@
 ## Hosted support only. FOO functions and control flow are emitted by emitter.nim.
-import std/[strutils, sets, tables]
+import std/[strutils, sets, tables, sequtils]
 import ../../ir/[node, kind]
 import ../c/emitter as cTypes
 import ../c/runtime as cRuntime
@@ -13,6 +13,7 @@ type Support* = ref object
   checked: HashSet[string]
   hasComparisons: bool
   libraries*: seq[string]
+  functionTypes: Table[pointer, tuple[source, mapped: node.Type]]
 
 const
   memoryCode = staticRead("../c/memory.c")
@@ -27,7 +28,19 @@ proc newSupport*(): Support =
   result.comparisons = cTypes.newComparisonSupport(result.types)
 
 proc ctype(s: Support; t: node.Type): string =
-  result = s.types.get(t)
+  var mapped = t
+  if t != nil and t.kind == TypeKind.Function and
+      (t.params.anyIt(it.kind == TypeKind.Void) or t.abi in ["foo", "foo:1"]):
+    let identity = cast[pointer](t)
+    if not s.functionTypes.hasKey(identity):
+      var nativeType: node.Type
+      new(nativeType)
+      nativeType[] = t[]
+      nativeType.params = t.params.filterIt(it.kind != TypeKind.Void)
+      if nativeType.abi in ["foo", "foo:1"]: nativeType.abi = ""
+      s.functionTypes[identity] = (t, nativeType)
+    mapped = s.functionTypes[identity].mapped
+  result = s.types.get(mapped)
   if t == nil or t.kind in {TypeKind.Void, TypeKind.Opaque} or result in s.checked: return
   s.checked.incl(result)
   let m = measure(t)
