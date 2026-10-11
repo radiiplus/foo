@@ -179,6 +179,7 @@ proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceF
       result = temp(); line(result & " = getelementptr i8, ptr " & address & ", i64 " & bytes)
     proc value(v: Value): string
     proc box(v: Value): string =
+      if v.type != nil and v.type.kind == TypeKind.Void: return "null"
       if v.kind == ValueKind.Reg and v.name in slots: return slots[v.name]
       result = stack(v.type); store(v.type,value(v),result)
     proc value(v: Value): string =

@@ -64,7 +64,8 @@ proc code*(s: Support; module: Module; target = ""; hosted = true): string =
       runtimeExterns.add(external)
     else:
       var parameters: seq[string]
-      for t in external.params: parameters.add(ctype(t))
+      for t in external.params:
+        if t.kind != TypeKind.Void: parameters.add(ctype(t))
       foreignDeclarations.add("extern " & ctype(external.ret) & " " & convention(external.abi) &
         cTypes.symbol(if external.symbol.len > 0: external.symbol else: external.name) &
         "(" & (if parameters.len == 0: "void" else: parameters.join(", ")) & ");")
@@ -77,7 +78,7 @@ proc code*(s: Support; module: Module; target = ""; hosted = true): string =
     var args: seq[string]
     for index, t in external.params:
       params.add("const void *p" & $index)
-      args.add("*(const " & ctype(t) & " *)p" & $index)
+      if t.kind != TypeKind.Void: args.add("*(const " & ctype(t) & " *)p" & $index)
     let target = if external.abi.startsWith("runtime"): cTypes.name(external.name)
       else: cTypes.symbol(if external.symbol.len > 0: external.symbol else: external.name)
     let call = target & "(" & args.join(", ") & ")"
@@ -87,8 +88,9 @@ proc code*(s: Support; module: Module; target = ""; hosted = true): string =
     if external.name != "$llvm_anchor":
       var typedParameters, typedArguments: seq[string]
       for index, parameter in external.params:
-        typedParameters.add(ctype(parameter) & " p" & $index)
-        typedArguments.add("p" & $index)
+        if parameter.kind != TypeKind.Void:
+          typedParameters.add(ctype(parameter) & " p" & $index)
+          typedArguments.add("p" & $index)
       let nativeCall = target & "(" & typedArguments.join(", ") & ")"
       adapters.add(ctype(external.ret) & " " & (if external.abi.startsWith("runtime"): "" else: convention(external.abi)) &
         callbackName(external.name) & "(" & (if typedParameters.len == 0: "void" else: typedParameters.join(", ")) & ") { " &
@@ -129,7 +131,7 @@ proc code*(s: Support; module: Module; target = ""; hosted = true): string =
         var args: seq[string]
         for index, parameter in t.params:
           params.add("const void *p" & $index)
-          args.add("*(const " & ctype(parameter) & " *)p" & $index)
+          if parameter.kind != TypeKind.Void: args.add("*(const " & ctype(parameter) & " *)p" & $index)
         let call = "((" & ctype(t) & ")callee)(" & args.join(", ") & ")"
         adapters.add("void " & name & "(" & params.join(", ") & ") { " &
           (if t.ret == nil or t.ret.kind == TypeKind.Void: "(void)out; " & call & ";"
