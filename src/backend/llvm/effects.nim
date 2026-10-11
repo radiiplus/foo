@@ -22,7 +22,7 @@ proc ioReport*(module: Module): JsonNode =
         report["operations"] = %(report["operations"].getInt() + run.len)
         report["candidates"].add(%*{"function": functionName, "block": blockName,
           "count": run.len, "handle": run[0].args[0].name, "formed": false,
-          "reason": (if run.len < 2: "single operation" else: "disabled: per-operation partial-write/error and benchmark gates pending"),
+          "reason": (if run.len < 2: "single operation" else: "rejected: each existing stream write flushes; coalescing would change per-operation visibility and partial-write/error semantics; differential and benchmark gates pending"),
           "boundary": reason, "slots": slots})
         run.setLen(0)
       for operation in blockValue.instrs:
