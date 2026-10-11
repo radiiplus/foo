@@ -1,0 +1,12 @@
+use testing as check.
+define Point as record { x of type decimal. y of type decimal. } derives Equatable, Ord.
+function widen(value decimal 32) giving decimal { give value. }
+function fromInteger(value integer 32) giving decimal { give value. }
+start {
+  constant left is Point(1.5, 3.0).
+  check.expect(left is Point(1.5, 3.0)).
+  check.expect(left is less than Point(1.5, 4.0)).
+  check.expect(widen(1.25) is 1.25).
+  check.expect(fromInteger(7) is 7.0).
+  check.expect(4.5 divide 1.5 is 3.0).
+}

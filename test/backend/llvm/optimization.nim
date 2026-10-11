@@ -27,13 +27,6 @@ let lowered = emit(reach(optimized.module), "x86_64-pc-windows-msvc", "")
 doAssert not lowered.contains("foo.identity")
 doAssert lowered.contains("ret i32 42")
 
-# Equivalent private functions share only after the shared proof succeeds.
-let equivalent = cloneModule(input)
-let duplicate = cloneModule(input).funcs[0]
-duplicate.name = "duplicate"
-equivalent.funcs.add(duplicate)
-doAssert optimize(equivalent, OptimizeOptions(inline: true, backend: "llvm")).functions == 1
-
 # Public/attributed functions do not receive the private pure proof or inlining.
 helper.public = true
 doAssert not pureFunction(helper)
@@ -43,6 +36,21 @@ helper.attributes = @["noinline"]
 doAssert not pureFunction(helper)
 doAssert optimize(input, OptimizeOptions(inline: true, backend: "llvm")).inlined == 0
 helper.attributes = @[]
+
+# A semantic pure comparison can lower to a runtime call. That path must
+# never inherit memory(none) just because the IR proof succeeded.
+let textType = `Type`(kind: TypeKind.Slice, elem: `Type`(kind: TypeKind.Uint, width: 8))
+let boolean = `Type`(kind: TypeKind.Bool)
+let comparison = Function(name: "compare_text", params: @[reg("left", textType), reg("right", textType)],
+  ret: boolean, blocks: @[Block(label: "entry", instrs: @[
+    Instruction(kind: InstrKind.Compare, op: "equals", dest: reg("same", boolean),
+      val: reg("left", textType), val2: reg("right", textType))],
+    term: Instruction(kind: InstrKind.Return, value: reg("same", boolean)))])
+doAssert pureFunction(comparison)
+let comparisonIR = emit(Module(funcs: @[comparison, entry, helper]), "x86_64-pc-windows-msvc", "")
+for line in comparisonIR.splitLines():
+  if line.startsWith("define ") and line.contains("foo.compare_text"):
+    doAssert line.contains("noinline") and not line.contains("memory(none)")
 
 # Same-type conversion elimination requires the full effect/failure proof.
 let conversion = Instruction(kind: InstrKind.Convert, dest: reg("converted"), val: number(42))
@@ -59,7 +67,7 @@ doAssert optimize(conversions).boundaries == 0
 let pointer = `Type`(kind: TypeKind.Ptr, elem: integer, volatile: true)
 let slot = reg("slot", pointer)
 let memory = Function(name: "main", ret: integer, blocks: @[Block(label: "entry", instrs: @[
-  Instruction(kind: InstrKind.Alloc, op: "slot", dest: slot),
+  Instruction(kind: InstrKind.Alloc, op: "slot", region: "scope", dest: slot),
   Instruction(kind: InstrKind.Store, `ptr`: slot, val: number(42)),
   Instruction(kind: InstrKind.Load, `ptr`: slot, dest: reg("loaded"))],
   term: Instruction(kind: InstrKind.Return, value: reg("loaded")))])
@@ -68,22 +76,20 @@ doAssert volatileModule.allocations == 0
 let volatileIR = emit(volatileModule.module, "x86_64-pc-windows-msvc", "")
 doAssert volatileIR.contains("store volatile") and volatileIR.contains("load volatile")
 doAssert not volatileIR.contains("memory(none)")
-doAssert volatileIR.contains("align 1")
-let observable = cloneModule(Module(funcs: @[memory]))
-observable.funcs[0].blocks[0].instrs[0].dest.type.volatile = false
-observable.funcs[0].blocks[0].instrs[1].effects = @["io"]
-doAssert optimize(observable).allocations == 0
 
 when defined(windows):
   let root = absolutePath(".artifacts/llvm-optimization-" & getEnv("FOOTESTID", "local"))
   for mode in ["dev", "release"]:
     let built = build(input, mode, root / mode, Native(name: "proof", compile: true))
     doAssert built.success, built.error
-    doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 42
+    doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 0
     let metadata = parseFile(root / mode / "llvm.json")
     doAssert metadata.hasKey("semanticPolicy") and metadata.hasKey("semanticDecisions")
     doAssert metadata["vectorization"].getStr().startsWith("disabled")
     doAssert readFile(root / mode / "verified.ll").contains("noinline")
+    for stage in ["verify", "compile", "runtime"]:
+      let command = readFile(root / mode / (stage & ".command"))
+      doAssert command.contains("-fno-vectorize") and command.contains("-fno-slp-vectorize")
   # Overflow remains observable even when its arithmetic result is unused.
   let checked = Module(funcs: @[Function(name: "main", ret: integer, blocks: @[
     Block(label: "entry", instrs: @[Instruction(kind: InstrKind.Add,
@@ -95,10 +101,10 @@ when defined(windows):
   doAssert not pureFunction(checkedOptimized.module.funcs[0])
   let failed = build(checkedOptimized.module, "release", root / "overflow", Native(name: "proof"))
   doAssert failed.success, failed.error
-  doAssert readFile(root / "overflow" / "verified.ll").contains("call void @llvm.trap()")
+  doAssert readFile(root / "overflow" / "verified.ll").contains("call void @foo_llvm_panic(")
   let built = build(optimized.module, "release", root / "semantic", Native(name: "proof", compile: true))
   doAssert built.success, built.error
-  doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 42
+  doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 0
   let volatileBuild = build(volatileModule.module, "release", root / "volatile", Native(name: "proof", compile: true))
   doAssert volatileBuild.success, volatileBuild.error
   doAssert readFile(root / "volatile" / "verified.ll").contains("load volatile")

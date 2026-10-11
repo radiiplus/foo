@@ -1,0 +1,13 @@
+use testing as check.
+function quotient(value unsigned 128, divisor unsigned 128) giving unsigned 128 keeping call { give value divide divisor. }
+function wideRest(value unsigned 128, divisor unsigned 128) giving unsigned 128 keeping call { give value remainder divisor. }
+function signedQuotient(value integer 128, divisor integer 128) giving integer 128 keeping call { give value divide divisor. }
+function signedRemainder(value integer 128, divisor integer 128) giving integer 128 keeping call { give value remainder divisor. }
+function minimumRemainder(value integer, divisor integer) giving integer keeping call { give value remainder divisor. }
+start {
+  check.expect(quotient(340282366920938463463374607431768211455, 3) is 113427455640312821154458202477256070485).
+  check.expect(wideRest(340282366920938463463374607431768211455, 7) is 3).
+  check.expect(signedQuotient(170141183460469231731687303715884105727, 0 subtract 3) is (0 subtract 56713727820156410577229101238628035242)).
+  check.expect(signedRemainder(0 subtract 170141183460469231731687303715884105727, 3) is (0 subtract 1)).
+  check.expect(minimumRemainder(0 subtract 9223372036854775807 subtract 1, 0 subtract 1) is 0).
+}

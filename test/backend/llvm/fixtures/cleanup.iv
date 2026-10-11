@@ -2,11 +2,11 @@ use testing as check.
 dynamic closed is 0.
 function work(flag boolean) giving failable integer {
   after { set closed to closed plus 1. }
-  if flag { give fail(Error.InvalidInput). }
+  when flag { give fail(Error.InvalidInput). }
   give 42.
 }
 start {
-  check.expect((work(false) try) is 42).
+  check.expect((work(false) fallback 0) is 42).
   check.expect((work(true) fallback 7) is 7).
   check.expect(closed is 2).
 }

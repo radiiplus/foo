@@ -1,0 +1,259 @@
+use testing as check.
+function signed33(value integer 33) giving integer 33 { give value plus 0. }
+function productsigned33(value integer 33) giving integer 33 { give value multiply 1. }
+function subtractsigned33(value integer 33) giving integer 33 { give value subtract 0. }
+function dividesigned33(value integer 33) giving integer 33 { give value divide 1. }
+function unsigned33(value unsigned 33) giving unsigned 33 { give value plus 0. }
+function productunsigned33(value unsigned 33) giving unsigned 33 { give value multiply 1. }
+function subtractunsigned33(value unsigned 33) giving unsigned 33 { give value subtract 0. }
+function divideunsigned33(value unsigned 33) giving unsigned 33 { give value divide 1. }
+function signed34(value integer 34) giving integer 34 { give value plus 0. }
+function productsigned34(value integer 34) giving integer 34 { give value multiply 1. }
+function subtractsigned34(value integer 34) giving integer 34 { give value subtract 0. }
+function dividesigned34(value integer 34) giving integer 34 { give value divide 1. }
+function unsigned34(value unsigned 34) giving unsigned 34 { give value plus 0. }
+function productunsigned34(value unsigned 34) giving unsigned 34 { give value multiply 1. }
+function subtractunsigned34(value unsigned 34) giving unsigned 34 { give value subtract 0. }
+function divideunsigned34(value unsigned 34) giving unsigned 34 { give value divide 1. }
+function signed35(value integer 35) giving integer 35 { give value plus 0. }
+function productsigned35(value integer 35) giving integer 35 { give value multiply 1. }
+function subtractsigned35(value integer 35) giving integer 35 { give value subtract 0. }
+function dividesigned35(value integer 35) giving integer 35 { give value divide 1. }
+function unsigned35(value unsigned 35) giving unsigned 35 { give value plus 0. }
+function productunsigned35(value unsigned 35) giving unsigned 35 { give value multiply 1. }
+function subtractunsigned35(value unsigned 35) giving unsigned 35 { give value subtract 0. }
+function divideunsigned35(value unsigned 35) giving unsigned 35 { give value divide 1. }
+function signed36(value integer 36) giving integer 36 { give value plus 0. }
+function productsigned36(value integer 36) giving integer 36 { give value multiply 1. }
+function subtractsigned36(value integer 36) giving integer 36 { give value subtract 0. }
+function dividesigned36(value integer 36) giving integer 36 { give value divide 1. }
+function unsigned36(value unsigned 36) giving unsigned 36 { give value plus 0. }
+function productunsigned36(value unsigned 36) giving unsigned 36 { give value multiply 1. }
+function subtractunsigned36(value unsigned 36) giving unsigned 36 { give value subtract 0. }
+function divideunsigned36(value unsigned 36) giving unsigned 36 { give value divide 1. }
+function signed37(value integer 37) giving integer 37 { give value plus 0. }
+function productsigned37(value integer 37) giving integer 37 { give value multiply 1. }
+function subtractsigned37(value integer 37) giving integer 37 { give value subtract 0. }
+function dividesigned37(value integer 37) giving integer 37 { give value divide 1. }
+function unsigned37(value unsigned 37) giving unsigned 37 { give value plus 0. }
+function productunsigned37(value unsigned 37) giving unsigned 37 { give value multiply 1. }
+function subtractunsigned37(value unsigned 37) giving unsigned 37 { give value subtract 0. }
+function divideunsigned37(value unsigned 37) giving unsigned 37 { give value divide 1. }
+function signed38(value integer 38) giving integer 38 { give value plus 0. }
+function productsigned38(value integer 38) giving integer 38 { give value multiply 1. }
+function subtractsigned38(value integer 38) giving integer 38 { give value subtract 0. }
+function dividesigned38(value integer 38) giving integer 38 { give value divide 1. }
+function unsigned38(value unsigned 38) giving unsigned 38 { give value plus 0. }
+function productunsigned38(value unsigned 38) giving unsigned 38 { give value multiply 1. }
+function subtractunsigned38(value unsigned 38) giving unsigned 38 { give value subtract 0. }
+function divideunsigned38(value unsigned 38) giving unsigned 38 { give value divide 1. }
+function signed39(value integer 39) giving integer 39 { give value plus 0. }
+function productsigned39(value integer 39) giving integer 39 { give value multiply 1. }
+function subtractsigned39(value integer 39) giving integer 39 { give value subtract 0. }
+function dividesigned39(value integer 39) giving integer 39 { give value divide 1. }
+function unsigned39(value unsigned 39) giving unsigned 39 { give value plus 0. }
+function productunsigned39(value unsigned 39) giving unsigned 39 { give value multiply 1. }
+function subtractunsigned39(value unsigned 39) giving unsigned 39 { give value subtract 0. }
+function divideunsigned39(value unsigned 39) giving unsigned 39 { give value divide 1. }
+function signed40(value integer 40) giving integer 40 { give value plus 0. }
+function productsigned40(value integer 40) giving integer 40 { give value multiply 1. }
+function subtractsigned40(value integer 40) giving integer 40 { give value subtract 0. }
+function dividesigned40(value integer 40) giving integer 40 { give value divide 1. }
+function unsigned40(value unsigned 40) giving unsigned 40 { give value plus 0. }
+function productunsigned40(value unsigned 40) giving unsigned 40 { give value multiply 1. }
+function subtractunsigned40(value unsigned 40) giving unsigned 40 { give value subtract 0. }
+function divideunsigned40(value unsigned 40) giving unsigned 40 { give value divide 1. }
+function signed41(value integer 41) giving integer 41 { give value plus 0. }
+function productsigned41(value integer 41) giving integer 41 { give value multiply 1. }
+function subtractsigned41(value integer 41) giving integer 41 { give value subtract 0. }
+function dividesigned41(value integer 41) giving integer 41 { give value divide 1. }
+function unsigned41(value unsigned 41) giving unsigned 41 { give value plus 0. }
+function productunsigned41(value unsigned 41) giving unsigned 41 { give value multiply 1. }
+function subtractunsigned41(value unsigned 41) giving unsigned 41 { give value subtract 0. }
+function divideunsigned41(value unsigned 41) giving unsigned 41 { give value divide 1. }
+function signed42(value integer 42) giving integer 42 { give value plus 0. }
+function productsigned42(value integer 42) giving integer 42 { give value multiply 1. }
+function subtractsigned42(value integer 42) giving integer 42 { give value subtract 0. }
+function dividesigned42(value integer 42) giving integer 42 { give value divide 1. }
+function unsigned42(value unsigned 42) giving unsigned 42 { give value plus 0. }
+function productunsigned42(value unsigned 42) giving unsigned 42 { give value multiply 1. }
+function subtractunsigned42(value unsigned 42) giving unsigned 42 { give value subtract 0. }
+function divideunsigned42(value unsigned 42) giving unsigned 42 { give value divide 1. }
+function signed43(value integer 43) giving integer 43 { give value plus 0. }
+function productsigned43(value integer 43) giving integer 43 { give value multiply 1. }
+function subtractsigned43(value integer 43) giving integer 43 { give value subtract 0. }
+function dividesigned43(value integer 43) giving integer 43 { give value divide 1. }
+function unsigned43(value unsigned 43) giving unsigned 43 { give value plus 0. }
+function productunsigned43(value unsigned 43) giving unsigned 43 { give value multiply 1. }
+function subtractunsigned43(value unsigned 43) giving unsigned 43 { give value subtract 0. }
+function divideunsigned43(value unsigned 43) giving unsigned 43 { give value divide 1. }
+function signed44(value integer 44) giving integer 44 { give value plus 0. }
+function productsigned44(value integer 44) giving integer 44 { give value multiply 1. }
+function subtractsigned44(value integer 44) giving integer 44 { give value subtract 0. }
+function dividesigned44(value integer 44) giving integer 44 { give value divide 1. }
+function unsigned44(value unsigned 44) giving unsigned 44 { give value plus 0. }
+function productunsigned44(value unsigned 44) giving unsigned 44 { give value multiply 1. }
+function subtractunsigned44(value unsigned 44) giving unsigned 44 { give value subtract 0. }
+function divideunsigned44(value unsigned 44) giving unsigned 44 { give value divide 1. }
+function signed45(value integer 45) giving integer 45 { give value plus 0. }
+function productsigned45(value integer 45) giving integer 45 { give value multiply 1. }
+function subtractsigned45(value integer 45) giving integer 45 { give value subtract 0. }
+function dividesigned45(value integer 45) giving integer 45 { give value divide 1. }
+function unsigned45(value unsigned 45) giving unsigned 45 { give value plus 0. }
+function productunsigned45(value unsigned 45) giving unsigned 45 { give value multiply 1. }
+function subtractunsigned45(value unsigned 45) giving unsigned 45 { give value subtract 0. }
+function divideunsigned45(value unsigned 45) giving unsigned 45 { give value divide 1. }
+function signed46(value integer 46) giving integer 46 { give value plus 0. }
+function productsigned46(value integer 46) giving integer 46 { give value multiply 1. }
+function subtractsigned46(value integer 46) giving integer 46 { give value subtract 0. }
+function dividesigned46(value integer 46) giving integer 46 { give value divide 1. }
+function unsigned46(value unsigned 46) giving unsigned 46 { give value plus 0. }
+function productunsigned46(value unsigned 46) giving unsigned 46 { give value multiply 1. }
+function subtractunsigned46(value unsigned 46) giving unsigned 46 { give value subtract 0. }
+function divideunsigned46(value unsigned 46) giving unsigned 46 { give value divide 1. }
+function signed47(value integer 47) giving integer 47 { give value plus 0. }
+function productsigned47(value integer 47) giving integer 47 { give value multiply 1. }
+function subtractsigned47(value integer 47) giving integer 47 { give value subtract 0. }
+function dividesigned47(value integer 47) giving integer 47 { give value divide 1. }
+function unsigned47(value unsigned 47) giving unsigned 47 { give value plus 0. }
+function productunsigned47(value unsigned 47) giving unsigned 47 { give value multiply 1. }
+function subtractunsigned47(value unsigned 47) giving unsigned 47 { give value subtract 0. }
+function divideunsigned47(value unsigned 47) giving unsigned 47 { give value divide 1. }
+function signed48(value integer 48) giving integer 48 { give value plus 0. }
+function productsigned48(value integer 48) giving integer 48 { give value multiply 1. }
+function subtractsigned48(value integer 48) giving integer 48 { give value subtract 0. }
+function dividesigned48(value integer 48) giving integer 48 { give value divide 1. }
+function unsigned48(value unsigned 48) giving unsigned 48 { give value plus 0. }
+function productunsigned48(value unsigned 48) giving unsigned 48 { give value multiply 1. }
+function subtractunsigned48(value unsigned 48) giving unsigned 48 { give value subtract 0. }
+function divideunsigned48(value unsigned 48) giving unsigned 48 { give value divide 1. }
+start {
+  check.expect(signed33(1) is 1).
+  check.expect(productsigned33(1) is 1).
+  check.expect(subtractsigned33(1) is 1).
+  check.expect(dividesigned33(1) is 1).
+  check.expect(unsigned33(1) is 1).
+  check.expect(productunsigned33(1) is 1).
+  check.expect(subtractunsigned33(1) is 1).
+  check.expect(divideunsigned33(1) is 1).
+  check.expect(signed34(1) is 1).
+  check.expect(productsigned34(1) is 1).
+  check.expect(subtractsigned34(1) is 1).
+  check.expect(dividesigned34(1) is 1).
+  check.expect(unsigned34(1) is 1).
+  check.expect(productunsigned34(1) is 1).
+  check.expect(subtractunsigned34(1) is 1).
+  check.expect(divideunsigned34(1) is 1).
+  check.expect(signed35(1) is 1).
+  check.expect(productsigned35(1) is 1).
+  check.expect(subtractsigned35(1) is 1).
+  check.expect(dividesigned35(1) is 1).
+  check.expect(unsigned35(1) is 1).
+  check.expect(productunsigned35(1) is 1).
+  check.expect(subtractunsigned35(1) is 1).
+  check.expect(divideunsigned35(1) is 1).
+  check.expect(signed36(1) is 1).
+  check.expect(productsigned36(1) is 1).
+  check.expect(subtractsigned36(1) is 1).
+  check.expect(dividesigned36(1) is 1).
+  check.expect(unsigned36(1) is 1).
+  check.expect(productunsigned36(1) is 1).
+  check.expect(subtractunsigned36(1) is 1).
+  check.expect(divideunsigned36(1) is 1).
+  check.expect(signed37(1) is 1).
+  check.expect(productsigned37(1) is 1).
+  check.expect(subtractsigned37(1) is 1).
+  check.expect(dividesigned37(1) is 1).
+  check.expect(unsigned37(1) is 1).
+  check.expect(productunsigned37(1) is 1).
+  check.expect(subtractunsigned37(1) is 1).
+  check.expect(divideunsigned37(1) is 1).
+  check.expect(signed38(1) is 1).
+  check.expect(productsigned38(1) is 1).
+  check.expect(subtractsigned38(1) is 1).
+  check.expect(dividesigned38(1) is 1).
+  check.expect(unsigned38(1) is 1).
+  check.expect(productunsigned38(1) is 1).
+  check.expect(subtractunsigned38(1) is 1).
+  check.expect(divideunsigned38(1) is 1).
+  check.expect(signed39(1) is 1).
+  check.expect(productsigned39(1) is 1).
+  check.expect(subtractsigned39(1) is 1).
+  check.expect(dividesigned39(1) is 1).
+  check.expect(unsigned39(1) is 1).
+  check.expect(productunsigned39(1) is 1).
+  check.expect(subtractunsigned39(1) is 1).
+  check.expect(divideunsigned39(1) is 1).
+  check.expect(signed40(1) is 1).
+  check.expect(productsigned40(1) is 1).
+  check.expect(subtractsigned40(1) is 1).
+  check.expect(dividesigned40(1) is 1).
+  check.expect(unsigned40(1) is 1).
+  check.expect(productunsigned40(1) is 1).
+  check.expect(subtractunsigned40(1) is 1).
+  check.expect(divideunsigned40(1) is 1).
+  check.expect(signed41(1) is 1).
+  check.expect(productsigned41(1) is 1).
+  check.expect(subtractsigned41(1) is 1).
+  check.expect(dividesigned41(1) is 1).
+  check.expect(unsigned41(1) is 1).
+  check.expect(productunsigned41(1) is 1).
+  check.expect(subtractunsigned41(1) is 1).
+  check.expect(divideunsigned41(1) is 1).
+  check.expect(signed42(1) is 1).
+  check.expect(productsigned42(1) is 1).
+  check.expect(subtractsigned42(1) is 1).
+  check.expect(dividesigned42(1) is 1).
+  check.expect(unsigned42(1) is 1).
+  check.expect(productunsigned42(1) is 1).
+  check.expect(subtractunsigned42(1) is 1).
+  check.expect(divideunsigned42(1) is 1).
+  check.expect(signed43(1) is 1).
+  check.expect(productsigned43(1) is 1).
+  check.expect(subtractsigned43(1) is 1).
+  check.expect(dividesigned43(1) is 1).
+  check.expect(unsigned43(1) is 1).
+  check.expect(productunsigned43(1) is 1).
+  check.expect(subtractunsigned43(1) is 1).
+  check.expect(divideunsigned43(1) is 1).
+  check.expect(signed44(1) is 1).
+  check.expect(productsigned44(1) is 1).
+  check.expect(subtractsigned44(1) is 1).
+  check.expect(dividesigned44(1) is 1).
+  check.expect(unsigned44(1) is 1).
+  check.expect(productunsigned44(1) is 1).
+  check.expect(subtractunsigned44(1) is 1).
+  check.expect(divideunsigned44(1) is 1).
+  check.expect(signed45(1) is 1).
+  check.expect(productsigned45(1) is 1).
+  check.expect(subtractsigned45(1) is 1).
+  check.expect(dividesigned45(1) is 1).
+  check.expect(unsigned45(1) is 1).
+  check.expect(productunsigned45(1) is 1).
+  check.expect(subtractunsigned45(1) is 1).
+  check.expect(divideunsigned45(1) is 1).
+  check.expect(signed46(1) is 1).
+  check.expect(productsigned46(1) is 1).
+  check.expect(subtractsigned46(1) is 1).
+  check.expect(dividesigned46(1) is 1).
+  check.expect(unsigned46(1) is 1).
+  check.expect(productunsigned46(1) is 1).
+  check.expect(subtractunsigned46(1) is 1).
+  check.expect(divideunsigned46(1) is 1).
+  check.expect(signed47(1) is 1).
+  check.expect(productsigned47(1) is 1).
+  check.expect(subtractsigned47(1) is 1).
+  check.expect(dividesigned47(1) is 1).
+  check.expect(unsigned47(1) is 1).
+  check.expect(productunsigned47(1) is 1).
+  check.expect(subtractunsigned47(1) is 1).
+  check.expect(divideunsigned47(1) is 1).
+  check.expect(signed48(1) is 1).
+  check.expect(productsigned48(1) is 1).
+  check.expect(subtractsigned48(1) is 1).
+  check.expect(dividesigned48(1) is 1).
+  check.expect(unsigned48(1) is 1).
+  check.expect(productunsigned48(1) is 1).
+  check.expect(subtractunsigned48(1) is 1).
+  check.expect(divideunsigned48(1) is 1).
+}

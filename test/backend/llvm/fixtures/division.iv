@@ -1,5 +1,3 @@
-start {
-  dynamic value of type integer is 42.
-  dynamic divisor of type integer is 0.
-  set value to value divided by divisor.
-}
+use testing as check.
+function quotient(value integer) giving integer { give 7 divide value. }
+start { check.expect(quotient(0) is 0). }

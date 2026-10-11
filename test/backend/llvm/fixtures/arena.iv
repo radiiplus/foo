@@ -1,0 +1,13 @@
+use testing as check.
+function sample(size integer, flag boolean) giving failable byte {
+  constant data is allocate size try.
+  when flag { give 7. }
+  check.expect(data at 0 is 0).
+  set data at 0 to 42.
+  give data at 0.
+}
+start {
+  check.expect((sample(8, false) fallback 0) is 42).
+  check.expect((sample(8, true) fallback 0) is 7).
+  check.expect((sample(0 subtract 1, false) fallback 9) is 9).
+}

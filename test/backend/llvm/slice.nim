@@ -5,6 +5,7 @@ import ../../../src/build/options
 import ../../../src/backend/llvm/driver
 import ../../../src/ir/[node, kind]
 import ../../../src/ir/print
+import ../../../src/ir/valid
 
 when defined(windows):
   let root = absolutePath(".artifacts/llvm-slice-" & getEnv("FOOTESTID", "local"))
@@ -20,13 +21,13 @@ when defined(windows):
   doAssert built.success, built.error
   let ir = readFile(root / "main.ll")
   doAssert ir.contains("; FOO LLVM backend")
-  doAssert ir.contains("define i32 @main()")
+  doAssert ir.contains("define i32 @main(")
   doAssert ir.contains("@llvm.sadd.with.overflow.i32"), ir
   doAssert fileExists(root / "verified.ll")
   doAssert fileExists(root / "main.obj")
   doAssert not fileExists(root / "main.c")
   doAssert not fileExists(root / "main.zig")
-  doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 42
+  doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 0
   let metadata = parseJson(readFile(root / "llvm.json"))
   doAssert metadata["backend"].getStr() == "llvm"
   doAssert metadata["optimization"].getStr() == "O0"
@@ -34,7 +35,7 @@ when defined(windows):
   doAssert identity("release", nativeOptions) != identity("dev", nativeOptions)
   let optimized = build(module, "release", root / "release", nativeOptions, file)
   doAssert optimized.success, optimized.error
-  doAssert execCmdEx(quoteShell(optimized.artifact)).exitCode == 42
+  doAssert execCmdEx(quoteShell(optimized.artifact)).exitCode == 0
   var reused = false
   let project = projects.newProject(root, projects.ProjectOptions(backend: "llvm", target: "windows-x64",
     progress: proc(phase, name, detail: string; cached: bool) =
@@ -50,13 +51,15 @@ when defined(windows):
     quoteShell(root / "invalid.ll") & " -o " & quoteShell(root / "invalid-verified.ll"))
   doAssert rejected.exitCode != 0
   doAssert rejected.output.contains("does not dominate"), rejected.output
-  module.funcs[0].blocks[0].instrs.add(Instruction(kind: InstrKind.Div,
-    span: SourceSpan(file: file, start: 12)))
+  module.native.add(NativeContract(id: "unsupported_native", stage: "@c", abi: "c", code: "operation();", effects: @["unknown"]))
+  module.funcs[0].blocks[0].instrs.add(Instruction(kind: InstrKind.Native,
+    symbol:"unsupported_native", span: SourceSpan(file: file, start: 12)))
+  discard seal(module)
   let unsupported = build(module, "dev", root / "unsupported", nativeOptions, file)
   doAssert not unsupported.success
-  doAssert unsupported.error.contains("unsupported instruction Div")
+  doAssert unsupported.error.contains("unsupported instruction Native")
   doAssert unsupported.error.contains(":12")
-  echo "LLVM slice verifies, links and returns 42 (O0 and O2)"
+  echo "LLVM slice verifies, links and preserves hosted entry exit semantics (O0 and O2)"
 else:
   echo "LLVM Batch 1 execution gate is Windows x64 only"
 

@@ -1,0 +1,14 @@
+use memory as storage.
+use testing as check.
+define Header as c record { tag of type byte. value of type unsigned 32. } aligned to 32.
+function borrow(owner pointer to storage.allocator, data pointer to byte) giving failable pointer to Header borrowing owner, data {
+  give storage.cast[Header](owner,data,0) try.
+}
+start {
+  constant owner is storage.system.
+  constant data is storage.reserve(owner,32,32) try.
+  after { storage.release(owner,data) fallback nothing. }
+  constant header is borrow(owner,data) try.
+  check.expect(storage.aligned(data,32)).
+  check.expect(storage.identical[Header](header,header)).
+}

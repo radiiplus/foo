@@ -1,0 +1,17 @@
+use issue as errors.
+use testing as check.
+start {
+  constant cause is errors.create("storage", "read", "IoFailure", "block 7").
+  constant outer is errors.wrap(cause, "open", "index").
+  check.expect(outer.category is "storage" and outer.cause is "IoFailure").
+  constant initial is errors.begin(cause) try.
+  after { errors.release(initial) fallback nothing. }
+  constant next is errors.create("index", "open", "IoFailure", "catalog").
+  constant chained is errors.push(initial, next) try.
+  after { errors.release(chained) fallback nothing. }
+  check.expect(errors.length(chained) is 2 and errors.length(initial) is 1).
+  check.expect((errors.frame(chained, 0) try).operation is "read").
+  check.expect((errors.frame(chained, 1) try).context is "catalog").
+  check.expect((errors.frame(chained, 0) try).cause is "IoFailure").
+  check.expect((errors.frame(chained, 2) fallback next).operation is "open").
+}

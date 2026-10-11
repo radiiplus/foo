@@ -219,7 +219,9 @@ proc instructionKey(instruction: Instruction): string =
   if instruction.dest.type != nil:
     result.add("->" & semanticTypeKey(instruction.dest.type))
 
-proc pureFunction(function: node.Function): bool =
+proc pureFunction*(function: node.Function): bool =
+  ## Shared conservative proof for boundary elimination and backend metadata.
+  ## Absence of a proof must never be interpreted as absence of effects.
   if function == nil or function.public or function.name == "main" or
       function.abi.len > 0 or function.attributes.len > 0 or
       function.blocks.len != 1 or function.ret == nil or
@@ -389,7 +391,10 @@ proc promoteSlots(function: node.Function): int =
     for instruction in basicBlock.instrs:
       if instruction.kind == InstrKind.Alloc and instruction.op == "slot" and
           instruction.dest.type != nil and instruction.dest.type.kind == TypeKind.Ptr:
-        owners[instruction.dest.name] = basicBlock.label
+        if instruction.dest.type.elem != nil and not instruction.dest.type.volatile and
+            not instruction.dest.type.elem.volatile and instruction.effects.len == 0 and
+            instruction.panic.len == 0 and instruction.trace.len == 0 and instruction.fallback == nil:
+          owners[instruction.dest.name] = basicBlock.label
   if owners.len == 0: return
 
   var valid = initTable[string, bool]()
@@ -402,7 +407,11 @@ proc promoteSlots(function: node.Function): int =
         let direct = instruction.ptr.kind == ValueKind.Reg and
           instruction.ptr.name == value.name and
           instruction.kind in {InstrKind.Load, InstrKind.Store}
-        if basicBlock.label != owners[value.name] or not direct:
+        if basicBlock.label != owners[value.name] or not direct or
+            instruction.effects.len > 0 or instruction.panic.len > 0 or
+            instruction.trace.len > 0 or instruction.fallback != nil or
+            value.type == nil or value.type.elem == nil or
+            value.type.volatile or value.type.elem.volatile:
           valid[value.name] = false
         elif instruction.kind == InstrKind.Load and
             not initialized.getOrDefault(value.name):
@@ -443,7 +452,7 @@ proc eliminateBoundaries(function: node.Function): int =
     var retained: seq[Instruction]
     for instruction in basicBlock.instrs:
       substitute(instruction, replacements)
-      if instruction.kind == InstrKind.Convert and instruction.dest.type != nil and
+      if instruction.kind == InstrKind.Convert and pure(instruction) and instruction.dest.type != nil and
           instruction.val.type != nil and
           semanticTypeKey(instruction.dest.type) == semanticTypeKey(instruction.val.type):
         replacements[instruction.dest.name] = instruction.val

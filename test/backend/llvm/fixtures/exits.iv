@@ -1,0 +1,25 @@
+use testing as check.
+dynamic cleaned is 0.
+function scoped(flag boolean) giving failable integer {
+  after { set cleaned to cleaned multiply 10 plus 1. }
+  after { set cleaned to cleaned multiply 10 plus 2. }
+  after error { set cleaned to cleaned multiply 10 plus 3. }
+  when flag { give fail(Error.InvalidInput). }
+  give 9.
+}
+start {
+  check.expect((scoped(false) fallback 0) is 9).
+  check.expect(cleaned is 21).
+  set cleaned to 0.
+  check.expect((scoped(true) fallback 7) is 7).
+  check.expect(cleaned is 321).
+  set cleaned to 0.
+  dynamic index is 0.
+  while index is less than 4 {
+    after { set cleaned to cleaned plus 1. }
+    set index to index plus 1.
+    when index is 2 { skip. }
+    when index is 3 { stop. }
+  }
+  check.expect(cleaned is 3).
+}

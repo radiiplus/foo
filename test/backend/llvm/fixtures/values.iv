@@ -1,25 +1,29 @@
 use testing as check.
-define Pair as record { left of type integer. right of type decimal. }.
+define Pair as record { number of type integer. active of type boolean. } derives Equatable, Ord.
 define Box[T] as record { value of type T. }.
-define Flag as choice { absent. present(integer). }.
+define Flag as choice { present(integer). absent. }.
 define Header as c record { tag of type byte. value of type unsigned 32. } aligned to 32.
+function pair(value integer) giving Pair { give Pair(value, true). }
 start {
-  constant pair is Pair(42, 1.5).
-  check.expect(pair is Pair(42, 1.5)).
-  check.expect(Pair(1, 9.0) less than Pair(2, 0.0)).
-  constant box is Box[integer](pair.left).
-  check.expect(box.value is 42).
-  constant words is [1, 2, 3].
-  check.expect(words at 1 is 2).
-  check.expect(words is [1, 2, 3]).
-  constant answer of type optional integer is 42.
+  dynamic first is pair(4).
+  set first.number to 5.
+  check.expect(first is Pair(5, true)).
+  check.expect(first is less than Pair(6, false)).
+  check.expect(Box[integer](7).value is 7).
+  constant some of type optional integer is 42.
   constant empty of type optional integer is null.
-  check.expect(answer is 42 and empty is null).
-  check.expect(present(42) is present(42)).
-  check.expect(absent is absent).
-  check.expect("a" plus "b" is "ab").
-  check.expect("a" less than "b").
-  eval { constant expected is reflect[Header].size. verify expected is 32. }
-  constant actual is reflect[Header].
-  check.expect(actual.size is 32 and actual.alignment is 32).
+  check.expect(some is 42 and 42 is some and empty is null).
+  check.expect(some is greater than 41).
+  constant selected of type Flag is present(9).
+  check.expect(selected is present(9) and selected is not absent).
+  match selected { case present(value) { check.expect(value is 9). } case absent { check.expect(false). } }
+  constant joined is "hello" plus " world".
+  check.expect(joined is "hello world").
+  check.expect("a" is less than "b").
+  check.expect(1.5 plus 2.25 is 3.75).
+  constant header is Header(3, 9).
+  check.expect(header.tag is 3 and header.value is 9).
+  constant description is reflect[Header].
+  check.expect(description.size is 32 and description.alignment is 32).
+  eval { constant bytes is reflect[Header].size. verify bytes is 32. }
 }

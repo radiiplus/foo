@@ -1,8 +1,145 @@
 [
-  {"name":"control", "status":0, "output":""},
-  {"name":"values", "status":0, "output":""},
-  {"name":"json", "status":0, "output":""},
-  {"name":"cleanup", "status":0, "output":""},
-  {"name":"overflow", "status":1, "error":"overflow"},
-  {"name":"division", "status":1, "error":"zero"}
+    {
+        "name":  "control",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "values",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "codecs",
+        "exit":  0,
+        "output":  "{\"x\":4,\"active\":true,\"value\":7}\n"
+    },
+    {
+        "name":  "cleanup",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "integers-1-16",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "integers-17-32",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "integers-33-48",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "integers-49-64",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "integers-65-80",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "integers-81-96",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "integers-97-112",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "integers-113-128",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "wide",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "sequences",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "arena",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "packed",
+        "exit":  0,
+        "output":  "",
+        "level":  "hardware",
+        "unsupported":  {
+                            "c":  {
+                                      "reason":  "The existing C emitter rejects nested packed fields; LLVM follows the byte-packed, alignment-one FOO layout contract.",
+                                      "contains":  "C packed fields must be integers or booleans"
+                                  }
+                        }
+    },
+    {
+        "name":  "decimals",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "issues",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "overflow",
+        "error":  {
+                      "c":  {
+                                "exit":  1,
+                                "contains":  "IntegerOverflow"
+                            },
+                      "llvm":  {
+                                   "exit":  1,
+                                   "contains":  "IntegerOverflow"
+                               },
+                      "zig":  {
+                                  "exit":  3,
+                                  "contains":  "integer overflow"
+                              },
+                      "kind":  "IntegerOverflow"
+                  }
+    },
+    {
+        "name":  "division",
+        "error":  {
+                      "c":  {
+                                "exit":  1,
+                                "contains":  "DivisionByZero"
+                            },
+                      "llvm":  {
+                                   "exit":  1,
+                                   "contains":  "DivisionByZero"
+                               },
+                      "zig":  {
+                                  "exit":  3,
+                                  "contains":  "division by zero"
+                              },
+                      "kind":  "DivisionByZero"
+                  }
+    },
+    {
+        "name":  "exits",
+        "exit":  0,
+        "output":  ""
+    },
+    {
+        "name":  "pointers",
+        "exit":  0,
+        "output":  ""
+    }
 ]

@@ -1,14 +1,14 @@
 use testing as check.
-function twice[T](value T) giving T { give value plus value. }
+function identity[T](value T) giving T { give value. }
 function choose(flag boolean) giving integer {
-  if flag { give twice[integer](21). }
+  when flag { give identity[integer](42). }
   give 7.
 }
 function increment(value integer) giving integer { give value plus 1. }
 start {
   dynamic total is 0.
   dynamic index is 0.
-  while index less than 6 {
+  while index is less than 6 {
     set total to total plus index.
     set index to increment(index).
   }

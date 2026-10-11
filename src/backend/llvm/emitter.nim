@@ -1,448 +1,501 @@
-## Typed IR lowering; typing, specialization and ownership stay in the frontend.
-import std/[algorithm, json, os, sequtils, strutils, tables, sets]
-import ../../ir/[node, kind]
-import ./layout
-import ./runtime
+## Typed IR -> LLVM. Integer checks operate at semantic width, never storage width.
+import std/[strutils, tables, sequtils, os]
+import ../../ir/[node, kind, monomorph]
+import ./[layout, runtime]
 
-type
-  State = ref object
-    globals, declarations, functions: seq[string]
-    externs: Table[string, Extern]
-    intrinsics: HashSet[string]
-    source: string
-  Context = ref object
-    state: State
-    fn: Function
-    lines, prologue: seq[string]
-    registers, cells, regions: Table[string, string]
-    cleanups: seq[tuple[body: Block, flag: string, onError: bool]]
-    allocations: seq[string]
-    blocks: Table[string, Block]
-    serial: int
-    current: string
-    location: SourceSpan
+proc quotedName(name: string): string = "\"" & name.replace("\\", "\\5C").replace("\"", "\\22") & "\""
+proc functionName(name: string): string = "@" & quotedName("foo." & name)
 
-proc symbol(name: string): string = "@" & escape("foo." & name)
-proc label(name: string): string = "b" & name.toHex()
-proc fresh(ctx: Context): string =
-  inc ctx.serial
-  "%v" & $ctx.serial
-proc add(ctx: Context; line: string) = ctx.lines.add("  " & line)
-proc mark(ctx: Context; name: string) = ctx.lines.add(name & ":")
-proc slot(ctx: Context; size, alignment: int): string =
-  result = ctx.fresh()
-  # Alignment is proved for our own allocations, never assumed for callers.
-  ctx.prologue.add("  " & result & " = alloca [" & $size & " x i8], align " & $alignment)
-proc temporary(ctx: Context; t: node.Type): string = ctx.slot(max(1, measure(t).size), measure(t).alignment)
-proc literal(state: State; data: openArray[byte]): string =
-  result = "@str" & $state.globals.len
-  var text: string
-  for b in data: text.add("\\" & toHex(b, 2))
-  state.globals.add(result & " = private constant [" & $(data.len + 1) & " x i8] c\"" & text & "\\00\"")
-proc literal(state: State; text: string): string = state.literal(text.toOpenArrayByte(0, text.high))
-proc gep(ctx: Context; pointer: string; offset: int): string =
-  if offset == 0: return pointer
-  result = ctx.fresh(); ctx.add(result & " = getelementptr i8, ptr " & pointer & ", i64 " & $offset)
-proc load(ctx: Context; t: node.Type; pointer: string): string =
-  if llvmType(t) == "void": return "zeroinitializer"
-  result = ctx.fresh(); ctx.add(result & " = load " & llvmType(t) & ", ptr " & pointer & ", align 1")
-proc store(ctx: Context; t: node.Type; text, pointer: string) =
-  if llvmType(t) != "void": ctx.add("store " & llvmType(t) & " " & text & ", ptr " & pointer & ", align 1")
-proc boxed(ctx: Context; t: node.Type; text: string): string =
-  result = ctx.temporary(t); ctx.store(t, text, result)
-proc value(ctx: Context; v: Value): string
-proc converted(ctx: Context; text: string; source, target: node.Type): string
-proc instruction(ctx: Context; i: Instruction)
+proc scalarMemoryProof(fn: node.Function): bool =
+  ## The shared purity proof also permits slice equality, which reads backing
+  ## storage. Restrict memory(none) to representations with no indirect reads.
+  proc scalar(t: node.Type): bool = t == nil or t.kind in {TypeKind.Void,TypeKind.Int,TypeKind.Uint,TypeKind.Float,TypeKind.Bool}
+  if not pureFunction(fn) or not scalar(fn.ret): return false
+  for p in fn.params:
+    if not scalar(p.type): return false
+  for b in fn.blocks:
+    for i in b.instrs:
+      if not scalar(i.dest.type) or not scalar(i.val.type) or not scalar(i.val2.type): return false
+  true
 
-proc value(ctx: Context; v: Value): string =
-  let t = v.type
-  if t == nil or t.kind == TypeKind.Void: return "zeroinitializer"
-  case v.kind
-  of ValueKind.Reg:
-    if not ctx.registers.hasKey(v.name): raise newException(ValueError, "undefined IR register " & v.name)
-    return ctx.load(t, ctx.registers[v.name])
-  of ValueKind.Global:
-    if t.kind in {TypeKind.Function, TypeKind.Ptr}: return symbol(v.name)
-    return ctx.load(t, symbol(v.name))
-  of ValueKind.Const:
-    let text = if v.name.len > 0: v.name else: v.bits
-    if text in ["null", "{}", "void", "undefined"]: return "zeroinitializer"
-    if t.kind in {TypeKind.Int, TypeKind.Uint}: return if v.bits.len > 0: v.bits else: text
-    if t.kind == TypeKind.Bool: return if text == "true": "1" else: "0"
-    if t.kind == TypeKind.Float:
-      let number = parseFloat(text)
-      let bits = if t.width == 32: cast[uint64](float64(float32(number))) else: cast[uint64](number)
-      return "0x" & toHex(bits, 16)
-    if t.kind == TypeKind.Error: return ctx.state.literal(text)
-    if t.kind == TypeKind.Ptr: return "null"
-    if t.kind == TypeKind.Slice:
-      let data = node.bytes(text); let pointer = ctx.state.literal(data)
-      let memory = ctx.temporary(t); ctx.store(t, "zeroinitializer", memory)
-      ctx.add("store ptr " & pointer & ", ptr " & memory & ", align 1")
-      ctx.add("store i64 " & $data.len & ", ptr " & ctx.gep(memory, 8) & ", align 1")
-      return ctx.load(t, memory)
-    raise newException(ValueError, "unsupported constant " & t.label)
-proc put(ctx: Context; v: Value; text: string) =
-  if v.type != nil and v.type.kind != TypeKind.Void: ctx.store(v.type, text, ctx.registers[v.name])
-proc op(ctx: Context; opcode, ty, a, b: string): string =
-  result = ctx.fresh(); ctx.add(result & " = " & opcode & " " & ty & " " & a & ", " & b)
-proc byteBool(ctx: Context; text: string): string =
-  result = ctx.fresh(); ctx.add(result & " = zext i1 " & text & " to i8")
-proc guard(ctx: Context; failed, message: string) =
-  let failure = "failure" & $ctx.serial; let success = "continue" & $ctx.serial
-  ctx.add("br i1 " & failed & ", label %" & failure & ", label %" & success); ctx.mark(failure)
-  ctx.add("call void @foo_llvm_trace(ptr " & ctx.state.literal(ctx.fn.name) & ", ptr " & ctx.state.literal(ctx.location.file) & ", i64 " & $ctx.location.start & ")")
-  ctx.add("call void @foo_llvm_panic(ptr " & ctx.state.literal(message) & ")")
-  ctx.add("unreachable"); ctx.mark(success)
-proc converted(ctx: Context; text: string; source, target: node.Type): string =
-  if target.kind in {TypeKind.Optional, TypeKind.Failable} and (source == nil or source.kind != target.kind):
-    let memory = ctx.temporary(target); ctx.store(target, "zeroinitializer", memory)
-    if target.kind == TypeKind.Optional: ctx.add("store i8 1, ptr " & memory & ", align 1")
-    if source != nil and source.kind != TypeKind.Void: ctx.store(target.elem, ctx.converted(text, source, target.elem), ctx.gep(memory, measure(target).offsets[1]))
-    return ctx.load(target, memory)
-  if llvmType(source) == llvmType(target): return text
-  let sourceInt = source.kind in {TypeKind.Int, TypeKind.Uint, TypeKind.Bool}
-  let targetInt = target.kind in {TypeKind.Int, TypeKind.Uint, TypeKind.Bool}
-  var opcode: string
-  if sourceInt and targetInt:
-    if measure(source).size > measure(target).size: raise newException(ValueError, "narrowing conversion lacks a checked frontend contract")
-    opcode = if source.kind == TypeKind.Int: "sext" else: "zext"
-  elif sourceInt and target.kind == TypeKind.Float: opcode = if source.kind == TypeKind.Int: "sitofp" else: "uitofp"
-  elif source.kind == TypeKind.Float and target.kind == TypeKind.Float: opcode = if source.width < target.width: "fpext" else: "fptrunc"
-  else: raise newException(ValueError, "unsupported conversion " & source.label & " to " & target.label)
-  result = ctx.fresh(); ctx.add(result & " = " & opcode & " " & llvmType(source) & " " & text & " to " & llvmType(target))
-proc assign(ctx: Context; expected: node.Type; v: Value): string = ctx.converted(ctx.value(v), v.type, expected)
-proc numeric(ctx: Context; i: Instruction; a, b: string): string =
-  let t = i.dest.type
-  if t.kind == TypeKind.Float:
-    let opcode = case i.kind
-      of InstrKind.Add: "fadd"
-      of InstrKind.Sub: "fsub"
-      of InstrKind.Mul: "fmul"
-      of InstrKind.Div: "fdiv"
-      else: raise newException(ValueError, "decimal remainder is not in the language IR")
-    return ctx.op(opcode, llvmType(t), a, b)
-  if t.kind notin {TypeKind.Int, TypeKind.Uint}: raise newException(ValueError, "numeric type required")
-  let n = width(t); let ty = "i" & $n
-  var left = a; var right = b
-  if n != storageWidth(t):
-    left = ctx.fresh(); ctx.add(left & " = trunc " & llvmType(t) & " " & a & " to " & ty)
-    right = ctx.fresh(); ctx.add(right & " = trunc " & llvmType(t) & " " & b & " to " & ty)
-  var computed: string
-  if i.kind in {InstrKind.Add, InstrKind.Sub, InstrKind.Mul}:
-    let intrinsic = "llvm." & (if t.kind == TypeKind.Int: "s" else: "u") & ($i.kind).toLowerAscii & ".with.overflow." & ty
-    ctx.state.intrinsics.incl(intrinsic)
-    let pair = ctx.fresh(); computed = ctx.fresh(); let failed = ctx.fresh()
-    ctx.add(pair & " = call { " & ty & ", i1 } @" & intrinsic & "(" & ty & " " & left & ", " & ty & " " & right & ")")
-    ctx.add(computed & " = extractvalue { " & ty & ", i1 } " & pair & ", 0")
-    ctx.add(failed & " = extractvalue { " & ty & ", i1 } " & pair & ", 1")
-    ctx.guard(failed, "IntegerOverflow")
-  else:
-    ctx.guard(ctx.op("icmp eq", ty, right, "0"), "DivisionByZero")
-    if t.kind == TypeKind.Int:
-      let minimum = ctx.op("shl", ty, "1", $(n - 1))
-      let overflow = ctx.op("and", "i1", ctx.op("icmp eq", ty, left, minimum), ctx.op("icmp eq", ty, right, "-1"))
-      if i.kind == InstrKind.Div: ctx.guard(overflow, "IntegerOverflow")
-      else:
-        let safe = ctx.fresh(); ctx.add(safe & " = select i1 " & overflow & ", " & ty & " 1, " & ty & " " & right)
-        right = safe # srem minimum/-1 is poison; safe divisor 1 gives exact zero
-    computed = ctx.op((if t.kind == TypeKind.Int: "s" else: "u") & (if i.kind == InstrKind.Div: "div" else: "rem"), ty, left, right)
-  if n == storageWidth(t): return computed
-  result = ctx.fresh(); ctx.add(result & " = " & (if t.kind == TypeKind.Int: "sext" else: "zext") & " " & ty & " " & computed & " to " & llvmType(t))
-proc compare(ctx: Context; t: node.Type; a, b, relation: string): string =
-  let relations = {"equals": "eq", "does not equal": "ne", "is less than": "lt", "is greater than": "gt", "is at most": "le", "is at least": "ge"}.toTable
-  if not relations.hasKey(relation): raise newException(ValueError, "unknown comparison " & relation)
-  let rel = relations[relation]
-  if not aggregate(t):
-    if t.kind == TypeKind.Float: return ctx.op("fcmp " & (if rel == "ne": "une" else: "o" & rel), llvmType(t), a, b)
-    return ctx.op("icmp " & (if rel in ["eq", "ne"]: rel else: (if t.kind == TypeKind.Int: "s" else: "u") & rel), llvmType(t), a, b)
-  let left = ctx.boxed(t, a); let right = ctx.boxed(t, b); let order = ctx.fresh()
-  let comparator = comparisonName(t, relation); ctx.state.intrinsics.incl("compare:" & comparator)
-  ctx.add(order & " = call i8 @" & comparator & "(ptr " & left & ", ptr " & right & ")")
-  ctx.op("icmp ne", "i8", order, "0")
-
-proc cleanup(ctx: Context; failed: string) =
-  for index in countdown(ctx.cleanups.high, 0):
-    let item = ctx.cleanups[index]; let enabled = ctx.fresh()
-    ctx.add(enabled & " = load i1, ptr " & item.flag & ", align 1")
-    let active = if item.onError: ctx.op("and", "i1", enabled, failed) else: enabled
-    let body = "cleanup" & $ctx.serial; let done = "cleaned" & $ctx.serial
-    ctx.add("br i1 " & active & ", label %" & body & ", label %" & done); ctx.mark(body)
-    ctx.add("store i1 false, ptr " & item.flag & ", align 1")
-    for child in item.body.instrs: ctx.instruction(child)
-    ctx.add("br label %" & done); ctx.mark(done)
-  for pointer in ctx.allocations: ctx.add("call void @free(ptr " & ctx.load(node.Type(kind: TypeKind.Ptr), pointer) & ")")
-  for region in ctx.regions.values: ctx.add("call void @foo_llvm_close(ptr " & region & ")")
-proc returned(ctx: Context; v: Value) =
-  let t = ctx.fn.ret
-  if t == nil or t.kind == TypeKind.Void:
-    ctx.cleanup("false"); ctx.add("ret void"); return
-  var text: string
-  if v.type == nil or v.type.kind == TypeKind.Void:
-    if t.kind == TypeKind.Failable and t.elem.kind == TypeKind.Void: text = "zeroinitializer"
-    else: raise newException(ValueError, "missing return value in " & ctx.fn.name)
-  else: text = ctx.assign(t, v)
-  var failed = "false"
-  if t.kind == TypeKind.Failable: failed = ctx.op("icmp ne", "ptr", ctx.load(node.Type(kind: TypeKind.Error), ctx.boxed(t, text)), "null")
-  ctx.cleanup(failed); ctx.add("ret " & llvmType(t) & " " & text)
-proc transfer(ctx: Context; target: string; arguments: seq[Value] = @[]) =
-  if not ctx.blocks.hasKey(target): raise newException(ValueError, "unknown IR block " & target)
-  var assignments: seq[tuple[v: Value, text: string]]
-  for i in ctx.blocks[target].instrs:
-    if i.kind != InstrKind.Phi: continue
-    var found = false
-    for incoming in i.blocks:
-      if incoming.label == ctx.current:
-        assignments.add((i.dest, ctx.assign(i.dest.type, incoming.value))); found = true
-    if not found: raise newException(ValueError, "phi has no incoming edge from " & ctx.current)
-  var index = 0
-  for parameter in ctx.blocks[target].params:
-    if parameter.type.kind == TypeKind.Memory: continue
-    if index >= arguments.len: raise newException(ValueError, "block argument missing")
-    assignments.add((parameter, ctx.assign(parameter.type, arguments[index]))); inc index
-  for assignment in assignments: ctx.put(assignment.v, assignment.text)
-  ctx.add("br label %" & label(target))
-
-proc instruction(ctx: Context; i: Instruction) =
-  if i == nil: return
-  ctx.location = i.span
-  ctx.lines.add("  ; " & $i.kind & " " & escape(i.span.file) & ":" & $i.span.start & ".." & $i.span.end)
-  let t = i.dest.type
-  case i.kind
-  of InstrKind.Phi: discard
-  of InstrKind.Alloc:
-    if i.op == "slot":
-      if not ctx.cells.hasKey(i.dest.name): ctx.cells[i.dest.name] = ctx.temporary(t.elem)
-      ctx.put(i.dest, ctx.cells[i.dest.name])
-    else:
-      let pointer = ctx.fresh(); ctx.add(pointer & " = call ptr @foo_llvm_alloc(i64 " & $measure(t.elem).size & ")")
-      ctx.put(i.dest, pointer)
-      let owned = ctx.temporary(t)
-      ctx.prologue.add("  store ptr null, ptr " & owned & ", align 1")
-      ctx.store(t, pointer, owned); ctx.allocations.add(owned)
-  of InstrKind.Load: ctx.put(i.dest, ctx.load(t, ctx.value(i.ptr)))
-  of InstrKind.Store: ctx.store(i.ptr.type.elem, ctx.assign(i.ptr.type.elem, i.val), ctx.value(i.ptr))
-  of InstrKind.Add, InstrKind.Sub, InstrKind.Mul, InstrKind.Div, InstrKind.Remainder:
-    if t.kind == TypeKind.Slice and i.kind == InstrKind.Add:
-      let a = ctx.boxed(t, ctx.value(i.val)); let b = ctx.boxed(t, ctx.value(i.val2))
-      ctx.add("call void @foo_llvm_join(ptr " & ctx.registers[i.dest.name] & ", ptr " & a & ", ptr " & b & ")")
-    else: ctx.put(i.dest, ctx.numeric(i, ctx.assign(t, i.val), ctx.assign(t, i.val2)))
-  of InstrKind.Not: ctx.put(i.dest, ctx.byteBool(ctx.op("icmp eq", "i8", ctx.value(i.val), "0")))
-  of InstrKind.Convert: ctx.put(i.dest, ctx.assign(t, i.val))
-  of InstrKind.Compare:
-    let typ = if i.val2.type.kind == TypeKind.Optional: i.val2.type else: i.val.type
-    ctx.put(i.dest, ctx.byteBool(ctx.compare(typ, ctx.assign(typ, i.val), ctx.assign(typ, i.val2), i.op)))
-  of InstrKind.Call:
-    if ctx.state.externs.hasKey(i.func):
-      let external = ctx.state.externs[i.func]
-      var args = @["ptr " & (if t == nil or t.kind == TypeKind.Void: "null" else: ctx.registers[i.dest.name])]
-      for index, arg in i.args: args.add("ptr " & ctx.boxed(external.params[index], ctx.assign(external.params[index], arg)))
-      ctx.add("call void @" & bridgeName(external.name) & "(" & args.join(", ") & ")")
-    else:
-      let called = if i.callee.type != nil: ctx.value(i.callee) else: symbol(i.func)
-      var args: seq[string]
-      for arg in i.args: args.add(llvmType(arg.type) & " " & ctx.value(arg))
-      let resultType = if t == nil: "void" else: llvmType(t)
-      let returned = if resultType == "void": "" else: ctx.fresh()
-      ctx.add((if returned.len > 0: returned & " = " else: "") & "call " & resultType & " " & called & "(" & args.join(", ") & ")")
-      if returned.len > 0: ctx.put(i.dest, returned)
-  of InstrKind.Construct:
-    let memory = ctx.registers[i.dest.name]; ctx.store(t, "zeroinitializer", memory)
-    if t.kind == TypeKind.Failable and i.op == "error": ctx.store(node.Type(kind: TypeKind.Error), ctx.value(i.args[0]), memory)
-    elif t.kind == TypeKind.TaggedUnion:
-      var index = 0; var found = false
-      for name, typ in t.variants:
-        if name == i.field:
-          found = true; ctx.add("store i32 " & $index & ", ptr " & memory & ", align 1")
-          if i.args.len > 0 and typ != nil and typ.kind != TypeKind.Void: ctx.store(typ, ctx.assign(typ, i.args[0]), ctx.gep(memory, measure(t).offsets[1]))
-        inc index
-      if not found: raise newException(ValueError, "unknown choice variant " & i.field)
-    elif t.kind == TypeKind.Slice and i.op == "sequence":
-      let backing = ctx.slot(max(1, measure(t.elem).size * i.args.len), measure(t.elem).alignment)
-      for index, arg in i.args: ctx.store(t.elem, ctx.assign(t.elem, arg), ctx.gep(backing, index * measure(t.elem).size))
-      ctx.add("store ptr " & backing & ", ptr " & memory & ", align 1")
-      ctx.add("store i64 " & $i.args.len & ", ptr " & ctx.gep(memory, 8) & ", align 1")
-    elif t.kind in {TypeKind.Struct, TypeKind.ExternStruct}:
-      var index = 0
-      for typ in t.fields.values:
-        ctx.store(typ, ctx.assign(typ, i.args[index]), ctx.gep(memory, measure(t).offsets[index])); inc index
-    elif t.kind in {TypeKind.Array, TypeKind.Vector}:
-      for index, arg in i.args: ctx.store(t.elem, ctx.assign(t.elem, arg), ctx.gep(memory, index * measure(t.elem).size))
-    else: raise newException(ValueError, "unsupported construction " & t.label)
-  of InstrKind.Extract:
-    let source = if i.ptr.type != nil: i.ptr else: i.val
-    let typ = if source.type.kind == TypeKind.Ptr: source.type.elem else: source.type
-    let memory = if source.type.kind == TypeKind.Ptr: ctx.value(source) else: ctx.boxed(typ, ctx.value(source))
-    if typ.kind == TypeKind.Failable and i.field == "failed": ctx.put(i.dest, ctx.byteBool(ctx.op("icmp ne", "ptr", ctx.load(node.Type(kind: TypeKind.Error), memory), "null")))
-    else:
-      let offset = if typ.kind == TypeKind.Failable: measure(typ).offsets[1]
-        elif typ.kind == TypeKind.Optional: (if i.field == "present": 0 else: measure(typ).offsets[1])
-        elif typ.kind == TypeKind.TaggedUnion: (if i.field == "tag": 0 else: measure(typ).offsets[1])
-        else: measure(typ).offsets[fieldIndex(typ, i.field)]
-      let pointer = ctx.gep(memory, offset)
-      ctx.put(i.dest, if i.op == "address": pointer else: ctx.load(t, pointer))
-  of InstrKind.Length:
-    let number = if i.val.type.kind == TypeKind.Slice:
-        ctx.load(node.Type(kind: TypeKind.Uint, width: 64), ctx.gep(ctx.boxed(i.val.type, ctx.value(i.val)), 8)) else: $i.val.type.width
-    ctx.put(i.dest, ctx.converted(number, node.Type(kind: TypeKind.Uint, width: 64), t))
-  of InstrKind.Index:
-    let typ = i.val.type; let memory = ctx.boxed(typ, ctx.value(i.val))
-    let length = if typ.kind == TypeKind.Slice: ctx.load(node.Type(kind: TypeKind.Uint, width: 64), ctx.gep(memory, 8)) else: $typ.width
-    var index = ctx.value(i.val2)
-    if storageWidth(i.val2.type) > 64: raise newException(ValueError, "wide index needs checked size conversion")
-    if llvmType(i.val2.type) != "i64": index = ctx.converted(index, i.val2.type, node.Type(kind: i.val2.type.kind, width: 64))
-    ctx.guard(ctx.op("icmp uge", "i64", index, length), "IndexOutOfBounds")
-    let base = if typ.kind == TypeKind.Slice: ctx.load(node.Type(kind: TypeKind.Ptr), memory) else: memory
-    let offset = ctx.op("mul", "i64", index, $measure(typ.elem).size)
-    let pointer = ctx.fresh(); ctx.add(pointer & " = getelementptr i8, ptr " & base & ", i64 " & offset)
-    ctx.put(i.dest, if i.op == "address": pointer else: ctx.load(t, pointer))
-  of InstrKind.Jump: ctx.transfer(i.label, i.args)
-  of InstrKind.Cjump:
-    let condition = ctx.op("icmp ne", "i8", ctx.value(i.cond), "0")
-    let yes = "edgeTrue" & $ctx.serial; let no = "edgeFalse" & $ctx.serial
-    ctx.add("br i1 " & condition & ", label %" & yes & ", label %" & no)
-    ctx.mark(yes); ctx.transfer(i.trueLabel, i.trueArgs)
-    ctx.mark(no); ctx.transfer(i.falseLabel, i.falseArgs)
-  of InstrKind.Return: ctx.returned(i.value)
-  of InstrKind.Try:
-    let typ = i.expr.type
-    if ctx.fn.ret.kind notin {TypeKind.Failable, TypeKind.Void}: raise newException(ValueError, "try requires a failable function")
-    let memory = ctx.boxed(typ, ctx.value(i.expr))
-    let errorType = node.Type(kind: TypeKind.Error); let error = ctx.load(errorType, memory)
-    let failed = ctx.op("icmp ne", "ptr", error, "null")
-    let failure = "tryFailure" & $ctx.serial; let success = "trySuccess" & $ctx.serial
-    ctx.add("br i1 " & failed & ", label %" & failure & ", label %" & success); ctx.mark(failure)
-    ctx.cleanup("true")
-    if ctx.fn.ret.kind == TypeKind.Void:
-      ctx.add("call void @foo_llvm_panic(ptr " & error & ")"); ctx.add("unreachable")
-    else:
-      let returned = ctx.temporary(ctx.fn.ret)
-      ctx.store(ctx.fn.ret, "zeroinitializer", returned); ctx.store(errorType, error, returned)
-      ctx.add("ret " & llvmType(ctx.fn.ret) & " " & ctx.load(ctx.fn.ret, returned))
-    ctx.mark(success); ctx.put(i.dest, ctx.load(t, ctx.gep(memory, measure(typ).offsets[1])))
-  of InstrKind.Catch:
-    let memory = ctx.boxed(i.val.type, ctx.value(i.val))
-    let failed = ctx.op("icmp ne", "ptr", ctx.load(node.Type(kind: TypeKind.Error), memory), "null")
-    let fallback = "fallback" & $ctx.serial; let success = "caught" & $ctx.serial; let done = "catchDone" & $ctx.serial
-    ctx.add("br i1 " & failed & ", label %" & fallback & ", label %" & success); ctx.mark(fallback)
-    for child in i.fallback.instrs: ctx.instruction(child)
-    if t != nil and t.kind != TypeKind.Void: ctx.put(i.dest, ctx.assign(t, i.fallback.term.value))
-    ctx.add("br label %" & done); ctx.mark(success)
-    ctx.put(i.dest, ctx.load(t, ctx.gep(memory, measure(i.val.type).offsets[1])))
-    ctx.add("br label %" & done); ctx.mark(done)
-  of InstrKind.Defer:
-    let flag = ctx.slot(1, 1); ctx.prologue.add("  store i1 false, ptr " & flag & ", align 1")
-    ctx.cleanups.add((i.fallback, flag, i.error)); ctx.add("store i1 true, ptr " & flag & ", align 1")
-  of InstrKind.Region:
-    if not ctx.regions.hasKey(i.region):
-      ctx.regions[i.region] = ctx.slot(8, 8); ctx.prologue.add("  store ptr null, ptr " & ctx.regions[i.region] & ", align 1")
-    if i.op == "open": ctx.add("store ptr null, ptr " & ctx.regions[i.region] & ", align 1")
-    else: ctx.add("call void @foo_llvm_close(ptr " & ctx.regions[i.region] & ")")
-  of InstrKind.Allocate:
-    if i.target.type != nil: raise newException(ValueError, "explicit allocator allocation needs a qualified runtime adapter")
-    if not ctx.regions.hasKey(i.region):
-      ctx.regions[i.region] = ctx.slot(8, 8); ctx.prologue.add("  store ptr null, ptr " & ctx.regions[i.region] & ", align 1")
-    let size = ctx.assign(node.Type(kind: i.val.type.kind, width: 64), i.val)
-    let valid = if i.val.type.kind == TypeKind.Int: ctx.op("icmp sge", "i64", size, "0") else: "true"
-    let memory = ctx.registers[i.dest.name]; ctx.store(t, "zeroinitializer", memory)
-    let invalid = "allocInvalid" & $ctx.serial; let allocate = "allocValid" & $ctx.serial; let done = "allocDone" & $ctx.serial
-    ctx.add("br i1 " & valid & ", label %" & allocate & ", label %" & invalid); ctx.mark(invalid)
-    ctx.add("store ptr " & ctx.state.literal("InvalidSize") & ", ptr " & memory & ", align 1"); ctx.add("br label %" & done); ctx.mark(allocate)
-    let pointer = ctx.fresh(); ctx.add(pointer & " = call ptr @foo_llvm_reserve(ptr " & ctx.regions[i.region] & ", i64 " & size & ")")
-    let missing = ctx.op("icmp eq", "ptr", pointer, "null"); let error = ctx.fresh()
-    ctx.add(error & " = select i1 " & missing & ", ptr " & ctx.state.literal("OutOfMemory") & ", ptr null")
-    ctx.add("store ptr " & error & ", ptr " & memory & ", align 1")
-    let payload = ctx.gep(memory, measure(t).offsets[1])
-    ctx.add("store ptr " & pointer & ", ptr " & payload & ", align 1")
-    ctx.add("store i64 " & size & ", ptr " & ctx.gep(payload, 8) & ", align 1")
-    ctx.add("br label %" & done); ctx.mark(done)
-  of InstrKind.Trace: ctx.add("call void @foo_llvm_trace(ptr " & ctx.state.literal(i.trace) & ", ptr " & ctx.state.literal(i.span.file) & ", i64 " & $i.span.start & ")")
-  of InstrKind.Panic:
-    ctx.add("call void @foo_llvm_trace(ptr " & ctx.state.literal(ctx.fn.name) & ", ptr " & ctx.state.literal(i.span.file) & ", i64 " & $i.span.start & ")")
-    ctx.add("call void @foo_llvm_panic(ptr " & ctx.state.literal(i.msg) & ")"); ctx.add("unreachable")
-  of InstrKind.Reflect:
-    let memory = ctx.registers[i.dest.name]; ctx.store(t, "zeroinitializer", memory)
-    let measured = measure(i.typeArg); var index = 0
-    for field, typ in t.fields:
-      let text = case field
-        of "size": $measured.size
-        of "alignment": $measured.alignment
-        of "name", "kind":
-          let name = if field == "name": i.typeArg.label else: node.Type(kind: i.typeArg.kind).label
-          ctx.value(Value(kind: ValueKind.Const, name: node.quoted(name.toOpenArrayByte(0, name.high)), type: typ))
-        else: raise newException(ValueError, "unknown reflection field " & field)
-      ctx.store(typ, text, ctx.gep(memory, measure(t).offsets[index])); inc index
-  of InstrKind.Embed:
-    let data = readFile(parentDir(ctx.state.source) / i.path)
-    ctx.put(i.dest, ctx.value(Value(kind: ValueKind.Const, name: node.quoted(data.toOpenArrayByte(0, data.high)), type: t)))
-  else: raise newException(ValueError, "unsupported instruction " & $i.kind)
-
-proc emit*(module: Module; triple, layout: string; source = "main.iv"): string =
-  let state = State(externs: initTable[string, Extern](), intrinsics: initHashSet[string](), source: source)
-  if module.native.len > 0: raise newException(ValueError, "native contracts are outside LLVM core qualification")
-  for external in module.externs:
-    state.externs[external.name] = external
-    state.declarations.add("declare void @" & bridgeName(external.name) & "(" & newSeqWith(external.params.len + 1, "ptr").join(", ") & ")")
-  for storage in module.storage:
-    let t = storage.value.type
-    if aggregate(t) or t.kind notin {TypeKind.Int, TypeKind.Uint, TypeKind.Bool, TypeKind.Ptr}: raise newException(ValueError, "global initializer not qualified: " & storage.name)
-    let text = if t.kind == TypeKind.Bool: (if storage.value.name == "true": "1" else: "0")
-      elif t.kind == TypeKind.Ptr: "null" elif storage.value.bits.len > 0: storage.value.bits else: storage.value.name
-    state.globals.add(symbol(storage.name) & " = global " & llvmType(t) & " " & text & ", align " & $measure(t).alignment)
-  var entry: Function
-  for fn in module.funcs:
-    if fn.name == "main": entry = fn
-    if fn.typeParams.len > 0: raise newException(ValueError, "generic function must be specialized by IR prepare: " & fn.name)
-    if fn.abi.len > 0 or fn.attributes.anyIt(it in ["naked", "interrupt", "start"]): raise newException(ValueError, "foreign/machine convention outside core gate: " & fn.name)
-    let ctx = Context(state: state, fn: fn, registers: initTable[string, string](), cells: initTable[string, string](), regions: initTable[string, string](), blocks: initTable[string, Block]())
+proc emit*(module: Module; triple, dataLayout: string; support: Support; sourceFile = "main.iv"): string =
+  var globals, definitions: seq[string]
+  var declarations = initOrderedTable[string,string]()
+  var functions = initTable[string,node.Function]()
+  var externs = initTable[string,Extern]()
+  for fn in module.funcs: functions[fn.name] = fn
+  for external in module.externs: externs[external.name] = external
+  proc stringPointer(data: seq[byte]; terminated = false): string =
+    let symbol = "@foo.bytes." & $globals.len
+    var literal = ""
+    for b in data: literal.add("\\" & toHex(b,2))
+    if terminated: literal.add("\\00")
+    globals.add(symbol & " = private constant [" & $(data.len + ord(terminated)) & " x i8] c\"" & literal & "\"")
+    symbol
+  proc cstring(text: string): string =
+    var data: seq[byte]
+    for c in text: data.add(byte(c))
+    stringPointer(data,true)
+  proc scalar(v: Value): string =
+    if v.type == nil: raise newException(ValueError,"untyped LLVM constant")
+    case v.type.kind
+    of TypeKind.Bool: (if v.name == "true": "1" else: "0")
+    of TypeKind.Int, TypeKind.Uint: v.name.replace("_", "")
+    of TypeKind.Float:
+      var number: float64
+      if v.bits.len > 0:
+        if v.type.width == 32: number = float64(cast[float32](uint32(parseHexInt(v.bits))))
+        else: number = cast[float64](parseHexInt(v.bits).uint64)
+      else: number = parseFloat(v.name)
+      if v.type.width == 32: number = float64(float32(number))
+      "0x" & toHex(cast[uint64](number),16)
+    of TypeKind.Ptr, TypeKind.Function: (if v.name == "null": "null" else: raise newException(ValueError,"non-null pointer literal"))
+    of TypeKind.Error: cstring(v.name)
+    else: raise newException(ValueError,"non-scalar constant " & v.type.label)
+  for item in module.storage:
+    if aggregate(item.value.type): raise newException(ValueError,"LLVM aggregate global initializer needs a constant serializer: " & item.name)
+    globals.add("@" & quotedName("storage." & item.name) & " = global " & llvmType(item.value.type) & " " & scalar(item.value) & ", align " & $measure(item.value.type).alignment)
+  for functionIndex in 0 ..< module.funcs.len:
+    let fn = module.funcs[functionIndex]
+    if fn.blocks.len == 0: raise newException(ValueError,"function has no blocks: " & fn.name)
+    if fn.abi notin ["", "foo", "foo:1"] or fn.attributes.anyIt(it != "noinline" and not it.startsWith("borrows(") and not it.startsWith("releases(")):
+      raise newException(ValueError,"LLVM function ABI/attribute needs qualification: " & fn.name)
+    var code, allocas, initializers: seq[string]
+    var slots = initTable[string,string]()
+    var blocks = initTable[string,Block]()
+    var counter = 0
+    var current: string
+    var predecessor: string
+    proc temp(): string =
+      inc counter; "%t" & $counter
+    proc line(text: string) = code.add("  " & text)
+    proc blockLabel(prefix: string): string =
+      inc counter; prefix & $counter
+    proc start(label: string) =
+      current = label; code.add(quotedName(label) & ":")
+    proc branch(label: string) = line("br label %" & quotedName(label))
+    proc stack(t: node.Type; zero = false): string =
+      result = temp()
+      allocas.add("  " & result & " = alloca " & llvmType(t) & ", align " & $measure(t).alignment)
+      if zero: initializers.add("  store " & llvmType(t) & " zeroinitializer, ptr " & result & ", align 1")
     proc register(v: Value) =
-      if v.kind == ValueKind.Reg and v.type != nil and v.type.kind notin {TypeKind.Void, TypeKind.Memory, TypeKind.Region, TypeKind.Trace} and not ctx.registers.hasKey(v.name): ctx.registers[v.name] = ctx.temporary(v.type)
+      if v.kind == ValueKind.Reg and v.name.len > 0 and v.type != nil and v.type.kind notin {TypeKind.Void,TypeKind.Memory,TypeKind.Region,TypeKind.Trace} and v.name notin slots:
+        slots[v.name] = stack(v.type)
     proc collect(i: Instruction) =
       if i == nil: return
       register(i.dest)
       if i.fallback != nil:
+        for p in i.fallback.params: register(p)
         for child in i.fallback.instrs: collect(child)
-    var parameters: seq[string]
-    for index, parameter in fn.params:
-      register(parameter); parameters.add(llvmType(parameter.type) & " %arg" & $index)
-      ctx.prologue.add("  store " & llvmType(parameter.type) & " %arg" & $index & ", ptr " & ctx.registers[parameter.name] & ", align 1")
-    for basicBlock in fn.blocks:
-      ctx.blocks[basicBlock.label] = basicBlock
-      for parameter in basicBlock.params: register(parameter)
-      for i in basicBlock.instrs: collect(i)
-      collect(basicBlock.term)
-    if fn.blocks.len == 0: raise newException(ValueError, "function has no blocks " & fn.name)
-    for basicBlock in fn.blocks:
-      ctx.current = basicBlock.label; ctx.mark(label(basicBlock.label))
-      for i in basicBlock.instrs & @[basicBlock.term]:
-        try: ctx.instruction(i)
-        except ValueError as error:
-          raise newException(ValueError, i.span.file & ":" & $i.span.start & ".." & $i.span.end & " (source offsets) in " & fn.name & ": LLVM " & error.msg)
-    state.functions.add("define " & llvmType(fn.ret) & " " & symbol(fn.name) & "(" & parameters.join(", ") & ") {\nprologue:\n" & ctx.prologue.join("\n") & "\n  br label %" & label(fn.blocks[0].label) & "\n" & ctx.lines.join("\n") & "\n}")
-  if entry == nil: raise newException(ValueError, "LLVM executable requires an entry point")
-  if entry.params.len > 0: raise newException(ValueError, "entry must be parameterless")
-  let ty = llvmType(entry.ret); var main = "define i32 @main() {\nentry:\n"
-  if ty == "void": main.add("  call void " & symbol(entry.name) & "()\n  call void @foo_llvm_finish(ptr null)\n  ret i32 0\n")
+        collect(i.fallback.term)
+    for parameter in fn.params: register(parameter)
+    for b in fn.blocks:
+      blocks[b.label] = b
+      for p in b.params: register(p)
+      for i in b.instrs: collect(i)
+      collect(b.term)
+    proc load(t: node.Type; address: string; volatile = false): string =
+      result = temp()
+      line(result & " = load " & (if volatile: "volatile " else: "") & llvmType(t) & ", ptr " & address & ", align 1")
+    proc store(t: node.Type; value, address: string; volatile = false) =
+      line("store " & (if volatile: "volatile " else: "") & llvmType(t) & " " & value & ", ptr " & address & ", align 1")
+    proc offset(address: string; bytes: string): string =
+      result = temp(); line(result & " = getelementptr i8, ptr " & address & ", i64 " & bytes)
+    proc value(v: Value): string
+    proc box(v: Value): string =
+      if v.kind == ValueKind.Reg and v.name in slots: return slots[v.name]
+      result = stack(v.type); store(v.type,value(v),result)
+    proc value(v: Value): string =
+      case v.kind
+      of ValueKind.Reg:
+        if v.name notin slots: raise newException(ValueError,"undefined typed register " & v.name)
+        return load(v.type, slots[v.name])
+      of ValueKind.Global:
+        if v.name in functions: return functionName(v.name)
+        for item in module.storage:
+          if item.name == v.name: return "@" & quotedName("storage." & v.name)
+        raise newException(ValueError,"undefined global " & v.name)
+      of ValueKind.Const: discard
+      if aggregate(v.type):
+        if v.type.kind == TypeKind.Optional and v.name == "null": return "zeroinitializer"
+        if v.type.kind == TypeKind.Slice:
+          let data = bytes(v.name); let address = stack(v.type)
+          store(node.Type(kind: TypeKind.Ptr),stringPointer(data),address)
+          store(node.Type(kind: TypeKind.Uint,width:64),$data.len,offset(address,"8"))
+          return load(v.type,address)
+        raise newException(ValueError,"unsupported aggregate constant")
+      scalar(v)
+    proc save(v: Value; expression: string) =
+      if v.type != nil and v.type.kind != TypeKind.Void: store(v.type,expression,slots[v.name])
+    proc castInteger(expression: string; source, target: node.Type): string =
+      let a = llvmType(source); let b = llvmType(target)
+      if a == b: return expression
+      if storageWidth(target) < storageWidth(source): raise newException(ValueError,"narrowing conversion lacks frontend range proof")
+      result = temp(); line(result & " = " & (if source.kind == TypeKind.Int: "sext" else: "zext") & " " & a & " " & expression & " to " & b)
+    proc assigned(v: Value; target: node.Type): string =
+      if target.kind in {TypeKind.Optional,TypeKind.Failable} and v.type.kind != target.kind:
+        let address = stack(target); store(target,"zeroinitializer",address)
+        if target.kind == TypeKind.Optional: store(node.Type(kind: TypeKind.Bool),"1",address)
+        if target.elem.kind != TypeKind.Void: store(target.elem,assigned(v,target.elem),offset(address,$measure(target).offsets[1]))
+        return load(target,address)
+      if target.kind in {TypeKind.Int,TypeKind.Uint} and v.type.kind in {TypeKind.Int,TypeKind.Uint}: return castInteger(value(v),v.type,target)
+      return value(v)
+    proc trace(i: Instruction) =
+      line("call void @foo_llvm_trace(ptr " & cstring(i.trace) & ", ptr " & cstring(i.span.file) & ", i64 " & $i.span.start & ")")
+    proc panic(message: string; i: Instruction) =
+      trace(i); line("call void @foo_llvm_panic(ptr " & cstring(message) & ")"); line("unreachable")
+    proc guard(predicate, message: string; i: Instruction) =
+      let bad = blockLabel("checked.fail."); let good = blockLabel("checked.pass.")
+      line("br i1 " & predicate & ", label %" & quotedName(bad) & ", label %" & quotedName(good))
+      start(bad); panic(message,i); start(good)
+    proc predicate(v: Value): string =
+      result = temp(); let input = value(v)
+      line(result & " = icmp ne " & llvmType(v.type) & " " & input & ", 0")
+    var cleanups: seq[tuple[instruction: Instruction, flag: string]]
+    var regions = initOrderedTable[string,string]()
+    var allocations = initTable[pointer,string]()
+    proc findCleanups(i: Instruction) =
+      if i == nil: return
+      if i.kind == InstrKind.Defer: cleanups.add((i,stack(node.Type(kind:TypeKind.Bool),true)))
+      if i.kind == InstrKind.Alloc and i.op != "slot":
+        allocations[cast[pointer](i)] = stack(node.Type(kind:TypeKind.Ptr),true)
+      if i.kind in {InstrKind.Region,InstrKind.Allocate} and i.target.type == nil and i.region notin regions:
+        regions[i.region] = stack(node.Type(kind:TypeKind.Ptr),true)
+      if i.fallback != nil:
+        for child in i.fallback.instrs: findCleanups(child)
+    for b in fn.blocks:
+      for i in b.instrs: findCleanups(i)
+    proc instruction(i: Instruction)
+    proc cleanup(error: string) =
+      for index in countdown(cleanups.high,0):
+        let item = cleanups[index]; let active = load(node.Type(kind:TypeKind.Bool),item.flag)
+        var pred = temp(); line(pred & " = icmp ne i8 " & active & ", 0")
+        if item.instruction.error:
+          let combined = temp(); line(combined & " = and i1 " & pred & ", " & error); pred = combined
+        let run = blockLabel("cleanup.run."); let done = blockLabel("cleanup.done.")
+        line("br i1 " & pred & ", label %" & quotedName(run) & ", label %" & quotedName(done)); start(run)
+        store(node.Type(kind:TypeKind.Bool),"0",item.flag)
+        for child in item.instruction.fallback.instrs: instruction(child)
+        branch(done); start(done)
+      for slot in allocations.values:
+        line("call void @foo_llvm_free(ptr " & slot & ")")
+      for region in regions.values: line("call void @foo_llvm_close(ptr " & region & ")")
+    proc returned(v: Value) =
+      if fn.ret.kind == TypeKind.Void: cleanup("false"); line("ret void"); return
+      let output = assigned(v,fn.ret)
+      var failed = "false"
+      if fn.ret.kind == TypeKind.Failable:
+        let address = stack(fn.ret); store(fn.ret,output,address)
+        let error = load(node.Type(kind:TypeKind.Error),address)
+        failed = temp(); line(failed & " = icmp ne ptr " & error & ", null")
+      cleanup(failed); line("ret " & llvmType(fn.ret) & " " & output)
+    proc transfer(label: string; args: seq[Value]) =
+      if label notin blocks: raise newException(ValueError,"unknown block " & label)
+      let target = blocks[label]
+      var pending: seq[tuple[dest:Value, expression:string]]
+      var index = 0
+      for p in target.params:
+        if p.type.kind != TypeKind.Memory:
+          while index < args.len and args[index].type.kind == TypeKind.Memory: inc index
+          if index >= args.len: raise newException(ValueError,"missing block argument")
+          pending.add((p,assigned(args[index],p.type))); inc index
+      for i in target.instrs:
+        if i.kind == InstrKind.Phi:
+          for edge in i.blocks:
+            if edge.label == predecessor: pending.add((i.dest,assigned(edge.value,i.dest.type)))
+      for pair in pending: save(pair.dest,pair.expression)
+      branch(label)
+    proc arithmetic(i: Instruction) =
+      let t = i.dest.type; let ty = llvmType(t)
+      if t.kind == TypeKind.Slice and i.kind == InstrKind.Add:
+        let a = box(i.val); let b = box(i.val2)
+        line("call void @foo_llvm_join(ptr " & slots[i.dest.name] & ", ptr " & a & ", ptr " & b & ")"); return
+      let left = value(i.val); let right = value(i.val2)
+      let operation = case i.kind
+        of InstrKind.Add: "add"
+        of InstrKind.Sub: "sub"
+        of InstrKind.Mul: "mul"
+        of InstrKind.Div: "div"
+        else: "rem"
+      if t.kind == TypeKind.Float:
+        let output = temp(); line(output & " = f" & operation & " " & ty & " " & left & ", " & right); save(i.dest,output); return
+      if t.kind notin {TypeKind.Int,TypeKind.Uint}: raise newException(ValueError,"unsupported arithmetic type " & t.label)
+      let signed = t.kind == TypeKind.Int; let narrow = "i" & $width(t)
+      var a = left; var b = right
+      if width(t) != storageWidth(t):
+        a = temp(); b = temp(); line(a & " = trunc " & ty & " " & left & " to " & narrow); line(b & " = trunc " & ty & " " & right & " to " & narrow)
+      var output = temp()
+      if i.kind in {InstrKind.Add,InstrKind.Sub,InstrKind.Mul}:
+        let intrinsic = "llvm." & (if signed: "s" else: "u") & operation & ".with.overflow." & narrow
+        declarations[intrinsic] = "declare { " & narrow & ", i1 } @" & intrinsic & "(" & narrow & ", " & narrow & ")"
+        let pair = temp(); let overflow = temp()
+        line(pair & " = call { " & narrow & ", i1 } @" & intrinsic & "(" & narrow & " " & a & ", " & narrow & " " & b & ")")
+        line(output & " = extractvalue { " & narrow & ", i1 } " & pair & ", 0")
+        line(overflow & " = extractvalue { " & narrow & ", i1 } " & pair & ", 1"); guard(overflow,"IntegerOverflow",i)
+      else:
+        let zero = temp(); line(zero & " = icmp eq " & narrow & " " & b & ", 0"); guard(zero,"DivisionByZero",i)
+        if signed:
+          let min = temp(); let negativeOne = temp(); let special = temp(); let minimum = temp()
+          line(minimum & " = shl " & narrow & " -1, " & $(width(t)-1))
+          line(min & " = icmp eq " & narrow & " " & a & ", " & minimum)
+          line(negativeOne & " = icmp eq " & narrow & " " & b & ", -1"); line(special & " = and i1 " & min & ", " & negativeOne)
+          if i.kind == InstrKind.Div: guard(special,"IntegerOverflow",i)
+          else:
+            let safe = temp(); line(safe & " = select i1 " & special & ", " & narrow & " 1, " & narrow & " " & b); b = safe
+        line(output & " = " & (if signed: "s" else: "u") & operation & " " & narrow & " " & a & ", " & b)
+      if width(t) != storageWidth(t):
+        let extended = temp(); line(extended & " = " & (if signed: "sext" else: "zext") & " " & narrow & " " & output & " to " & ty); output = extended
+      save(i.dest,output)
+    proc instruction(i: Instruction) =
+      if i == nil: raise newException(ValueError,"missing terminator")
+      line("; " & $i.kind & " " & i.span.file.replace("\n"," ").replace("\r"," ") & ":" & $i.span.start & ".." & $i.span.end)
+      try:
+        case i.kind
+        of InstrKind.Alloc:
+          if i.op == "slot": save(i.dest,stack(i.dest.type.elem))
+          else:
+            let cell = allocations[cast[pointer](i)]
+            let pointer = temp(); let m = measure(i.dest.type.elem)
+            line(pointer & " = call ptr @foo_llvm_alloc(ptr " & cell & ", i64 " & $m.size & ", i64 " & $max(8,m.alignment) & ")")
+            save(i.dest,pointer)
+        of InstrKind.Region:
+          if i.op == "open": line("call void @foo_llvm_close(ptr " & regions[i.region] & ")")
+          elif i.op == "close": line("call void @foo_llvm_close(ptr " & regions[i.region] & ")")
+          else: raise newException(ValueError,"unknown region operation " & i.op)
+        of InstrKind.Allocate:
+          if i.target.type != nil: raise newException(ValueError,"explicit allocator allocation needs its runtime adapter")
+          let address = slots[i.dest.name]; let typ = i.dest.type
+          store(typ,"zeroinitializer",address)
+          let count = castInteger(value(i.val),i.val.type,node.Type(kind:i.val.type.kind,width:64))
+          let invalid = temp(); line(invalid & " = icmp slt i64 " & count & ", 0")
+          let bad = blockLabel("allocate.invalid."); let reserve = blockLabel("allocate.reserve."); let done = blockLabel("allocate.done.")
+          line("br i1 " & (if i.val.type.kind == TypeKind.Int: invalid else: "false") & ", label %" & quotedName(bad) & ", label %" & quotedName(reserve))
+          start(bad); store(node.Type(kind:TypeKind.Error),cstring("InvalidSize"),address); branch(done)
+          start(reserve)
+          let pointer = temp(); line(pointer & " = call ptr @foo_llvm_reserve(ptr " & regions[i.region] & ", i64 " & count & ")")
+          let missing = temp(); line(missing & " = icmp eq ptr " & pointer & ", null")
+          let failed = blockLabel("allocate.failed."); let success = blockLabel("allocate.success.")
+          line("br i1 " & missing & ", label %" & quotedName(failed) & ", label %" & quotedName(success))
+          start(failed); store(node.Type(kind:TypeKind.Error),cstring("OutOfMemory"),address); branch(done)
+          start(success)
+          let payload = offset(address,$measure(typ).offsets[1]); store(node.Type(kind:TypeKind.Ptr),pointer,payload)
+          store(node.Type(kind:TypeKind.Uint,width:64),count,offset(payload,"8")); branch(done); start(done)
+        of InstrKind.Load: save(i.dest,load(i.dest.type,value(i.ptr),i.ptr.type.volatile or i.ptr.type.elem.volatile))
+        of InstrKind.Store: store(i.ptr.type.elem,assigned(i.val,i.ptr.type.elem),value(i.ptr),i.ptr.type.volatile or i.ptr.type.elem.volatile)
+        of InstrKind.Add,InstrKind.Sub,InstrKind.Mul,InstrKind.Div,InstrKind.Remainder: arithmetic(i)
+        of InstrKind.Convert:
+          let source = i.val.type; let target = i.dest.type
+          if source.kind in {TypeKind.Int,TypeKind.Uint} and target.kind == TypeKind.Float:
+            let outVal = temp(); let input = value(i.val)
+            line(outVal & " = " & (if source.kind == TypeKind.Int: "sitofp" else: "uitofp") & " " & llvmType(source) & " " & input & " to " & llvmType(target)); save(i.dest,outVal)
+          elif source.kind == TypeKind.Float and target.kind == TypeKind.Float and source.width < target.width:
+            let outVal = temp(); let input = value(i.val)
+            line(outVal & " = fpext " & llvmType(source) & " " & input & " to " & llvmType(target)); save(i.dest,outVal)
+          else: save(i.dest,assigned(i.val,target))
+        of InstrKind.Call:
+          if i.func in externs:
+            let external = externs[i.func]; let adapter = bridgeName(external)
+            var arguments = @["ptr " & (if i.dest.type == nil or i.dest.type.kind == TypeKind.Void: "null" else: slots[i.dest.name])]
+            for arg in i.args: arguments.add("ptr " & box(arg))
+            declarations[adapter] = "declare void @" & adapter & "(" & newSeqWith(arguments.len,"ptr").join(", ") & ")"
+            line("call void @" & adapter & "(" & arguments.join(", ") & ")")
+          else:
+            var parameters: seq[node.Type]
+            var ret: node.Type
+            var target: string
+            if i.callee.type != nil: target = value(i.callee); parameters = i.callee.type.params; ret = i.callee.type.ret
+            elif i.func in functions: target = functionName(i.func); parameters = functions[i.func].params.mapIt(it.type); ret = functions[i.func].ret
+            else: raise newException(ValueError,"unbound call " & i.func)
+            if parameters.len != i.args.len: raise newException(ValueError,"call arity mismatch")
+            var args: seq[string]
+            for index, arg in i.args: args.add(llvmType(parameters[index]) & " " & assigned(arg,parameters[index]))
+            let output = if ret.kind == TypeKind.Void: "" else: temp()
+            line((if output.len == 0: "" else: output & " = ") & "call " & llvmType(ret) & " " & target & "(" & args.join(", ") & ")")
+            if output.len > 0: save(i.dest,output)
+        of InstrKind.Not:
+          let outVal = temp(); let input = value(i.val); line(outVal & " = xor i8 " & input & ", 1"); save(i.dest,outVal)
+        of InstrKind.Compare:
+          let operation = {"equals":"equals", "does not equal":"does-not-equal", "is less than":"less-than", "is at most":"less-or-equal", "is greater than":"greater-than", "is at least":"greater-or-equal"}.toTable[i.op]
+          var typ = i.val.type
+          if i.val2.type.kind == TypeKind.Optional: typ = i.val2.type
+          let output = temp()
+          if aggregate(typ):
+            let helper = support.comparison(typ,operation)
+            declarations[helper] = "declare i8 @" & helper & "(ptr, ptr)"
+            let a = stack(typ); let b = stack(typ)
+            store(typ,assigned(i.val,typ),a); store(typ,assigned(i.val2,typ),b)
+            line(output & " = call i8 @" & helper & "(ptr " & a & ", ptr " & b & ")")
+          else:
+            let predicates = if typ.kind == TypeKind.Float:
+                {"equals":"oeq", "does-not-equal":"une", "less-than":"olt", "less-or-equal":"ole", "greater-than":"ogt", "greater-or-equal":"oge"}.toTable
+              else:
+                {"equals":"eq", "does-not-equal":"ne", "less-than":(if typ.kind == TypeKind.Int:"slt" else:"ult"), "less-or-equal":(if typ.kind == TypeKind.Int:"sle" else:"ule"), "greater-than":(if typ.kind == TypeKind.Int:"sgt" else:"ugt"), "greater-or-equal":(if typ.kind == TypeKind.Int:"sge" else:"uge")}.toTable
+            if operation notin predicates: raise newException(ValueError,"unknown comparison " & i.op)
+            let pred = temp(); let a = value(i.val); let b = value(i.val2)
+            line(pred & " = " & (if typ.kind == TypeKind.Float: "fcmp " else: "icmp ") & predicates[operation] & " " & llvmType(typ) & " " & a & ", " & b)
+            line(output & " = zext i1 " & pred & " to i8")
+          save(i.dest,output)
+        of InstrKind.Construct:
+          let typ = i.dest.type; let address = slots[i.dest.name]; let m = measure(typ)
+          store(typ,"zeroinitializer",address)
+          case typ.kind
+          of TypeKind.Failable,TypeKind.Optional:
+            if i.op == "error": store(node.Type(kind:TypeKind.Error),value(i.args[0]),address)
+            elif i.args.len > 0:
+              if typ.kind == TypeKind.Optional: store(node.Type(kind:TypeKind.Bool),"1",address)
+              store(typ.elem,assigned(i.args[0],typ.elem),offset(address,$m.offsets[1]))
+          of TypeKind.Slice:
+            let backing = stack(node.Type(kind:TypeKind.Array,elem:typ.elem,width:max(1,i.args.len)))
+            for index, arg in i.args: store(typ.elem,assigned(arg,typ.elem),offset(backing,$(index * measure(typ.elem).size)))
+            store(node.Type(kind:TypeKind.Ptr),backing,address); store(node.Type(kind:TypeKind.Uint,width:64),$i.args.len,offset(address,"8"))
+          of TypeKind.Struct,TypeKind.ExternStruct:
+            var index = 0
+            for field in typ.fields.values:
+              store(field,assigned(i.args[index],field),offset(address,$m.offsets[index])); inc index
+          of TypeKind.TaggedUnion:
+            var tag = 0
+            for field in typ.variants.keys:
+              if field == i.field: break
+              inc tag
+            store(node.Type(kind:TypeKind.Uint,width:32),$tag,address)
+            if i.args.len > 0: store(typ.variants[i.field],assigned(i.args[0],typ.variants[i.field]),offset(address,$m.offsets[1]))
+          of TypeKind.Array:
+            for index, arg in i.args: store(typ.elem,assigned(arg,typ.elem),offset(address,$(index * measure(typ.elem).size)))
+          of TypeKind.PackedStruct:
+            let count = max(1,packedBits(typ)); let backing = "i" & $count
+            var accumulated = "0"; var index = 0
+            for field in typ.fields.values:
+              let bits = max(1,packedBits(field)); let fieldTy = "i" & $bits
+              var part: string
+              if field.kind == TypeKind.PackedStruct:
+                let p = box(i.args[index]); part = temp(); line(part & " = load " & fieldTy & ", ptr " & p & ", align 1")
+              else:
+                part = value(i.args[index])
+                if llvmType(field) != fieldTy:
+                  let narrowed = temp(); line(narrowed & " = trunc " & llvmType(field) & " " & part & " to " & fieldTy); part = narrowed
+              if bits < count:
+                let expanded = temp(); line(expanded & " = zext " & fieldTy & " " & part & " to " & backing); part = expanded
+              if m.offsets[index] > 0:
+                let shifted = temp(); line(shifted & " = shl " & backing & " " & part & ", " & $m.offsets[index]); part = shifted
+              let merged = temp(); line(merged & " = or " & backing & " " & accumulated & ", " & part); accumulated = merged; inc index
+            line("store " & backing & " " & accumulated & ", ptr " & address & ", align 1")
+          else: raise newException(ValueError,"unsupported construction " & typ.label)
+        of InstrKind.Extract:
+          if i.dest.type == nil or i.dest.type.kind == TypeKind.Void: return
+          let input = if i.val.type != nil: i.val else: i.ptr
+          let typ = if input.type.kind == TypeKind.Ptr: input.type.elem else: input.type
+          let address = if input.type.kind == TypeKind.Ptr: value(input) else: box(input)
+          if typ.kind == TypeKind.PackedStruct:
+            if i.op == "address": raise newException(ValueError,"an ordinary pointer cannot address a packed bit field")
+            let member = typ.fields[i.field]; let bits = max(1,packedBits(member)); let count = max(1,packedBits(typ))
+            let backing = "i" & $count; let memberTy = "i" & $bits
+            let raw = temp(); line(raw & " = load " & backing & ", ptr " & address & ", align 1")
+            let shifted = temp(); line(shifted & " = lshr " & backing & " " & raw & ", " & $measure(typ).offsets[fieldIndex(typ,i.field)])
+            var part = shifted
+            if bits < count:
+              part = temp(); line(part & " = trunc " & backing & " " & shifted & " to " & memberTy)
+            if member.kind == TypeKind.PackedStruct:
+              store(member,"zeroinitializer",slots[i.dest.name]); line("store " & memberTy & " " & part & ", ptr " & slots[i.dest.name] & ", align 1")
+            elif llvmType(member) == memberTy: save(i.dest,part)
+            else:
+              let expanded = temp(); line(expanded & " = " & (if member.kind == TypeKind.Int: "sext" else:"zext") & " " & memberTy & " " & part & " to " & llvmType(member)); save(i.dest,expanded)
+            return
+          var displacement = 0
+          if typ.kind in {TypeKind.Optional,TypeKind.Failable}:
+            if i.field == "failed":
+              let err = load(node.Type(kind:TypeKind.Error),address); let pred = temp(); let output = temp()
+              line(pred & " = icmp ne ptr " & err & ", null"); line(output & " = zext i1 " & pred & " to i8"); save(i.dest,output); return
+            if i.field notin ["error","present"]: displacement = measure(typ).offsets[1]
+          elif typ.kind == TypeKind.TaggedUnion:
+            if i.field != "tag": displacement = measure(typ).offsets[1]
+          else: displacement = measure(typ).offsets[fieldIndex(typ,i.field)]
+          let projected = offset(address,$displacement)
+          save(i.dest,if i.op == "address": projected else: load(i.dest.type,projected))
+        of InstrKind.Length:
+          if i.val.type.kind == TypeKind.Slice: save(i.dest,load(i.dest.type,offset(box(i.val),"8")))
+          else: save(i.dest,$i.val.type.width)
+        of InstrKind.Index:
+          let typ = i.val.type; let address = box(i.val)
+          let data = if typ.kind == TypeKind.Slice: load(node.Type(kind:TypeKind.Ptr),address) elif typ.kind == TypeKind.Ptr: value(i.val) else: address
+          let index = castInteger(value(i.val2),i.val2.type,node.Type(kind:i.val2.type.kind,width:64))
+          if typ.kind != TypeKind.Ptr:
+            let count = if typ.kind == TypeKind.Slice: load(node.Type(kind:TypeKind.Uint,width:64),offset(address,"8")) else: $typ.width
+            let bad = temp(); line(bad & " = icmp uge i64 " & index & ", " & count); guard(bad,"IndexOutOfBounds",i)
+          let displacement = temp(); line(displacement & " = mul i64 " & index & ", " & $measure(typ.elem).size)
+          let projected = offset(data,displacement)
+          save(i.dest,if i.op == "address": projected else: load(i.dest.type,projected))
+        of InstrKind.Reflect:
+          let typ = i.typeArg; let address = slots[i.dest.name]; let bare = node.Type(kind:typ.kind,elem:typ.elem,width:typ.width)
+          for name, field in i.dest.type.fields:
+            var data: string
+            if name in ["size","alignment"]: data = $(if name == "size": measure(typ).size else: measure(typ).alignment)
+            else:
+              let label = if name == "name": typ.label else: bare.label
+              data = value(Value(kind:ValueKind.Const,type:field,name:quoted(label.toOpenArrayByte(0,label.high))))
+            store(field,data,offset(address,$measure(i.dest.type).offsets[fieldIndex(i.dest.type,name)]))
+        of InstrKind.Embed:
+          let data = readFile(parentDir(sourceFile)/i.path)
+          save(i.dest,value(Value(kind:ValueKind.Const,type:i.dest.type,name:quoted(data.toOpenArrayByte(0,data.high)))))
+        of InstrKind.Trace: trace(i)
+        of InstrKind.Defer:
+          for item in cleanups:
+            if item.instruction == i: store(node.Type(kind:TypeKind.Bool),"1",item.flag)
+        of InstrKind.Try,InstrKind.Catch:
+          let v = if i.kind == InstrKind.Try: i.expr else: i.val
+          let address = box(v); let error = load(node.Type(kind:TypeKind.Error),address)
+          let failed = temp(); line(failed & " = icmp ne ptr " & error & ", null")
+          let bad = blockLabel("issue.fail."); let good = blockLabel("issue.pass."); let done = blockLabel("issue.merge.")
+          line("br i1 " & failed & ", label %" & quotedName(bad) & ", label %" & quotedName(good)); start(bad)
+          if i.kind == InstrKind.Try:
+            trace(i)
+            if fn.name == "main" and fn.ret.kind == TypeKind.Void:
+              cleanup("true"); line("call void @foo_llvm_entry_error(ptr " & error & ")"); line("unreachable")
+            else:
+              if fn.ret.kind != TypeKind.Failable: raise newException(ValueError,"try requires failable function result")
+              let returnedError = stack(fn.ret); store(fn.ret,"zeroinitializer",returnedError); store(node.Type(kind:TypeKind.Error),error,returnedError)
+              cleanup("true"); let output = load(fn.ret,returnedError); line("ret " & llvmType(fn.ret) & " " & output)
+          else:
+            for child in i.fallback.instrs: instruction(child)
+            save(i.dest,assigned(i.fallback.term.value,i.dest.type)); branch(done)
+          start(good)
+          if i.dest.type != nil and i.dest.type.kind != TypeKind.Void: save(i.dest,load(i.dest.type,offset(address,$measure(v.type).offsets[1])))
+          branch(done); start(done)
+        of InstrKind.Jump: transfer(i.label,i.args)
+        of InstrKind.Cjump:
+          let a = blockLabel("edge.true."); let b = blockLabel("edge.false."); let origin = current; let cond = predicate(i.cond)
+          line("br i1 " & cond & ", label %" & quotedName(a) & ", label %" & quotedName(b))
+          start(a); current = origin; transfer(i.trueLabel,i.trueArgs)
+          start(b); current = origin; transfer(i.falseLabel,i.falseArgs)
+        of InstrKind.Return: returned(i.value)
+        of InstrKind.Panic: panic(i.msg,i)
+        of InstrKind.Phi: discard
+        else: raise newException(ValueError,"unsupported instruction " & $i.kind)
+      except ValueError as error:
+        raise newException(ValueError,i.span.file & ":" & $i.span.start & " (source offset), " & fn.name & ": LLVM " & error.msg)
+    var params: seq[string]
+    for index, p in fn.params:
+      params.add(llvmType(p.type) & " %arg" & $index)
+      initializers.add("  store " & llvmType(p.type) & " %arg" & $index & ", ptr " & slots[p.name] & ", align 1")
+    for b in fn.blocks:
+      predecessor = b.label
+      start(b.label)
+      for i in b.instrs: instruction(i)
+      instruction(b.term)
+    definitions.add("define " & llvmType(fn.ret) & " " & functionName(fn.name) & "(" & params.join(", ") & ") noinline" & (if scalarMemoryProof(fn): " memory(none)" else: "") & " {\nfoo.prologue:\n" &
+      allocas.join("\n") & "\n" & initializers.join("\n") & "\n  br label %" & quotedName(fn.blocks[0].label) & "\n" & code.join("\n") & "\n}")
+  if "main" notin functions: raise newException(ValueError,"LLVM executable requires an entry point")
+  let entry = functions["main"]
+  if entry.params.len > 0: raise newException(ValueError,"entry point must be parameterless")
+  var entrypoint = "define i32 @main(i32 %argc, ptr %argv) {\nentry:\n  call void @foo_llvm_init(i32 %argc, ptr %argv)\n"
+  if entry.ret.kind == TypeKind.Void: entrypoint.add("  call void " & functionName("main") & "()\n")
   elif entry.ret.kind == TypeKind.Failable:
-    main.add("  %result = call " & ty & " " & symbol(entry.name) & "()\n  %memory = alloca " & ty & "\n  store " & ty & " %result, ptr %memory, align 1\n  %error = load ptr, ptr %memory, align 1\n  call void @foo_llvm_finish(ptr %error)\n  %failed = icmp ne ptr %error, null\n  %status = zext i1 %failed to i32\n  ret i32 %status\n")
-  elif entry.ret.kind in {TypeKind.Int, TypeKind.Uint}:
-    main.add("  %result = call " & ty & " " & symbol(entry.name) & "()\n  call void @foo_llvm_finish(ptr null)\n")
-    if ty == "i32": main.add("  ret i32 %result\n")
-    else: main.add("  %exit = " & (if storageWidth(entry.ret) > 32: "trunc" elif entry.ret.kind == TypeKind.Int: "sext" else: "zext") & " " & ty & " %result to i32\n  ret i32 %exit\n")
-  else: raise newException(ValueError, "entry result must be unit, failable or integer")
-  state.functions.add(main & "}")
-  var intrinsicNames = toSeq(state.intrinsics); intrinsicNames.sort()
-  for intrinsic in intrinsicNames:
-    if intrinsic.startsWith("compare:"): state.declarations.add("declare i8 @" & intrinsic[8..^1] & "(ptr, ptr)")
-    else:
-      let ty = intrinsic.split('.')[^1]; state.declarations.add("declare { " & ty & ", i1 } @" & intrinsic & "(" & ty & ", " & ty & ")")
-  result = "; FOO LLVM backend\ntarget triple = " & escape(triple) & "\ntarget datalayout = " & escape(layout) & "\n" & state.globals.join("\n") & "\n" & state.declarations.join("\n") & "\n" & """
-declare void @foo_llvm_panic(ptr)
-declare void @foo_llvm_trace(ptr, ptr, i64)
-declare void @foo_llvm_finish(ptr)
-declare void @foo_llvm_close(ptr)
-declare ptr @foo_llvm_reserve(ptr, i64)
-declare ptr @foo_llvm_alloc(i64)
-declare void @foo_llvm_join(ptr, ptr, ptr)
-declare void @free(ptr)
-""" & state.functions.join("\n") & "\n"
+    entrypoint.add("  %result = call " & llvmType(entry.ret) & " " & functionName("main") & "()\n  %cell = alloca " & llvmType(entry.ret) & ", align " & $measure(entry.ret).alignment &
+      "\n  store " & llvmType(entry.ret) & " %result, ptr %cell, align 1\n  %error = load ptr, ptr %cell, align 1\n  %failed = icmp ne ptr %error, null\n  br i1 %failed, label %failure, label %success\nfailure:\n  call void @foo_llvm_panic(ptr %error)\n  unreachable\nsuccess:\n")
+  else: entrypoint.add("  %ignored = call " & llvmType(entry.ret) & " " & functionName("main") & "()\n")
+  entrypoint.add("  call void @foo_llvm_finish()\n  ret i32 0\n}\n")
+  result = "; FOO LLVM backend: core typed IR\ntarget triple = " & escape(triple) & "\ntarget datalayout = " & escape(dataLayout) & "\n" & globals.join("\n") &
+    "\ndeclare void @foo_llvm_entry_error(ptr)\ndeclare ptr @foo_llvm_alloc(ptr, i64, i64)\ndeclare void @foo_llvm_free(ptr)\ndeclare ptr @foo_llvm_reserve(ptr, i64)\ndeclare void @foo_llvm_close(ptr)\ndeclare void @foo_llvm_panic(ptr)\ndeclare void @foo_llvm_trace(ptr, ptr, i64)\ndeclare void @foo_llvm_init(i32, ptr)\ndeclare void @foo_llvm_finish()\ndeclare void @foo_llvm_join(ptr, ptr, ptr)\n" &
+    toSeq(declarations.values).join("\n") & "\n" & definitions.join("\n") & "\n" & entrypoint
+
+proc emit*(module: Module; triple, dataLayout: string): string =
+  emit(module,triple,dataLayout,newSupport())
