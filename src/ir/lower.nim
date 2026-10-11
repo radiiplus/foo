@@ -179,7 +179,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
   proc fresh(typ: `Type`): Value =
     inc serial
     Value(kind: ValueKind.Reg, name: "tmp_" & $serial, `type`: typ)
-  var sourceSpan = SourceSpan(file: sourcePath, start: functionNode.span.start, `end`: functionNode.span.end)
+  var sourceSpan = SourceSpan(file: (if sourcePath.len > 0: sourcePath else: functionNode.span.file), start: functionNode.span.start, `end`: functionNode.span.end)
   proc emit(instruction: Instruction) =
     if instruction.span.file.len == 0: instruction.span = sourceSpan
     instructions.add(instruction)
@@ -260,7 +260,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
   proc expression(node: ast.Expression; expected: `Type` = nil): Value =
     if node == nil: return Value(kind: ValueKind.Const, name: "null", `type`: expected)
     let savedSpan = sourceSpan
-    sourceSpan = SourceSpan(file: sourcePath, start: node.span.start, `end`: node.span.end)
+    sourceSpan = SourceSpan(file: (if sourcePath.len > 0: sourcePath else: node.span.file), start: node.span.start, `end`: node.span.end)
     defer: sourceSpan = savedSpan
     proc invokeZero(callee: Value; name = "";
         arguments: seq[ast.Expression] = @[]): Value =
@@ -689,7 +689,7 @@ proc lowerFunction(functionNode: ast.Function; signatures: Table[string, `Type`]
     let saved = snapshot(slots)
     scopes.add(@[])
     for statement in body:
-      sourceSpan = SourceSpan(file: sourcePath, start: statement.span.start, `end`: statement.span.end)
+      sourceSpan = SourceSpan(file: (if sourcePath.len > 0: sourcePath else: statement.span.file), start: statement.span.start, `end`: statement.span.end)
       case statement.tag
       of "unsafe":
         statements(ast.Unsafe(statement).body.stmts)
