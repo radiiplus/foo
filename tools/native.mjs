@@ -56,6 +56,7 @@ const embedded = [
   "src/backend/native/service.c", "src/backend/native/service.h",
   "src/backend/native/vulkan.c",
   "src/backend/native/gpu.c",
+  "src/backend/llvm/io.c",
   "src/backend/zig/library.zig", "src/backend/zig/storage.zig",
   "src/backend/zig/stream.zig", "src/backend/zig/service.zig",
   "src/backend/zig/shim.zig", "src/backend/c/runtime.h",
