@@ -29,12 +29,17 @@ From the worktree root:
 ```powershell
 node tools/native.mjs
 nim c -r --cc:clang --path:. --nimcache:.artifacts/ffi-nimcache --out:.artifacts/ffi-test.exe test/backend/llvm/ffi.nim
+nim c -r --cc:clang --path:. --nimcache:.artifacts/gpu-nimcache --out:.artifacts/gpu-test.exe test/backend/llvm/gpu.nim
+nim c -r --cc:clang --path:. --nimcache:.artifacts/effects-nimcache --out:.artifacts/effects-test.exe test/backend/llvm/effects.nim
 .artifacts/native/foo.exe test test/library/services.iv --backend llvm --explain --no-batching
 .artifacts/native/foo.exe test test/library/device.iv --backend llvm --explain --no-batching
 ```
 
 The FFI gate verifies LLVM IR and executes aggregate native calls/callbacks
 at O0/O2, asserting exit code 42 and reciprocal LLVM gates in the emitted IR.
+Both FOO functions and imported native functions can be passed as callbacks.
+Callback identities include layout attributes and variants and terminate on
+recursive types; `test/backend/llvm/abi.nim` guards these cases.
 All language control flow remains LLVM. Explicit native contracts and the
 existing runtime providers are compiled using Clang's native ABI.
 
@@ -51,21 +56,30 @@ The following existing suites have passed with LLVM on this Windows host:
 processes, clocks, threads, task callbacks and native failure injection),
 `clocks`, `virtual`, `mapping`, `ring`, `crypto`, `compression`, `cancellation`,
 `simd`, `resource`, `timer`, `atomic`, `process`, `quotas`, `topology`, `ordering`,
-`platform` and `dylib`. The dynamic-library test used an actual compiled DLL
+`platform`, `dylib`, `instruments`, `issue`, `deadlines`, `socket`, `stream`,
+`positioned`, `pipes`, `ipc`, `auth`, `secrets`, `blake`, `regions` and `hints`.
+The dynamic-library test used an actual compiled DLL
 and configured `FOO_DYLIB_TEST_PATH` so its lifetime checks were executed.
 This is suite execution evidence;
 it does not certify every service operation or every required acceptance case.
 The vector implementation preserves ordered scalar operations and checked
 integer failures. No SIMD performance specialization is claimed.
 
-`device` passes its two existing tests, but their bodies are conditional on
-GPU availability. That result alone does not prove hardware dispatch,
-barriers/atomics/subgroups or portability behavior on a Vulkan device.
+An unconditional availability assertion passed on this host. `device`, `hints`
+and the focused LLVM GPU gate exercised actual Vulkan transfers/dispatch,
+shared-memory barriers, atomics, invalid dispatch and resource ownership.
+The focused gate checks embedded direct SPIR-V and LLVM verification and
+re-executes artifacts at O0/O2. Subgroup execution follows the adapter's
+capability check; unsupported devices take the explicit failure path.
+This is not certification of other GPU adapters or operating systems.
 
 I/O currently remains synchronous. The effect report identifies consecutive
 same-register stream writes, retains their source/result slots, and rejects
 every candidate while differential/partial-write and paired benchmark gates
-are pending. Every intervening instruction and basic-block boundary is a
+are pending. Existing writes call `fflush` individually; combining them would
+change per-operation visibility and error reporting. The focused effects test
+checks source/result slots, different handles and intervening barriers.
+Every intervening instruction and basic-block boundary is a
 barrier. `--no-batching` or `FOO_IO_BATCHING=off` selects the baseline;
 attempting to enable an unqualified path is an actionable error. There are no
 formed batches, measured thresholds or speedup claims yet.
@@ -73,10 +87,12 @@ formed batches, measured thresholds or speedup claims yet.
 ## Outstanding Batch 4 gates
 
 Linux/macOS LLVM execution and broader hardware-target verification;
-unconditional GPU execution/capability tests; complete success/failure,
+additional GPU portability/capability tests; complete success/failure,
 ownership/cleanup/ordering/platform coverage for every audited service family;
 paired batching benchmarks and differential crash/failure tests; and the
 complete C/Zig regression suite. Batch 4 is not complete until those gates pass.
+Selected `services`, `simd`, `issue`, `device` and `compression` regressions
+passed with both C and Zig. The complete native suite is a separate gate.
 
 The io_uring capability probe has Windows and Linux/WSL tests. Linux failure
 injection covers EPERM/EACCES, ENOSYS and resource-limit failures, preserves
