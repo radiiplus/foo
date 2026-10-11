@@ -20,20 +20,22 @@ save();
 async function run(name, command, args, env = {}) {
   console.log(`Checking ${name}`);
   let output = "";
+  const milliseconds = Number(process.env.FOO_RUNTIME_TEST_TIMEOUT || 1800000);
+  if (!Number.isFinite(milliseconds) || milliseconds <= 0)
+    throw Error("FOO_RUNTIME_TEST_TIMEOUT must be a positive number of milliseconds");
   const log = join(directory, `${name}.log`);
   writeFileSync(log, "");
   const code = await new Promise((done, fail) => {
     const child = spawn(command, args, { cwd: root, windowsHide: true,
-      env: { ...process.env, FOO_COMPILER: compiler, FOO_TEST_COMPILER: compiler,
+      detached: !windows, env: { ...process.env, FOO_COMPILER: compiler, FOO_TEST_COMPILER: compiler,
         FOO_IO_BATCHING: "off", ...env }, stdio: ["ignore", "pipe", "pipe"] });
     let timedOut = false;
-    const milliseconds = Number(process.env.FOO_RUNTIME_TEST_TIMEOUT || 1800000);
     const timer = setTimeout(() => {
       timedOut = true;
       appendFileSync(log, `\nAcceptance command timed out after ${milliseconds} ms\n`);
       if (windows) spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"],
         { windowsHide: true, stdio: "ignore" });
-      else child.kill("SIGKILL");
+      else { try { process.kill(-child.pid, "SIGKILL"); } catch { child.kill("SIGKILL"); } }
     }, milliseconds);
     for (const stream of [child.stdout, child.stderr])
       stream.on("data", data => { output += data; appendFileSync(log, data); });

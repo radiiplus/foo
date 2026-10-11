@@ -115,6 +115,11 @@ proc build*(module: Module; mode, outDir: string; options = Native();
     if progress != nil:
       progress("path", options.name, "I/O batches / 0 formed; " & $batching["operations"].getInt() &
         " writes retain their own result/error slots; see " & outDir / "io-batches.json", false)
+      for candidate in batching["candidates"]:
+        progress("strategy", "io-batching", candidate["function"].getStr() & "/" &
+          candidate["block"].getStr() & ": " & $candidate["count"].getInt() &
+          " operations; " & candidate["reason"].getStr() & "; " &
+          candidate["boundary"].getStr(), false)
     let decisions = prepared.optimization
     metadata["semanticDecisions"] = %*{
       "generics": decisions.generics, "bounds": decisions.bounds,
