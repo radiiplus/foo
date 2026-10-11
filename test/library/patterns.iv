@@ -1,5 +1,5 @@
 -- Exercises reusable abstractions built from the current language.
-use codec as codecs.
+use "../../lib/codec.iv" as codecs.
 use contract as contracts.
 use state as states.
 use testing as check.

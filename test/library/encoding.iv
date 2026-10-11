@@ -1,4 +1,4 @@
-use codec as codecs.
+use "../../lib/codec.iv" as codecs.
 use sequence as sequences.
 use testing as check.
 use text as words.
