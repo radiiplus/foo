@@ -6,6 +6,10 @@ import { createServer } from "node:tls";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const selected = process.argv.find(argument => argument.startsWith("--backend="))?.slice(10);
+if (selected && !["c", "zig", "llvm"].includes(selected))
+  throw new Error("--backend must be c, zig or llvm");
+const backends = selected ? [selected] : ["c", "zig"];
 const openssl = process.env.FOO_OPENSSL ?? (process.platform === "win32"
   ? "C:/Program Files/Git/mingw64/bin/openssl.exe" : "openssl");
 const directory = mkdtempSync(join(tmpdir(), "foo-tls-"));
@@ -36,8 +40,8 @@ try {
       const library = join(dirname(openssl), "libssl-3-x64.dll");
       if (existsSync(library)) env.FOO_TLS_LIBRARY = library;
     }
-    for (const [backend, trusted] of [["c", true], ["zig", true],
-      ["c", false], ["zig", false]]) {
+    for (const [backend, trusted] of [true, false].flatMap(trusted =>
+      backends.map(backend => [backend, trusted]))) {
       if (trusted) {
         env.FOO_TLS_TEST = "1";
         env.SSL_CERT_FILE = cert;

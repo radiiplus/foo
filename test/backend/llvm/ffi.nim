@@ -17,7 +17,7 @@ when defined(windows):
   let answer = reg("answer", integer)
   let nativeAnswer = reg("nativeAnswer", integer)
   let module = Module(funcs: @[
-    Function(name: "echoPair", params: @[input], ret: pair, blocks: @[
+    Function(name: "echoPair", public: true, abi: "stdcall", params: @[input], ret: pair, blocks: @[
       node.Block(label: "entry", term: Instruction(kind: InstrKind.Return, value: input))]),
     Function(name: "main", ret: integer, blocks: @[
       node.Block(label: "entry", instrs: @[
@@ -35,9 +35,12 @@ when defined(windows):
 #include <assert.h>
 typedef struct { int32_t left, right; } Pair;
 Pair foreign_identity(Pair value) { return value; }
+Pair __stdcall echoPair(Pair value);
 int32_t foreign_invoke(Pair (*callback)(Pair), Pair value) {
   Pair returned = callback(value);
   assert(returned.left == 19 && returned.right == 23);
+  Pair exported = echoPair(value);
+  assert(exported.left == 19 && exported.right == 23);
   return returned.left + returned.right;
 }
 """)
@@ -51,6 +54,8 @@ int32_t foreign_invoke(Pair (*callback)(Pair), Pair value) {
     doAssert emitted.contains("call void @llvm_")
     doAssert fileExists(directory / "verified.ll")
     doAssert execCmdEx(quoteShell(built.artifact)).exitCode == 42
+    let exports = execCmdEx("llvm-readobj --coff-exports " & quoteShell(built.artifact))
+    doAssert exports.exitCode == 0 and exports.output.contains("Name: echoPair"), exports.output
   echo "LLVM FFI and aggregate callback ABI execute correctly at O0/O2"
 else:
   echo "LLVM runtime ABI execution is qualified only on Windows x64"

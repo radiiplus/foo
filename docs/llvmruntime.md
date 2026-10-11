@@ -13,6 +13,9 @@ Clang/LLD 18.1.3 and the MSVC x64 libraries/Windows SDK. Keep the checkout's
 and `vendor/vulkan` directories intact. Crypto uses the existing sodium/BLAKE3
 providers; compression uses zlib. GPU uses bundled Vulkan headers and volk,
 with a working Vulkan driver required for actual device execution.
+The TLS integration test needs OpenSSL's executable and matching shared
+library; on this Windows host it uses Git's `mingw64/bin/openssl.exe` and
+`libssl-3-x64.dll`. Override `FOO_OPENSSL` and `FOO_TLS_LIBRARY` when needed.
 There is no OpenCL source compiler dependency. LLVM host cross-compilation,
 other host targets remain unqualified and fail explicitly.
 Windows x64 runtime-free PE linking, direct setup-free startup assembly and
@@ -33,11 +36,14 @@ nim c -r --cc:clang --path:. --nimcache:.artifacts/gpu-nimcache --out:.artifacts
 nim c -r --cc:clang --path:. --nimcache:.artifacts/effects-nimcache --out:.artifacts/effects-test.exe test/backend/llvm/effects.nim
 .artifacts/native/foo.exe test test/library/services.iv --backend llvm --explain --no-batching
 .artifacts/native/foo.exe test test/library/device.iv --backend llvm --explain --no-batching
+node test/library/tls.mjs --backend=llvm
 ```
 
 The FFI gate verifies LLVM IR and executes aggregate native calls/callbacks
 at O0/O2, asserting exit code 42 and reciprocal LLVM gates in the emitted IR.
 Both FOO functions and imported native functions can be passed as callbacks.
+The test calls an exported stdcall FOO aggregate function from native code and
+checks its actual PE export symbol.
 Callback identities include layout attributes and variants and terminate on
 recursive types; `test/backend/llvm/abi.nim` guards these cases.
 All language control flow remains LLVM. Explicit native contracts and the
@@ -58,6 +64,8 @@ processes, clocks, threads, task callbacks and native failure injection),
 `simd`, `resource`, `timer`, `atomic`, `process`, `quotas`, `topology`, `ordering`,
 `platform`, `dylib`, `instruments`, `issue`, `deadlines`, `socket`, `stream`,
 `positioned`, `pipes`, `ipc`, `auth`, `secrets`, `blake`, `regions` and `hints`.
+`bloom`, `spans` and `memory` also passed. TLS ran against an actual local
+server with a trusted certificate and with certificate rejection enabled.
 The dynamic-library test used an actual compiled DLL
 and configured `FOO_DYLIB_TEST_PATH` so its lifetime checks were executed.
 This is suite execution evidence;
