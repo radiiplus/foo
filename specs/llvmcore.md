@@ -94,3 +94,17 @@ shared scalar purity proof is the only source of `memory(none)`, with runtime
 and aggregate operations excluded. The qualified version policy remains the
 one in `migration.md`: LLVM/LLD 18.1.3, Nim 2.2.12 and managed Zig 0.16.0 are the
 tested host configuration; additional versions/targets require qualification.
+
+Qualification run on 2026-10-11 in the main Windows x64 workspace: all 17
+script checks passed, including the full 252-observation matrix and 24 typed IR
+observations. The source matrix contains 210 executions (C 68, Zig 70, LLVM 72),
+36 expected shared frontend rejections and six checked legacy compile
+restrictions. The typed IR matrix contains 20 executions and four checked
+legacy block-parameter restrictions. All source-map and emitted-assumption
+checks passed. A fresh compiler also passed 42 focused observations after the
+workspace dependency/build-driver edits and six failed-entry cleanup observations.
+Retained evidence is `.artifacts/llvm-acceptance-final/{acceptance,evidence}.json`;
+complete raw bytes and diagnostics remain under its `core/` and `typed-ir/`.
+The manifest SHA1 is `59FC76681FAD4771919B42C59F92E06BFC36A025`. These results
+qualify the documented fixture coverage; the explicit runtime/ABI/platform
+restrictions above remain in force.
