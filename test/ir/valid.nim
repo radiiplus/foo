@@ -136,3 +136,29 @@ let arrayModule=Module(funcs: @[Function(name: "array",ret: `Type`(kind: TypeKin
 doAssert validate(arrayModule).len == 0
 arrayInstruction.args.setLen(1)
 doAssert validate(arrayModule).anyIt("Construction does not match" in it.msg)
+
+# A long chain of diamonds exercises cross-word dominator sets and merges.
+let denseSeed = Value(kind: ValueKind.Reg, name: "denseSeed", `type`: intType)
+let denseBranch = Value(kind: ValueKind.Const, name: "true", `type`: `Type`(kind: TypeKind.Bool))
+var denseBlocks = @[Block(label: "entry", instrs: @[
+  Instruction(kind: InstrKind.Add, dest: denseSeed,
+    val: Value(kind: ValueKind.Const, name: "1", `type`: intType),
+    val2: Value(kind: ValueKind.Const, name: "2", `type`: intType))],
+  term: Instruction(kind: InstrKind.Jump, label: "join0"))]
+for index in 0..<128:
+  let suffix = $index
+  denseBlocks.add(Block(label: "join" & suffix,
+    term: Instruction(kind: InstrKind.Cjump, cond: denseBranch,
+      trueLabel: "left" & suffix, falseLabel: "right" & suffix)))
+  for side in ["left", "right"]:
+    denseBlocks.add(Block(label: side & suffix,
+      term: Instruction(kind: InstrKind.Jump, label: "join" & $(index + 1))))
+denseBlocks.add(Block(label: "join128", term: Instruction(kind: InstrKind.Return, value: denseSeed)))
+let denseModule = Module(funcs: @[Function(name: "dense", ret: intType, blocks: denseBlocks)])
+doAssert validate(denseModule).len == 0
+# A definition from only one branch must not dominate the common exit.
+denseBlocks[0].instrs.setLen(0)
+denseBlocks[2].instrs.add(Instruction(kind: InstrKind.Add, dest: denseSeed,
+  val: Value(kind: ValueKind.Const, name: "1", `type`: intType),
+  val2: Value(kind: ValueKind.Const, name: "2", `type`: intType)))
+doAssert validate(denseModule).anyIt("does not dominate" in it.msg)

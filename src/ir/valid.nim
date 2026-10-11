@@ -299,26 +299,42 @@ proc validate*(module: Module): seq[ValidationError] =
       elif term != nil and term.kind == InstrKind.Cjump:
         queue.add(term.trueLabel); queue.add(term.falseLabel)
 
-    var dominators = initTable[string, HashSet[string]]()
-    for basicBlock in function.blocks:
+    # Dense block IDs make intersection proportional to words, not repeated
+    # string hashing/copying for each candidate dominator. Keep the same fixed
+    # point and unreachable-block semantics as the set formulation.
+    var blockIds = initTable[string,int]()
+    for index, basicBlock in function.blocks: blockIds[basicBlock.label] = index
+    let words = (function.blocks.len + 63) div 64
+    var reachableBits = newSeq[uint64](words)
+    for label in reachable:
+      let id = blockIds[label]
+      reachableBits[id div 64] = reachableBits[id div 64] or (1'u64 shl (id mod 64))
+    var dominators = newSeq[seq[uint64]](function.blocks.len)
+    for index, basicBlock in function.blocks:
+      dominators[index] = newSeq[uint64](words)
       if basicBlock.label == entry or basicBlock.label notin reachable:
-        dominators[basicBlock.label] = toHashSet([basicBlock.label])
+        dominators[index][index div 64] = 1'u64 shl (index mod 64)
       else:
-        dominators[basicBlock.label] = reachable
+        for word in 0..<words: dominators[index][word] = reachableBits[word]
     var changed = true
     while changed:
       changed = false
-      for basicBlock in function.blocks:
+      for index, basicBlock in function.blocks:
         if basicBlock.label == entry or basicBlock.label notin reachable: continue
         let incoming = predecessors[basicBlock.label].toSeq.filterIt(it in reachable)
-        var next = initHashSet[string]()
+        var next = newSeq[uint64](words)
         if incoming.len > 0:
-          for candidate in dominators[incoming[0]]:
-            if incoming.allIt(candidate in dominators[it]): next.incl(candidate)
-        next.incl(basicBlock.label)
-        if next != dominators[basicBlock.label]:
-          dominators[basicBlock.label] = next
+          for word in 0..<words:
+            next[word] = dominators[blockIds[incoming[0]]][word]
+            for predecessor in incoming:
+              next[word] = next[word] and dominators[blockIds[predecessor]][word]
+        next[index div 64] = next[index div 64] or (1'u64 shl (index mod 64))
+        if next != dominators[index]:
+          dominators[index] = next
           changed = true
+    proc dominates(definition, owner: string): bool =
+      let id = blockIds[definition]
+      (dominators[blockIds[owner]][id div 64] and (1'u64 shl (id mod 64))) != 0
 
     proc use(value: Value; owner: string; index: int) =
       checkType(value.`type`)
@@ -342,7 +358,7 @@ proc validate*(module: Module): seq[ValidationError] =
       let definition = definitions[value.name]
       if not same(definition.typ, value.`type`): fail("Register %" & value.name & " changes type")
       if (definition.owner == owner and definition.index >= index) or
-          (definition.owner.len > 0 and definition.owner != owner and definition.owner notin dominators[owner]):
+          (definition.owner.len > 0 and definition.owner != owner and not dominates(definition.owner,owner)):
         fail("Definition of %" & value.name & " does not dominate its use in " & owner)
 
     proc inspect(instruction: Instruction; owner: string; index: int) =
