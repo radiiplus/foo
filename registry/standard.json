@@ -1,6 +1,6 @@
 {
   "schema": "foo.standard-catalog/v1",
-  "revision": "8c2531b6f34bae87ca29963cad0207494d0ecdb23c346d4c0a2b1d763971f1de",
+  "revision": "98bfba81ad6c7d8f996b9a1747d02c43c7f00313b40d7ece2eb0fcec22993519",
   "count": 74,
   "entries": [
     {
@@ -209,7 +209,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "exports": [
         "decode",
         "decoded",
@@ -870,7 +870,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "exports": [
         "accessed",
         "block",
@@ -999,7 +999,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "e2030980792c4eea9c8d0c7dddd93ab5287c3a27",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "exports": [
         "copy",
         "fill",
@@ -1116,7 +1116,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "exports": [
         "build",
         "create",
@@ -1443,7 +1443,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "e2030980792c4eea9c8d0c7dddd93ab5287c3a27",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "exports": [
         "join",
         "join_into"
@@ -2364,7 +2364,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "exports": [
         "all",
         "any",
@@ -2897,7 +2897,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "exports": [
         "concatenate",
         "contains",
@@ -3984,7 +3984,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "install": "use binary.",
       "dependencies": [],
       "readme": [
@@ -5505,7 +5505,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "install": "use file.",
       "dependencies": [],
       "readme": [
@@ -5959,7 +5959,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "e2030980792c4eea9c8d0c7dddd93ab5287c3a27",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "install": "use freestanding.",
       "dependencies": [],
       "readme": [
@@ -6335,7 +6335,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "install": "use heap.",
       "dependencies": [],
       "readme": [
@@ -7162,7 +7162,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "e2030980792c4eea9c8d0c7dddd93ab5287c3a27",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "install": "use joining.",
       "dependencies": [],
       "readme": [
@@ -9591,7 +9591,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "install": "use sequence.",
       "dependencies": [],
       "readme": [
@@ -10996,7 +10996,7 @@
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "7f2bdac21f33e94da7b55a8afbf5967dc6717f8a",
       "install": "use text.",
       "dependencies": [],
       "readme": [
