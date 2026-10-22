@@ -1,5 +1,0 @@
-function previous(value integer 9) giving integer 9 { give value subtract 1. }
-start {
-  constant minimum of type integer 9 is 0 subtract 255 subtract 1.
-  previous(minimum).
-}

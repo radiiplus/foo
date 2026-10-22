@@ -1,0 +1,5 @@
+function main giving integer 32 {
+  dynamic value of type unsigned 2 is 3.
+  set value to value plus 1.
+  give 0.
+}

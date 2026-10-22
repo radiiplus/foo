@@ -13,5 +13,50 @@ public function decode(source sequence of constant byte, offset unsigned) giving
 }
 
 -- Fixed-width encoding accepts 1..8 bytes and "little" or "big" order.
-public use "binary" function fixed(value unsigned, width unsigned, order text) giving failable sequence of byte.
-public use "binary" function parse(source sequence of constant byte, offset unsigned, width unsigned, order text) giving failable unsigned.
+use "binary" function octet(value unsigned) giving failable byte.
+use "binary" function widen(value byte) giving unsigned.
+use sequence as items.
+public function fixed(value unsigned, width unsigned, order text) giving failable sequence of byte {
+  when width less than 1 or width greater than 8 or (order is not "little" and order is not "big") {
+    give fail(Error.InvalidInput).
+  }
+  when width less than 8 {
+    dynamic limit of type unsigned is 1.
+    dynamic index of type unsigned is 0.
+    while index less than width {
+      set limit to limit multiply 256.
+      increase index by 1.
+    }
+    when value greater than or equal to limit { give fail(Error.InvalidInput). }
+  }
+  dynamic output is items.sized[byte](width) try.
+  after error { items.release[byte](output) fallback nothing. }
+  dynamic rest is value.
+  dynamic index of type unsigned is 0.
+  while index less than width {
+    dynamic slot is index.
+    when order is "big" { set slot to width subtract index subtract 1. }
+    set output at slot to octet(rest remainder 256) try.
+    set rest to rest divide 256.
+    increase index by 1.
+  }
+  give output.
+}
+public function parse(source sequence of constant byte, offset unsigned, width unsigned, order text) giving failable unsigned {
+  when width less than 1 or width greater than 8 or (order is not "little" and order is not "big") {
+    give fail(Error.InvalidInput).
+  }
+  constant extent is items.extent[byte](source).
+  when offset greater than extent or width greater than extent subtract offset {
+    give fail(Error.Bounds).
+  }
+  dynamic value of type unsigned is 0.
+  dynamic index of type unsigned is 0.
+  while index less than width {
+    dynamic slot is index.
+    when order is "little" { set slot to width subtract index subtract 1. }
+    set value to value multiply 256 plus widen(source at (offset plus slot)).
+    increase index by 1.
+  }
+  give value.
+}

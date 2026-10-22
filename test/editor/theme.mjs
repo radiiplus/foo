@@ -1,17 +1,20 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync as read } from 'node:fs';
 import { createRequire } from 'node:module';
 import tm from 'vscode-textmate';
 import onig from 'vscode-oniguruma';
 
 const require = createRequire(import.meta.url);
-const manifest = JSON.parse(readFileSync(new URL('../../editors/textmate/package.json', import.meta.url), 'utf8'));
+const manifest = JSON.parse(read(new URL('../../editors/textmate/package.json', import.meta.url), 'utf8'));
 const rules = manifest.contributes.configurationDefaults['editor.tokenColorCustomizations'].textMateRules;
-for (const rule of rules) for (const scope of rule.scope) assert(scope.startsWith('source.foo '), `Color override leaks outside FOO: ${scope}`);
+for (const rule of rules) for (const scope of rule.scope) assert(
+  scope.startsWith('source.foo ') || scope.startsWith('source.foo.config ') ||
+    scope.startsWith('source.foo.ivl '),
+  `Color override leaks outside FOO: ${scope}`);
 for (const scope of Object.keys(manifest.contributes.configurationDefaults['editor.semanticTokenColorCustomizations'].rules)) assert(scope.endsWith(':foo'));
 const path = new URL('../../editors/textmate/grammars/foo.json', import.meta.url);
-const raw = tm.parseRawGrammar(readFileSync(path, 'utf8'), path.pathname);
-await onig.loadWASM(readFileSync(require.resolve('vscode-oniguruma/release/onig.wasm')));
+const raw = tm.parseRawGrammar(read(path, 'utf8'), path.pathname);
+await onig.loadWASM(read(require.resolve('vscode-oniguruma/release/onig.wasm')));
 const registry = new tm.Registry({
   theme: { settings: [{ settings: { foreground: '#D4D4D4', background: '#1E1E1E' } },
     { scope: ['storage.type.foo', 'storage.modifier.type.foo', 'support.type.primitive.foo', 'entity.name.function.foo', 'constant.numeric.foo'], settings: { foreground: '#123456' } },

@@ -1,0 +1,31 @@
+use table as fast.
+use sequence as items.
+use system as machine.
+use testing as check.
+
+constant cache is fast.create[unsigned] try.
+after { fast.close[unsigned](cache) fallback nothing. }
+dynamic keys is items.sized[text](8) try.
+after { items.release[text](keys) fallback nothing. }
+set keys at 0 to "amber".
+set keys at 1 to "blue".
+set keys at 2 to "cyan".
+set keys at 3 to "dusk".
+set keys at 4 to "ember".
+set keys at 5 to "frost".
+set keys at 6 to "green".
+set keys at 7 to "haze".
+dynamic key of type unsigned is 0.
+while key less than 8 {
+  fast.put[unsigned](cache, keys at key, key plus 1) try.
+  increase key by 1.
+}
+dynamic limit of type unsigned is 1`000`000.
+when machine.cores try greater than 0 { increase limit by 1. }
+dynamic index of type unsigned is 0.
+dynamic checksum of type unsigned is 0.
+while index less than limit {
+  set checksum to checksum plus (fast.get[unsigned](cache, keys at (index remainder 8)) try).
+  increase index by 1.
+}
+check.number(checksum, 4`500`001).

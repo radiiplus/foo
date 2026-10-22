@@ -1,0 +1,15 @@
+use codec as codecs.
+use "text" function release(content text) giving failable nothing.
+use testing as check.
+define Pair as record { value of type integer 9. }.
+use "codec" function encode(value Pair) giving failable text.
+use "codec" function decode(source text) giving failable Pair.
+start {
+  constant serializer of type codecs.codec[Pair] is codecs.codec[Pair](encode,decode).
+  constant encoded is serializer.encode(Pair(42)) try.
+  after { release(encoded) fallback nothing. }
+  check.same(encoded,"{\"value\":42}").
+  constant decoded is serializer.decode(encoded) try.
+  check.expect(decoded.value is 42).
+  display encoded.
+}

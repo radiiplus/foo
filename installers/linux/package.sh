@@ -35,8 +35,13 @@ if ! command -v readelf >/dev/null 2>&1; then
   echo "readelf is required to validate Linux release binaries" >&2
   exit 1
 fi
-if ! LC_ALL=C readelf -h "$source_dir/bin/foo" | grep -F "Machine:" | grep -Fq "$expected_machine"; then
+header=$(LC_ALL=C readelf -h "$source_dir/bin/foo")
+if ! printf '%s\n' "$header" | grep -F "Machine:" | grep -Fq "$expected_machine"; then
   echo "binary architecture does not match Debian architecture $architecture: $source_dir/bin/foo" >&2
+  exit 1
+fi
+if ! printf '%s\n' "$header" | grep -E 'Type:.*(EXEC|DYN)' >/dev/null; then
+  echo "Debian compiler must be an executable ELF, not an object or archive: $source_dir/bin/foo" >&2
   exit 1
 fi
 
@@ -46,6 +51,7 @@ install -d \
   "$package_root/usr/bin" \
   "$package_root/usr/share/applications" \
   "$package_root/usr/share/doc/foo" \
+  "$package_root/usr/share/icons/hicolor/256x256/apps" \
   "$package_root/usr/share/icons/hicolor/scalable/apps" \
   "$package_root/usr/share/metainfo" \
   "$output_dir"
@@ -53,10 +59,17 @@ install -d \
 cp -a "$source_dir/." "$package_root/opt/foo/"
 find "$package_root/opt/foo" -type d -exec chmod 0755 {} +
 find "$package_root/opt/foo" -type f -exec chmod 0644 {} +
-chmod 0755 "$package_root/opt/foo/bin/foo"
+for tool in foo qbe tcc arm64-tcc qbe-as qbe-as-arm64 qbe-as-riscv64 \
+  qbe-ld qbe-ld-arm64 qbe-ld-riscv64; do
+  if [ -f "$package_root/opt/foo/bin/$tool" ]; then
+    chmod 0755 "$package_root/opt/foo/bin/$tool"
+  fi
+done
 ln -s /opt/foo/bin/foo "$package_root/usr/bin/foo"
 install -m 0644 "$source_dir/assets/dark.svg" \
   "$package_root/usr/share/icons/hicolor/scalable/apps/io.github.radiiplus.foo.svg"
+install -m 0644 "$(dirname "$0")/../assets/installer.png" \
+  "$package_root/usr/share/icons/hicolor/256x256/apps/io.github.radiiplus.foo.png"
 install -m 0644 "$(dirname "$0")/io.github.radiiplus.foo.desktop" \
   "$package_root/usr/share/applications/io.github.radiiplus.foo.desktop"
 install -m 0644 "$source_dir/LICENSE" "$package_root/usr/share/doc/foo/copyright"
@@ -73,10 +86,14 @@ Architecture: $architecture
 Installed-Size: $installed_size
 Maintainer: radiiplus <radiiplus@users.noreply.github.com>
 Homepage: https://github.com/radiiplus/foo
-Depends: libc6, ca-certificates, tar, xz-utils
+Depends: libc6, libssl3, ca-certificates, tar, xz-utils, nodejs
 Description: Readable systems programming language
  FOO checks, formats, tests, builds, and runs sentence-like .iv programs,
- with C and Zig available as native output backends.
+ with QBE as its native output backend.
+ .
+ License: MIT OR Apache-2.0. FOO runs with the current user's filesystem
+ and network access; it is not sandboxed. Package and toolchain commands
+ may download dependencies. No privileged service is installed.
 EOF
 
 sed "s/@VERSION@/$version/g" "$(dirname "$0")/io.github.radiiplus.foo.metainfo.xml.in" \
@@ -85,33 +102,19 @@ chmod 0644 "$package_root/DEBIAN/control" \
   "$package_root/usr/share/applications/io.github.radiiplus.foo.desktop" \
   "$package_root/usr/share/metainfo/io.github.radiiplus.foo.metainfo.xml"
 
-cat > "$package_root/DEBIAN/postinst" <<'EOF'
-#!/bin/sh
-set -u
-
-if [ "${FOO_SKIP_TOOLCHAIN_INSTALL:-}" != "1" ]; then
-  echo "Provisioning the FOO Zig backend..."
-  if ! FOO_HOME=/opt/foo /opt/foo/bin/foo toolchain install base; then
-    echo "FOO: backend provisioning was deferred; first use will retry it." >&2
-  fi
-fi
-exit 0
-EOF
-
 cat > "$package_root/DEBIAN/postrm" <<'EOF'
 #!/bin/sh
 set -u
 
 case "${1:-}" in
   remove|purge)
-    rm -rf /opt/foo/.artifacts/toolchain
     rmdir /opt/foo/.artifacts /opt/foo 2>/dev/null || true
     ;;
 esac
 exit 0
 EOF
 
-chmod 0755 "$package_root/DEBIAN/postinst" "$package_root/DEBIAN/postrm"
+chmod 0755 "$package_root/DEBIAN/postrm"
 
 fakeroot dpkg-deb --build --root-owner-group "$package_root" \
   "$output_dir/foo-$release_arch.deb"

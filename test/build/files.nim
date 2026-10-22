@@ -23,7 +23,8 @@ doAssert destination(root, "target", @["src", "test", "benchmark"]) ==
   absolutePath(root / "target")
 doAssert destination(root, "dist/native", @["src"]) ==
   absolutePath(root / "dist" / "native")
-for invalid in ["../outside", ".artifacts/output", "src/output", "project.json"]:
+for invalid in ["../outside", ".artifacts/output", "src/output",
+    "project.ivc", "foo.ivl", "project.ivl"]:
   expect ValueError:
     discard destination(root, invalid, @["src"])
 createDir(root / "dist")
@@ -44,5 +45,9 @@ write(stable, "same")
 doAssert getLastModificationTime(stable) == before
 write(stable, "changed")
 doAssert readFile(stable) == "changed"
+erase(root / "generated")
+doAssert not dirExists(root / "generated")
+doAssert fileExists(root / "src" / "main.iv")
+erase(root / "generated") # Missing cleanup is still a no-op.
 removeDir(root)
 echo "build files parity: ok"

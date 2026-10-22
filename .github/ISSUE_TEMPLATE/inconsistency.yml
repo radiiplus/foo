@@ -1,5 +1,5 @@
 name: Implementation inconsistency
-description: Report disagreement between documentation, standard library declarations, C, or Zig.
+description: Report disagreement between documentation, standard library declarations, or compiler targets.
 title: "[Inconsistency] "
 body:
   - type: dropdown
@@ -11,8 +11,9 @@ body:
         - Language guide
         - Language specification
         - Standard library declaration
-        - C backend
-        - Zig backend
+        - QBE native backend
+        - WASI or WebAssembly backend
+        - Shader backend
         - VS Code extension or LSP
         - Installed toolchain and hosted website
     validations:

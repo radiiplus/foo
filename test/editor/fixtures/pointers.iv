@@ -1,0 +1,1 @@
+define Buffer as record { data of type pointer to byte. }.

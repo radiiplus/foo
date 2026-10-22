@@ -1,0 +1,12 @@
+use system as machine.
+use testing as check.
+
+dynamic limit of type unsigned is 5`000`000.
+when machine.cores try greater than 0 { increase limit by 1. }
+dynamic index of type unsigned is 0.
+dynamic checksum of type decimal is 0.0.
+while index less than limit {
+  set checksum to checksum plus 1.5.
+  increase index by 1.
+}
+check.expect(checksum is 7`500`001.5).

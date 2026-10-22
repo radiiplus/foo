@@ -2,10 +2,13 @@ import std/strutils
 import std/sets
 import ./node
 import ../sema/bindings
+import ../diag/engine
+import ../lex/lexer
+import ./parser
 
 proc indent(depth: int): string = "  ".repeat(depth)
 
-proc escapeText(text: string): string =
+proc escape(text: string): string =
   for ch in text:
     case ch
     of '"': result.add("\\\"")
@@ -17,18 +20,18 @@ proc escapeText(text: string): string =
     else: result.add(ch)
 
 proc text(value: string): string =
-  if '\n' notin value: return "\"" & escapeText(value) & "\""
+  if '\n' notin value: return "\"" & escape(value) & "\""
   var pieces: seq[string]
   let parts = value.split('\n')
   for index in 0 ..< parts.len:
     let part = parts[index]
     if index > 0: pieces.add("newline")
-    if part.len > 0: pieces.add("\"" & escapeText(part) & "\"")
+    if part.len > 0: pieces.add("\"" & escape(part) & "\"")
   if pieces.len == 1: pieces[0] else: "(" & pieces.join(" plus ") & ")"
 
 proc print*(value: Node; depth: int = 0): string
 
-proc printAttributes(attributes: seq[string]): string =
+proc attributes(attributes: seq[string]): string =
   for attribute in attributes:
     if attribute notin ["start", "interrupt", "naked", "noinline", "volatile",
         "repr(C)"] and not attribute.startsWith("align(") and
@@ -37,7 +40,7 @@ proc printAttributes(attributes: seq[string]): string =
         not attribute.startsWith("releases("):
       result.add("#[" & attribute & "] ")
 
-proc functionClauses(attributes: seq[string]): string =
+proc clauses(attributes: seq[string]): string =
   if "start" in attributes: result.add(" for startup")
   if "interrupt" in attributes: result.add(" for interrupt")
   if "naked" in attributes: result.add(" without setup")
@@ -51,13 +54,13 @@ proc functionClauses(attributes: seq[string]): string =
     elif attribute.startsWith("releases(") and attribute.endsWith(")"):
       result.add(" releasing " & attribute[9 ..< attribute.len - 1])
 
-proc printTypeParams(params: seq[TypeParam]): string =
+proc generics(params: seq[Generic]): string =
   if params.len == 0: return ""
   var values: seq[string]
   for param in params: values.add(param.name.text)
   "[" & values.join(", ") & "]"
 
-proc constraints(params: seq[TypeParam]; clauses: seq[Constraint]): string =
+proc constraints(params: seq[Generic]; clauses: seq[Constraint]): string =
   var seen = initHashSet[string]()
   var values: seq[string]
   for param in params:
@@ -69,7 +72,7 @@ proc constraints(params: seq[TypeParam]; clauses: seq[Constraint]): string =
     if value notin seen: seen.incl(value); values.add(value)
   if values.len > 0: " where " & values.join(", ") else: ""
 
-proc printBlock(value: Block; depth: int): string =
+proc body(value: Block; depth: int): string =
   if value.stmts.len == 0: return "{ }"
   var statements: seq[string]
   for statement in value.stmts: statements.add(print(statement, depth + 1))
@@ -86,13 +89,13 @@ proc print*(value: Node; depth: int = 0): string =
     var statements: seq[string]
     for statement in Unit(value).body.stmts: statements.add(print(statement, depth))
     result = statements.join("\n")
-  of "test": result = indent(depth) & "test " & text(TestBlock(value).name.value) & " " & printBlock(TestBlock(value).body, depth)
-  of "eval": result = indent(depth) & "eval " & printBlock(EvalBlock(value).body, depth)
+  of "test": result = indent(depth) & "test " & text(Test(value).name.value) & " " & body(Test(value).body, depth)
+  of "eval": result = indent(depth) & "eval " & body(Evaluation(value).body, depth)
   of "verify": result = indent(depth) & "verify " & print(Verify(value).condition) & "."
   of "reflect": result = "reflect[" & print(Reflect(value).`type`) & "]"
   of "embed":
     let item = Embed(value)
-    result = "embed" & (if item.`type` != nil: "[" & print(item.`type`) & "]" else: "") & "(\"" & escapeText(item.path) & "\")"
+    result = "embed" & (if item.`type` != nil: "[" & print(item.`type`) & "]" else: "") & "(\"" & escape(item.path) & "\")"
   of "constant":
     let item = Constant(value)
     result = indent(depth) & (if item.public: "public " else: "") & "constant " & item.name.text &
@@ -102,29 +105,31 @@ proc print*(value: Node; depth: int = 0): string =
     let item = Mutable(value)
     result = indent(depth) & (if item.public: "public " else: "") & "dynamic " & item.name.text &
       (if item.`type` != nil: " of type " & print(item.`type`) else: "") &
+      (if item.alignment > 0: " aligned to " & $item.alignment else: "") &
+      (if item.section.len > 0: " in section \"" & escape(item.section) & "\"" else: "") &
       (if item.plural: " are " else: " is ") & print(item.value) & "."
   of "destructure":
     let item = Destructure(value)
     var bindings: seq[string]
     for binding in item.bindings: bindings.add(binding.text)
-    result = indent(depth) & "constant " & print(item.recordType) & "(" &
+    result = indent(depth) & "constant " & print(item.record) & "(" &
       bindings.join(", ") & ") is " & print(item.value) & "."
   of "function":
     let item = Function(value)
     var params: seq[string]
     for param in item.params: params.add(print(param))
     let name = if item.name.text == "start": "start" else: "function " & item.name.text
-    result = indent(depth) & printAttributes(item.attributes) & (if item.public: "public " else: "") & name &
-      printTypeParams(item.typeParams) & (if params.len > 0: "(" & params.join(", ") & ")" else: "") &
+    result = indent(depth) & attributes(item.attributes) & (if item.public: "public " else: "") & name &
+      generics(item.generics) & (if params.len > 0: "(" & params.join(", ") & ")" else: "") &
       (if item.guard != nil: " when " & print(item.guard) else: "") &
-      (if item.returnType != nil: " giving " & print(item.returnType) else: "") &
-      (if item.abi.len > 0: " for " & item.abi else: "") & functionClauses(item.attributes) &
-      constraints(item.typeParams, item.constraints) & " " & printBlock(item.body, depth)
+      (if item.returns != nil: " giving " & print(item.returns) else: "") &
+      (if item.abi.len > 0: " for " & item.abi else: "") & clauses(item.attributes) &
+      constraints(item.generics, item.constraints) & " " & body(item.body, depth)
   of "alias":
     let item = Alias(value)
     var body = print(item.body, depth)
-    result = indent(depth) & printAttributes(item.attributes) & (if item.public: "public " else: "") & "define " & item.name.text &
-      printTypeParams(item.typeParams) & " as " & body
+    result = indent(depth) & attributes(item.attributes) & (if item.public: "public " else: "") & "define " & item.name.text &
+      generics(item.generics) & " as " & body
     for attribute in item.attributes:
       if attribute.startsWith("align(") and attribute.endsWith(")"):
         result.add(" aligned to " & attribute[6 ..< attribute.len - 1])
@@ -132,33 +137,33 @@ proc print*(value: Node; depth: int = 0): string =
       var traits: seq[string]
       for trait in item.derives.traits: traits.add(trait.text)
       result.add(" derives " & traits.join(", "))
-    result.add(constraints(item.typeParams, item.constraints) & ".")
+    result.add(constraints(item.generics, item.constraints) & ".")
   of "use":
     let item = Use(value)
-    let target = if item.path.len > 0: "\"" & escapeText(item.path) & "\"" else: item.name.text
+    let target = if item.path.len > 0: "\"" & escape(item.path) & "\"" else: item.name.text
     result = indent(depth) & (if item.public: "public " else: "") & "use " & target & (if item.alias != nil: " as " & item.alias.text else: "") & "."
   of "extern-function":
-    let item = ExternFunction(value)
+    let item = External(value)
     var params: seq[string]
     for param in item.params: params.add(print(param))
     let prefix = indent(depth) & (if item.public: "public " else: "")
     if item.native.code.len > 0:
       result = prefix & "native" & (if item.native.substrate == "foo": "" else: " " & item.native.substrate) & " function " & item.name.text &
-        (if params.len > 0: "(" & params.join(", ") & ")" else: "") & " giving " & print(item.returnType) & " {" & item.native.code & "}"
+        (if params.len > 0: "(" & params.join(", ") & ")" else: "") & " giving " & print(item.returns) & " {" & item.native.code & "}"
     else:
-      result = prefix & "use \"" & escapeText(provider(item.abi)) & "\" function " & item.name.text & printTypeParams(item.typeParams) &
-        (if params.len > 0: "(" & params.join(", ") & ")" else: "") & " giving " & print(item.returnType) & "."
-  of "c-import": result = indent(depth) & "use c \"" & escapeText(CImport(value).header) & "\"."
+      result = prefix & "use \"" & escape(provider(item.abi)) & "\" function " & item.name.text & generics(item.generics) &
+        (if params.len > 0: "(" & params.join(", ") & ")" else: "") & " giving " & print(item.returns) & "."
+  of "c-import": result = indent(depth) & "use c \"" & escape(CImport(value).header) & "\"."
   of "native":
     let item = Native(value)
     result = indent(depth) & "native" & (if item.substrate == "foo": "" else: " " & item.substrate) & " {" & item.code & "}"
   of "give": result = indent(depth) & "give" & (if Give(value).value != nil: " " & print(Give(value).value) else: "") & "."
   of "when":
     let item = `When`(value)
-    result = indent(depth) & "when " & print(item.cond) & " " & printBlock(item.`then`, depth)
+    result = indent(depth) & "when " & print(item.cond) & " " & body(item.`then`, depth)
     if item.`else` != nil: result.add(" otherwise " & print(item.`else`, depth).strip())
-  of "while": result = indent(depth) & "while " & print(`While`(value).cond) & " " & printBlock(`While`(value).body, depth)
-  of "for": result = indent(depth) & "for each " & `For`(value).`bind`.text & " in " & print(`For`(value).iter) & " " & printBlock(`For`(value).body, depth)
+  of "while": result = indent(depth) & "while " & print(`While`(value).cond) & " " & body(`While`(value).body, depth)
+  of "for": result = indent(depth) & "for each " & `For`(value).`bind`.text & " in " & print(`For`(value).iter) & " " & body(`For`(value).body, depth)
   of "match":
     let item = Match(value)
     var cases: seq[string]
@@ -169,8 +174,8 @@ proc print*(value: Node; depth: int = 0): string =
   of "defer":
     let item = `Defer`(value)
     result = indent(depth) & "after" & (if item.error: " error" else: "") & " "
-    if item.body.tag == "block": result.add(printBlock(Block(item.body), depth)) else: result.add("{ " & print(item.body) & ". }")
-  of "unsafe": result = indent(depth) & "unsafe " & printBlock(Unsafe(value).body, depth)
+    if item.body.tag == "block": result.add(body(Block(item.body), depth)) else: result.add("{ " & print(item.body) & ". }")
+  of "unsafe": result = indent(depth) & "unsafe " & body(Unsafe(value).body, depth)
   of "action":
     let item = Action(value)
     if item.value != nil: result = indent(depth) & print(item.value) & "."
@@ -214,9 +219,9 @@ proc print*(value: Node; depth: int = 0): string =
     for parameter in item.params: params.add(print(parameter))
     for capture in item.captures: captures.add(capture.text)
     result = "function" & (if params.len > 0: "(" & params.join(", ") & ")" else: "") &
-      (if item.returnType != nil: " giving " & print(item.returnType) else: "") &
+      (if item.returns != nil: " giving " & print(item.returns) else: "") &
       (if captures.len > 0: " using (" & captures.join(", ") & ")" else: "") &
-      " " & printBlock(item.body, depth)
+      " " & body(item.body, depth)
   of "unary":
     let item = Unary(value)
     result = if item.op == "try": print(item.operand) & " try" else: item.op & " " & print(item.operand)
@@ -250,15 +255,15 @@ proc print*(value: Node; depth: int = 0): string =
   of "named": result = Named(value).name.text
   of "generic-inst":
     var args: seq[string]
-    for arg in GenericInst(value).args: args.add(print(arg))
-    result = GenericInst(value).name.text & "[" & args.join(", ") & "]"
+    for arg in Instantiation(value).args: args.add(print(arg))
+    result = Instantiation(value).name.text & "[" & args.join(", ") & "]"
   of "vector": result = "vector[" & Vector(value).length & ", " & print(Vector(value).elem) & "]"
   of "function-type":
     var params: seq[string]
-    for param in FunctionType(value).params: params.add(print(param))
+    for param in Signature(value).params: params.add(print(param))
     result = "function" & (if params.len > 0: " taking (" & params.join(", ") & ")" else: "") &
-      " giving " & print(FunctionType(value).ret) &
-      (if FunctionType(value).abi.len > 0: " for " & FunctionType(value).abi else: "")
+      " giving " & print(Signature(value).ret) &
+      (if Signature(value).abi.len > 0: " for " & Signature(value).abi else: "")
   of "parameter":
     let item = Parameter(value)
     result = item.name.text & (if item.variadic: " are sequence of " else: " ") &
@@ -266,10 +271,10 @@ proc print*(value: Node; depth: int = 0): string =
   of "constraint": result = Constraint(value).subject.text & " is " & Constraint(value).trait.text
   of "case":
     let item = `Case`(value)
-    result = indent(depth) & "case " & print(item.pattern) & (if item.guard != nil: " when " & print(item.guard) else: "") & " " & printBlock(item.body, depth)
-  of "block": result = printBlock(Block(value), depth)
+    result = indent(depth) & "case " & print(item.pattern) & (if item.guard != nil: " when " & print(item.guard) else: "") & " " & body(item.body, depth)
+  of "block": result = body(Block(value), depth)
   of "wildcard": result = "anything"
-  of "variant-pattern": result = VariantPattern(value).name.text & "(" & (if VariantPattern(value).binding != nil: VariantPattern(value).binding.text else: "") & ")"
+  of "variant-pattern": result = Arm(value).name.text & "(" & (if Arm(value).binding != nil: Arm(value).binding.text else: "") & ")"
   of "record":
     let item = Record(value)
     let prefix = if item.layout.len > 0: item.layout & " " else: ""
@@ -292,9 +297,44 @@ proc print*(value: Node; depth: int = 0): string =
   of "opaque": result = "opaque"
   of "member":
     let item = Member(value)
-    result = indent(depth) & printAttributes(item.attributes) & item.name.text &
+    result = indent(depth) & attributes(item.attributes) & item.name.text &
       " of type " & print(item.`type`) &
       (if "volatile" in item.attributes: " with exact access" else: "") & "."
   of "variant": result = indent(depth) & Variant(value).name.text & (if Variant(value).payload != nil: "(" & print(Variant(value).payload) & ")" else: "") & (if Variant(value).value != nil: " is " & print(Variant(value).value) else: "") & "."
   of "broken": result = "-- broken"
   else: result = ""
+
+type Comment = object
+  start: int
+  text: string
+
+proc comments(source: string): seq[Comment] =
+  var offset = 0
+  for line in source.splitLines:
+    let trimmed = line.strip()
+    if trimmed.startsWith("--"):
+      result.add(Comment(start: offset + line.find('-'), text: trimmed))
+    offset += line.len + 1
+
+proc format*(program: Program; source = ""): string =
+  if source.len == 0:
+    return print(program).strip() & "\n"
+  let found = comments(source)
+  var cursor = 0
+  var blocks: seq[string] = @[]
+  for unit in program.units:
+    for statement in unit.body.stmts:
+      var prefix = ""
+      for comment in found:
+        if comment.start >= cursor and comment.start < statement.span.start:
+          prefix.add(comment.text & "\n")
+      prefix.add(print(statement, 0))
+      blocks.add(prefix)
+      cursor = statement.span.`end`
+  result = blocks.join("\n").strip() & "\n"
+
+proc format*(source: string): string =
+  let diagnostics = engine()
+  let program = parser(lexer(source, diagnostics).lex(), diagnostics).parse()
+  if diagnostics.failed: raise newException(ValueError, "Cannot format invalid source")
+  format(program, source)

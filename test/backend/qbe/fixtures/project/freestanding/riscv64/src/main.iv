@@ -1,0 +1,20 @@
+function choose(value integer 32) giving integer 32 {
+  when value is 42 { give value. }
+  give 0.
+}
+
+public function probe giving integer 32 for c {
+  give choose(42).
+}
+
+native asm {
+  .text
+  .globl _start
+  _start:
+    li sp, 0x80080000
+    call probe
+    li t0, 0x10000000
+    sb a0, 0(t0)
+  1: wfi
+    j 1b
+}

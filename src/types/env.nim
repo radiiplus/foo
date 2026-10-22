@@ -10,12 +10,12 @@ type Environment* = ref object
   types: Table[string, Type]
   states: Table[string, State]
 
-var nextIdentity = 0
-proc newEnvironment*(parent: Environment = nil): Environment = Environment(parent: parent, types: initTable[string, Type](), states: initTable[string, State]())
+var stamp = 0
+proc environment*(parent: Environment = nil): Environment = Environment(parent: parent, types: initTable[string, Type](), states: initTable[string, State]())
 proc define*(environment: Environment; name: string; value: Type; mutable = false; initialized = true) =
-  inc nextIdentity
+  inc stamp
   environment.types[name] = value
-  environment.states[name] = State(mutable: mutable, initialized: initialized, identity: nextIdentity)
+  environment.states[name] = State(mutable: mutable, initialized: initialized, identity: stamp)
 proc mutable*(environment: Environment; name: string): bool =
   if name in environment.states: environment.states[name].mutable elif environment.parent != nil: environment.parent.mutable(name) else: false
 proc initialized*(environment: Environment; name: string): bool =
@@ -29,12 +29,12 @@ proc names*(environment: Environment): seq[string] =
   if environment.parent != nil: result = environment.parent.names
   for name in environment.types.keys:
     if name notin result: result.add(name)
-proc child*(environment: Environment): Environment = newEnvironment(environment)
+proc child*(environment: Environment): Environment = environment(environment)
 proc join*(environment: Environment; branches: seq[Environment]) =
   for name in environment.names:
     if name notin environment.states: continue
     let state = environment.states[name]
-    var allReady = true
+    var ready = true
     for branch in branches:
-      if name notin branch.states or branch.states[name].identity != state.identity or not branch.initialized(name): allReady = false
-    if allReady: environment.initialize(name)
+      if name notin branch.states or branch.states[name].identity != state.identity or not branch.initialized(name): ready = false
+    if ready: environment.initialize(name)

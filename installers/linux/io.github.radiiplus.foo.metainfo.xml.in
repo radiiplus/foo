@@ -7,9 +7,13 @@
   <summary>Readable systems programming with native output</summary>
   <description>
     <p>FOO is a systems programming language for clear, sentence-like programs. It checks, formats, tests, builds, and runs projects from one command.</p>
+    <p>FOO runs in a terminal with the current user's filesystem and network access. Package and toolchain commands may download dependencies. The Debian package does not install a privileged service.</p>
   </description>
   <url type="homepage">https://github.com/radiiplus/foo</url>
   <url type="bugtracker">https://github.com/radiiplus/foo/issues</url>
+  <url type="contact">https://github.com/radiiplus/foo/issues</url>
+  <url type="help">https://github.com/radiiplus/foo/blob/main/docs/start.md</url>
+  <url type="vcs-browser">https://github.com/radiiplus/foo</url>
   <icon type="stock">io.github.radiiplus.foo</icon>
   <launchable type="desktop-id">io.github.radiiplus.foo.desktop</launchable>
   <provides>

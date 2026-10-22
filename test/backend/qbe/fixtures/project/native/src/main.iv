@@ -1,0 +1,5 @@
+extern "C" function foreign_value giving integer 32.
+
+start {
+  foreign_value.
+}

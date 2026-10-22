@@ -22,6 +22,7 @@ These documents define FOO v1 conformance. A specification requirement is not a 
 | Contract | Reference |
 | --- | --- |
 | Typed representation and substrate boundaries | [IR](ir.md) |
+| Configuration source and capability schema | [Configuration](configuration.md) |
 | Project configuration and dependency lock | [Project](project.md) |
 | Installation levels and compiler service | [Toolchain](toolchain.md) |
 | Presets and target descriptors | [Targets](targets.md) |
@@ -31,6 +32,14 @@ These documents define FOO v1 conformance. A specification requirement is not a 
 | Application benchmark discovery and measurement | [Benchmarking](benchmarking.md) |
 | Removed duplicate spellings | [Consolidation](consolidation.md) |
 
-Each format carries version 1 independently of an application's release version. Filenames describe their subject without embedding a version or development milestone.
+Each contract states its own version independently of an application's release
+version. Filenames describe their subject without embedding a version or
+development milestone. These contracts define intended behavior; the
+[current support guide](../docs/status.md) and [QBE target guide](../docs/qbe.md)
+identify which products and services have passed implementation gates.
 
-The compiler accepts source through a library interface: parsing, semantic analysis and typed FOO IR precede lowering through the C substrate and ASM substrate to native output. The CLI presents this service. Substrate choices do not change ordinary FOO syntax or library types.
+The compiler accepts source through a library interface: parsing, semantic
+analysis, and typed FOO IR precede QBE lowering for native output. WAT and
+SPIR-V products use their target-specific lowering routes. The CLI presents
+this service. Target choice does not change ordinary FOO syntax or library
+types. See [current support](../docs/qbe.md) for qualified routes.

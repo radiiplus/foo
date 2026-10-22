@@ -1,0 +1,4 @@
+dynamic cpu_page of type unsigned aligned to 4096 in section ".percpu" is 0.
+public function page giving unsigned {
+  give cpu_page.
+}

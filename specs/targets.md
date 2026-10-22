@@ -16,6 +16,7 @@ whether an operation exists. Both checks are required.
 | linux-musl-x64 | x64 | linux | musl | hosted |
 | linux-musl-arm64 | arm64 | linux | musl | hosted |
 | windows-x64 | x64 | windows | msvc | hosted |
+| uefi-x64 | x64 | uefi | msvc | none |
 | windows-x64-v3 | x64, v3 | windows | msvc | hosted |
 | windows-arm64 | arm64 | windows | msvc | hosted |
 | macos-x64 | x64 | macos | darwin | hosted |
@@ -23,8 +24,23 @@ whether an operation exists. Both checks are required.
 | wasi | wasm32 | wasi | wasi | hosted |
 | wasi-threads | wasm32 | wasi | wasi | hosted, shared memory and atomics |
 | wasm-freestanding | wasm32 | none | eabi | none |
+| x64-freestanding | x64 | none | none | none |
 | arm64-freestanding | arm64 | none | eabi | none |
 | riscv64-freestanding | riscv64 | none | eabi | none |
+
+These rows define target descriptors, not a promise that every product is
+available in the current compiler. The active QBE route qualifies hosted
+Windows x64, Linux x64 and Linux ARM64, selected freestanding and UEFI routes,
+WASI, WASI threads and SPIR-V separately. macOS and Windows ARM64 native builds
+are deferred. Product and service limits are in [QBE support](../docs/qbe.md).
+
+A project may use `linux`, `windows`, or `darwin` for the matching architecture
+on its current host. `wasm` resolves to `wasm-freestanding`; `wasi` and
+`wasi-threads` name hosted WebAssembly targets. `freestanding` resolves to the
+current host architecture's freestanding preset. Cross builds should name the
+architecture-specific preset explicitly. In a target list, the matching host
+entry is selected when present; otherwise the first entry is selected. The
+resolved preset is recorded in the build identity.
 
 A preset is a complete descriptor with baseline CPU and an explicit feature set.
 All v1 presets are little-endian; x64/arm64/riscv64 use 64-bit pointers and
@@ -53,7 +69,7 @@ in the installation's target catalog.
 ```
 
 Every field is required. Schema is integer 1. Arch is x64, arm64, riscv64 or
-wasm32; os is linux, windows, macos, wasi or none. ABI/runtime pairs must match
+wasm32; os is linux, windows, uefi, macos, wasi or none. ABI/runtime pairs must match
 a row in the preset table for that architecture. Runtime is hosted or none.
 Endian is little in v1. CPU is baseline or a model in the versioned target
 catalog. Features is a sorted, duplicate-free array of catalog feature names.
@@ -85,31 +101,47 @@ Its explicit start entry performs machine initialization through verified native
 interfaces; device access additionally requires hardware capability.
 A target never gains a libc or a system service merely because an API was named.
 
-Both standard backends implement runtime-none emission. A runtime-none C build
-is compiled and linked as freestanding code, exports its `for startup` function as
-`_start`, and does not include the hosted C runtime. FOO selects its managed C
-cross-compiler path for supported freestanding and WASI targets when no explicit
-C compiler was configured. This changes the compiler driver, not the source
-backend: the generated translation unit remains C11.
+QBE emits runtime-none code for native targets, exports its `for startup`
+function as `_start`, and omits the hosted runtime. Native freestanding ELF
+executables require matching assembler and linker inputs; object products need
+the assembler. Direct WAT products for WASI and WebAssembly require WABT. The
+current direct WAT route rejects external native sources, objects and libraries;
+it does not require a separate SDK or linker. Missing prerequisites are
+reported rather than replaced with another code generator.
 
 `for interrupt` uses the selected architecture's supported interrupt convention;
 `without setup` suppresses ordinary function setup and cleanup; and
 `using feature "NAME"` may enable only a feature contained in the resolved
 target CPU profile. These clauses require hardware capability and invalid
 architecture, feature, or runtime combinations are errors. Runtime-none code
-cannot use region allocation, dynamic allocation, text joining, hosted runtime
+cannot use region allocation, dynamic allocation, allocating text joining, hosted runtime
 providers, coverage, or benchmark instrumentation.
+
+The `freestanding` library supplies bounded caller-owned storage reservation, byte filling, copying,
+overlap-safe moves, equality and byte searching without a runtime provider.
+`textjoin.join_into` also joins text into disjoint caller-owned output.
+Its `invoke` accepts a caller-supplied C ABI callback and context. Callback
+ABI version 1 defines bounded request/response buffers, service identifiers,
+wire payloads and explicit unavailable/error results in
+`src/runtime/freestanding/host.h` and `docs/freestanding.md`. No host, board,
+heap, filesystem, clock or network service is implicitly linked by selecting a
+freestanding preset. A deployment must supply and qualify the callback for the
+operations it advertises.
 
 WASI binaries use their declared import interface. Shared-memory WASI additionally
 requires system capability and a compatible runner. A freestanding binary has
 no undeclared hosted imports. Foreign libraries must match architecture,
 ABI, deployment minimum and required features.
 
-For the C backend, `wasi-threads` enables atomics, bulk memory, shared memory,
-and the compatible thread flags in the managed compiler. The ordinary `wasi`
-preset does not enable them. The build output remains a WebAssembly module in
-both cases.
+`wasi-threads` enables atomics, bulk memory and shared memory in the WASI target
+and requires a compatible SDK and runner. The ordinary `wasi` preset does not
+enable them. Both presets produce WebAssembly modules.
 
 Cross-compilation must not execute target code as part of ordinary evaluation.
 `foo run` uses a matching local environment or an explicitly configured runner.
 Missing runner support is reported separately from successful binary generation.
+Hosted `linux-arm64` builds use the bundled target-specific TinyCC and matching
+musl sysroot when available. An explicit compatible C compiler or sysroot
+override is also permitted. Headers, startup objects, compiler helpers and ELF
+architecture must match the target before linking; cross execution is a
+separate QEMU gate.

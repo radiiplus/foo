@@ -1,0 +1,19 @@
+use codec as codecs.
+use testing as check.
+use "text" function release(content text) giving failable nothing.
+
+define Choice as choice { number(unsigned). empty. }.
+
+start {
+  constant selected of type Choice is number(42).
+  constant encoded is codecs.encode[Choice](selected) try.
+  after { release(encoded) fallback nothing. }
+  check.same(encoded, "{\"number\":42}").
+  check.expect((codecs.decode[Choice](encoded) try) is selected).
+  constant vacant of type Choice is empty.
+  constant text is codecs.encode[Choice](vacant) try.
+  after { release(text) fallback nothing. }
+  check.same(text, "{\"empty\":{}}").
+  check.expect((codecs.decode[Choice](text) try) is vacant).
+  check.expect((codecs.decode[Choice]("{\"number\":1,\"empty\":{}}") fallback vacant) is vacant).
+}

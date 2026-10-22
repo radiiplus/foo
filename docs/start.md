@@ -62,7 +62,7 @@ Hello, vibes!
 ```
 
 Change the text in `src/main.iv` and run `foo run` again. You can now move on to
-[FOO Basics](basics.md), or explore what the project generated.
+[The Language](language.md), or explore what the project generated.
 
 ## Explore your project
 
@@ -77,35 +77,36 @@ hello/
 |   `-- main.iv
 |-- benchmark/
 |   `-- main.iv
-|-- project.json
+|-- project.ivc
 `-- .gitignore
 ```
 
-The `.iv` extension marks FOO source. `project.json` names the entry file and
+The `.iv` extension marks FOO source. `project.ivc` names the entry file and
 output directory:
 
-```json
-{
-  "source": "src",
-  "entry": "src/main.iv",
-  "entries": {},
-  "build": {
-    "output": "output",
-    "icon": "assets/icon.ico"
+```ivc
+capability "project"
+project {
+  name is "example"
+  version is "0.1.0"
+  source is "src"
+  entry is "src/main.iv"
+  entries {}
+  build {
+    output is "output"
   }
 }
 ```
 
-`foo run` checks the project, builds a native executable through the selected C
-or Zig backend, and runs it. Use `foo run --explain` when you want to see the
+`foo run` checks the project, builds a native executable through QBE, and runs
+it. Use `foo run --explain` when you want to see the
 chosen build path and cache reuse.
 
 ### Installation details
 
-The Debian installer provisions the pinned Zig backend. `foo run` and
-`foo build` can retry that setup after an offline installation. On Debian and Ubuntu,
-the C backend also provisions dependencies for the bundled `crypto`, `compress`,
-and `http` modules. Clang is optional unless a project imports C headers.
+Builds require QBE, the selected native C tools and target platform SDK or
+sysroot. Native dependencies for `crypto`, `compress`, and `http` are described
+in [Dependencies](dependencies.md). `foo doctor` reports missing inputs.
 
 For Ubuntu through Termux/proot on ARM64 Android, check that `uname -m` prints
 `aarch64` inside Ubuntu and install `foo-arm64.deb` there. The package targets
@@ -115,18 +116,22 @@ On Windows, uninstall FOO from **Settings > Apps > Installed apps**. On Ubuntu
 and Debian, run `sudo apt remove foo`. Uninstalling leaves projects and `~/.foo`
 user data in place.
 
+Run `foo upgrade --check` to see the latest published FOO release. Run
+`foo upgrade` to download a verified release package and update a Windows
+installer or Debian package installation. Other installation methods should
+use their original package manager. Upgrade requires Node.js and leaves
+project build caches in place.
+
 ### Adding another runnable program
 
 Suppose the same project also has `src/worker.iv`. Give it a short command name
-in `project.json`:
+in `project.ivc`:
 
-```json
-{
-  "source": "src",
-  "entry": "src/main.iv",
-  "entries": {
-    "worker": "src/worker.iv"
-  }
+```ivc
+source is "src"
+entry is "src/main.iv"
+entries {
+  worker is "src/worker.iv"
 }
 ```
 
@@ -138,7 +143,7 @@ foo run worker   # runs src/worker.iv
 ```
 
 Each named entry is an ordinary FOO program. Use a short, memorable name; the
-path stays in `project.json`, so nobody has to remember it.
+path stays in `project.ivc`, so nobody has to remember it.
 
 ---
 
@@ -214,5 +219,5 @@ These commands cover the usual edit, check, and run cycle:
 
 ---
 
-Continue with [FOO Basics](basics.md) for values, decisions, loops, and more
+Continue with [The Language](language.md) for values, decisions, loops, and more
 small programs.

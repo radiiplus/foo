@@ -1,12 +1,37 @@
 -- Combines, trims, and splits text using byte offsets and ASCII whitespace.
 use sequence as items.
+use joining as direct.
 use "sequence" function sized[T](length unsigned) giving failable sequence of T.
 public use "text" function concatenate(left text, right text) giving failable text.
-public use "text" function trim(content text) giving failable text.
-public use "text" function length(content text) giving unsigned.
 public use "text" function slice(content text, first unsigned, last unsigned) giving failable text.
 public use "text" function find(content text, value text) giving optional unsigned.
 public use "text" function release(content text) giving failable nothing.
+public function length(content text) giving unsigned {
+  give lengthof(content).
+}
+public function trim(content text) giving failable text {
+  dynamic first of type unsigned is 0.
+  dynamic last of type unsigned is length(content).
+  while first less than last {
+    constant value is content at first.
+    when value is 32 or value is 9 or value is 10 or value is 13 or value is 11 or value is 12 {
+      increase first by 1.
+    } otherwise { stop. }
+  }
+  while last greater than first {
+    constant value is content at (last subtract 1).
+    when value is 32 or value is 9 or value is 10 or value is 13 or value is 11 or value is 12 {
+      set last to last subtract 1.
+    } otherwise { stop. }
+  }
+  give slice(content, first, last) try.
+}
+public function join(left text, right text, output sequence of byte) giving boolean {
+  give direct.join(left, right, output).
+}
+public function join_into(left text, right text, output sequence of byte) giving boolean {
+  give join(left, right, output).
+}
 public function starts(content text, prefix text) giving boolean {
   when length(prefix) greater than length(content) {
     give false.

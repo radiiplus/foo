@@ -1,13 +1,13 @@
 {
   "schema": "foo.standard-catalog/v1",
-  "revision": "96ecc5ca5d4e8dc431fed9aebf8b46c87e490ec3a7c7e32cad9815063284edd6",
-  "count": 72,
+  "revision": "8c2531b6f34bae87ca29963cad0207494d0ecdb23c346d4c0a2b1d763971f1de",
+  "count": 74,
   "entries": [
     {
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/adapter",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Snapshots assigned network interface addresses.",
       "category": "standard library",
       "tags": [
@@ -20,7 +20,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -41,8 +41,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -52,7 +52,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/arch",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares guarded CPU intrinsics.",
       "category": "standard library",
       "tags": [
@@ -65,7 +65,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -86,8 +86,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -97,7 +97,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/atomic",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares atomic values and memory ordering operations.",
       "category": "standard library",
       "tags": [
@@ -110,7 +110,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -141,8 +141,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -152,7 +152,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/base64",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Canonical unpadded URL-safe Base64 encoding.",
       "category": "standard library",
       "tags": [
@@ -165,7 +165,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -179,8 +179,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -190,7 +190,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/binary",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Portable unsigned integer encodings over owned byte sequences. Results from encode and fixed must be released with sequence.release[byte].",
       "category": "standard library",
       "tags": [
@@ -203,7 +203,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -220,8 +220,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -231,7 +231,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/bitmap",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Persistent compact bitmaps. Each word stores 64 bits.",
       "category": "standard library",
       "tags": [
@@ -244,7 +244,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -272,8 +272,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -283,7 +283,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/blake",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "BLAKE3 digests arbitrary bytes and supports incremental input.",
       "category": "standard library",
       "tags": [
@@ -296,7 +296,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -316,8 +316,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -327,7 +327,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/block",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Length-prefixed payloads with a trailing little-endian CRC32C checksum. CRC32C detects accidental corruption; it does not authenticate a block.",
       "category": "standard library",
       "tags": [
@@ -340,7 +340,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -356,8 +356,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -367,7 +367,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/bloom",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Owned bit-packed Bloom filter for binary keys. False positives are possible. The hash is noncryptographic; do not use this for hostile-input admission.",
       "category": "standard library",
       "tags": [
@@ -380,7 +380,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -399,8 +399,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -410,7 +410,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/buffer",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares owned byte buffers.",
       "category": "standard library",
       "tags": [
@@ -423,7 +423,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -438,8 +438,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -449,7 +449,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/calendar",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Provides validated Gregorian dates and fixed UTC offsets.",
       "category": "standard library",
       "tags": [
@@ -462,7 +462,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -482,8 +482,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -493,7 +493,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/checksum",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Computes CRC32C for corruption detection; it is not a cryptographic digest.",
       "category": "standard library",
       "tags": [
@@ -506,7 +506,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -524,8 +524,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -535,7 +535,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/codec",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Defines explicit, reusable conversions between a value and text.",
       "category": "standard library",
       "tags": [
@@ -548,7 +548,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -565,8 +565,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -576,7 +576,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/compress",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares zlib and gzip compression.",
       "category": "standard library",
       "tags": [
@@ -589,7 +589,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -607,8 +607,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -618,7 +618,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/contract",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Checks application invariants with the runtime assertion mechanism.",
       "category": "standard library",
       "tags": [
@@ -631,7 +631,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -646,8 +646,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -657,7 +657,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/cpu",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Runs byte arithmetic with runtime CPU feature selection. Add wraps each byte modulo 256. Output may be either input exactly, but partial overlap is rejected. All three slices must have the same length.",
       "category": "standard library",
       "tags": [
@@ -670,7 +670,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -683,8 +683,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -694,7 +694,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/crypto",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares cryptography and secure random operations.",
       "category": "standard library",
       "tags": [
@@ -707,7 +707,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -753,8 +753,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -764,7 +764,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/dns",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Resolves names and queries DNS record sets.",
       "category": "standard library",
       "tags": [
@@ -777,7 +777,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -797,8 +797,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -808,7 +808,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/dylib",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Loads a native shared library and invokes symbols with an explicit C ABI. The caller must know the exported signature; the operating system cannot verify it.",
       "category": "standard library",
       "tags": [
@@ -821,7 +821,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -840,8 +840,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -851,7 +851,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/file",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Opens files, transfers their contents, creates directories, and joins paths.",
       "category": "standard library",
       "tags": [
@@ -864,7 +864,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -929,8 +929,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -940,7 +940,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/frame",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Bounded length-prefixed binary values. The prefix is canonical unsigned LEB128.",
       "category": "standard library",
       "tags": [
@@ -953,7 +953,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -969,8 +969,52 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
+          "deprecated": "",
+          "path": "registry/standard.json"
+        }
+      ]
+    },
+    {
+      "schema": "foo.entry/v1",
+      "kind": "standard",
+      "name": "lib/freestanding",
+      "version": "1.0.0",
+      "description": "Caller-owned byte operations for runtime:none targets. Invalid ranges leave the destination unchanged. Inputs and outputs to copy must not overlap. Alignment is relative to the start of storage; the caller must align the storage base for absolute alignment. Advance the cursor to result plus size.",
+      "category": "standard library",
+      "tags": [
+        "freestanding",
+        "standard"
+      ],
+      "license": "MIT OR Apache-2.0",
+      "compatible": true,
+      "deprecated": "",
+      "platforms": [
+        "all"
+      ],
+      "updated": "2026-10-22",
+      "owner": {
+        "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
+        "login": "radiiplus"
+      },
+      "repository": "https://github.com/radiiplus/foo",
+      "revision": "e2030980792c4eea9c8d0c7dddd93ab5287c3a27",
+      "exports": [
+        "copy",
+        "fill",
+        "find",
+        "identical",
+        "invoke",
+        "move",
+        "reserve",
+        "version"
+      ],
+      "path": "registry/standard.json",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -980,7 +1024,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/gpu",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Runs checked FOO compute kernels through Vulkan.",
       "category": "standard library",
       "tags": [
@@ -993,7 +1037,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1042,8 +1086,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1053,7 +1097,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/heap",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Persistent minimum-priority heap. Updates copy the sequence before reordering.",
       "category": "standard library",
       "tags": [
@@ -1066,7 +1110,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1091,8 +1135,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1102,7 +1146,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/hex",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Canonical lowercase hexadecimal encoding.",
       "category": "standard library",
       "tags": [
@@ -1115,7 +1159,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1129,8 +1173,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1140,7 +1184,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/http",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares HTTP clients and servers.",
       "category": "standard library",
       "tags": [
@@ -1153,7 +1197,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1190,8 +1234,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1201,7 +1245,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/io",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Reads and writes values through standard streams and open files.",
       "category": "standard library",
       "tags": [
@@ -1214,13 +1258,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "34fb58ae97c0e389a2e3b7c4d2359def4e335916",
       "exports": [
         "close",
         "diagnose",
@@ -1236,8 +1280,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1247,7 +1291,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/ipc",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Named file-backed shared regions for local processes.",
       "category": "standard library",
       "tags": [
@@ -1260,7 +1304,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1281,8 +1325,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1292,7 +1336,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/issue",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "A structured error description. Text fields borrow their source storage.",
       "category": "standard library",
       "tags": [
@@ -1305,7 +1349,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1326,8 +1370,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1337,7 +1381,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/iterator",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Defines explicit, state-carrying iteration for user-defined sources.",
       "category": "standard library",
       "tags": [
@@ -1350,7 +1394,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1369,8 +1413,46 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
+          "deprecated": "",
+          "path": "registry/standard.json"
+        }
+      ]
+    },
+    {
+      "schema": "foo.entry/v1",
+      "kind": "standard",
+      "name": "lib/joining",
+      "version": "1.0.0",
+      "description": "The caller allocates and releases output; it must be disjoint from both inputs.",
+      "category": "standard library",
+      "tags": [
+        "joining",
+        "standard"
+      ],
+      "license": "MIT OR Apache-2.0",
+      "compatible": true,
+      "deprecated": "",
+      "platforms": [
+        "all"
+      ],
+      "updated": "2026-10-22",
+      "owner": {
+        "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
+        "login": "radiiplus"
+      },
+      "repository": "https://github.com/radiiplus/foo",
+      "revision": "e2030980792c4eea9c8d0c7dddd93ab5287c3a27",
+      "exports": [
+        "join",
+        "join_into"
+      ],
+      "path": "registry/standard.json",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1380,7 +1462,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/json",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares JSON trees and streaming tokens.",
       "category": "standard library",
       "tags": [
@@ -1393,7 +1475,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1422,8 +1504,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1433,7 +1515,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/limit",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "POSIX process limits. Unsupported kinds or targets report missing values. Kinds: \"files\", \"address\", \"cpu\", and \"stack\".",
       "category": "standard library",
       "tags": [
@@ -1446,7 +1528,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1462,8 +1544,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1473,7 +1555,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/list",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares growable lists of borrowed byte pointers.",
       "category": "standard library",
       "tags": [
@@ -1486,7 +1568,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1504,8 +1586,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1515,7 +1597,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/log",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Writes application messages and errors to the diagnostic stream.",
       "category": "standard library",
       "tags": [
@@ -1528,7 +1610,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1544,8 +1626,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1555,7 +1637,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/map",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Stores typed key/value pairs with equality-based lookup.",
       "category": "standard library",
       "tags": [
@@ -1568,7 +1650,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1591,8 +1673,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1602,7 +1684,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/matrix",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Dense row-major decimal matrices with explicit ownership.",
       "category": "standard library",
       "tags": [
@@ -1615,7 +1697,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1638,8 +1720,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1649,7 +1731,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/memory",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares owned allocations and grouped arena lifetimes.",
       "category": "standard library",
       "tags": [
@@ -1662,7 +1744,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1691,8 +1773,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1702,7 +1784,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/metric",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Owned, synchronized instruments. Bounds must be strictly ascending.",
       "category": "standard library",
       "tags": [
@@ -1715,7 +1797,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1739,8 +1821,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1750,7 +1832,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/net",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Opens TCP connections and UDP sockets with explicit resource lifetimes.",
       "category": "standard library",
       "tags": [
@@ -1763,7 +1845,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1849,8 +1931,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1860,7 +1942,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/packing",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Canonical, independently owned byte-oriented packing formats.",
       "category": "standard library",
       "tags": [
@@ -1873,7 +1955,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1891,8 +1973,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1902,7 +1984,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/platform",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Runtime properties of the host ABI and virtual-memory page layout.",
       "category": "standard library",
       "tags": [
@@ -1915,7 +1997,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1932,8 +2014,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1943,7 +2025,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/poll",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Polls owned TCP and UDP sockets and one-shot monotonic deadlines.",
       "category": "standard library",
       "tags": [
@@ -1956,7 +2038,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -1977,8 +2059,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -1988,7 +2070,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/process",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Executes programs, runs shell commands, and reads arguments and environment values.",
       "category": "standard library",
       "tags": [
@@ -2001,7 +2083,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2036,8 +2118,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2047,7 +2129,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/queue",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Stores typed values in first-in, first-out order.",
       "category": "standard library",
       "tags": [
@@ -2060,7 +2142,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2079,8 +2161,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2090,7 +2172,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/radix",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Stable least-significant-byte radix ordering for unsigned 64-bit values.",
       "category": "standard library",
       "tags": [
@@ -2103,7 +2185,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2117,8 +2199,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2128,7 +2210,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/resource",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Reports live native resources owned by the current process.",
       "category": "standard library",
       "tags": [
@@ -2141,7 +2223,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2159,8 +2241,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2170,7 +2252,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/ring",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Owned bounded byte ring. Calls may be shared across threads; synchronize close.",
       "category": "standard library",
       "tags": [
@@ -2183,7 +2265,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2206,8 +2288,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2217,7 +2299,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/route",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Snapshots routes; a blank gateway identifies an on-link route.",
       "category": "standard library",
       "tags": [
@@ -2230,7 +2312,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2252,8 +2334,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2263,7 +2345,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/sequence",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Builds typed sequences and applies ordering, searching, and transformations.",
       "category": "standard library",
       "tags": [
@@ -2276,7 +2358,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2319,8 +2401,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2330,7 +2412,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/set",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Keeps each typed value once using equality-based membership.",
       "category": "standard library",
       "tags": [
@@ -2343,7 +2425,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2367,8 +2449,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2378,7 +2460,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/simd",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "FOO standard library module simd.",
       "category": "standard library",
       "tags": [
@@ -2391,7 +2473,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2411,8 +2493,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2422,7 +2504,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/stack",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Stores typed values in last-in, first-out order.",
       "category": "standard library",
       "tags": [
@@ -2435,7 +2517,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2454,8 +2536,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2465,7 +2547,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/state",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Applies application-defined transitions without adding state-machine syntax.",
       "category": "standard library",
       "tags": [
@@ -2478,7 +2560,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2493,8 +2575,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2504,7 +2586,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/stream",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares length-aware input, output and diagnostic streams.",
       "category": "standard library",
       "tags": [
@@ -2517,7 +2599,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2537,8 +2619,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2548,7 +2630,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/system",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares host system information.",
       "category": "standard library",
       "tags": [
@@ -2561,7 +2643,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2576,8 +2658,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2587,7 +2669,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/table",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Mutable open-addressed maps for hot text-keyed lookup paths. Values are shallow-copied into backend-owned storage.",
       "category": "standard library",
       "tags": [
@@ -2600,7 +2682,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2620,8 +2702,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2631,7 +2713,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/task",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares task execution and networking.",
       "category": "standard library",
       "tags": [
@@ -2644,7 +2726,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2686,8 +2768,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2697,7 +2779,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/tensor",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Dense row-major decimal tensors with explicit ownership.",
       "category": "standard library",
       "tags": [
@@ -2710,7 +2792,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2738,8 +2820,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2749,7 +2831,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/testing",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares executable test assertions.",
       "category": "standard library",
       "tags": [
@@ -2762,7 +2844,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2785,8 +2867,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2796,7 +2878,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/text",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Combines, trims, and splits text using byte offsets and ASCII whitespace.",
       "category": "standard library",
       "tags": [
@@ -2809,7 +2891,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2821,6 +2903,8 @@
         "contains",
         "ends",
         "find",
+        "join",
+        "join_into",
         "length",
         "release",
         "slice",
@@ -2831,8 +2915,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2842,7 +2926,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/thread",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Runs function-valued tasks and coordinates shared work with locks and conditions.",
       "category": "standard library",
       "tags": [
@@ -2855,7 +2939,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2879,8 +2963,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2890,7 +2974,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/time",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Measures elapsed time using a monotonic nanosecond clock.",
       "category": "standard library",
       "tags": [
@@ -2903,7 +2987,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2930,8 +3014,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2941,7 +3025,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/timer",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Owns a cancellable one-shot timer driven by the monotonic clock.",
       "category": "standard library",
       "tags": [
@@ -2954,7 +3038,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -2972,8 +3056,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -2983,7 +3067,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/tls",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "TLS client streams over TCP. A verified handshake completes before connect returns.",
       "category": "standard library",
       "tags": [
@@ -2996,7 +3080,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3015,8 +3099,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3026,7 +3110,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/topology",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Queries logical processors and temporarily pins the calling thread.",
       "category": "standard library",
       "tags": [
@@ -3039,7 +3123,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3060,8 +3144,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3071,7 +3155,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/trace",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Nested spans on one thread; finish in reverse start order.",
       "category": "standard library",
       "tags": [
@@ -3084,7 +3168,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3105,8 +3189,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3116,7 +3200,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/transaction",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Coordinates one-process transactions with rollback on propagated failure.",
       "category": "standard library",
       "tags": [
@@ -3129,7 +3213,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3143,8 +3227,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3154,7 +3238,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/tree",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Persistent packed ordered search tree. Midpoint search is logarithmic; immutable insertion and removal copy storage in linear time.",
       "category": "standard library",
       "tags": [
@@ -3167,7 +3251,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3190,8 +3274,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3201,7 +3285,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/unicode",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares Unicode validation and conversion.",
       "category": "standard library",
       "tags": [
@@ -3214,7 +3298,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3234,8 +3318,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3245,7 +3329,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/units",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Keeps values from unrelated physical dimensions in distinct generic types.",
       "category": "standard library",
       "tags": [
@@ -3258,7 +3342,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3281,8 +3365,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3292,7 +3376,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/virtual",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Page-backed address space. Operations cover the entire reserved region.",
       "category": "standard library",
       "tags": [
@@ -3305,7 +3389,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3326,8 +3410,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3337,7 +3421,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/vulkan",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Executes SPIR-V compute shaders on an available Vulkan device.",
       "category": "standard library",
       "tags": [
@@ -3350,7 +3434,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3383,8 +3467,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3394,7 +3478,7 @@
       "schema": "foo.entry/v1",
       "kind": "standard",
       "name": "lib/zigzag",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Signed 64-bit ZigZag integers use canonical unsigned LEB128 on the wire.",
       "category": "standard library",
       "tags": [
@@ -3407,7 +3491,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3422,8 +3506,8 @@
       "path": "registry/standard.json",
       "versions": [
         {
-          "version": "0.8.1",
-          "updated": "2026-10-10",
+          "version": "1.0.0",
+          "updated": "2026-10-22",
           "deprecated": "",
           "path": "registry/standard.json"
         }
@@ -3435,7 +3519,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/adapter",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Snapshots assigned network interface addresses.",
       "category": "standard library",
       "tags": [
@@ -3448,7 +3532,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3542,7 +3626,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/arch",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares guarded CPU intrinsics.",
       "category": "standard library",
       "tags": [
@@ -3555,7 +3639,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3649,7 +3733,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/atomic",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares atomic values and memory ordering operations.",
       "category": "standard library",
       "tags": [
@@ -3662,7 +3746,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3816,7 +3900,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/base64",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Canonical unpadded URL-safe Base64 encoding.",
       "category": "standard library",
       "tags": [
@@ -3829,7 +3913,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3881,7 +3965,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/binary",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Portable unsigned integer encodings over owned byte sequences. Results from encode and fixed must be released with sequence.release[byte].",
       "category": "standard library",
       "tags": [
@@ -3894,7 +3978,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -3909,11 +3993,11 @@
       ],
       "source": {
         "format": "foo.source/v1",
-        "digest": "cd3684aca29ed62426c1550d408b68802a33dcad0581be65b0274308c65f25ea",
+        "digest": "ba4dc32316103284ca7611ac6eaf48922f0d4e13dc8e97eb7e134d384d3076d2",
         "files": [
           {
             "path": "lib/binary.iv",
-            "content": "-- Portable unsigned integer encodings over owned byte sequences.\n-- Results from encode and fixed must be released with sequence.release[byte].\npublic define decoded as record {\n  value of type unsigned.\n  next of type unsigned.\n}.\n-- Canonical unsigned LEB128; at most ten bytes for an unsigned value.\npublic use \"binary\" function encode(value unsigned) giving failable sequence of byte.\nuse \"binary\" function scan(source sequence of constant byte, offset unsigned) giving failable unsigned.\nuse \"binary\" function next(source sequence of constant byte, offset unsigned) giving failable unsigned.\npublic function decode(source sequence of constant byte, offset unsigned) giving failable decoded {\n  give decoded(scan(source, offset) try, next(source, offset) try).\n}\n\n-- Fixed-width encoding accepts 1..8 bytes and \"little\" or \"big\" order.\npublic use \"binary\" function fixed(value unsigned, width unsigned, order text) giving failable sequence of byte.\npublic use \"binary\" function parse(source sequence of constant byte, offset unsigned, width unsigned, order text) giving failable unsigned.\n"
+            "content": "-- Portable unsigned integer encodings over owned byte sequences.\n-- Results from encode and fixed must be released with sequence.release[byte].\npublic define decoded as record {\n  value of type unsigned.\n  next of type unsigned.\n}.\n-- Canonical unsigned LEB128; at most ten bytes for an unsigned value.\npublic use \"binary\" function encode(value unsigned) giving failable sequence of byte.\nuse \"binary\" function scan(source sequence of constant byte, offset unsigned) giving failable unsigned.\nuse \"binary\" function next(source sequence of constant byte, offset unsigned) giving failable unsigned.\npublic function decode(source sequence of constant byte, offset unsigned) giving failable decoded {\n  give decoded(scan(source, offset) try, next(source, offset) try).\n}\n\n-- Fixed-width encoding accepts 1..8 bytes and \"little\" or \"big\" order.\nuse \"binary\" function octet(value unsigned) giving failable byte.\nuse \"binary\" function widen(value byte) giving unsigned.\nuse sequence as items.\npublic function fixed(value unsigned, width unsigned, order text) giving failable sequence of byte {\n  when width less than 1 or width greater than 8 or (order is not \"little\" and order is not \"big\") {\n    give fail(Error.InvalidInput).\n  }\n  when width less than 8 {\n    dynamic limit of type unsigned is 1.\n    dynamic index of type unsigned is 0.\n    while index less than width {\n      set limit to limit multiply 256.\n      increase index by 1.\n    }\n    when value greater than or equal to limit { give fail(Error.InvalidInput). }\n  }\n  dynamic output is items.sized[byte](width) try.\n  after error { items.release[byte](output) fallback nothing. }\n  dynamic rest is value.\n  dynamic index of type unsigned is 0.\n  while index less than width {\n    dynamic slot is index.\n    when order is \"big\" { set slot to width subtract index subtract 1. }\n    set output at slot to octet(rest remainder 256) try.\n    set rest to rest divide 256.\n    increase index by 1.\n  }\n  give output.\n}\npublic function parse(source sequence of constant byte, offset unsigned, width unsigned, order text) giving failable unsigned {\n  when width less than 1 or width greater than 8 or (order is not \"little\" and order is not \"big\") {\n    give fail(Error.InvalidInput).\n  }\n  constant extent is items.extent[byte](source).\n  when offset greater than extent or width greater than extent subtract offset {\n    give fail(Error.Bounds).\n  }\n  dynamic value of type unsigned is 0.\n  dynamic index of type unsigned is 0.\n  while index less than width {\n    dynamic slot is index.\n    when order is \"little\" { set slot to width subtract index subtract 1. }\n    set value to value multiply 256 plus widen(source at (offset plus slot)).\n    increase index by 1.\n  }\n  give value.\n}\n"
           }
         ]
       },
@@ -3946,13 +4030,13 @@
               {
                 "kind": "function",
                 "name": "fixed",
-                "declaration": "public use \"binary\" function fixed(value unsigned, width unsigned, order text) giving failable sequence of byte.",
-                "documentation": "Fixed-width encoding accepts 1..8 bytes and \"little\" or \"big\" order."
+                "declaration": "public function fixed(value unsigned, width unsigned, order text) giving failable sequence of byte.",
+                "documentation": ""
               },
               {
                 "kind": "function",
                 "name": "parse",
-                "declaration": "public use \"binary\" function parse(source sequence of constant byte, offset unsigned, width unsigned, order text) giving failable unsigned.",
+                "declaration": "public function parse(source sequence of constant byte, offset unsigned, width unsigned, order text) giving failable unsigned.",
                 "documentation": ""
               }
             ]
@@ -3964,7 +4048,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/bitmap",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Persistent compact bitmaps. Each word stores 64 bits.",
       "category": "standard library",
       "tags": [
@@ -3977,7 +4061,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4113,7 +4197,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/blake",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "BLAKE3 digests arbitrary bytes and supports incremental input.",
       "category": "standard library",
       "tags": [
@@ -4126,7 +4210,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4214,7 +4298,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/block",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Length-prefixed payloads with a trailing little-endian CRC32C checksum. CRC32C detects accidental corruption; it does not authenticate a block.",
       "category": "standard library",
       "tags": [
@@ -4227,7 +4311,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4291,7 +4375,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/bloom",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Owned bit-packed Bloom filter for binary keys. False positives are possible. The hash is noncryptographic; do not use this for hostile-input admission.",
       "category": "standard library",
       "tags": [
@@ -4304,7 +4388,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4386,7 +4470,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/buffer",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares owned byte buffers.",
       "category": "standard library",
       "tags": [
@@ -4399,7 +4483,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4457,7 +4541,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/calendar",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Provides validated Gregorian dates and fixed UTC offsets.",
       "category": "standard library",
       "tags": [
@@ -4470,7 +4554,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4558,7 +4642,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/checksum",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Computes CRC32C for corruption detection; it is not a cryptographic digest.",
       "category": "standard library",
       "tags": [
@@ -4571,7 +4655,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4647,7 +4731,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/codec",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Defines explicit, reusable conversions between a value and text.",
       "category": "standard library",
       "tags": [
@@ -4660,7 +4744,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4730,7 +4814,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/compress",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares zlib and gzip compression.",
       "category": "standard library",
       "tags": [
@@ -4743,7 +4827,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4819,7 +4903,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/contract",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Checks application invariants with the runtime assertion mechanism.",
       "category": "standard library",
       "tags": [
@@ -4832,7 +4916,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4890,7 +4974,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/cpu",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Runs byte arithmetic with runtime CPU feature selection. Add wraps each byte modulo 256. Output may be either input exactly, but partial overlap is rejected. All three slices must have the same length.",
       "category": "standard library",
       "tags": [
@@ -4903,7 +4987,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -4949,7 +5033,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/crypto",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares cryptography and secure random operations.",
       "category": "standard library",
       "tags": [
@@ -4962,7 +5046,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -5206,7 +5290,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/dns",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Resolves names and queries DNS record sets.",
       "category": "standard library",
       "tags": [
@@ -5219,7 +5303,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -5307,7 +5391,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/dylib",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Loads a native shared library and invokes symbols with an explicit C ABI. The caller must know the exported signature; the operating system cannot verify it.",
       "category": "standard library",
       "tags": [
@@ -5320,7 +5404,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -5402,7 +5486,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/file",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Opens files, transfers their contents, creates directories, and joins paths.",
       "category": "standard library",
       "tags": [
@@ -5415,7 +5499,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -5430,11 +5514,11 @@
       ],
       "source": {
         "format": "foo.source/v1",
-        "digest": "824eb738e1cc4d56dc276a2511b80e16266d141a5d538e995c5064f9c31cd91b",
+        "digest": "dcf1554cc6a898b8b2b66126961216e1a0dd38b8d10fadf48ad944eefefc0fc2",
         "files": [
           {
             "path": "lib/file.iv",
-            "content": "-- Opens files, transfers their contents, creates directories, and joins paths.\nuse io as streams.\npublic define mapping as opaque.\npublic define cursor as opaque.\npublic define walker as opaque.\npublic define details as opaque.\npublic use \"fs\" function open(path text, mode text) giving failable pointer to streams.stream.\npublic use \"fs\" function read(path text) giving failable text.\npublic use \"fs\" function write(path text, content text) giving failable nothing.\npublic use \"fs\" function load(path text) giving failable sequence of byte.\npublic use \"fs\" function save(path text, content sequence of byte) giving failable nothing.\npublic use \"fs\" function release(content sequence of byte) giving failable nothing.\npublic use \"fs\" function directory(path text) giving failable nothing.\n-- Scan returns names in host order. next returns empty text at end.\n-- Release nonempty names with text.release and close the cursor with finish.\npublic use \"fs\" function scan(path text) giving failable pointer to cursor.\npublic use \"fs\" function next(cursor pointer to cursor) giving failable text.\npublic use \"fs\" function finish(cursor pointer to cursor) giving failable nothing.\npublic use \"fs\" function join(left text, right text) giving failable text.\npublic use \"fs\" function exists(path text) giving failable boolean.\npublic use \"fs\" function kind(path text) giving failable text.\n-- Metadata is a snapshot. Timestamps are UTC nanoseconds since 1970.\npublic use \"fs\" function metadata(path text) giving failable pointer to details.\nuse \"fs\" function measure(value pointer to details) giving failable unsigned.\nuse \"fs\" function timestamp(value pointer to details, field text) giving failable unsigned.\nuse \"fs\" function classify(value pointer to details) giving failable text.\npublic function extent(value pointer to details) giving failable unsigned {\n  give measure(value) try.\n}\npublic function modified(value pointer to details) giving failable unsigned {\n  give timestamp(value, \"modified\") try.\n}\npublic function accessed(value pointer to details) giving failable unsigned {\n  give timestamp(value, \"accessed\") try.\n}\npublic function changed(value pointer to details) giving failable unsigned {\n  give timestamp(value, \"changed\") try.\n}\npublic function category(value pointer to details) giving failable text borrowing value {\n  give classify(value) try.\n}\nuse \"fs\" function restricted(value pointer to details) giving failable boolean.\n-- Reports the inverse of the read-only attribute or mode bits, not an access check.\npublic function writable(value pointer to details) giving failable boolean {\n  give not (restricted(value) try).\n}\nuse \"fs\" function retire(value pointer to details) giving failable nothing.\npublic function dismiss(value pointer to details) giving failable nothing {\n  retire(value) try.\n}\n-- Creates an exclusive empty file and returns its owned path. Release the path and remove the file.\npublic use \"fs\" function temporary(directory text, prefix text) giving failable text.\n-- Depth-first relative paths. Directory entries are returned before their children.\n-- Links are returned but never traversed. Release each nonempty result with text.release.\npublic use \"fs\" function walk(path text) giving failable pointer to walker.\nuse \"fs\" function traverse(cursor pointer to walker) giving failable text.\nuse \"fs\" function cease(cursor pointer to walker) giving failable nothing.\npublic function visit(source pointer to walker) giving failable text {\n  give traverse(source) try.\n}\npublic function halt(source pointer to walker) giving failable nothing {\n  cease(source) try.\n}\n-- Available bytes for this process and the filesystem allocation unit.\npublic use \"fs\" function free(path text) giving failable unsigned.\npublic use \"fs\" function block(path text) giving failable unsigned.\npublic use \"fs\" function copy(source text, destination text) giving failable nothing.\npublic use \"fs\" function working giving failable text.\npublic use \"fs\" function remove(path text) giving failable nothing.\n-- Replaces destination on one filesystem and requests durable directory publication where supported.\npublic use \"fs\" function replace(source text, destination text) giving failable nothing.\n-- Advanced stream controls. flush empties process buffers; sync also requests stable storage from the host.\npublic use \"fs\" function flush(stream pointer to streams.stream) giving failable nothing.\npublic use \"fs\" function sync(stream pointer to streams.stream) giving failable nothing.\npublic use \"fs\" function seek(stream pointer to streams.stream, offset integer, origin text) giving failable nothing.\npublic use \"fs\" function position(stream pointer to streams.stream) giving failable unsigned.\npublic use \"fs\" function size(stream pointer to streams.stream) giving failable unsigned.\n-- A writable stream can be shortened or extended. The cursor is unchanged.\npublic use \"fs\" function truncate(stream pointer to streams.stream, size unsigned) giving failable nothing.\n-- Reserves storage through size, extending the file if necessary.\npublic use \"fs\" function reserve(stream pointer to streams.stream, size unsigned) giving failable nothing.\n-- Advisory whole-file locking. The mode is \"shared\" or \"exclusive\".\npublic use \"fs\" function lock(stream pointer to streams.stream, mode text) giving failable nothing.\npublic use \"fs\" function unlock(stream pointer to streams.stream) giving failable nothing.\n-- Transfers bytes at an absolute offset without changing the stream position.\n-- A short count indicates end of file or a partial transfer; callers may retry.\npublic use \"fs\" function fetch(stream pointer to streams.stream, offset unsigned, destination sequence of byte) giving failable unsigned.\npublic use \"fs\" function store(stream pointer to streams.stream, offset unsigned, source sequence of constant byte) giving failable unsigned.\n-- Borrows the platform's native handle. It is valid only while the stream stays open.\npublic use \"fs\" function handle(stream pointer to streams.stream) giving failable unsigned.\n-- A read-only file mapping. A length of zero maps from offset to end of file.\npublic use \"fs\" function map(path text, offset unsigned, length unsigned) giving failable pointer to mapping.\n-- Shared writable mapping of an existing file. The requested range must be within the file.\npublic use \"fs\" function edit(path text, offset unsigned, length unsigned) giving failable pointer to mapping.\n-- The returned bytes remain valid until unmap; do not truncate the underlying file.\nuse \"fs\" function mapped(mapping pointer to mapping) giving failable sequence of constant byte.\npublic function view(source pointer to mapping) giving failable sequence of constant byte borrowing source {\n  give mapped(source) try.\n}\n-- Mutable bytes borrow the mapping. Flush before unmap to request durable storage.\nuse \"fs\" function borrow(source pointer to mapping) giving failable sequence of byte.\npublic function mutable(source pointer to mapping) giving failable sequence of byte borrowing source {\n  give borrow(source) try.\n}\nuse \"fs\" function publish(source pointer to mapping) giving failable nothing.\npublic function persist(source pointer to mapping) giving failable nothing {\n  publish(source) try.\n}\n-- Flushes a bounded range of a writable shared mapping, then syncs its file.\n-- Offset and length are relative to the mapped view; zero length is a no-op.\nuse \"fs\" function portion(source pointer to mapping, offset unsigned, length unsigned) giving failable nothing.\npublic function persist(source pointer to mapping, offset unsigned, length unsigned) giving failable nothing {\n  portion(source, offset, length) try.\n}\npublic use \"fs\" function unmap(mapping pointer to mapping) giving failable nothing.\n"
+            "content": "-- Opens files, transfers their contents, creates directories, and joins paths.\nuse io as streams.\npublic define mapping as opaque.\npublic define cursor as opaque.\npublic define walker as opaque.\npublic define details as opaque.\npublic use \"fs\" function open(path text, mode text) giving failable pointer to streams.stream.\npublic use \"fs\" function read(path text) giving failable text.\npublic use \"fs\" function write(path text, content text) giving failable nothing.\npublic use \"fs\" function load(path text) giving failable sequence of byte.\npublic use \"fs\" function save(path text, content sequence of byte) giving failable nothing.\npublic use \"fs\" function release(content sequence of byte) giving failable nothing.\npublic use \"fs\" function directory(path text) giving failable nothing.\n-- Scan returns names in host order. next returns empty text at end.\n-- Release nonempty names with text.release and close the cursor with finish.\npublic use \"fs\" function scan(path text) giving failable pointer to cursor.\npublic use \"fs\" function next(cursor pointer to cursor) giving failable text.\npublic use \"fs\" function finish(cursor pointer to cursor) giving failable nothing.\npublic use \"fs\" function join(left text, right text) giving failable text.\npublic use \"fs\" function exists(path text) giving failable boolean.\npublic use \"fs\" function kind(path text) giving failable text.\n-- Metadata is a snapshot. Timestamps are UTC nanoseconds since 1970.\npublic use \"fs\" function metadata(path text) giving failable pointer to details.\nuse \"fs\" function measure(value pointer to details) giving failable unsigned.\nuse \"fs\" function timestamp(value pointer to details, field text) giving failable unsigned.\nuse \"fs\" function classify(value pointer to details) giving failable text.\npublic function extent(value pointer to details) giving failable unsigned {\n  give measure(value) try.\n}\npublic function modified(value pointer to details) giving failable unsigned {\n  give timestamp(value, \"modified\") try.\n}\npublic function accessed(value pointer to details) giving failable unsigned {\n  give timestamp(value, \"accessed\") try.\n}\npublic function changed(value pointer to details) giving failable unsigned {\n  give timestamp(value, \"changed\") try.\n}\npublic function category(value pointer to details) giving failable text borrowing value {\n  give classify(value) try.\n}\nuse \"fs\" function restricted(value pointer to details) giving failable boolean.\n-- Reports the inverse of read-only attributes or mode bits; WASI uses guest access rights.\npublic function writable(value pointer to details) giving failable boolean {\n  give not (restricted(value) try).\n}\nuse \"fs\" function retire(value pointer to details) giving failable nothing.\npublic function dismiss(value pointer to details) giving failable nothing {\n  retire(value) try.\n}\n-- Creates an exclusive empty file and returns its owned path. Release the path and remove the file.\npublic use \"fs\" function temporary(directory text, prefix text) giving failable text.\n-- Depth-first relative paths. Directory entries are returned before their children.\n-- Links are returned but never traversed. Release each nonempty result with text.release.\npublic use \"fs\" function walk(path text) giving failable pointer to walker.\nuse \"fs\" function traverse(cursor pointer to walker) giving failable text.\nuse \"fs\" function cease(cursor pointer to walker) giving failable nothing.\npublic function visit(source pointer to walker) giving failable text {\n  give traverse(source) try.\n}\npublic function halt(source pointer to walker) giving failable nothing {\n  cease(source) try.\n}\n-- Available bytes for this process and the filesystem allocation unit.\npublic use \"fs\" function free(path text) giving failable unsigned.\npublic use \"fs\" function block(path text) giving failable unsigned.\npublic use \"fs\" function copy(source text, destination text) giving failable nothing.\npublic use \"fs\" function working giving failable text.\npublic use \"fs\" function remove(path text) giving failable nothing.\n-- Replaces destination on one filesystem and requests durable directory publication where supported.\npublic use \"fs\" function replace(source text, destination text) giving failable nothing.\n-- Advanced stream controls. flush empties process buffers; sync also requests stable storage from the host.\npublic use \"fs\" function flush(stream pointer to streams.stream) giving failable nothing.\npublic use \"fs\" function sync(stream pointer to streams.stream) giving failable nothing.\npublic use \"fs\" function seek(stream pointer to streams.stream, offset integer, origin text) giving failable nothing.\npublic use \"fs\" function position(stream pointer to streams.stream) giving failable unsigned.\npublic use \"fs\" function size(stream pointer to streams.stream) giving failable unsigned.\n-- A writable stream can be shortened or extended. The cursor is unchanged.\npublic use \"fs\" function truncate(stream pointer to streams.stream, size unsigned) giving failable nothing.\n-- Reserves storage through size, extending the file if necessary.\npublic use \"fs\" function reserve(stream pointer to streams.stream, size unsigned) giving failable nothing.\n-- Advisory whole-file locking. The mode is \"shared\" or \"exclusive\".\npublic use \"fs\" function lock(stream pointer to streams.stream, mode text) giving failable nothing.\npublic use \"fs\" function unlock(stream pointer to streams.stream) giving failable nothing.\n-- Transfers bytes at an absolute offset without changing the stream position.\n-- A short count indicates end of file or a partial transfer; callers may retry.\npublic use \"fs\" function fetch(stream pointer to streams.stream, offset unsigned, destination sequence of byte) giving failable unsigned.\npublic use \"fs\" function store(stream pointer to streams.stream, offset unsigned, source sequence of constant byte) giving failable unsigned.\n-- Borrows the platform's native handle. It is valid only while the stream stays open.\npublic use \"fs\" function handle(stream pointer to streams.stream) giving failable unsigned.\n-- A read-only file mapping. A length of zero maps from offset to end of file.\npublic use \"fs\" function map(path text, offset unsigned, length unsigned) giving failable pointer to mapping.\n-- Shared writable mapping of an existing file. The requested range must be within the file.\npublic use \"fs\" function edit(path text, offset unsigned, length unsigned) giving failable pointer to mapping.\n-- The returned bytes remain valid until unmap; do not truncate the underlying file.\nuse \"fs\" function mapped(mapping pointer to mapping) giving failable sequence of constant byte.\npublic function view(source pointer to mapping) giving failable sequence of constant byte borrowing source {\n  give mapped(source) try.\n}\n-- Mutable bytes borrow the mapping. Flush before unmap to request durable storage.\nuse \"fs\" function borrow(source pointer to mapping) giving failable sequence of byte.\npublic function mutable(source pointer to mapping) giving failable sequence of byte borrowing source {\n  give borrow(source) try.\n}\nuse \"fs\" function publish(source pointer to mapping) giving failable nothing.\npublic function persist(source pointer to mapping) giving failable nothing {\n  publish(source) try.\n}\n-- Flushes a bounded range of a writable shared mapping, then syncs its file.\n-- Offset and length are relative to the mapped view; zero length is a no-op.\nuse \"fs\" function portion(source pointer to mapping, offset unsigned, length unsigned) giving failable nothing.\npublic function persist(source pointer to mapping, offset unsigned, length unsigned) giving failable nothing {\n  portion(source, offset, length) try.\n}\npublic use \"fs\" function unmap(mapping pointer to mapping) giving failable nothing.\n"
           }
         ]
       },
@@ -5588,7 +5672,7 @@
                 "kind": "function",
                 "name": "writable",
                 "declaration": "public function writable(value pointer to details) giving failable boolean.",
-                "documentation": "Reports the inverse of the read-only attribute or mode bits, not an access check."
+                "documentation": "Reports the inverse of read-only attributes or mode bits; WASI uses guest access rights."
               },
               {
                 "kind": "function",
@@ -5779,7 +5863,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/frame",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Bounded length-prefixed binary values. The prefix is canonical unsigned LEB128.",
       "category": "standard library",
       "tags": [
@@ -5792,7 +5876,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -5855,8 +5939,109 @@
     {
       "schema": "foo.package/v1",
       "kind": "standard",
+      "name": "lib/freestanding",
+      "version": "1.0.0",
+      "description": "Caller-owned byte operations for runtime:none targets. Invalid ranges leave the destination unchanged. Inputs and outputs to copy must not overlap. Alignment is relative to the start of storage; the caller must align the storage base for absolute alignment. Advance the cursor to result plus size.",
+      "category": "standard library",
+      "tags": [
+        "freestanding",
+        "standard"
+      ],
+      "license": "MIT OR Apache-2.0",
+      "compatible": true,
+      "deprecated": "",
+      "platforms": [
+        "all"
+      ],
+      "updated": "2026-10-22",
+      "owner": {
+        "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
+        "login": "radiiplus"
+      },
+      "repository": "https://github.com/radiiplus/foo",
+      "revision": "e2030980792c4eea9c8d0c7dddd93ab5287c3a27",
+      "install": "use freestanding.",
+      "dependencies": [],
+      "readme": [
+        "Caller-owned byte operations for runtime:none targets. Invalid ranges leave the destination unchanged. Inputs and outputs to copy must not overlap. Alignment is relative to the start of storage; the caller must align the storage base for absolute alignment. Advance the cursor to result plus size.",
+        "Import this module with use freestanding."
+      ],
+      "source": {
+        "format": "foo.source/v1",
+        "digest": "62aac1830b77cd294ae1f7f4965da13a85dd80842d06474ff1129b06e9c686df",
+        "files": [
+          {
+            "path": "lib/freestanding.iv",
+            "content": "-- Caller-owned byte operations for runtime:none targets. Invalid ranges leave\n-- the destination unchanged. Inputs and outputs to copy must not overlap.\n-- Alignment is relative to the start of storage; the caller must align the\n-- storage base for absolute alignment. Advance the cursor to result plus size.\npublic function reserve(capacity unsigned, cursor unsigned, size unsigned,\n  alignment unsigned) giving optional unsigned {\n  when alignment is 0 or cursor greater than capacity { give null. }\n  dynamic aligned is cursor.\n  constant remainder is cursor remainder alignment.\n  when remainder is not 0 {\n    constant padding is alignment subtract remainder.\n    when padding greater than capacity subtract cursor { give null. }\n    set aligned to cursor plus padding.\n  }\n  when size greater than capacity subtract aligned { give null. }\n  give aligned.\n}\n\npublic function fill(output sequence of byte, value byte) giving nothing {\n  dynamic index of type unsigned is 0.\n  while index less than lengthof(output) {\n    set output at index to value.\n    increase index by 1.\n  }\n}\n\npublic function copy(source sequence of constant byte, output sequence of byte) giving boolean {\n  when lengthof(source) greater than lengthof(output) { give false. }\n  dynamic index of type unsigned is 0.\n  while index less than lengthof(source) {\n    set output at index to source at index.\n    increase index by 1.\n  }\n  give true.\n}\n\n-- Moves bytes within one owner; the ranges may overlap.\npublic function move(buffer sequence of byte, origin unsigned, destination unsigned,\n  count unsigned) giving boolean {\n  constant size is lengthof(buffer).\n  when origin greater than size or destination greater than size { give false. }\n  when count greater than size subtract origin or count greater than size subtract destination {\n    give false.\n  }\n  when destination greater than origin and destination less than origin plus count {\n    dynamic remaining is count.\n    while remaining greater than 0 {\n      set remaining to remaining subtract 1.\n      set buffer at (destination plus remaining) to buffer at (origin plus remaining).\n    }\n  } otherwise {\n    dynamic index of type unsigned is 0.\n    while index less than count {\n      set buffer at (destination plus index) to buffer at (origin plus index).\n      increase index by 1.\n    }\n  }\n  give true.\n}\n\npublic function identical(left sequence of constant byte, right sequence of constant byte) giving boolean {\n  when lengthof(left) is not lengthof(right) { give false. }\n  dynamic index of type unsigned is 0.\n  while index less than lengthof(left) {\n    when (left at index) is not (right at index) { give false. }\n    increase index by 1.\n  }\n  give true.\n}\n\n-- A byte-oriented search. Text is UTF-8; offsets are bytes, not code points.\npublic function find(haystack text, needle text) giving optional unsigned {\n  constant available is lengthof(haystack).\n  constant needed is lengthof(needle).\n  when needed greater than available { give null. }\n  dynamic origin of type unsigned is 0.\n  while origin less than or equal to available subtract needed {\n    dynamic offset of type unsigned is 0.\n    while offset less than needed and (haystack at (origin plus offset)) is (needle at offset) {\n      increase offset by 1.\n    }\n    when offset is needed { give origin. }\n    increase origin by 1.\n  }\n  give null.\n}\n\n-- The callback ABI is declared in src/runtime/freestanding/host.h. A nonnegative\n-- result is the number of bytes transferred; negative results are host errors.\npublic function version giving unsigned 32 {\n  give 1.\n}\n\npublic function invoke(context pointer to byte,\n  callback function taking (pointer to byte, unsigned 32, pointer to byte,\n    unsigned 32, pointer to byte, unsigned 32) giving integer 32 for c,\n  operation unsigned 32, request pointer to byte, length unsigned 32,\n  response pointer to byte, capacity unsigned 32) giving integer 32 keeping call {\n  give callback(context, operation, request, length, response, capacity).\n}\n"
+          }
+        ]
+      },
+      "api": {
+        "schema": "foo.api/v1",
+        "modules": [
+          {
+            "name": "lib/freestanding",
+            "path": "lib/freestanding.iv",
+            "summary": "Caller-owned byte operations for runtime:none targets. Invalid ranges leave the destination unchanged. Inputs and outputs to copy must not overlap. Alignment is relative to the start of storage; the caller must align the storage base for absolute alignment. Advance the cursor to result plus size.",
+            "items": [
+              {
+                "kind": "function",
+                "name": "reserve",
+                "declaration": "public function reserve(capacity unsigned, cursor unsigned, size unsigned, alignment unsigned) giving optional unsigned.",
+                "documentation": "Caller-owned byte operations for runtime:none targets. Invalid ranges leave the destination unchanged. Inputs and outputs to copy must not overlap. Alignment is relative to the start of storage; the caller must align the storage base for absolute alignment. Advance the cursor to result plus size."
+              },
+              {
+                "kind": "function",
+                "name": "fill",
+                "declaration": "public function fill(output sequence of byte, value byte) giving nothing.",
+                "documentation": ""
+              },
+              {
+                "kind": "function",
+                "name": "copy",
+                "declaration": "public function copy(source sequence of constant byte, output sequence of byte) giving boolean.",
+                "documentation": ""
+              },
+              {
+                "kind": "function",
+                "name": "move",
+                "declaration": "public function move(buffer sequence of byte, origin unsigned, destination unsigned, count unsigned) giving boolean.",
+                "documentation": "Moves bytes within one owner; the ranges may overlap."
+              },
+              {
+                "kind": "function",
+                "name": "identical",
+                "declaration": "public function identical(left sequence of constant byte, right sequence of constant byte) giving boolean.",
+                "documentation": ""
+              },
+              {
+                "kind": "function",
+                "name": "find",
+                "declaration": "public function find(haystack text, needle text) giving optional unsigned.",
+                "documentation": "A byte-oriented search. Text is UTF-8; offsets are bytes, not code points."
+              },
+              {
+                "kind": "function",
+                "name": "version",
+                "declaration": "public function version giving unsigned 32.",
+                "documentation": "The callback ABI is declared in src/runtime/freestanding/host.h. A nonnegative result is the number of bytes transferred; negative results are host errors."
+              },
+              {
+                "kind": "function",
+                "name": "invoke",
+                "declaration": "public function invoke(context pointer to byte, callback function taking (pointer to byte, unsigned 32, pointer to byte, unsigned 32, pointer to byte, unsigned 32) giving integer 32 for c, operation unsigned 32, request pointer to byte, length unsigned 32, response pointer to byte, capacity unsigned 32) giving integer 32 keeping call.",
+                "documentation": ""
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema": "foo.package/v1",
+      "kind": "standard",
       "name": "lib/gpu",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Runs checked FOO compute kernels through Vulkan.",
       "category": "standard library",
       "tags": [
@@ -5869,7 +6054,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -6131,7 +6316,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/heap",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Persistent minimum-priority heap. Updates copy the sequence before reordering.",
       "category": "standard library",
       "tags": [
@@ -6144,7 +6329,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -6159,11 +6344,11 @@
       ],
       "source": {
         "format": "foo.source/v1",
-        "digest": "8bb9069d78649b9f970856bb5412ceae243b4c7f5160a62049b581211e344569",
+        "digest": "178ec34eefbecfaa37e9d5b2b69956cfd0e19be81d898843a4c0cd8561f7ccee",
         "files": [
           {
             "path": "lib/heap.iv",
-            "content": "-- Persistent minimum-priority heap. Updates copy the sequence before reordering.\nuse sequence as items.\n\npublic define heap[T] as record {\n  values of type sequence of T.\n}.\n\npublic function create[T] giving heap[T] {\n  give heap[T](items.create[T]).\n}\n\npublic function length[T](value heap[T]) giving unsigned {\n  give items.length[T](value.values).\n}\n\npublic function first[T](value heap[T]) giving failable T {\n  when length[T](value) is 0 { give fail(Error.Empty). }\n  give value.values at 0.\n}\n\nfunction descend[T](values sequence of T, count unsigned, origin unsigned) giving nothing where T is Ord {\n  dynamic cursor is origin.\n  while count greater than 1 and cursor less than or equal to (count subtract 2) divide 2 {\n    constant left is cursor multiply 2 plus 1.\n    dynamic child is left.\n    when left plus 1 less than count and (values at (left plus 1)) less than (values at left) {\n      set child to left plus 1.\n    }\n    when not ((values at child) less than (values at cursor)) { stop. }\n    constant saved is values at cursor.\n    set values at cursor to values at child.\n    set values at child to saved.\n    set cursor to child.\n  }\n}\n\nfunction heapify[T](values sequence of T) giving nothing where T is Ord {\n  constant count is items.length[T](values).\n  dynamic cursor is count divide 2.\n  while cursor greater than 0 {\n    set cursor to cursor subtract 1.\n    descend[T](values, count, cursor).\n  }\n}\n\n-- Copies an arbitrary sequence and builds a minimum heap in linear time.\npublic function build[T](values sequence of T) giving failable heap[T] where T is Ord {\n  constant result is items.copy[T](values) try.\n  heapify[T](result).\n  give heap[T](result).\n}\n\n-- Combines two owned heaps into an independent minimum heap.\npublic function merge[T](left heap[T], right heap[T]) giving failable heap[T] where T is Ord {\n  constant prefix is length[T](left).\n  constant suffix is length[T](right).\n  when suffix greater than 18446744073709551615 subtract prefix {\n    give fail(Error.Bounds).\n  }\n  constant result is items.sized[T](prefix plus suffix) try.\n  dynamic cursor of type unsigned is 0.\n  while cursor less than prefix {\n    set result at cursor to left.values at cursor.\n    increase cursor by 1.\n  }\n  dynamic index of type unsigned is 0.\n  while index less than suffix {\n    set result at cursor to right.values at index.\n    increase cursor by 1.\n    increase index by 1.\n  }\n  heapify[T](result).\n  give heap[T](result).\n}\n\npublic function push[T](value heap[T], item T) giving failable heap[T] where T is Ord {\n  dynamic result is heap[T](items.append[T](value.values, item) try).\n  dynamic cursor is length[T](result) subtract 1.\n  while cursor greater than 0 {\n    constant parent is (cursor subtract 1) divide 2.\n    when not ((result.values at cursor) less than (result.values at parent)) { stop. }\n    constant saved is result.values at parent.\n    set result.values at parent to result.values at cursor.\n    set result.values at cursor to saved.\n    set cursor to parent.\n  }\n  give result.\n}\n\npublic function remove[T](value heap[T]) giving failable heap[T] where T is Ord {\n  constant size is length[T](value).\n  when size is 0 { give fail(Error.Empty). }\n  when size is 1 { give create[T]. }\n  constant tail is value.values at (size subtract 1).\n  dynamic result is heap[T](items.remove[T](value.values, size subtract 1) try).\n  set result.values at 0 to tail.\n  descend[T](result.values, size subtract 1, 0).\n  give result.\n}\n\n-- Replaces the current minimum without changing the source heap.\npublic function replace[T](value heap[T], item T) giving failable heap[T] where T is Ord {\n  when length[T](value) is 0 { give fail(Error.Empty). }\n  constant values is items.copy[T](value.values) try.\n  set values at 0 to item.\n  descend[T](values, length[T](value), 0).\n  give heap[T](values).\n}\n\npublic define popped[T] as record {\n  item of type T.\n  rest of type heap[T].\n}.\n\n-- Returns both the removed minimum and an independent remaining heap.\npublic function pop[T](value heap[T]) giving failable popped[T] where T is Ord {\n  constant item is first[T](value) try.\n  give popped[T](item, remove[T](value) try).\n}\n\n-- Drains a private heap copy into an independently owned ascending sequence.\npublic function sorted[T](value heap[T]) giving failable sequence of T where T is Ord {\n  constant count is length[T](value).\n  constant work is items.copy[T](value.values) try.\n  after { items.release[T](work) fallback nothing. }\n  constant result is items.sized[T](count) try.\n  after error { items.release[T](result) fallback nothing. }\n  dynamic remaining is count.\n  dynamic cursor of type unsigned is 0.\n  while remaining greater than 0 {\n    set result at cursor to work at 0.\n    set remaining to remaining subtract 1.\n    when remaining greater than 0 {\n      set work at 0 to work at remaining.\n      descend[T](work, remaining, 0).\n    }\n    increase cursor by 1.\n  }\n  give result.\n}\n\npublic function release[T](value heap[T]) giving failable nothing {\n  items.release[T](value.values) try.\n  give nothing.\n}\n"
+            "content": "-- Persistent minimum-priority heap. Updates copy the sequence before reordering.\nuse sequence as items.\n\npublic define heap[T] as record {\n  values of type sequence of T.\n}.\n\npublic function create[T] giving heap[T] {\n  give heap[T](items.create[T]).\n}\n\npublic function length[T](value heap[T]) giving unsigned {\n  give items.length[T](value.values).\n}\n\npublic function first[T](value heap[T]) giving failable T {\n  when length[T](value) is 0 { give fail(Error.Empty). }\n  give value.values at 0.\n}\n\nfunction descend[T](values sequence of T, count unsigned, origin unsigned) giving nothing where T is Ord {\n  dynamic cursor is origin.\n  while count greater than 1 and cursor less than or equal to (count subtract 2) divide 2 {\n    constant left is cursor multiply 2 plus 1.\n    dynamic child is left.\n    when left plus 1 less than count and (values at (left plus 1)) less than (values at left) {\n      set child to left plus 1.\n    }\n    when not ((values at child) less than (values at cursor)) { stop. }\n    constant saved is values at cursor.\n    set values at cursor to values at child.\n    set values at child to saved.\n    set cursor to child.\n  }\n}\n\nfunction heapify[T](values sequence of T) giving nothing where T is Ord {\n  constant count is items.length[T](values).\n  dynamic cursor is count divide 2.\n  while cursor greater than 0 {\n    set cursor to cursor subtract 1.\n    descend[T](values, count, cursor).\n  }\n}\n\n-- Copies an arbitrary sequence and builds a minimum heap in linear time.\npublic function build[T](values sequence of T) giving failable heap[T] where T is Ord {\n  constant result is items.copy[T](values) try.\n  heapify[T](result).\n  give heap[T](result).\n}\n\n-- Combines two owned heaps into an independent minimum heap.\npublic function merge[T](left heap[T], right heap[T]) giving failable heap[T] where T is Ord {\n  constant prefix is length[T](left).\n  constant suffix is length[T](right).\n  when suffix greater than 18446744073709551615 subtract prefix {\n    give fail(Error.Bounds).\n  }\n  constant result is items.sized[T](prefix plus suffix) try.\n  dynamic cursor of type unsigned is 0.\n  while cursor less than prefix {\n    set result at cursor to left.values at cursor.\n    increase cursor by 1.\n  }\n  dynamic index of type unsigned is 0.\n  while index less than suffix {\n    set result at cursor to right.values at index.\n    increase cursor by 1.\n    increase index by 1.\n  }\n  heapify[T](result).\n  give heap[T](result).\n}\n\npublic function push[T](value heap[T], item T) giving failable heap[T] where T is Ord {\n  constant count is length[T](value).\n  when count is 18446744073709551615 { give fail(Error.Overflow). }\n  constant values is items.sized[T](count plus 1) try.\n  after error { items.release[T](values) fallback nothing. }\n  dynamic index of type unsigned is 0.\n  while index less than count {\n    set values at index to value.values at index.\n    increase index by 1.\n  }\n  set values at count to item.\n  dynamic result is heap[T](values).\n  dynamic cursor is count.\n  while cursor greater than 0 {\n    constant parent is (cursor subtract 1) divide 2.\n    when not ((result.values at cursor) less than (result.values at parent)) { stop. }\n    constant saved is result.values at parent.\n    set result.values at parent to result.values at cursor.\n    set result.values at cursor to saved.\n    set cursor to parent.\n  }\n  give result.\n}\n\npublic function remove[T](value heap[T]) giving failable heap[T] where T is Ord {\n  constant size is length[T](value).\n  when size is 0 { give fail(Error.Empty). }\n  when size is 1 { give create[T]. }\n  constant tail is value.values at (size subtract 1).\n  dynamic result is heap[T](items.remove[T](value.values, size subtract 1) try).\n  set result.values at 0 to tail.\n  descend[T](result.values, size subtract 1, 0).\n  give result.\n}\n\n-- Replaces the current minimum without changing the source heap.\npublic function replace[T](value heap[T], item T) giving failable heap[T] where T is Ord {\n  when length[T](value) is 0 { give fail(Error.Empty). }\n  constant values is items.copy[T](value.values) try.\n  set values at 0 to item.\n  descend[T](values, length[T](value), 0).\n  give heap[T](values).\n}\n\npublic define popped[T] as record {\n  item of type T.\n  rest of type heap[T].\n}.\n\n-- Returns both the removed minimum and an independent remaining heap.\npublic function pop[T](value heap[T]) giving failable popped[T] where T is Ord {\n  constant item is first[T](value) try.\n  give popped[T](item, remove[T](value) try).\n}\n\n-- Drains a private heap copy into an independently owned ascending sequence.\npublic function sorted[T](value heap[T]) giving failable sequence of T where T is Ord {\n  constant count is length[T](value).\n  constant work is items.copy[T](value.values) try.\n  after { items.release[T](work) fallback nothing. }\n  constant result is items.sized[T](count) try.\n  after error { items.release[T](result) fallback nothing. }\n  dynamic remaining is count.\n  dynamic cursor of type unsigned is 0.\n  while remaining greater than 0 {\n    set result at cursor to work at 0.\n    set remaining to remaining subtract 1.\n    when remaining greater than 0 {\n      set work at 0 to work at remaining.\n      descend[T](work, remaining, 0).\n    }\n    increase cursor by 1.\n  }\n  give result.\n}\n\npublic function release[T](value heap[T]) giving failable nothing {\n  items.release[T](value.values) try.\n  give nothing.\n}\n"
           }
         ]
       },
@@ -6262,7 +6447,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/hex",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Canonical lowercase hexadecimal encoding.",
       "category": "standard library",
       "tags": [
@@ -6275,7 +6460,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -6327,7 +6512,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/http",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares HTTP clients and servers.",
       "category": "standard library",
       "tags": [
@@ -6340,7 +6525,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -6530,7 +6715,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/io",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Reads and writes values through standard streams and open files.",
       "category": "standard library",
       "tags": [
@@ -6543,13 +6728,13 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
       },
       "repository": "https://github.com/radiiplus/foo",
-      "revision": "ed035cad4e6d98d1182a556ff114bb821beb4530",
+      "revision": "34fb58ae97c0e389a2e3b7c4d2359def4e335916",
       "install": "use io.",
       "dependencies": [],
       "readme": [
@@ -6649,7 +6834,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/ipc",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Named file-backed shared regions for local processes.",
       "category": "standard library",
       "tags": [
@@ -6662,7 +6847,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -6756,7 +6941,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/issue",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "A structured error description. Text fields borrow their source storage.",
       "category": "standard library",
       "tags": [
@@ -6769,7 +6954,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -6863,7 +7048,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/iterator",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Defines explicit, state-carrying iteration for user-defined sources.",
       "category": "standard library",
       "tags": [
@@ -6876,7 +7061,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -6957,8 +7142,73 @@
     {
       "schema": "foo.package/v1",
       "kind": "standard",
+      "name": "lib/joining",
+      "version": "1.0.0",
+      "description": "The caller allocates and releases output; it must be disjoint from both inputs.",
+      "category": "standard library",
+      "tags": [
+        "joining",
+        "standard"
+      ],
+      "license": "MIT OR Apache-2.0",
+      "compatible": true,
+      "deprecated": "",
+      "platforms": [
+        "all"
+      ],
+      "updated": "2026-10-22",
+      "owner": {
+        "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
+        "login": "radiiplus"
+      },
+      "repository": "https://github.com/radiiplus/foo",
+      "revision": "e2030980792c4eea9c8d0c7dddd93ab5287c3a27",
+      "install": "use joining.",
+      "dependencies": [],
+      "readme": [
+        "The caller allocates and releases output; it must be disjoint from both inputs.",
+        "Import this module with use joining."
+      ],
+      "source": {
+        "format": "foo.source/v1",
+        "digest": "5ffba9655b8ed6ce1781bbbfb6c4f67739dd4855558e5a10ef0fa340713f3c8a",
+        "files": [
+          {
+            "path": "lib/joining.iv",
+            "content": "-- The caller allocates and releases output; it must be disjoint from both inputs.\npublic function join(left text, right text, output sequence of byte) giving boolean {\n  constant first is lengthof(left).\n  constant second is lengthof(right).\n  constant available is lengthof(output).\n  when first greater than available { give false. }\n  when second is not (available subtract first) { give false. }\n  dynamic cursor of type unsigned is 0.\n  for each value in left {\n    set output at cursor to value.\n    increase cursor by 1.\n  }\n  for each value in right {\n    set output at cursor to value.\n    increase cursor by 1.\n  }\n  give true.\n}\n\npublic function join_into(left text, right text, output sequence of byte) giving boolean {\n  give join(left, right, output).\n}\n"
+          }
+        ]
+      },
+      "api": {
+        "schema": "foo.api/v1",
+        "modules": [
+          {
+            "name": "lib/joining",
+            "path": "lib/joining.iv",
+            "summary": "The caller allocates and releases output; it must be disjoint from both inputs.",
+            "items": [
+              {
+                "kind": "function",
+                "name": "join",
+                "declaration": "public function join(left text, right text, output sequence of byte) giving boolean.",
+                "documentation": "The caller allocates and releases output; it must be disjoint from both inputs."
+              },
+              {
+                "kind": "function",
+                "name": "join_into",
+                "declaration": "public function join_into(left text, right text, output sequence of byte) giving boolean.",
+                "documentation": ""
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "schema": "foo.package/v1",
+      "kind": "standard",
       "name": "lib/json",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares JSON trees and streaming tokens.",
       "category": "standard library",
       "tags": [
@@ -6971,7 +7221,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -7113,7 +7363,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/limit",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "POSIX process limits. Unsupported kinds or targets report missing values. Kinds: \"files\", \"address\", \"cpu\", and \"stack\".",
       "category": "standard library",
       "tags": [
@@ -7126,7 +7376,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -7190,7 +7440,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/list",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares growable lists of borrowed byte pointers.",
       "category": "standard library",
       "tags": [
@@ -7203,7 +7453,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -7279,7 +7529,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/log",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Writes application messages and errors to the diagnostic stream.",
       "category": "standard library",
       "tags": [
@@ -7292,7 +7542,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -7356,7 +7606,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/map",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Stores typed key/value pairs with equality-based lookup.",
       "category": "standard library",
       "tags": [
@@ -7369,7 +7619,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -7475,7 +7725,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/matrix",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Dense row-major decimal matrices with explicit ownership.",
       "category": "standard library",
       "tags": [
@@ -7488,7 +7738,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -7594,7 +7844,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/memory",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares owned allocations and grouped arena lifetimes.",
       "category": "standard library",
       "tags": [
@@ -7607,7 +7857,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -7749,7 +7999,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/metric",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Owned, synchronized instruments. Bounds must be strictly ascending.",
       "category": "standard library",
       "tags": [
@@ -7762,7 +8012,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -7874,7 +8124,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/net",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Opens TCP connections and UDP sockets with explicit resource lifetimes.",
       "category": "standard library",
       "tags": [
@@ -7887,7 +8137,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -8371,7 +8621,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/packing",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Canonical, independently owned byte-oriented packing formats.",
       "category": "standard library",
       "tags": [
@@ -8384,7 +8634,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -8460,7 +8710,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/platform",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Runtime properties of the host ABI and virtual-memory page layout.",
       "category": "standard library",
       "tags": [
@@ -8473,7 +8723,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -8543,7 +8793,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/poll",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Polls owned TCP and UDP sockets and one-shot monotonic deadlines.",
       "category": "standard library",
       "tags": [
@@ -8556,7 +8806,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -8650,7 +8900,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/process",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Executes programs, runs shell commands, and reads arguments and environment values.",
       "category": "standard library",
       "tags": [
@@ -8663,7 +8913,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -8841,7 +9091,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/queue",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Stores typed values in first-in, first-out order.",
       "category": "standard library",
       "tags": [
@@ -8854,7 +9104,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -8936,7 +9186,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/radix",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Stable least-significant-byte radix ordering for unsigned 64-bit values.",
       "category": "standard library",
       "tags": [
@@ -8949,7 +9199,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -9001,7 +9251,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/resource",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Reports live native resources owned by the current process.",
       "category": "standard library",
       "tags": [
@@ -9014,7 +9264,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -9090,7 +9340,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/ring",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Owned bounded byte ring. Calls may be shared across threads; synchronize close.",
       "category": "standard library",
       "tags": [
@@ -9103,7 +9353,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -9209,7 +9459,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/route",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Snapshots routes; a blank gateway identifies an on-link route.",
       "category": "standard library",
       "tags": [
@@ -9222,7 +9472,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -9322,7 +9572,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/sequence",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Builds typed sequences and applies ordering, searching, and transformations.",
       "category": "standard library",
       "tags": [
@@ -9335,7 +9585,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -9350,11 +9600,11 @@
       ],
       "source": {
         "format": "foo.source/v1",
-        "digest": "34298c23aa49ffd1ecb377041ca0a97368a9c214936d787a84075707ea78e683",
+        "digest": "290c098eda8fb10bc8deb1af623e408b58121268aa94cf995c46fe5a1467bc20",
         "files": [
           {
             "path": "lib/sequence.iv",
-            "content": "-- Builds typed sequences and applies ordering, searching, and transformations.\npublic use \"sequence\" function create[T] giving sequence of T.\npublic use \"sequence\" function append[T](items sequence of T, value T) giving failable sequence of T.\npublic use \"sequence\" function remove[T](items sequence of T, index unsigned) giving failable sequence of T.\npublic use \"sequence\" function copy[T](items sequence of T) giving failable sequence of T.\npublic use \"sequence\" function length[T](items sequence of T) giving unsigned.\n-- Reads the length of a borrowed, read-only sequence without copying it.\npublic use \"sequence\" function extent[T](items sequence of constant T) giving unsigned.\n-- The returned view borrows items; keep the owner alive while using it.\npublic use \"sequence\" function view[T](items sequence of constant T, offset unsigned, count unsigned) giving failable sequence of constant T.\npublic use \"sequence\" function release[T](items sequence of T) giving failable nothing.\npublic use \"sequence\" function sized[T](length unsigned) giving failable sequence of T.\nuse \"sequence\" function compact[T](items sequence of T, length unsigned) giving failable sequence of T.\npublic function find[T](items sequence of T, value T) giving optional unsigned where T is Equatable {\n  dynamic index of type unsigned is 0.\n  for each item in items {\n    when item is value {\n      give index.\n    }\n    set index to index plus 1.\n  }\n  give null.\n}\n-- These operations require values sorted in ascending order under Ord.\npublic function lower[T](values sequence of constant T, target T) giving unsigned where T is Ord {\n  dynamic left of type unsigned is 0.\n  dynamic right is extent[T](values).\n  while left less than right {\n    constant middle is left plus (right subtract left) divide 2.\n    when (values at middle) less than target {\n      set left to middle plus 1.\n    } otherwise {\n      set right to middle.\n    }\n  }\n  give left.\n}\npublic function upper[T](values sequence of constant T, target T) giving unsigned where T is Ord {\n  dynamic left of type unsigned is 0.\n  dynamic right is extent[T](values).\n  while left less than right {\n    constant middle is left plus (right subtract left) divide 2.\n    when target less than (values at middle) {\n      set right to middle.\n    } otherwise {\n      set left to middle plus 1.\n    }\n  }\n  give left.\n}\npublic function search[T](values sequence of constant T, target T) giving optional unsigned where T is Ord {\n  constant index is lower[T](values, target).\n  when index less than extent[T](values) and (values at index) is target {\n    give index.\n  }\n  give null.\n}\n-- Removes adjacent duplicates from ascending input into independent storage.\npublic function unique[T](values sequence of constant T) giving failable sequence of T where T is Ord {\n  constant length is extent[T](values).\n  constant result is sized[T](length) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic count of type unsigned is 0.\n  for each value in values {\n    when count is 0 or not ((result at (count subtract 1)) is value) {\n      set result at count to value.\n      increase count by 1.\n    }\n  }\n  give compact[T](result, count) try.\n}\n-- Merges two ascending inputs into one independently owned stable result.\npublic function merge[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {\n  constant first is extent[T](left).\n  constant second is extent[T](right).\n  when second greater than 18446744073709551615 subtract first {\n    give fail(Error.Bounds).\n  }\n  constant result is sized[T](first plus second) try.\n  dynamic a of type unsigned is 0.\n  dynamic b of type unsigned is 0.\n  dynamic cursor of type unsigned is 0.\n  while a less than first and b less than second {\n    when (right at b) less than (left at a) {\n      set result at cursor to right at b.\n      increase b by 1.\n    } otherwise {\n      set result at cursor to left at a.\n      increase a by 1.\n    }\n    increase cursor by 1.\n  }\n  while a less than first {\n    set result at cursor to left at a.\n    increase a by 1.\n    increase cursor by 1.\n  }\n  while b less than second {\n    set result at cursor to right at b.\n    increase b by 1.\n    increase cursor by 1.\n  }\n  give result.\n}\n-- Advances past every copy of the current value in an ascending sequence.\nfunction advance[T](values sequence of constant T, index unsigned) giving unsigned where T is Ord {\n  constant value is values at index.\n  dynamic cursor is index plus 1.\n  while cursor less than extent[T](values) and (values at cursor) is value {\n    increase cursor by 1.\n  }\n  give cursor.\n}\n-- Returns the ascending union of two ascending sequences without duplicates.\npublic function unite[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {\n  constant first is extent[T](left).\n  constant second is extent[T](right).\n  when second greater than 18446744073709551615 subtract first {\n    give fail(Error.Bounds).\n  }\n  constant result is sized[T](first plus second) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic a of type unsigned is 0.\n  dynamic b of type unsigned is 0.\n  dynamic count of type unsigned is 0.\n  while a less than first and b less than second {\n    when (left at a) less than (right at b) {\n      set result at count to left at a.\n      set a to advance[T](left, a).\n    } otherwise when (right at b) less than (left at a) {\n      set result at count to right at b.\n      set b to advance[T](right, b).\n    } otherwise {\n      set result at count to left at a.\n      set a to advance[T](left, a).\n      set b to advance[T](right, b).\n    }\n    increase count by 1.\n  }\n  while a less than first {\n    set result at count to left at a.\n    increase count by 1.\n    set a to advance[T](left, a).\n  }\n  while b less than second {\n    set result at count to right at b.\n    increase count by 1.\n    set b to advance[T](right, b).\n  }\n  give compact[T](result, count) try.\n}\n-- Returns the ascending values shared by two ascending sequences.\npublic function intersect[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {\n  constant first is extent[T](left).\n  constant second is extent[T](right).\n  dynamic capacity is first.\n  when second less than first { set capacity to second. }\n  constant result is sized[T](capacity) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic a of type unsigned is 0.\n  dynamic b of type unsigned is 0.\n  dynamic count of type unsigned is 0.\n  while a less than first and b less than second {\n    when (left at a) less than (right at b) {\n      set a to advance[T](left, a).\n    } otherwise when (right at b) less than (left at a) {\n      set b to advance[T](right, b).\n    } otherwise {\n      set result at count to left at a.\n      increase count by 1.\n      set a to advance[T](left, a).\n      set b to advance[T](right, b).\n    }\n  }\n  give compact[T](result, count) try.\n}\n-- Returns ascending values from left that do not appear in right.\npublic function difference[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {\n  constant first is extent[T](left).\n  constant second is extent[T](right).\n  constant result is sized[T](first) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic a of type unsigned is 0.\n  dynamic b of type unsigned is 0.\n  dynamic count of type unsigned is 0.\n  while a less than first and b less than second {\n    when (left at a) less than (right at b) {\n      set result at count to left at a.\n      increase count by 1.\n      set a to advance[T](left, a).\n    } otherwise when (right at b) less than (left at a) {\n      set b to advance[T](right, b).\n    } otherwise {\n      set a to advance[T](left, a).\n      set b to advance[T](right, b).\n    }\n  }\n  while a less than first {\n    set result at count to left at a.\n    increase count by 1.\n    set a to advance[T](left, a).\n  }\n  give compact[T](result, count) try.\n}\npublic function sort[T](items sequence of T) giving failable sequence of T where T is Ord {\n  dynamic result is copy[T](items) try.\n  after error { release[T](result) fallback nothing. }\n  constant size is length[T](result).\n  when size less than 2 { give result. }\n  constant scratch is sized[T](size) try.\n  after { release[T](scratch) fallback nothing. }\n  dynamic width of type unsigned is 1.\n  while width less than size {\n    dynamic origin of type unsigned is 0.\n    while origin less than size {\n      dynamic middle is size.\n      when width less than size subtract origin { set middle to origin plus width. }\n      dynamic end is size.\n      when width less than size subtract middle { set end to middle plus width. }\n      dynamic left is origin.\n      dynamic right is middle.\n      dynamic cursor is origin.\n      while left less than middle and right less than end {\n        when (result at right) less than (result at left) {\n          set scratch at cursor to result at right.\n          increase right by 1.\n        } otherwise {\n          set scratch at cursor to result at left.\n          increase left by 1.\n        }\n        increase cursor by 1.\n      }\n      while left less than middle {\n        set scratch at cursor to result at left.\n        increase left by 1.\n        increase cursor by 1.\n      }\n      while right less than end {\n        set scratch at cursor to result at right.\n        increase right by 1.\n        increase cursor by 1.\n      }\n      set origin to end.\n    }\n    dynamic index of type unsigned is 0.\n    while index less than size {\n      set result at index to scratch at index.\n      increase index by 1.\n    }\n    when width greater than size divide 2 { set width to size. }\n    otherwise { set width to width multiply 2. }\n  }\n  give result.\n}\npublic function filter[T](items sequence of T, predicate function taking (T) giving boolean) giving failable sequence of T {\n  dynamic result is sized[T](length[T](items)) try.\n  after error {\n    release[T](result) fallback nothing.\n  }\n  dynamic count of type unsigned is 0.\n  for each item in items {\n    when predicate(item) {\n      set result at count to item.\n      set count to count plus 1.\n    }\n  }\n  give compact[T](result, count) try.\n}\npublic define division[T] as record {\n  kept of type sequence of T.\n  rest of type sequence of T.\n}.\n-- Evaluates the predicate once per item and preserves order in each result.\npublic function partition[T](items sequence of T, predicate function taking (T) giving boolean) giving failable division[T] {\n  constant size is length[T](items).\n  constant flags is sized[boolean](size) try.\n  after { release[boolean](flags) fallback nothing. }\n  dynamic count of type unsigned is 0.\n  dynamic index of type unsigned is 0.\n  while index less than size {\n    constant selected is predicate(items at index).\n    set flags at index to selected.\n    when selected { increase count by 1. }\n    increase index by 1.\n  }\n  constant kept is sized[T](count) try.\n  after error { release[T](kept) fallback nothing. }\n  constant rest is sized[T](size subtract count) try.\n  after error { release[T](rest) fallback nothing. }\n  dynamic yes of type unsigned is 0.\n  dynamic no of type unsigned is 0.\n  set index to 0.\n  while index less than size {\n    when flags at index {\n      set kept at yes to items at index.\n      increase yes by 1.\n    } otherwise {\n      set rest at no to items at index.\n      increase no by 1.\n    }\n    increase index by 1.\n  }\n  give division[T](kept, rest).\n}\npublic function map[T, U](items sequence of T, transform function taking (T) giving U) giving failable sequence of U {\n  dynamic result is sized[U](length[T](items)) try.\n  after error {\n    release[U](result) fallback nothing.\n  }\n  dynamic index is 0.\n  for each item in items {\n    set result at index to transform(item).\n    set index to index plus 1.\n  }\n  give result.\n}\npublic function reverse[T](items sequence of T) giving failable sequence of T {\n  constant count is length[T](items).\n  dynamic result is sized[T](count) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic index of type unsigned is 0.\n  while index less than count {\n    set result at index to items at (count subtract index subtract 1).\n    increase index by 1.\n  }\n  give result.\n}\npublic function any[T](items sequence of T, predicate function taking (T) giving boolean) giving boolean {\n  for each item in items {\n    when predicate(item) { give true. }\n  }\n  give false.\n}\npublic function all[T](items sequence of T, predicate function taking (T) giving boolean) giving boolean {\n  for each item in items {\n    when not predicate(item) { give false. }\n  }\n  give true.\n}\npublic function fold[T, U](items sequence of T, initial U, combine function taking (U, T) giving U) giving U {\n  dynamic result is initial.\n  for each item in items {\n    set result to combine(result, item).\n  }\n  give result.\n}\npublic function take[T](items sequence of T, count unsigned) giving failable sequence of T {\n  when count greater than length[T](items) { give fail(Error.Bounds). }\n  dynamic result is sized[T](count) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic index of type unsigned is 0.\n  while index less than count {\n    set result at index to items at index.\n    increase index by 1.\n  }\n  give result.\n}\npublic function drop[T](items sequence of T, count unsigned) giving failable sequence of T {\n  when count greater than length[T](items) { give fail(Error.Bounds). }\n  constant remaining is length[T](items) subtract count.\n  dynamic result is sized[T](remaining) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic index of type unsigned is 0.\n  while index less than remaining {\n    set result at index to items at (count plus index).\n    increase index by 1.\n  }\n  give result.\n}\npublic function deduplicate[T](items sequence of T) giving failable sequence of T where T is Equatable {\n  dynamic result is sized[T](length[T](items)) try.\n  after error {\n    release[T](result) fallback nothing.\n  }\n  dynamic count of type unsigned is 0.\n  for each item in items {\n    dynamic present is false.\n    dynamic cursor of type unsigned is 0.\n    while cursor less than count {\n      when result at cursor is item {\n        set present to true.\n        stop.\n      }\n      set cursor to cursor plus 1.\n    }\n    when not present {\n      set result at count to item.\n      set count to count plus 1.\n    }\n  }\n  give compact[T](result, count) try.\n}\npublic function dedup[T](items sequence of T) giving failable sequence of T where T is Equatable {\n  give deduplicate[T](items) try.\n}\n"
+            "content": "-- Builds typed sequences and applies ordering, searching, and transformations.\npublic use \"sequence\" function create[T] giving sequence of T.\npublic use \"sequence\" function append[T](items sequence of T, value T) giving failable sequence of T.\npublic use \"sequence\" function remove[T](items sequence of T, index unsigned) giving failable sequence of T.\npublic use \"sequence\" function copy[T](items sequence of T) giving failable sequence of T.\npublic use \"sequence\" function length[T](items sequence of T) giving unsigned.\n-- Reads the length of a borrowed, read-only sequence without copying it.\npublic use \"sequence\" function extent[T](items sequence of constant T) giving unsigned.\n-- The returned view borrows items; keep the owner alive while using it.\npublic use \"sequence\" function view[T](items sequence of constant T, offset unsigned, count unsigned) giving failable sequence of constant T.\npublic use \"sequence\" function release[T](items sequence of T) giving failable nothing.\npublic use \"sequence\" function sized[T](length unsigned) giving failable sequence of T.\nuse \"sequence\" function compact[T](items sequence of T, length unsigned) giving failable sequence of T.\npublic function find[T](items sequence of T, value T) giving optional unsigned where T is Equatable {\n  dynamic index of type unsigned is 0.\n  for each item in items {\n    when item is value {\n      give index.\n    }\n    set index to index plus 1.\n  }\n  give null.\n}\n-- These operations require values sorted in ascending order under Ord.\npublic function lower[T](values sequence of constant T, target T) giving unsigned where T is Ord {\n  dynamic left of type unsigned is 0.\n  dynamic right is extent[T](values).\n  while left less than right {\n    constant middle is left plus (right subtract left) divide 2.\n    when (values at middle) less than target {\n      set left to middle plus 1.\n    } otherwise {\n      set right to middle.\n    }\n  }\n  give left.\n}\npublic function upper[T](values sequence of constant T, target T) giving unsigned where T is Ord {\n  dynamic left of type unsigned is 0.\n  dynamic right is extent[T](values).\n  while left less than right {\n    constant middle is left plus (right subtract left) divide 2.\n    when target less than (values at middle) {\n      set right to middle.\n    } otherwise {\n      set left to middle plus 1.\n    }\n  }\n  give left.\n}\npublic function search[T](values sequence of constant T, target T) giving optional unsigned where T is Ord {\n  constant index is lower[T](values, target).\n  when index less than extent[T](values) and (values at index) is target {\n    give index.\n  }\n  give null.\n}\n-- Removes adjacent duplicates from ascending input into independent storage.\npublic function unique[T](values sequence of constant T) giving failable sequence of T where T is Ord {\n  constant length is extent[T](values).\n  constant result is sized[T](length) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic count of type unsigned is 0.\n  for each value in values {\n    when count is 0 or not ((result at (count subtract 1)) is value) {\n      set result at count to value.\n      increase count by 1.\n    }\n  }\n  give compact[T](result, count) try.\n}\n-- Merges two ascending inputs into one independently owned stable result.\npublic function merge[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {\n  constant first is extent[T](left).\n  constant second is extent[T](right).\n  when second greater than 18446744073709551615 subtract first {\n    give fail(Error.Bounds).\n  }\n  constant result is sized[T](first plus second) try.\n  dynamic a of type unsigned is 0.\n  dynamic b of type unsigned is 0.\n  dynamic cursor of type unsigned is 0.\n  while a less than first and b less than second {\n    when (right at b) less than (left at a) {\n      set result at cursor to right at b.\n      increase b by 1.\n    } otherwise {\n      set result at cursor to left at a.\n      increase a by 1.\n    }\n    increase cursor by 1.\n  }\n  while a less than first {\n    set result at cursor to left at a.\n    increase a by 1.\n    increase cursor by 1.\n  }\n  while b less than second {\n    set result at cursor to right at b.\n    increase b by 1.\n    increase cursor by 1.\n  }\n  give result.\n}\n-- Advances past every copy of the current value in an ascending sequence.\nfunction advance[T](values sequence of constant T, index unsigned) giving unsigned where T is Ord {\n  constant value is values at index.\n  dynamic cursor is index plus 1.\n  while cursor less than extent[T](values) and (values at cursor) is value {\n    increase cursor by 1.\n  }\n  give cursor.\n}\n-- Returns the ascending union of two ascending sequences without duplicates.\npublic function unite[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {\n  constant first is extent[T](left).\n  constant second is extent[T](right).\n  when second greater than 18446744073709551615 subtract first {\n    give fail(Error.Bounds).\n  }\n  constant result is sized[T](first plus second) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic a of type unsigned is 0.\n  dynamic b of type unsigned is 0.\n  dynamic count of type unsigned is 0.\n  while a less than first and b less than second {\n    when (left at a) less than (right at b) {\n      set result at count to left at a.\n      set a to advance[T](left, a).\n    } otherwise when (right at b) less than (left at a) {\n      set result at count to right at b.\n      set b to advance[T](right, b).\n    } otherwise {\n      set result at count to left at a.\n      set a to advance[T](left, a).\n      set b to advance[T](right, b).\n    }\n    increase count by 1.\n  }\n  while a less than first {\n    set result at count to left at a.\n    increase count by 1.\n    set a to advance[T](left, a).\n  }\n  while b less than second {\n    set result at count to right at b.\n    increase count by 1.\n    set b to advance[T](right, b).\n  }\n  give compact[T](result, count) try.\n}\n-- Returns the ascending values shared by two ascending sequences.\nfunction seek[T](values sequence of constant T, origin unsigned, target T) giving unsigned where T is Ord {\n  constant size is extent[T](values).\n  dynamic left is origin.\n  dynamic right is size.\n  dynamic step of type unsigned is 1.\n  while step less than size subtract origin {\n    constant probe is origin plus step.\n    when not ((values at probe) less than target) {\n      set right to probe.\n      stop.\n    }\n    set left to probe plus 1.\n    when step greater than (size subtract origin) divide 2 { stop. }\n    set step to step multiply 2.\n  }\n  while left less than right {\n    constant middle is left plus (right subtract left) divide 2.\n    when (values at middle) less than target { set left to middle plus 1. }\n    otherwise { set right to middle. }\n  }\n  give left.\n}\npublic function intersect[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {\n  constant first is extent[T](left).\n  constant second is extent[T](right).\n  dynamic capacity is first.\n  when second less than first { set capacity to second. }\n  constant result is sized[T](capacity) try.\n  after error { release[T](result) fallback nothing. }\n  constant gallop is capacity greater than or equal to 32 and (first greater than or equal to 1024 or second greater than or equal to 1024) and first less than or equal to 65536 and second less than or equal to 65536 and (first divide capacity greater than or equal to 16 or second divide capacity greater than or equal to 16).\n  dynamic a of type unsigned is 0.\n  dynamic b of type unsigned is 0.\n  dynamic count of type unsigned is 0.\n  while a less than first and b less than second {\n    when (left at a) less than (right at b) {\n      when gallop { set a to seek[T](left, a, right at b). }\n      otherwise { set a to advance[T](left, a). }\n    } otherwise when (right at b) less than (left at a) {\n      when gallop { set b to seek[T](right, b, left at a). }\n      otherwise { set b to advance[T](right, b). }\n    } otherwise {\n      set result at count to left at a.\n      increase count by 1.\n      set a to advance[T](left, a).\n      set b to advance[T](right, b).\n    }\n  }\n  give compact[T](result, count) try.\n}\n\n-- Returns ascending values from left that do not appear in right.\npublic function difference[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {\n  constant first is extent[T](left).\n  constant second is extent[T](right).\n  constant result is sized[T](first) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic a of type unsigned is 0.\n  dynamic b of type unsigned is 0.\n  dynamic count of type unsigned is 0.\n  while a less than first and b less than second {\n    when (left at a) less than (right at b) {\n      set result at count to left at a.\n      increase count by 1.\n      set a to advance[T](left, a).\n    } otherwise when (right at b) less than (left at a) {\n      set b to advance[T](right, b).\n    } otherwise {\n      set a to advance[T](left, a).\n      set b to advance[T](right, b).\n    }\n  }\n  while a less than first {\n    set result at count to left at a.\n    increase count by 1.\n    set a to advance[T](left, a).\n  }\n  give compact[T](result, count) try.\n}\npublic function sort[T](items sequence of T) giving failable sequence of T where T is Ord {\n  dynamic result is copy[T](items) try.\n  after error { release[T](result) fallback nothing. }\n  constant size is length[T](result).\n  when size less than 2 { give result. }\n  constant scratch is sized[T](size) try.\n  after { release[T](scratch) fallback nothing. }\n  dynamic width of type unsigned is 1.\n  while width less than size {\n    dynamic origin of type unsigned is 0.\n    while origin less than size {\n      dynamic middle is size.\n      when width less than size subtract origin { set middle to origin plus width. }\n      dynamic end is size.\n      when width less than size subtract middle { set end to middle plus width. }\n      dynamic left is origin.\n      dynamic right is middle.\n      dynamic cursor is origin.\n      while left less than middle and right less than end {\n        when (result at right) less than (result at left) {\n          set scratch at cursor to result at right.\n          increase right by 1.\n        } otherwise {\n          set scratch at cursor to result at left.\n          increase left by 1.\n        }\n        increase cursor by 1.\n      }\n      while left less than middle {\n        set scratch at cursor to result at left.\n        increase left by 1.\n        increase cursor by 1.\n      }\n      while right less than end {\n        set scratch at cursor to result at right.\n        increase right by 1.\n        increase cursor by 1.\n      }\n      set origin to end.\n    }\n    dynamic index of type unsigned is 0.\n    while index less than size {\n      set result at index to scratch at index.\n      increase index by 1.\n    }\n    when width greater than size divide 2 { set width to size. }\n    otherwise { set width to width multiply 2. }\n  }\n  give result.\n}\npublic function filter[T](items sequence of T, predicate function taking (T) giving boolean) giving failable sequence of T {\n  dynamic result is sized[T](length[T](items)) try.\n  after error {\n    release[T](result) fallback nothing.\n  }\n  dynamic count of type unsigned is 0.\n  for each item in items {\n    when predicate(item) {\n      set result at count to item.\n      set count to count plus 1.\n    }\n  }\n  give compact[T](result, count) try.\n}\npublic define division[T] as record {\n  kept of type sequence of T.\n  rest of type sequence of T.\n}.\n-- Evaluates the predicate once per item and preserves order in each result.\npublic function partition[T](items sequence of T, predicate function taking (T) giving boolean) giving failable division[T] {\n  constant size is length[T](items).\n  constant flags is sized[boolean](size) try.\n  after { release[boolean](flags) fallback nothing. }\n  dynamic count of type unsigned is 0.\n  dynamic index of type unsigned is 0.\n  while index less than size {\n    constant selected is predicate(items at index).\n    set flags at index to selected.\n    when selected { increase count by 1. }\n    increase index by 1.\n  }\n  constant kept is sized[T](count) try.\n  after error { release[T](kept) fallback nothing. }\n  constant rest is sized[T](size subtract count) try.\n  after error { release[T](rest) fallback nothing. }\n  dynamic yes of type unsigned is 0.\n  dynamic no of type unsigned is 0.\n  set index to 0.\n  while index less than size {\n    when flags at index {\n      set kept at yes to items at index.\n      increase yes by 1.\n    } otherwise {\n      set rest at no to items at index.\n      increase no by 1.\n    }\n    increase index by 1.\n  }\n  give division[T](kept, rest).\n}\npublic function map[T, U](items sequence of T, transform function taking (T) giving U) giving failable sequence of U {\n  dynamic result is sized[U](length[T](items)) try.\n  after error {\n    release[U](result) fallback nothing.\n  }\n  dynamic index is 0.\n  for each item in items {\n    set result at index to transform(item).\n    set index to index plus 1.\n  }\n  give result.\n}\npublic function reverse[T](items sequence of T) giving failable sequence of T {\n  constant count is length[T](items).\n  dynamic result is sized[T](count) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic index of type unsigned is 0.\n  while index less than count {\n    set result at index to items at (count subtract index subtract 1).\n    increase index by 1.\n  }\n  give result.\n}\npublic function any[T](items sequence of T, predicate function taking (T) giving boolean) giving boolean {\n  for each item in items {\n    when predicate(item) { give true. }\n  }\n  give false.\n}\npublic function all[T](items sequence of T, predicate function taking (T) giving boolean) giving boolean {\n  for each item in items {\n    when not predicate(item) { give false. }\n  }\n  give true.\n}\npublic function fold[T, U](items sequence of T, initial U, combine function taking (U, T) giving U) giving U {\n  dynamic result is initial.\n  for each item in items {\n    set result to combine(result, item).\n  }\n  give result.\n}\npublic function take[T](items sequence of T, count unsigned) giving failable sequence of T {\n  when count greater than length[T](items) { give fail(Error.Bounds). }\n  dynamic result is sized[T](count) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic index of type unsigned is 0.\n  while index less than count {\n    set result at index to items at index.\n    increase index by 1.\n  }\n  give result.\n}\npublic function drop[T](items sequence of T, count unsigned) giving failable sequence of T {\n  when count greater than length[T](items) { give fail(Error.Bounds). }\n  constant remaining is length[T](items) subtract count.\n  dynamic result is sized[T](remaining) try.\n  after error { release[T](result) fallback nothing. }\n  dynamic index of type unsigned is 0.\n  while index less than remaining {\n    set result at index to items at (count plus index).\n    increase index by 1.\n  }\n  give result.\n}\npublic function deduplicate[T](items sequence of T) giving failable sequence of T where T is Equatable {\n  dynamic result is sized[T](length[T](items)) try.\n  after error {\n    release[T](result) fallback nothing.\n  }\n  dynamic count of type unsigned is 0.\n  for each item in items {\n    dynamic present is false.\n    dynamic cursor of type unsigned is 0.\n    while cursor less than count {\n      when result at cursor is item {\n        set present to true.\n        stop.\n      }\n      set cursor to cursor plus 1.\n    }\n    when not present {\n      set result at count to item.\n      set count to count plus 1.\n    }\n  }\n  give compact[T](result, count) try.\n}\npublic function dedup[T](items sequence of T) giving failable sequence of T where T is Equatable {\n  give deduplicate[T](items) try.\n}\n"
           }
         ]
       },
@@ -9466,7 +9716,7 @@
                 "kind": "function",
                 "name": "intersect",
                 "declaration": "public function intersect[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord.",
-                "documentation": "Returns the ascending values shared by two ascending sequences."
+                "documentation": ""
               },
               {
                 "kind": "function",
@@ -9561,7 +9811,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/set",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Keeps each typed value once using equality-based membership.",
       "category": "standard library",
       "tags": [
@@ -9574,7 +9824,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -9686,7 +9936,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/simd",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "FOO standard library module simd.",
       "category": "standard library",
       "tags": [
@@ -9699,7 +9949,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -9787,7 +10037,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/stack",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Stores typed values in last-in, first-out order.",
       "category": "standard library",
       "tags": [
@@ -9800,7 +10050,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -9882,7 +10132,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/state",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Applies application-defined transitions without adding state-machine syntax.",
       "category": "standard library",
       "tags": [
@@ -9895,7 +10145,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -9953,7 +10203,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/stream",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares length-aware input, output and diagnostic streams.",
       "category": "standard library",
       "tags": [
@@ -9966,7 +10216,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -10054,7 +10304,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/system",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares host system information.",
       "category": "standard library",
       "tags": [
@@ -10067,7 +10317,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -10125,7 +10375,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/table",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Mutable open-addressed maps for hot text-keyed lookup paths. Values are shallow-copied into backend-owned storage.",
       "category": "standard library",
       "tags": [
@@ -10138,7 +10388,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -10226,7 +10476,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/task",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares task execution and networking.",
       "category": "standard library",
       "tags": [
@@ -10239,7 +10489,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -10459,7 +10709,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/tensor",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Dense row-major decimal tensors with explicit ownership.",
       "category": "standard library",
       "tags": [
@@ -10472,7 +10722,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -10608,7 +10858,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/testing",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares executable test assertions.",
       "category": "standard library",
       "tags": [
@@ -10621,7 +10871,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -10727,7 +10977,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/text",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Combines, trims, and splits text using byte offsets and ASCII whitespace.",
       "category": "standard library",
       "tags": [
@@ -10740,7 +10990,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -10755,11 +11005,11 @@
       ],
       "source": {
         "format": "foo.source/v1",
-        "digest": "f6fd9fd741e39df9c805744165b0598204821bc8b9843ea937817aed79e18f1b",
+        "digest": "4e932e76b2391f70e112b2d9bda3b9b3416a2f18f71d4e6c68881310dc5def5d",
         "files": [
           {
             "path": "lib/text.iv",
-            "content": "-- Combines, trims, and splits text using byte offsets and ASCII whitespace.\nuse sequence as items.\nuse \"sequence\" function sized[T](length unsigned) giving failable sequence of T.\npublic use \"text\" function concatenate(left text, right text) giving failable text.\npublic use \"text\" function trim(content text) giving failable text.\npublic use \"text\" function length(content text) giving unsigned.\npublic use \"text\" function slice(content text, first unsigned, last unsigned) giving failable text.\npublic use \"text\" function find(content text, value text) giving optional unsigned.\npublic use \"text\" function release(content text) giving failable nothing.\npublic function starts(content text, prefix text) giving boolean {\n  when length(prefix) greater than length(content) {\n    give false.\n  }\n  dynamic index of type unsigned is 0.\n  while index less than length(prefix) {\n    when content at index is not prefix at index {\n      give false.\n    }\n    increase index by 1.\n  }\n  give true.\n}\npublic function ends(content text, suffix text) giving boolean {\n  constant size is length(content).\n  constant span is length(suffix).\n  when span greater than size {\n    give false.\n  }\n  dynamic index of type unsigned is 0.\n  while index less than span {\n    when content at (size subtract span plus index) is not suffix at index {\n      give false.\n    }\n    increase index by 1.\n  }\n  give true.\n}\npublic function contains(content text, value text) giving boolean {\n  give find(content, value) is not null.\n}\npublic function split(content text, separator text) giving failable sequence of text {\n  constant width is length(separator).\n  constant size is length(content).\n  when width is 0 {\n    give fail(Error.Separator).\n  }\n  dynamic count of type unsigned is 1.\n  dynamic cursor of type unsigned is 0.\n  while cursor plus width less than or equal to size {\n    dynamic matches is true.\n    dynamic index of type unsigned is 0.\n    while index less than width {\n      when content at (cursor plus index) is not separator at index {\n        set matches to false.\n        stop.\n      }\n      set index to index plus 1.\n    }\n    when matches {\n      set count to count plus 1.\n      set cursor to cursor plus width.\n    } otherwise {\n      set cursor to cursor plus 1.\n    }\n  }\n  dynamic result is sized[text](count) try.\n  after error {\n    for each part in result {\n      release(part) fallback nothing.\n    }\n    items.release[text](result) fallback nothing.\n  }\n  dynamic first of type unsigned is 0.\n  set cursor to 0.\n  dynamic position of type unsigned is 0.\n  while cursor plus width less than or equal to size {\n    dynamic matches is true.\n    dynamic index of type unsigned is 0.\n    while index less than width {\n      when content at (cursor plus index) is not separator at index {\n        set matches to false.\n        stop.\n      }\n      set index to index plus 1.\n    }\n    when matches {\n      constant part is slice(content, first, cursor) try.\n      set result at position to part.\n      set position to position plus 1.\n      set cursor to cursor plus width.\n      set first to cursor.\n    } otherwise {\n      set cursor to cursor plus 1.\n    }\n  }\n  set result at position to slice(content, first, size) try.\n  give result.\n}\n"
+            "content": "-- Combines, trims, and splits text using byte offsets and ASCII whitespace.\nuse sequence as items.\nuse joining as direct.\nuse \"sequence\" function sized[T](length unsigned) giving failable sequence of T.\npublic use \"text\" function concatenate(left text, right text) giving failable text.\npublic use \"text\" function slice(content text, first unsigned, last unsigned) giving failable text.\npublic use \"text\" function find(content text, value text) giving optional unsigned.\npublic use \"text\" function release(content text) giving failable nothing.\npublic function length(content text) giving unsigned {\n  give lengthof(content).\n}\npublic function trim(content text) giving failable text {\n  dynamic first of type unsigned is 0.\n  dynamic last of type unsigned is length(content).\n  while first less than last {\n    constant value is content at first.\n    when value is 32 or value is 9 or value is 10 or value is 13 or value is 11 or value is 12 {\n      increase first by 1.\n    } otherwise { stop. }\n  }\n  while last greater than first {\n    constant value is content at (last subtract 1).\n    when value is 32 or value is 9 or value is 10 or value is 13 or value is 11 or value is 12 {\n      set last to last subtract 1.\n    } otherwise { stop. }\n  }\n  give slice(content, first, last) try.\n}\npublic function join(left text, right text, output sequence of byte) giving boolean {\n  give direct.join(left, right, output).\n}\npublic function join_into(left text, right text, output sequence of byte) giving boolean {\n  give join(left, right, output).\n}\npublic function starts(content text, prefix text) giving boolean {\n  when length(prefix) greater than length(content) {\n    give false.\n  }\n  dynamic index of type unsigned is 0.\n  while index less than length(prefix) {\n    when content at index is not prefix at index {\n      give false.\n    }\n    increase index by 1.\n  }\n  give true.\n}\npublic function ends(content text, suffix text) giving boolean {\n  constant size is length(content).\n  constant span is length(suffix).\n  when span greater than size {\n    give false.\n  }\n  dynamic index of type unsigned is 0.\n  while index less than span {\n    when content at (size subtract span plus index) is not suffix at index {\n      give false.\n    }\n    increase index by 1.\n  }\n  give true.\n}\npublic function contains(content text, value text) giving boolean {\n  give find(content, value) is not null.\n}\npublic function split(content text, separator text) giving failable sequence of text {\n  constant width is length(separator).\n  constant size is length(content).\n  when width is 0 {\n    give fail(Error.Separator).\n  }\n  dynamic count of type unsigned is 1.\n  dynamic cursor of type unsigned is 0.\n  while cursor plus width less than or equal to size {\n    dynamic matches is true.\n    dynamic index of type unsigned is 0.\n    while index less than width {\n      when content at (cursor plus index) is not separator at index {\n        set matches to false.\n        stop.\n      }\n      set index to index plus 1.\n    }\n    when matches {\n      set count to count plus 1.\n      set cursor to cursor plus width.\n    } otherwise {\n      set cursor to cursor plus 1.\n    }\n  }\n  dynamic result is sized[text](count) try.\n  after error {\n    for each part in result {\n      release(part) fallback nothing.\n    }\n    items.release[text](result) fallback nothing.\n  }\n  dynamic first of type unsigned is 0.\n  set cursor to 0.\n  dynamic position of type unsigned is 0.\n  while cursor plus width less than or equal to size {\n    dynamic matches is true.\n    dynamic index of type unsigned is 0.\n    while index less than width {\n      when content at (cursor plus index) is not separator at index {\n        set matches to false.\n        stop.\n      }\n      set index to index plus 1.\n    }\n    when matches {\n      constant part is slice(content, first, cursor) try.\n      set result at position to part.\n      set position to position plus 1.\n      set cursor to cursor plus width.\n      set first to cursor.\n    } otherwise {\n      set cursor to cursor plus 1.\n    }\n  }\n  set result at position to slice(content, first, size) try.\n  give result.\n}\n"
           }
         ]
       },
@@ -10779,18 +11029,6 @@
               },
               {
                 "kind": "function",
-                "name": "trim",
-                "declaration": "public use \"text\" function trim(content text) giving failable text.",
-                "documentation": ""
-              },
-              {
-                "kind": "function",
-                "name": "length",
-                "declaration": "public use \"text\" function length(content text) giving unsigned.",
-                "documentation": ""
-              },
-              {
-                "kind": "function",
                 "name": "slice",
                 "declaration": "public use \"text\" function slice(content text, first unsigned, last unsigned) giving failable text.",
                 "documentation": ""
@@ -10805,6 +11043,30 @@
                 "kind": "function",
                 "name": "release",
                 "declaration": "public use \"text\" function release(content text) giving failable nothing.",
+                "documentation": ""
+              },
+              {
+                "kind": "function",
+                "name": "length",
+                "declaration": "public function length(content text) giving unsigned.",
+                "documentation": ""
+              },
+              {
+                "kind": "function",
+                "name": "trim",
+                "declaration": "public function trim(content text) giving failable text.",
+                "documentation": ""
+              },
+              {
+                "kind": "function",
+                "name": "join",
+                "declaration": "public function join(left text, right text, output sequence of byte) giving boolean.",
+                "documentation": ""
+              },
+              {
+                "kind": "function",
+                "name": "join_into",
+                "declaration": "public function join_into(left text, right text, output sequence of byte) giving boolean.",
                 "documentation": ""
               },
               {
@@ -10840,7 +11102,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/thread",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Runs function-valued tasks and coordinates shared work with locks and conditions.",
       "category": "standard library",
       "tags": [
@@ -10853,7 +11115,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -10965,7 +11227,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/time",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Measures elapsed time using a monotonic nanosecond clock.",
       "category": "standard library",
       "tags": [
@@ -10978,7 +11240,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -11108,7 +11370,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/timer",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Owns a cancellable one-shot timer driven by the monotonic clock.",
       "category": "standard library",
       "tags": [
@@ -11121,7 +11383,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -11197,7 +11459,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/tls",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "TLS client streams over TCP. A verified handshake completes before connect returns.",
       "category": "standard library",
       "tags": [
@@ -11210,7 +11472,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -11292,7 +11554,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/topology",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Queries logical processors and temporarily pins the calling thread.",
       "category": "standard library",
       "tags": [
@@ -11305,7 +11567,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -11399,7 +11661,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/trace",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Nested spans on one thread; finish in reverse start order.",
       "category": "standard library",
       "tags": [
@@ -11412,7 +11674,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -11506,7 +11768,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/transaction",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Coordinates one-process transactions with rollback on propagated failure.",
       "category": "standard library",
       "tags": [
@@ -11519,7 +11781,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -11571,7 +11833,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/tree",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Persistent packed ordered search tree. Midpoint search is logarithmic; immutable insertion and removal copy storage in linear time.",
       "category": "standard library",
       "tags": [
@@ -11584,7 +11846,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -11690,7 +11952,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/unicode",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Declares Unicode validation and conversion.",
       "category": "standard library",
       "tags": [
@@ -11703,7 +11965,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -11791,7 +12053,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/units",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Keeps values from unrelated physical dimensions in distinct generic types.",
       "category": "standard library",
       "tags": [
@@ -11804,7 +12066,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -11910,7 +12172,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/virtual",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Page-backed address space. Operations cover the entire reserved region.",
       "category": "standard library",
       "tags": [
@@ -11923,7 +12185,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -12017,7 +12279,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/vulkan",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Executes SPIR-V compute shaders on an available Vulkan device.",
       "category": "standard library",
       "tags": [
@@ -12030,7 +12292,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"
@@ -12196,7 +12458,7 @@
       "schema": "foo.package/v1",
       "kind": "standard",
       "name": "lib/zigzag",
-      "version": "0.8.1",
+      "version": "1.0.0",
       "description": "Signed 64-bit ZigZag integers use canonical unsigned LEB128 on the wire.",
       "category": "standard library",
       "tags": [
@@ -12209,7 +12471,7 @@
       "platforms": [
         "all"
       ],
-      "updated": "2026-10-10",
+      "updated": "2026-10-22",
       "owner": {
         "signature": "v1.m8QuzQNcvsKITl_Jyz0qn5dA9ExcXMyPzLgup9CRrU4",
         "login": "radiiplus"

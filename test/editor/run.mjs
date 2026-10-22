@@ -1,22 +1,22 @@
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync as read, existsSync as exists, readdirSync as list } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath as filename } from 'node:url';
 import { createRequire } from 'node:module';
 import tm from 'vscode-textmate';
 import onig from 'vscode-oniguruma';
 
 const require = createRequire(import.meta.url);
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../editors/textmate');
-const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const root = resolve(dirname(filename(import.meta.url)), '../../editors/textmate');
+const manifest = JSON.parse(read(join(root, 'package.json'), 'utf8'));
 const contribution = manifest.contributes.grammars[0];
 assert.equal(contribution.language, 'foo');
 assert.equal(contribution.scopeName, 'source.foo');
 assert.deepEqual(manifest.contributes.languages[0].extensions, ['.iv']);
 const path = resolve(root, contribution.path);
-const raw = tm.parseRawGrammar(readFileSync(path, 'utf8'), path);
+const raw = tm.parseRawGrammar(read(path, 'utf8'), path);
 assert.equal(raw.scopeName, contribution.scopeName);
-await onig.loadWASM(readFileSync(require.resolve('vscode-oniguruma/release/onig.wasm')));
+await onig.loadWASM(read(require.resolve('vscode-oniguruma/release/onig.wasm')));
 let expressions = 0;
 function visit(value) {
   if (!value || typeof value !== 'object') return;
@@ -47,7 +47,7 @@ function tokenize(source) {
   });
 }
 let assertions = 0;
-const pointer = tokenize(readFileSync(resolve(root, '../../test/editor/cases/pointers.iv'), 'utf8')).find(row => row.line.includes('buffer pointer to byte'));
+const pointer = tokenize(read(resolve(root, '../../test/editor/cases/pointers.iv'), 'utf8')).find(row => row.line.includes('buffer pointer to byte'));
 assert(pointer, 'Missing real pointer declaration fixture');
 for (const [text, scope] of [['pointer', 'storage.modifier.type.foo'], ['to', 'keyword.other.operator.to.foo'], ['byte', 'support.type.primitive.foo']]) {
   const start = pointer.line.lastIndexOf(text);
@@ -55,7 +55,7 @@ for (const [text, scope] of [['pointer', 'storage.modifier.type.foo'], ['to', 'k
   assert(tokens.length && tokens.every(token => token.scopes.includes(scope)), `${text} must use ${scope}`);
   assertions++;
 }
-const configuration = JSON.parse(readFileSync(join(root, 'language.json'), 'utf8'));
+const configuration = JSON.parse(read(join(root, 'language.json'), 'utf8'));
 const increase = new RegExp(configuration.indentationRules.increaseIndentPattern);
 const decrease = new RegExp(configuration.indentationRules.decreaseIndentPattern);
 for (const line of ['function visit {', 'start {', 'when true {', '  } otherwise {']) assert(increase.test(line), `Block must indent: ${line}`);
@@ -64,12 +64,12 @@ assert(decrease.test('  } otherwise {'));
 assert.equal('data.value'.match(new RegExp(configuration.wordPattern, 'g')).join(','), 'data,value');
 assert.deepEqual(configuration.comments, { lineComment: '--', blockComment: ['---', '---'] });
 assert.equal(manifest.main, './extension.js');
-assert(existsSync(join(root, 'extension.js')), 'Language client entry point must be packaged');
+assert(exists(join(root, 'extension.js')), 'Language client entry point must be packaged');
 assert(manifest.activationEvents.includes('onLanguage:foo'));
 assert.deepEqual(manifest.contributes.commands.map(item => item.command).sort(), ['foo.restartLanguageServer', 'foo.startWatch']);
 assert.equal(manifest.contributes.configuration.properties['foo.server.enabled'].default, true);
 assert.equal(manifest.contributes.configuration.properties['foo.server.path'].default, 'foo');
-const client = readFileSync(join(root, 'extension.js'), 'utf8');
+const client = read(join(root, 'extension.js'), 'utf8');
 assert(client.includes(`version: '${manifest.version}'`), 'Language client version must match the extension package');
 for (const behavior of ["spawn(command, ['lsp']", 'textDocument/didOpen', 'textDocument/didChange', 'publishDiagnostics']) {
   assert(client.includes(behavior), `Language client is missing ${behavior}`);
@@ -77,11 +77,11 @@ for (const behavior of ["spawn(command, ['lsp']", 'textDocument/didOpen', 'textD
 assert(!manifest.contributes.iconThemes, 'Extension must not replace the selected icon theme');
 assert(!manifest.contributes.themes, 'Syntax colors must not contribute a VS Code theme');
 assert.deepEqual(Object.keys(manifest.contributes.configurationDefaults).sort(), ['[foo]', 'editor.semanticTokenColorCustomizations', 'editor.tokenColorCustomizations']);
-for (const variant of ['light', 'dark']) assert.match(readFileSync(resolve(root, manifest.contributes.languages[0].icon[variant]), 'utf8'), /<svg\b/);
+for (const variant of ['light', 'dark']) assert.match(read(resolve(root, manifest.contributes.languages[0].icon[variant]), 'utf8'), /<svg\b/);
 for (const name of ['keywords', 'forms']) {
-  const source = readFileSync(resolve(root, `../../test/editor/fixtures/${name}.iv`), 'utf8');
+  const source = read(resolve(root, `../../test/editor/fixtures/${name}.iv`), 'utf8');
   const rows = tokenize(source);
-  const checks = JSON.parse(readFileSync(resolve(root, `../../test/editor/fixtures/${name}.json`), 'utf8'));
+  const checks = JSON.parse(read(resolve(root, `../../test/editor/fixtures/${name}.json`), 'utf8'));
   for (const check of checks) {
     const row = rows[check.line - 1];
     const start = check.last ? row.line.lastIndexOf(check.text) : row.line.indexOf(check.text);
@@ -138,27 +138,27 @@ for (const [line, word, scope] of [
   assert(tokens.length && tokens.every(token => token.scopes.includes(scope)), `Current syntax ${word} must use ${scope}`);
   assertions++;
 }
-const malformedNumber = tokenize('constant bad is 1`.')[0];
-const malformedSeparator = malformedNumber.line.indexOf('`');
-assert(malformedNumber.tokens.some(token => token.startIndex <= malformedSeparator &&
-  token.endIndex > malformedSeparator && token.scopes.includes('invalid.illegal.numeric.foo')),
+const malformed = tokenize('constant bad is 1`.')[0];
+const invalid = malformed.line.indexOf('`');
+assert(malformed.tokens.some(token => token.startIndex <= invalid &&
+  token.endIndex > invalid && token.scopes.includes('invalid.illegal.numeric.foo')),
   'A misplaced numeric backtick must be marked invalid');
 assertions++;
-const fractionalNumber = tokenize('constant bad is 10`000.2`5.')[0];
-const fractionalSeparator = fractionalNumber.line.lastIndexOf('`');
-assert(fractionalNumber.tokens.some(token => token.startIndex <= fractionalSeparator &&
-  token.endIndex > fractionalSeparator && token.scopes.includes('invalid.illegal.numeric.foo')),
+const fractional = tokenize('constant bad is 10`000.2`5.')[0];
+const decimal = fractional.line.lastIndexOf('`');
+assert(fractional.tokens.some(token => token.startIndex <= decimal &&
+  token.endIndex > decimal && token.scopes.includes('invalid.illegal.numeric.foo')),
   'A backtick after the decimal point must be marked invalid');
 assertions++;
 // Check coverage against the compiler when running in the FOO checkout.
 // The standalone grammar package does not require the compiler to run tests.
 const lexer = resolve(root, '../../src/lex/lexer.nim');
-if (existsSync(lexer)) {
-  const source = readFileSync(lexer, 'utf8');
-  const table = source.match(/proc keywordKind[\s\S]*?(?=\nproc word)/);
+if (exists(lexer)) {
+  const source = read(lexer, 'utf8');
+  const table = source.match(/proc keyword(?:Kind)?\([\s\S]*?(?=\nproc word)/);
   assert(table, 'Cannot find compiler keyword table; update the coverage check.');
   const keywords = [...table[0].matchAll(/"([a-z_]+)"/g)].map(match => match[1]);
-  const fixtures = readFileSync(resolve(root, '../../test/editor/fixtures/keywords.iv'), 'utf8').split(/\r?\n/);
+  const fixtures = read(resolve(root, '../../test/editor/fixtures/keywords.iv'), 'utf8').split(/\r?\n/);
   for (const word of keywords) assert(fixtures.includes(word), `Compiler keyword lacks a fixture line: ${word}`);
   console.log(`Covered all ${keywords.length} compiler keywords, plus contextual words.`);
 }
@@ -167,11 +167,11 @@ for (const source of ['"', "'", '"' + 'x'.repeat(65536), '"' + '\\'.repeat(2048)
 // Tokenize real source files too, without treating lexical coloring as validation.
 let sources = 0;
 function walk(directory) {
-  if (!existsSync(directory)) return;
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+  if (!exists(directory)) return;
+  for (const entry of list(directory, { withFileTypes: true })) {
     const file = join(directory, entry.name);
     if (entry.isDirectory()) walk(file);
-    else if (entry.name.endsWith('.iv')) { tokenize(readFileSync(file, 'utf8')); sources++; }
+    else if (entry.name.endsWith('.iv')) { tokenize(read(file, 'utf8')); sources++; }
   }
 }
 walk(resolve(root, '../../lib'));

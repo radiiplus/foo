@@ -18,7 +18,7 @@ directory the command's working directory or change import semantics.
 `foo test lib` runs the shipped standard-library fixtures. An explicitly selected
 fixture file with a `start` and no test blocks runs that entry point. Where test
 blocks exist, the application entry point is never executed alongside them.
-`--backend c` or `--backend zig` selects the compiler backend.
+`--backend qbe` selects the compiler backend explicitly.
 
 `foo test --watch` rediscovers tests after source and configuration changes,
 reruns affected tests, and reuses successful results whose imported source and
@@ -27,7 +27,7 @@ Tests containing native code or C interfaces rerun on every observed change;
 their external inputs cannot safely be inferred from FOO imports alone.
 Generated executables stay under `.artifacts/test` for debugging and build reuse.
 Test executions have a 60-second timeout. Native fixture inputs can be declared
-under `tests.NAME.sources` in project.json, relative to the project root.
+under `tests.NAME.sources` in project.ivc, relative to the project root.
 
 ## Conformance snapshots
 Every stage has deterministic golden outputs. A snapshot envelope has `format: "foo.snapshot"`, `version: 1`, `stage`, `case`, `inputs`, `options`, `expected` and `diagnostics`. Inputs are a map of package-relative paths to UTF-8 source strings; options include the language version and any target or capability selection. Expected output is either the canonical stage object or exact normalized text. Diagnostics follow the diagnostic record contract.

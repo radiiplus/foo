@@ -67,11 +67,12 @@ capability; ordinary allocations using the current arena require only base.
 
 ## Raw access
 
-Unsafe blocks and native blocks allow raw addresses, pointer arithmetic,
-alignment control and explicit lifetime assertions at system level. Instructions
-or registers require machine level; device memory and interrupts require
-hardware level. Privilege is determined by the operation, not merely by spelling
-a block.
+Ordinary FOO expressions do not expose raw address arithmetic, provenance
+removal, or lifetime assertions. Direct memory operations require a verified
+native boundary with the appropriate capability level. Instructions or
+registers require machine level; device memory and interrupts require hardware
+level. The parser accepts `unsafe {}` but its body receives the same type and
+ownership checks as an ordinary block. It grants no additional operations.
 
 Raw access does not disable type checking for unrelated code. Its contract must
 state accessed storage, aliasing, alignment, writes, synchronization and retained

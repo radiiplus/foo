@@ -9,3 +9,10 @@ They are licensed under Apache-2.0 OR MIT; see `LICENSE.headers.md`.
 `LICENSE.volk.md`. The generated program compiles these sources when it uses
 the FOO Vulkan service. The Vulkan loader and vendor drivers are supplied by
 the operating system. `volk` loads device entry points directly.
+
+`vulkan.c` and `gpu.c` are FOO's adapter sources, moved from
+`src/backend/native`. All three generators copy these SHA-256-locked files from
+this directory into their build output; there is no second source copy.
+
+Shader validation uses the separately locked executables under
+`vendor/spirv-tools`. No Vulkan loader or GPU driver is bundled.

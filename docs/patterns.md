@@ -69,6 +69,14 @@ FOO does not treat `Account` as a subtype (a type accepted wherever another
 type is expected) of `User`. Read the contained value
 as `account.owner` and pass it explicitly.
 
+Choice variants can carry a value. For a generic choice, a payload constructor
+can specify its type argument, such as `picked[unsigned](42)`. A payload-free
+variant can take its type from an expected result, as in `give ended.` inside a
+function returning `Outcome[unsigned]`; without that context, write
+`ended[unsigned]`. Use a module alias consistently when constructing and
+matching an imported choice. The [type rules](../specs/types.md) define record
+and choice construction precisely.
+
 ## Typed time
 
 The `time` module supplies `instant` and `duration` records. Constructors name
@@ -95,6 +103,13 @@ zones require an external versioned time-zone database. An `instant` remains a
 monotonic measurement point rather than a calendar timestamp. Use `clock.utc`
 for a persisted UTC/POSIX `stamp`; wall time can change when the host clock is
 corrected.
+The older `time.current`, `time.sleep`, and `time.measure` APIs exchange raw
+nanosecond counts; prefer typed `instant` and `duration` values in new code.
+
+For values with physical dimensions, `units.measure[D]` keeps addition and
+difference within one dimension. `units.meters`, `units.kilograms`, and
+`units.celsius` construct length, mass, and temperature values explicitly;
+FOO has no unit-suffixed numeric literals.
 
 ## Explicit codecs
 
@@ -206,6 +221,10 @@ The three parts are always visible:
 
 Add a failure variant or make `next` return `failable step` when reading can
 fail. A resource-backed cursor also needs an immediate `after` cleanup.
+The shipped `iterator` module offers `cursor[T, S]` with a failable pull
+function and `step[T, S]` with `finished`, optional `value`, and next `state`.
+Its `item` and `done` constructors keep these fields consistent. Custom cursors
+still need an explicit loop; `for each` accepts compiler-supported collections.
 
 ## Capabilities as values
 
@@ -233,6 +252,8 @@ Tests can pass `fixed`; production code can pass a wrapper around the real
 clock. The same pattern works for random input, files, and network clients.
 It does not create a `T has Capability` constraint or a static effect system
 (compile-time rules describing which outside operations code may perform).
+Capability records do not automatically become linear resources. Their
+creation, delegation, and revocation remain ordinary application operations.
 
 ## Explicit transactions
 

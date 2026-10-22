@@ -9,7 +9,7 @@ type Task* = object
   text*: string
   values*: Table[string, JsonNode]
 
-proc jsonText(value: JsonNode): string =
+proc text(value: JsonNode): string =
   case value.kind
   of JString: value.getStr()
   of JBool, JInt, JFloat: $value
@@ -26,11 +26,11 @@ proc substitute(text: string; values: Table[string, JsonNode]; name: string): st
           key.anyIt(not (it.isAlphaNumeric)):
         result.add(text[index .. close + 1]); index = close + 2; continue
       if key notin values: raise newException(ValueError, "Task '" & name & "' has no value '" & key & "'")
-      result.add(jsonText(values[key])); index = close + 2
+      result.add(text(values[key])); index = close + 2
     else:
       result.add(text[index]); index.inc
 
-proc appendU32(output: var string; value: int) =
+proc append(output: var string; value: int) =
   for shift in [0, 8, 16, 24]: output.add(char((value shr shift) and 0xff))
 
 proc identifier(value: string; upper: bool): bool =
@@ -40,7 +40,7 @@ proc identifier(value: string; upper: bool): bool =
     if letter notin {'A'..'Z', 'a'..'z', '0'..'9'}: return false
   true
 
-proc recordSource(task: Task; name: string): string =
+proc source(task: Task; name: string): string =
   if not task.output.endsWith(".iv"):
     raise newException(ValueError, "Record task '" & name & "' needs a .iv output")
   let declaration = task.values.getOrDefault("name")
@@ -74,9 +74,9 @@ proc tasks*(root: string; definitions: Table[string, Task];
   var done, active, outputs: Table[string, bool]
   var produced: Table[string, string]
   var files: seq[string] = @[]
-  var selectedNames = selected
-  if selectedNames.len == 0:
-    for name in definitions.keys: selectedNames.add(name)
+  var names = selected
+  if names.len == 0:
+    for name in definitions.keys: names.add(name)
   proc run(name: string) =
     if done.getOrDefault(name): return
     if active.getOrDefault(name): raise newException(ValueError, "Build task cycle at '" & name & "'")
@@ -109,15 +109,15 @@ proc tasks*(root: string; definitions: Table[string, Task];
       if inputs.len != 1: raise newException(ValueError, "Copy task '" & name & "' needs exactly one input")
       content = readFile(confined(root, inputs[0]))
     of "text": content = substitute(task.text, task.values, name)
-    of "record": content = recordSource(task, name)
+    of "record": content = source(task, name)
     of "embed":
       content = "FOO\0\1"
       for path in inputs:
         let bytes = readFile(confined(root, path))
-        appendU32(content, path.len); appendU32(content, bytes.len); content.add(path); content.add(bytes)
+        append(content, path.len); append(content, bytes.len); content.add(path); content.add(bytes)
     else: raise newException(ValueError, "Unsupported task kind '" & task.kind & "'")
     write(destination, content)
     files.add(destination)
     produced[name] = destination; done[name] = true; active[name] = false
-  for name in selectedNames: run(name)
+  for name in names: run(name)
   result = files

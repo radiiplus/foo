@@ -20,84 +20,84 @@ type
     width: int
     operation: int
     follow: int
-    postLeft: bool
+    following: bool
     ending: string
 
 proc register(value, expected: Value): bool =
-  value.kind == ValueKind.Reg and expected.kind == ValueKind.Reg and
+  value.kind == Flavor.Reg and expected.kind == Flavor.Reg and
     value.name == expected.name
 
 proc load(instruction: Instruction; pointer: Value): bool =
-  instruction.kind == InstrKind.Load and instruction.ptr.register(pointer)
+  instruction.kind == Opcode.Load and instruction.ptr.register(pointer)
 
 proc scalar(value: `Type`; width: int): bool =
-  value != nil and value.kind == TypeKind.Float and value.width == width and
+  value != nil and value.kind == Shape.Float and value.width == width and
     not value.volatile
 
 proc slice(value: Value; width: int): bool =
-  value.`type` != nil and value.`type`.kind == TypeKind.Slice and
+  value.`type` != nil and value.`type`.kind == Shape.Slice and
     not value.`type`.volatile and value.`type`.elem.scalar(width)
 
-proc opcode(kind: InstrKind): int =
+proc opcode(kind: Opcode): int =
   case kind
-  of InstrKind.Add: 0
-  of InstrKind.Sub: 1
-  of InstrKind.Mul: 2
-  of InstrKind.Div: 3
+  of Opcode.Add: 0
+  of Opcode.Sub: 1
+  of Opcode.Mul: 2
+  of Opcode.Div: 3
   else: 4
 
 proc operand(value: Value; width: int; reads: Table[string, Value];
     parameters: HashSet[string]; used: var HashSet[string]): Operand =
-  if value.kind == ValueKind.Reg and reads.hasKey(value.name):
+  if value.kind == Flavor.Reg and reads.hasKey(value.name):
     let source = reads[value.name]
     if source.slice(width):
       used.incl(value.name)
       return Operand(valid: true, indexed: true, value: source)
-  if value.`type`.scalar(width) and (value.kind == ValueKind.Const or
-      (value.kind == ValueKind.Reg and value.name in parameters)):
+  if value.`type`.scalar(width) and (value.kind == Flavor.Const or
+      (value.kind == Flavor.Reg and value.name in parameters)):
     return Operand(valid: true, value: value)
 
 proc zero(width: int): Value =
-  Value(kind: ValueKind.Const, name: "0.0",
-    `type`: `Type`(kind: TypeKind.Float, width: width))
+  Value(kind: Flavor.Const, name: "0.0",
+    `type`: `Type`(kind: Shape.Float, width: width))
 
 proc numeric(value: Operand; width: int): Value =
   if value.valid and not value.indexed: value.value else: zero(width)
 
 proc incoming(function: Function; label: string): int =
-  for basicBlock in function.blocks:
-    if basicBlock.term == nil: continue
-    if basicBlock.term.kind == InstrKind.Jump and basicBlock.term.label == label:
+  for section in function.blocks:
+    if section.term == nil: continue
+    if section.term.kind == Opcode.Jump and section.term.label == label:
       inc result
-    elif basicBlock.term.kind == InstrKind.Cjump:
-      if basicBlock.term.trueLabel == label: inc result
-      if basicBlock.term.falseLabel == label: inc result
+    elif section.term.kind == Opcode.Cjump:
+      if section.term.yes == label: inc result
+      if section.term.no == label: inc result
 
 # Match only loops whose indexed reads and write have no intervening effects.
 proc match(function: Function; entry: Block;
     blocks: Table[string, Block]): Pattern =
-  if entry.term == nil or entry.term.kind != InstrKind.Jump or
+  if entry.term == nil or entry.term.kind != Opcode.Jump or
       entry.instrs.len < 2 or not blocks.hasKey(entry.term.label): return
   let head = blocks[entry.term.label]
   if head.instrs.len != 2 or head.term == nil or
-      head.term.kind != InstrKind.Cjump or
-      head.instrs[0].kind != InstrKind.Load or
-      head.instrs[1].kind != InstrKind.Compare or
+      head.term.kind != Opcode.Cjump or
+      head.instrs[0].kind != Opcode.Load or
+      head.instrs[1].kind != Opcode.Compare or
       head.instrs[1].op != "is less than" or
       not head.instrs[1].val.register(head.instrs[0].dest) or
       not head.term.cond.register(head.instrs[1].dest) or
       head.instrs[1].val2.`type` == nil or
-      head.instrs[1].val2.`type`.kind != TypeKind.Uint or
+      head.instrs[1].val2.`type`.kind != Shape.Uint or
       head.instrs[1].val2.`type`.width != 64 or
-      not blocks.hasKey(head.term.trueLabel) or
-      not blocks.hasKey(head.term.falseLabel) or
+      not blocks.hasKey(head.term.yes) or
+      not blocks.hasKey(head.term.no) or
       function.incoming(head.label) != 2 or
-      function.incoming(head.term.trueLabel) != 1 or
-      function.incoming(head.term.falseLabel) != 1: return
+      function.incoming(head.term.yes) != 1 or
+      function.incoming(head.term.no) != 1: return
   let counter = head.instrs[0].ptr
-  if counter.`type` == nil or counter.`type`.kind != TypeKind.Ptr or
+  if counter.`type` == nil or counter.`type`.kind != Shape.Ptr or
       counter.`type`.elem == nil or
-      counter.`type`.elem.kind != TypeKind.Uint or
+      counter.`type`.elem.kind != Shape.Uint or
       counter.`type`.elem.width != 64: return
   var start: Value
   var initialized = false
@@ -106,38 +106,38 @@ proc match(function: Function; entry: Block;
   for position in 0 ..< (entry.instrs.len - 1):
     let allocation = entry.instrs[position]
     let initial = entry.instrs[position + 1]
-    if allocation.kind == InstrKind.Alloc and allocation.op == "slot" and
+    if allocation.kind == Opcode.Alloc and allocation.op == "slot" and
         allocation.dest.register(counter) and
-        initial.kind == InstrKind.Store and
+        initial.kind == Opcode.Store and
         initial.ptr.register(counter) and
-        (initial.val.kind == ValueKind.Const or
-          (initial.val.kind == ValueKind.Reg and
+        (initial.val.kind == Flavor.Const or
+          (initial.val.kind == Flavor.Reg and
             initial.val.name in parameters)) and
         initial.val.`type` != nil and
-        initial.val.`type`.kind == TypeKind.Uint and
+        initial.val.`type`.kind == Shape.Uint and
         initial.val.`type`.width == 64:
       start = initial.val
       initialized = true
   if not initialized: return
-  let body = blocks[head.term.trueLabel]
-  let ending = blocks[head.term.falseLabel]
+  let body = blocks[head.term.yes]
+  let ending = blocks[head.term.no]
   if body.instrs.len < 6 or body.term == nil or
-      body.term.kind != InstrKind.Jump or body.term.label != head.label or
-      ending.params.anyIt(it.`type` == nil or it.`type`.kind != TypeKind.Memory):
+      body.term.kind != Opcode.Jump or body.term.label != head.label or
+      ending.params.anyIt(it.`type` == nil or it.`type`.kind != Shape.Memory):
     return
   let steps = body.instrs
   let store = steps[^4]
   let advance = steps[^2]
   if not steps[0].load(counter) or
-      steps[1].kind != InstrKind.Index or steps[1].op != "address" or
+      steps[1].kind != Opcode.Index or steps[1].op != "address" or
       not steps[1].val2.register(steps[0].dest) or
-      store.kind != InstrKind.Store or
+      store.kind != Opcode.Store or
       not store.ptr.register(steps[1].dest) or
       not steps[^3].load(counter) or
-      advance.kind != InstrKind.Add or
+      advance.kind != Opcode.Add or
       not advance.val.register(steps[^3].dest) or
-      advance.val2.kind != ValueKind.Const or advance.val2.name != "1" or
-      steps[^1].kind != InstrKind.Store or
+      advance.val2.kind != Flavor.Const or advance.val2.name != "1" or
+      steps[^1].kind != Opcode.Store or
       not steps[^1].ptr.register(counter) or
       not steps[^1].val.register(advance.dest): return
   let width = if steps[1].val.`type` != nil and
@@ -152,15 +152,15 @@ proc match(function: Function; entry: Block;
     let instruction = steps[position]
     if instruction.load(counter) and position + 1 < stop:
       let indexed = steps[position + 1]
-      if indexed.kind != InstrKind.Index or indexed.op == "address" or
+      if indexed.kind != Opcode.Index or indexed.op == "address" or
           not indexed.val2.register(instruction.dest) or
           not indexed.val.slice(width) or
-          indexed.dest.kind != ValueKind.Reg or
+          indexed.dest.kind != Flavor.Reg or
           reads.hasKey(indexed.dest.name): return
       reads[indexed.dest.name] = indexed.val
       position += 2
-    elif instruction.kind in {InstrKind.Add, InstrKind.Sub,
-        InstrKind.Mul, InstrKind.Div} and
+    elif instruction.kind in {Opcode.Add, Opcode.Sub,
+        Opcode.Mul, Opcode.Div} and
         instruction.dest.`type`.scalar(width) and
         instruction.panic.len == 0:
       arithmetic.add(instruction)
@@ -171,7 +171,7 @@ proc match(function: Function; entry: Block;
   var first, second, post: Operand
   var operation = 4
   var follow = 4
-  var postLeft = false
+  var following = false
   if arithmetic.len == 0:
     first = operand(store.val, width, reads, parameters, used)
     second = Operand(valid: true, value: zero(width))
@@ -189,7 +189,7 @@ proc match(function: Function; entry: Block;
         post = operand(next.val2, width, reads, parameters, used)
       elif next.val2.register(current.dest):
         post = operand(next.val, width, reads, parameters, used)
-        postLeft = true
+        following = true
       else: return
       if not post.valid or post.indexed: return
       follow = opcode(next.kind)
@@ -197,7 +197,7 @@ proc match(function: Function; entry: Block;
   result = Pattern(counter: counter, bound: head.instrs[1].val2,
     start: start, first: first, second: second, post: post,
     output: steps[1].val, width: width, operation: operation,
-    follow: follow, postLeft: postLeft, ending: ending.label)
+    follow: follow, following: following, ending: ending.label)
 
 proc apply*(module: Module; backend, target, cpu, mode: string): int =
   let architecture = arch.architecture(target)
@@ -210,8 +210,8 @@ proc apply*(module: Module; backend, target, cpu, mode: string): int =
       fallback = true),
     selection.candidate("simd", "@runtime", "ordered decimal lanes",
       "runtime guards permit independent decimal lanes", 20,
-      compatible = architecture in ["x86_64", "aarch64"],
-      backends = @["c", "zig"], modes = @["release"])
+      compatible = architecture == "x86_64", targets = @["windows"],
+      backends = @["qbe"], modes = @["release"], evidenced = false)
   ])
   if decision.implementation != "simd": return
   var names = initHashSet[string]()
@@ -221,7 +221,7 @@ proc apply*(module: Module; backend, target, cpu, mode: string): int =
   var serial = 0
   for function in module.funcs:
     var blocks = initTable[string, Block]()
-    for basicBlock in function.blocks: blocks[basicBlock.label] = basicBlock
+    for section in function.blocks: blocks[section.label] = section
     for entry in function.blocks:
       let pattern = function.match(entry, blocks)
       if pattern.width == 0: continue
@@ -233,34 +233,34 @@ proc apply*(module: Module; backend, target, cpu, mode: string): int =
           external = "vector" & $pattern.width & $serial
         names.incl(external)
         declarations[pattern.width] = external
-        let number = `Type`(kind: TypeKind.Uint, width: 64)
-        let decimal = `Type`(kind: TypeKind.Float, width: pattern.width)
+        let number = `Type`(kind: Shape.Uint, width: 64)
+        let decimal = `Type`(kind: Shape.Float, width: pattern.width)
         module.externs.add(Extern(name: external, symbol: "vectorize",
-          abi: "runtime.cpu", ret: `Type`(kind: TypeKind.Bool),
+          abi: "runtime.cpu", ret: `Type`(kind: Shape.Bool),
           params: @[pattern.output.`type`, pattern.output.`type`,
             pattern.output.`type`, number, number, number, number, number,
             decimal, decimal, number, decimal, pattern.counter.`type`]))
-      let number = `Type`(kind: TypeKind.Uint, width: 64)
+      let number = `Type`(kind: Shape.Uint, width: 64)
       let flags = (if pattern.first.indexed: 0 else: 1) +
         (if pattern.second.indexed: 0 else: 2) +
-        (if pattern.postLeft: 4 else: 0)
-      let selected = Value(kind: ValueKind.Reg,
+        (if pattern.following: 4 else: 0)
+      let selected = Value(kind: Flavor.Reg,
         name: "vector" & $pattern.width & $serial & $result,
-        `type`: `Type`(kind: TypeKind.Bool))
-      entry.instrs.add(Instruction(kind: InstrKind.Call, dest: selected,
+        `type`: `Type`(kind: Shape.Bool))
+      entry.instrs.add(Instruction(kind: Opcode.Call, dest: selected,
         `func`: external, symbol: "vectorize", abi: "runtime.cpu",
         args: @[(if pattern.first.indexed: pattern.first.value else: pattern.output),
           (if pattern.second.indexed: pattern.second.value else: pattern.output),
           pattern.output,
-          pattern.bound, Value(kind: ValueKind.Const, name: $pattern.width,
-            `type`: number), Value(kind: ValueKind.Const,
+          pattern.bound, Value(kind: Flavor.Const, name: $pattern.width,
+            `type`: number), Value(kind: Flavor.Const,
             name: $pattern.operation, `type`: number), pattern.start,
-          Value(kind: ValueKind.Const, name: $flags, `type`: number),
+          Value(kind: Flavor.Const, name: $flags, `type`: number),
           numeric(pattern.first, pattern.width),
           numeric(pattern.second, pattern.width),
-          Value(kind: ValueKind.Const, name: $pattern.follow, `type`: number),
+          Value(kind: Flavor.Const, name: $pattern.follow, `type`: number),
           numeric(pattern.post, pattern.width), pattern.counter],
         effects: @["read", "write"]))
-      entry.term = Instruction(kind: InstrKind.Cjump, cond: selected,
-        trueLabel: pattern.ending, falseLabel: entry.term.label)
+      entry.term = Instruction(kind: Opcode.Cjump, cond: selected,
+        yes: pattern.ending, no: entry.term.label)
       inc result

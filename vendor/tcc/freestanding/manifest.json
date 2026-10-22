@@ -1,0 +1,8 @@
+{
+  "sourceSha256": "95d937966a86a59d087e431b544ce5d378ccd3483b48ba60c87d29b4ac65e6ae",
+  "objects": {
+    "x64-freestanding": "67762d5b900462c9d808e2cf5a1da2d68ad9530e4ed6090209efe63cb8eccebd",
+    "arm64-freestanding": "14b8929ff3525e374cd3ff8e029080c7188d2b1a1547312aa766223cbd145b9b",
+    "riscv64-freestanding": "52737f7940b62bf6080e2fdcf03366bdde7465c7617e8d82f835ec0980bd553d"
+  }
+}

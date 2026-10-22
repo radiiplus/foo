@@ -1,0 +1,18 @@
+use codec as codecs.
+use testing as check.
+use "text" function release(content text) giving failable nothing.
+
+define State as record { count of type unsigned. ready of type boolean. }.
+
+start {
+  constant original is State(18446744073709551615, false).
+  constant encoded is codecs.encode[State](original) try.
+  after { release(encoded) fallback nothing. }
+  check.same(encoded, "{\"count\":18446744073709551615,\"ready\":false}").
+  check.expect((codecs.decode[State](encoded) try) is original).
+  check.expect((codecs.decode[State]("{\"count\":0,\"ready\":false}") try) is State(0, false)).
+  check.expect((codecs.decode[State]("{\"ready\":true,\"count\":9}") try) is State(9, true)).
+  check.expect((codecs.decode[State]("{\"count\":01,\"ready\":false}") fallback State(7, true)) is State(7, true)).
+  check.expect((codecs.decode[State]("{\"count\":18446744073709551616,\"ready\":false}") fallback State(7, true)) is State(7, true)).
+  check.expect((codecs.decode[State]("{\"count\":1,\"ready\":false}extra") fallback State(7, true)) is State(7, true)).
+}

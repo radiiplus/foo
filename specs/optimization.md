@@ -75,6 +75,7 @@ setup only when no retained operation requires its allocation or cleanup
 contract. Link-time section collection is a final safeguard, not a substitute
 for semantic reachability. Release stripping may remove symbols and debug
 records, but it must preserve exported ABI symbols and requested debug mode.
+The current QBE driver rejects native debug output until that mode is qualified.
 
 Allocation placement is also a selection problem. Compile-time storage, stack
 storage, region storage, persistent storage, or shared storage are eligible
@@ -195,7 +196,7 @@ retain their identity. Development builds may enable semantic optimization with
 Costs are relative estimates, not cycle counts or measurements of a specific CPU.
 
 `foo build -mcpu x86-64-v3` selects a CPU profile. The equivalent persistent
-setting is `build.cpu` in `project.json`. A command-line choice overrides that
+setting is `build.cpu` in `project.ivc`. A command-line choice overrides that
 setting; otherwise the target preset supplies the CPU. The architecture must
 match the selected target. These choices do not change FOO syntax.
 
@@ -216,36 +217,27 @@ allows vector instructions; it does not require every operation to use them.
 Scalable vectors have no fixed width. The `linux-x64-v3` and `windows-x64-v3`
 presets select v3; ordinary x64 presets retain baseline requirements.
 
-Optimized copies choose an implementation using the target, CPU, capability
-level, optimization mode and portable-substrate override. Every choice preserves
-the same bounds and overlap behavior. Choosing a CPU is a deployment promise:
-the executable is only required to run on processors supporting that profile.
-Cross-compilation does not execute the selected instructions on the build host.
-
-The C AVX2 path currently handles 128 through 256 bytes with eight 32-byte
-head/tail loads completed before stores. The machine x86-64 path uses
-`rep movsb` for non-overlapping copies from 1 KiB through 8 KiB. Other sizes,
-overlap on the machine path, and unsupported targets use overlap-safe
-`memmove`. The Zig path copies forward or backward in 32-byte AVX2, 16-byte
-AArch64, or target-word blocks. These ranges are implementation policy and must
-remain guarded by the shared overlap contract.
+Copy implementations must preserve the same bounds and overlap behavior for
+every selected target and mode. Choosing a CPU is a deployment promise: the
+executable is only required to run on processors supporting that profile.
+Cross-compilation does not execute target instructions on the build host. The
+active QBE selection uses overlap-safe `memmove` for hosted copies; the
+freestanding integer runtime supplies a bytewise overlap-safe implementation.
+No architecture-specific AVX2 or `rep movsb` copy policy is qualified in the
+current QBE route.
 
 Sequence transforms reserve their result once and compact once. Mutable text
-tables use open addressing. Hosted C task pools dispatch through IOCP on Windows
-and epoll with `eventfd` on Linux; scoped tasks and other targets retain the
-threaded fallback. Seekable file reads reserve from the measured size and adopt
-the resulting buffer directly, while unknown sizes use geometric streaming.
-Text search selects a single-byte, small linear, or large skip-table path.
-Atomic operations retain their requested memory order. These substitutions do
-not permit changes to ordering, ownership, failure, or synchronization semantics.
+tables use open addressing. Atomic operations retain their requested memory
+order. The hosted task runtime contains threaded and event-backed machinery,
+but its high-level task service is not qualified through QBE. These
+implementations do not permit changes to ordering, ownership, failure, or
+synchronization semantics.
 
-CPU, target, optimization settings, compiler contents, and the selected profile
-contents participate in generated output cache identities. `build.coverage`
-writes versioned per-function hit counts. `build.profile` consumes that data;
-functions at or above one fifth of the peak count receive larger release
-inlining limits and callers receive a larger inlining budget. A changed profile
-invalidates affected output. No optimization choice alone guarantees a speedup;
-performance claims require measurements on the target.
+CPU, target, optimization settings, compiler contents, and selected policy
+inputs participate in generated-output cache identity. `build.coverage` and
+`build.profile` are reserved contracts; the current QBE driver rejects both.
+No optimization choice alone guarantees a speedup. A new selected path requires
+correctness gates and representative measurements on each enabled target.
 
 Instruction levels follow the compiler target definitions for
 [x86](https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html),

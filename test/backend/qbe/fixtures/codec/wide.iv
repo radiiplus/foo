@@ -1,0 +1,16 @@
+use codec as codecs.
+use testing as check.
+use "text" function release(content text) giving failable nothing.
+
+start {
+  constant maximum is codecs.encode[unsigned 128](340282366920938463463374607431768211455) try.
+  after { release(maximum) fallback nothing. }
+  check.same(maximum, "340282366920938463463374607431768211455").
+  check.expect((codecs.decode[unsigned 128](maximum) try) is 340282366920938463463374607431768211455).
+  constant signed is codecs.decode[integer 128]("-170141183460469231731687303715884105728") try.
+  constant minimum is codecs.encode[integer 128](signed) try.
+  after { release(minimum) fallback nothing. }
+  check.same(minimum, "-170141183460469231731687303715884105728").
+  check.expect((codecs.decode[unsigned 128]("340282366920938463463374607431768211456") fallback 0) is 0).
+  check.expect((codecs.decode[integer 128]("-170141183460469231731687303715884105729") fallback 0) is 0).
+}

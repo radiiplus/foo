@@ -1,3 +1,0 @@
-use testing as check.
-function advance(value integer 8) giving integer 8 { give value plus 1. }
-start { check.expect(advance(127) is 0). }

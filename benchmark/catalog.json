@@ -3,6 +3,10 @@
     "purpose": "Baseline checked loop execution",
     "work": "10,000,000 checked additions, comparisons, increments, assignments, and final validation"
   },
+  "global": {
+    "purpose": "Checked loop execution with module-global mutable state",
+    "work": "The arithmetic workload with global counter, checksum, and limit; exact validation"
+  },
   "calls": {
     "purpose": "Preserved private function-call overhead",
     "work": "10,000,000 private function calls inside a checked accumulation loop"

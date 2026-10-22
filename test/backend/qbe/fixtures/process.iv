@@ -1,0 +1,44 @@
+use process as host.
+use sequence as items.
+use testing as check.
+
+start {
+  check.expect((host.run("node -e \"process.exit(9)\"") try) is 9).
+  constant empty is items.create[text].
+  constant flag is items.append[text](empty, "-e") try.
+  constant arguments is items.append[text](flag, "process.exit(7)") try.
+  check.expect((host.execute("node", arguments) try) is 7).
+  constant child is host.spawn("node", arguments) try.
+  check.expect((host.identity(child) try) is greater than 0).
+  check.expect((host.wait(child) try) is 7).
+  check.expect(not (host.active(child) try)).
+  host.close(child) try.
+  items.release[text](flag) try.
+  items.release[text](arguments) try.
+  constant commands is items.sized[text](2) try.
+  set commands at 0 to "-e".
+  set commands at 1 to "process.stdin.on('data', d => process.stdout.write(d)); process.stdin.on('end', () => process.stderr.write('err'))".
+  constant pipe is host.pipe("node", commands) try.
+  constant bytes is items.sized[byte](2) try.
+  set bytes at 0 to 65.
+  set bytes at 1 to 66.
+  check.expect((host.write(pipe, bytes) try) is 2).
+  host.seal(pipe) try.
+  constant output is host.read(pipe, "output", 2) try.
+  check.expect(items.length[byte](output) is 2).
+  check.expect(output at 0 is 65).
+  check.expect(output at 1 is 66).
+  host.release(output) try.
+  constant report is host.read(pipe, "error", 3) try.
+  check.expect(items.length[byte](report) is 3).
+  check.expect(report at 0 is 101).
+  check.expect(report at 1 is 114).
+  check.expect(report at 2 is 114).
+  host.release(report) try.
+  check.expect((host.wait(pipe) try) is 0).
+  host.close(pipe) try.
+  items.release[byte](bytes) try.
+  items.release[text](commands) try.
+  check.expect(host.id is greater than 0).
+  check.expect((host.parent try) is greater than 0).
+}

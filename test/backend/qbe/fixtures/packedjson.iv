@@ -1,0 +1,39 @@
+use codec as codecs.
+use testing as check.
+use "text" function release(content text) giving failable nothing.
+
+define Bits as packed record {
+  low of type unsigned 3.
+  enabled of type boolean.
+  signed of type integer 5.
+}.
+define Wide as packed record {
+  low of type unsigned.
+  high of type unsigned.
+}.
+define Packet as packed record {
+  prefix of type byte.
+  bits of type Bits.
+  suffix of type unsigned 7.
+}.
+
+start {
+  constant original is Bits(5, true, 0 subtract 3).
+  constant encoded is codecs.encode[Bits](original) try.
+  after { release(encoded) fallback nothing. }
+  check.same(encoded, "{\"low\":5,\"enabled\":true,\"signed\":-3}").
+  check.expect((codecs.decode[Bits](encoded) try) is original).
+  check.expect((codecs.decode[Bits]("{\"low\":5,\"enabled\":true}") fallback Bits(7, false, 0 subtract 1)) is Bits(7, false, 0 subtract 1)).
+  check.expect((codecs.decode[Bits]("{\"low\":8,\"enabled\":true,\"signed\":0}") fallback Bits(7, false, 0 subtract 1)) is Bits(7, false, 0 subtract 1)).
+  constant wide is Wide(18446744073709551615, 9223372036854775808).
+  constant serialized is codecs.encode[Wide](wide) try.
+  after { release(serialized) fallback nothing. }
+  check.same(serialized, "{\"low\":18446744073709551615,\"high\":9223372036854775808}").
+  check.expect((codecs.decode[Wide](serialized) try) is wide).
+  constant packet is Packet(42, original, 77).
+  constant nested is codecs.encode[Packet](packet) try.
+  after { release(nested) fallback nothing. }
+  check.same(nested, "{\"prefix\":42,\"bits\":{\"low\":5,\"enabled\":true,\"signed\":-3},\"suffix\":77}").
+  check.expect((codecs.decode[Packet](nested) try) is packet).
+  check.expect((codecs.decode[Packet]("{\"prefix\":42,\"bits\":{\"low\":8,\"enabled\":true,\"signed\":-3},\"suffix\":77}") fallback Packet(1, original, 2)) is Packet(1, original, 2)).
+}

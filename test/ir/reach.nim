@@ -1,19 +1,19 @@
 import ../../src/ir/[kind, node, reach]
 
-let unitType = `Type`(kind: TypeKind.Void)
-let unused = Function(name: "unused", ret: unitType,
-  blocks: @[Block(label: "entry", term: Instruction(kind: InstrKind.Return))])
-let helper = Function(name: "helper", ret: unitType,
+let representation = `Type`(kind: Shape.Void)
+let unused = Function(name: "unused", ret: representation,
+  blocks: @[Block(label: "entry", term: Instruction(kind: Opcode.Return))])
+let helper = Function(name: "helper", ret: representation,
   blocks: @[Block(label: "entry", instrs: @[
-    Instruction(kind: InstrKind.Call, `func`: "output")],
-    term: Instruction(kind: InstrKind.Return))])
-let main = Function(name: "main", ret: unitType,
+    Instruction(kind: Opcode.Call, `func`: "output")],
+    term: Instruction(kind: Opcode.Return))])
+let main = Function(name: "main", ret: representation,
   blocks: @[Block(label: "entry", instrs: @[
-    Instruction(kind: InstrKind.Call, `func`: "helper")],
-    term: Instruction(kind: InstrKind.Return))])
+    Instruction(kind: Opcode.Call, `func`: "helper")],
+    term: Instruction(kind: Opcode.Return))])
 let module = Module(name: "reach", funcs: @[unused, helper, main], externs: @[
-  Extern(name: "output", symbol: "write", abi: "runtime.io", ret: unitType),
-  Extern(name: "open", abi: "runtime.fs", ret: unitType)])
+  Extern(name: "output", symbol: "write", abi: "runtime.io", ret: representation),
+  Extern(name: "open", abi: "runtime.fs", ret: representation)])
 
 let selected = reach(module)
 doAssert selected.funcs.len == 2
@@ -23,12 +23,12 @@ doAssert selected.externs.len == 1
 doAssert selected.externs[0].name == "output"
 
 let library = reach(Module(name: "library", funcs: @[
-  Function(name: "hidden", ret: unitType,
-    blocks: @[Block(label: "entry", term: Instruction(kind: InstrKind.Return))]),
-  Function(name: "visible", public: true, ret: unitType,
-    blocks: @[Block(label: "entry", term: Instruction(kind: InstrKind.Return))])],
+  Function(name: "hidden", ret: representation,
+    blocks: @[Block(label: "entry", term: Instruction(kind: Opcode.Return))]),
+  Function(name: "visible", public: true, ret: representation,
+    blocks: @[Block(label: "entry", term: Instruction(kind: Opcode.Return))])],
   storage: @[Storage(name: "callback", public: true,
-    value: Value(kind: ValueKind.Global, name: "hidden"))]), true)
+    value: Value(kind: Flavor.Global, name: "hidden"))]), true)
 doAssert library.funcs.len == 2
 doAssert library.storage.len == 1
 

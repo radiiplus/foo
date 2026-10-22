@@ -1,0 +1,6 @@
+use gpu as graphics.
+
+function shade(left sequence of constant decimal 32, right sequence of constant decimal 32, output sequence of decimal 32) giving nothing for gpu {
+  constant index is graphics.index.
+  set output at index to (left at index) plus (right at index).
+}

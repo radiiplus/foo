@@ -1,15 +1,15 @@
 import std/[sequtils, strutils]
 import ../../src/diag/engine
-import ../../src/ast/print as astPrint
+import ../../src/ast/print as printing
 import ../../src/lex/lexer
-import ../../src/parse/parser
+import ../../src/ast/parser
 import ../../src/types/checker
 
 proc checked(source: string): Engine =
-  result = newEngine()
-  result.setSource(source, "borrow.iv")
-  let program = newParser(newLexer(source, result).lex(), result).parse()
-  if not result.failed: newChecker(result).check(program)
+  result = engine()
+  result.source(source, "borrow.iv")
+  let program = parser(lexer(source, result).lex(), result).parse()
+  if not result.failed: checker(result).check(program)
 
 let valid = checked("""
 function choose(left pointer to byte, right pointer to byte) giving pointer to byte borrowing left {
@@ -43,15 +43,15 @@ function choose(left pointer to byte) giving pointer to byte {
 doAssert legacy.failed
 doAssert legacy.messages[0].text.contains("borrowing parameter")
 
-let syntaxDiagnostics = newEngine()
-let syntaxSource = "function borrow(value pointer to byte) giving pointer to byte borrowing value { give value. }"
-syntaxDiagnostics.setSource(syntaxSource, "syntax.iv")
-let syntaxTree = newParser(newLexer(syntaxSource, syntaxDiagnostics).lex(),
-  syntaxDiagnostics).parse()
-doAssert astPrint.print(syntaxTree).contains("borrowing value")
-doAssert not astPrint.print(syntaxTree).contains("#[borrows")
+let diagnostics = engine()
+let input = "function borrow(value pointer to byte) giving pointer to byte borrowing value { give value. }"
+diagnostics.source(input, "syntax.iv")
+let tree = parser(lexer(input, diagnostics).lex(),
+  diagnostics).parse()
+doAssert printing.print(tree).contains("borrowing value")
+doAssert not printing.print(tree).contains("#[borrows")
 
-let lifetimeDeclarations = """
+let declarations = """
 define allocator as opaque.
 define mapping as opaque.
 use "memory" function bytes(owner pointer to allocator, buffer pointer to byte, size unsigned) giving failable sequence of constant byte.
@@ -63,7 +63,7 @@ use "memory" function close(owner pointer to allocator) giving failable nothing.
 use "fs" function borrow(source pointer to mapping) giving failable sequence of byte.
 use "fs" function unmap(source pointer to mapping) giving failable nothing.
 """
-let released = checked(lifetimeDeclarations & """
+let released = checked(declarations & """
 function invalid(owner pointer to allocator, buffer pointer to byte) giving failable byte {
   constant view is bytes(owner, buffer, 1) try.
   release(owner, buffer) try.
@@ -73,7 +73,7 @@ function invalid(owner pointer to allocator, buffer pointer to byte) giving fail
 doAssert released.failed
 doAssert released.messages[0].text.contains("after its owner")
 
-let resized = checked(lifetimeDeclarations & """
+let resized = checked(declarations & """
 function invalid(owner pointer to allocator, buffer pointer to byte) giving failable byte {
   constant view is bytes(owner, buffer, 1) try.
   constant grown is expand(owner, buffer, 2) try.
@@ -83,7 +83,7 @@ function invalid(owner pointer to allocator, buffer pointer to byte) giving fail
 doAssert resized.failed
 doAssert resized.messages[0].text.contains("after its owner")
 
-let unmapped = checked(lifetimeDeclarations & """
+let unmapped = checked(declarations & """
 function invalid(source pointer to mapping) giving failable byte {
   constant view is borrow(source) try.
   unmap(source) try.
@@ -93,7 +93,7 @@ function invalid(source pointer to mapping) giving failable byte {
 doAssert unmapped.failed
 doAssert unmapped.messages[0].text.contains("after its owner")
 
-let readOnlyUnmapped = checked(lifetimeDeclarations & """
+let only = checked(declarations & """
 use "fs" function mapped(source pointer to mapping) giving failable sequence of constant byte.
 function view(source pointer to mapping) giving failable sequence of constant byte borrowing source {
   give mapped(source) try.
@@ -104,10 +104,10 @@ function invalid(source pointer to mapping) giving failable byte {
   give bytes at 0.
 }
 """)
-doAssert readOnlyUnmapped.failed
-doAssert readOnlyUnmapped.messages.anyIt(it.text.contains("after its owner"))
+doAssert only.failed
+doAssert only.messages.anyIt(it.text.contains("after its owner"))
 
-let disposedGpu = checked("""
+let gpu = checked("""
 define buffer as opaque.
 use "gpu" function mapped(source pointer to buffer) giving failable sequence of constant byte.
 use "gpu" function dispose(source pointer to buffer) giving failable nothing.
@@ -120,20 +120,20 @@ function invalid(source pointer to buffer) giving failable byte {
   give bytes at 0.
 }
 """)
-doAssert disposedGpu.failed
-doAssert disposedGpu.messages.anyIt(it.text.contains("after its owner"))
+doAssert gpu.failed
+doAssert gpu.messages.anyIt(it.text.contains("after its owner"))
 
-let closedOwner = checked(lifetimeDeclarations & """
+let owner = checked(declarations & """
 function invalid(owner pointer to allocator, buffer pointer to byte) giving failable byte {
   constant view is bytes(owner, buffer, 1) try.
   close(owner) try.
   give view at 0.
 }
 """)
-doAssert closedOwner.failed
-doAssert closedOwner.messages[0].text.contains("after its owner")
+doAssert owner.failed
+doAssert owner.messages[0].text.contains("after its owner")
 
-let releasedAlias = checked(lifetimeDeclarations & """
+let alias = checked(declarations & """
 function invalid(owner pointer to allocator, buffer pointer to byte) giving failable byte {
   constant view is bytes(owner, buffer, 1) try.
   constant alias is buffer.
@@ -141,41 +141,41 @@ function invalid(owner pointer to allocator, buffer pointer to byte) giving fail
   give view at 0.
 }
 """)
-doAssert releasedAlias.failed
-doAssert releasedAlias.messages[0].text.contains("after its owner")
+doAssert alias.failed
+doAssert alias.messages[0].text.contains("after its owner")
 
-let closedAllocation = checked(lifetimeDeclarations & """
+let allocation = checked(declarations & """
 function invalid(owner pointer to allocator) giving failable boolean {
   constant buffer is allocate(owner, 1) try.
   close(owner) try.
   give aligned(buffer, 1).
 }
 """)
-doAssert closedAllocation.failed
-doAssert closedAllocation.messages[0].text.contains("after its owner")
+doAssert allocation.failed
+doAssert allocation.messages[0].text.contains("after its owner")
 
-let cleanupReturn = checked(lifetimeDeclarations & """
+let returned = checked(declarations & """
 function invalid(owner pointer to allocator, buffer pointer to byte)
     giving failable sequence of constant byte borrowing buffer {
   after { release(owner, buffer) fallback nothing. }
   give bytes(owner, buffer, 1) try.
 }
 """)
-doAssert cleanupReturn.failed
-doAssert cleanupReturn.messages.anyIt(it.text.contains("cleanup")),
-  cleanupReturn.messages[0].text
+doAssert returned.failed
+doAssert returned.messages.anyIt(it.text.contains("cleanup")),
+  returned.messages[0].text
 
-let errorOnlyCleanup = checked("""
+let cleanup = checked("""
 use "sequence" function release[T](items sequence of T) giving failable nothing.
 function valid(items sequence of byte) giving failable sequence of byte borrowing items {
   after error { release[byte](items) fallback nothing. }
   give items.
 }
 """)
-doAssert not errorOnlyCleanup.failed,
-  if errorOnlyCleanup.messages.len > 0: errorOnlyCleanup.messages[0].text else: "unexpected failure"
+doAssert not cleanup.failed,
+  if cleanup.messages.len > 0: cleanup.messages[0].text else: "unexpected failure"
 
-let separateBranch = checked(lifetimeDeclarations & """
+let branch = checked(declarations & """
 function invalid(owner pointer to allocator, buffer pointer to byte, enabled boolean)
     giving failable sequence of constant byte borrowing owner, buffer {
   when enabled { give bytes(owner, buffer, 1) try. }
@@ -183,10 +183,10 @@ function invalid(owner pointer to allocator, buffer pointer to byte, enabled boo
   give fail(Error.Closed).
 }
 """)
-doAssert separateBranch.failed
-doAssert separateBranch.messages.anyIt(it.text.contains("without declaring"))
+doAssert branch.failed
+doAssert branch.messages.anyIt(it.text.contains("without declaring"))
 
-let declaredRelease = checked("""
+let release = checked("""
 use "sequence" function release[T](items sequence of T) giving failable nothing.
 function consume(items sequence of byte) giving failable nothing releasing items {
   release[byte](items) try.
@@ -198,28 +198,28 @@ function invalid(items sequence of byte) giving failable byte {
   give alias at 0.
 }
 """)
-doAssert declaredRelease.failed
-doAssert declaredRelease.messages.anyIt(it.text.contains("after its owner"))
+doAssert release.failed
+doAssert release.messages.anyIt(it.text.contains("after its owner"))
 
-let hiddenRelease = checked("""
+let optimized = checked("""
 use "sequence" function release[T](items sequence of T) giving failable nothing.
 function consume(items sequence of byte) giving failable nothing {
   release[byte](items) try.
   give nothing.
 }
 """)
-doAssert hiddenRelease.failed
-doAssert hiddenRelease.messages.anyIt(it.text.contains("without declaring"))
+doAssert optimized.failed
+doAssert optimized.messages.anyIt(it.text.contains("without declaring"))
 
-let unknownRelease = checked("""
+let disposal = checked("""
 function consume(items sequence of byte) giving nothing releasing missing {
   give nothing.
 }
 """)
-doAssert unknownRelease.failed
-doAssert unknownRelease.messages.anyIt(it.text.contains("unknown parameter"))
+doAssert disposal.failed
+doAssert disposal.messages.anyIt(it.text.contains("unknown parameter"))
 
-let releasedAfterUse = checked(lifetimeDeclarations & """
+let use = checked(declarations & """
 function valid(owner pointer to allocator, buffer pointer to byte) giving failable byte releasing buffer {
   constant view is bytes(owner, buffer, 1) try.
   constant first is view at 0.
@@ -227,10 +227,10 @@ function valid(owner pointer to allocator, buffer pointer to byte) giving failab
   give first.
 }
 """)
-doAssert not releasedAfterUse.failed,
-  if releasedAfterUse.messages.len > 0: releasedAfterUse.messages[0].text else: "unexpected failure"
+doAssert not use.failed,
+  if use.messages.len > 0: use.messages[0].text else: "unexpected failure"
 
-let closedAuthenticator = checked("""
+let authenticator = checked("""
 define authenticator as opaque.
 use "crypto" function discard(state pointer to authenticator) giving nothing.
 function invalid(state pointer to authenticator) giving pointer to authenticator {
@@ -238,10 +238,10 @@ function invalid(state pointer to authenticator) giving pointer to authenticator
   give state.
 }
 """)
-doAssert closedAuthenticator.failed
-doAssert closedAuthenticator.messages.anyIt(it.text.contains("after its owner"))
+doAssert authenticator.failed
+doAssert authenticator.messages.anyIt(it.text.contains("after its owner"))
 
-let closedSecureKey = checked("""
+let key = checked("""
 define key as opaque.
 use "crypto" function forget(secret pointer to key) giving nothing.
 function invalid(secret pointer to key) giving pointer to key {
@@ -249,10 +249,10 @@ function invalid(secret pointer to key) giving pointer to key {
   give secret.
 }
 """)
-doAssert closedSecureKey.failed
-doAssert closedSecureKey.messages.anyIt(it.text.contains("after its owner"))
+doAssert key.failed
+doAssert key.messages.anyIt(it.text.contains("after its owner"))
 
-let closedBlakeHasher = checked("""
+let hasher = checked("""
 define hasher as opaque.
 use "crypto" function retire(state pointer to hasher) giving nothing.
 function invalid(state pointer to hasher) giving pointer to hasher {
@@ -260,10 +260,10 @@ function invalid(state pointer to hasher) giving pointer to hasher {
   give state.
 }
 """)
-doAssert closedBlakeHasher.failed
-doAssert closedBlakeHasher.messages.anyIt(it.text.contains("after its owner"))
+doAssert hasher.failed
+doAssert hasher.messages.anyIt(it.text.contains("after its owner"))
 
-let closedLibrarySymbol = checked("""
+let symbol = checked("""
 define library as opaque.
 define unary as opaque.
 use "dylib" function lookup(owner pointer to library, name text) giving failable pointer to unary.
@@ -275,7 +275,7 @@ function invalid(owner pointer to library) giving failable unsigned {
   give call(symbol, 1) try.
 }
 """)
-doAssert closedLibrarySymbol.failed
-doAssert closedLibrarySymbol.messages.anyIt(it.text.contains("after its owner"))
+doAssert symbol.failed
+doAssert symbol.messages.anyIt(it.text.contains("after its owner"))
 
 echo "type borrow parity: ok"

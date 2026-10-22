@@ -12,11 +12,11 @@ type
     line*: int
     character*: int
 
-  SourceRange* = object
+  Range* = object
     start*: Position
     `end`*: Position
 
-proc range*(span: Span; source: string = ""): SourceRange =
+proc range*(span: Span; source: string = ""): Range =
   if source.len > 0:
     proc position(offset: int): Position =
       let bounded = max(0, min(offset, source.len))

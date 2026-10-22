@@ -1,0 +1,172 @@
+-- Stable adaptive path; portable, with the original merge sort as fallback.
+use "sequence" function copy[T](values sequence of T) giving failable sequence of T.
+use "sequence" function sized[T](size unsigned) giving failable sequence of T.
+use "sequence" function length[T](values sequence of T) giving unsigned.
+use "sequence" function release[T](values sequence of T) giving failable nothing.
+
+function exchange[T](values sequence of T, left unsigned, right unsigned) giving nothing where T is Ord {
+  when (values at right) less than (values at left) {
+    constant saved is values at left.
+    set values at left to values at right.
+    set values at right to saved.
+  }
+}
+function finish[T](values sequence of T, first unsigned, size unsigned) giving unsigned where T is Ord {
+  dynamic end is first plus 1.
+  while end less than size and not ((values at end) less than (values at (end subtract 1))) {
+    increase end by 1.
+  }
+  give end.
+}
+public function sort[T](source sequence of T) giving failable sequence of T where T is Ord {
+  constant count is length[T](source).
+  dynamic adaptive is count less than or equal to 4.
+  when count greater than or equal to 4096 and count less than or equal to 65536 {
+    dynamic rising is true.
+    dynamic falling is true.
+    dynamic prefix of type unsigned is 1.
+    while prefix less than 8 {
+      when (source at prefix) less than (source at (prefix subtract 1)) { set rising to false. }
+      otherwise { set falling to false. }
+      when not rising and not falling { stop. }
+      increase prefix by 1.
+    }
+    set adaptive to rising or falling.
+  }
+  when not adaptive {
+
+  dynamic result is copy[T](source) try.
+  after error { release[T](result) fallback nothing. }
+  constant size is length[T](result).
+  when size less than 2 { give result. }
+  constant scratch is sized[T](size) try.
+  after { release[T](scratch) fallback nothing. }
+  dynamic width of type unsigned is 1.
+  while width less than size {
+    dynamic origin of type unsigned is 0.
+    while origin less than size {
+      dynamic middle is size.
+      when width less than size subtract origin { set middle to origin plus width. }
+      dynamic end is size.
+      when width less than size subtract middle { set end to middle plus width. }
+      dynamic left is origin.
+      dynamic right is middle.
+      dynamic cursor is origin.
+      while left less than middle and right less than end {
+        when (result at right) less than (result at left) {
+          set scratch at cursor to result at right.
+          increase right by 1.
+        } otherwise {
+          set scratch at cursor to result at left.
+          increase left by 1.
+        }
+        increase cursor by 1.
+      }
+      while left less than middle {
+        set scratch at cursor to result at left.
+        increase left by 1.
+        increase cursor by 1.
+      }
+      while right less than end {
+        set scratch at cursor to result at right.
+        increase right by 1.
+        increase cursor by 1.
+      }
+      set origin to end.
+    }
+    dynamic index of type unsigned is 0.
+    while index less than size {
+      set result at index to scratch at index.
+      increase index by 1.
+    }
+    when width greater than size divide 2 { set width to size. }
+    otherwise { set width to width multiply 2. }
+  }
+  give result.
+  }
+  constant result is copy[T](source) try.
+  after error { release[T](result) fallback nothing. }
+  constant size is length[T](result).
+  when size less than 2 { give result. }
+  when size less than or equal to 4 {
+    exchange[T](result, 0, 1).
+    when size is 3 {
+      exchange[T](result, 1, 2).
+      exchange[T](result, 0, 1).
+    } otherwise when size is 4 {
+      exchange[T](result, 2, 3).
+      exchange[T](result, 1, 2).
+      exchange[T](result, 0, 1).
+      exchange[T](result, 2, 3).
+      exchange[T](result, 1, 2).
+    }
+    give result.
+  }
+  dynamic origin of type unsigned is 0.
+  while origin less than size {
+    dynamic end is origin plus 1.
+    when end less than size and (result at end) less than (result at origin) {
+      while end less than size and (result at end) less than (result at (end subtract 1)) {
+        increase end by 1.
+      }
+      dynamic left is origin.
+      dynamic right is end subtract 1.
+      while left less than right {
+        constant saved is result at left.
+        set result at left to result at right.
+        set result at right to saved.
+        increase left by 1.
+        set right to right subtract 1.
+      }
+    } otherwise {
+      set end to finish[T](result, origin, size).
+    }
+    set origin to end.
+  }
+  when finish[T](result, 0, size) is size { give result. }
+  constant scratch is sized[T](size) try.
+  after { release[T](scratch) fallback nothing. }
+  while true {
+    set origin to 0.
+    dynamic pairs of type unsigned is 0.
+    while origin less than size {
+      constant middle is finish[T](result, origin, size).
+      dynamic end is size.
+      when middle less than size {
+        set end to finish[T](result, middle, size).
+        increase pairs by 1.
+      }
+      dynamic left is origin.
+      dynamic right is middle.
+      dynamic cursor is origin.
+      while left less than middle and right less than end {
+        when (result at right) less than (result at left) {
+          set scratch at cursor to result at right.
+          increase right by 1.
+        } otherwise {
+          set scratch at cursor to result at left.
+          increase left by 1.
+        }
+        increase cursor by 1.
+      }
+      while left less than middle {
+        set scratch at cursor to result at left.
+        increase left by 1.
+        increase cursor by 1.
+      }
+      while right less than end {
+        set scratch at cursor to result at right.
+        increase right by 1.
+        increase cursor by 1.
+      }
+      set origin to end.
+    }
+    when pairs is 0 { stop. }
+    dynamic index of type unsigned is 0.
+    while index less than size {
+      set result at index to scratch at index.
+      increase index by 1.
+    }
+  }
+  give result.
+}

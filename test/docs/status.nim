@@ -14,7 +14,7 @@ for current in ["Execution-specialization engine | Current",
     "Automatic allocation placement | Current, local",
     "Continuation specialization | Current, synchronous",
     "Direct serialization and generated parsing | Current",
-    "Event-backed task pool | Current on hosted C",
+    "Event-backed task pool | Current on qualified hosted targets",
     "PGO (profile-guided optimization using earlier run data) | Current",
     "Adaptive file and text search paths | Current on hosted runtime"]:
   doAssert current in guide, "missing scoped optimization status: " & current

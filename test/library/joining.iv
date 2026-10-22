@@ -1,0 +1,13 @@
+use joining as direct.
+use text as words.
+use sequence as items.
+use testing as check.
+
+test "single-word joining preserves the caller-owned result" {
+  constant output is items.sized[byte](5) try.
+  after { items.release[byte](output) fallback nothing. }
+  check.expect(direct.join("ab", "cde", output)).
+  check.expect(output at 0 is 97 and output at 4 is 101).
+  check.expect(words.join("ab", "cde", output)).
+  check.expect(direct.join_into("ab", "cde", output)).
+}

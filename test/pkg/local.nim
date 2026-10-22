@@ -1,6 +1,7 @@
 import std/[json, os, sequtils, strutils, tables]
-import ../../src/cli/project as cliProject
+import ../../src/cli/project as commands
 import ../../src/pkg/[hash, registry]
+import ../../src/config/project as configuration
 
 let base = getTempDir() / "foo-local-install"
 let root = base / "app"
@@ -12,74 +13,74 @@ createDir(root / "src")
 createDir(stateful / "src")
 createDir(helper / "src")
 
-writeFile(helper / "project.json", $(%*{
+configuration.writeProject(helper, %*{
   "name": "helper",
   "version": "1.1.0",
   "source": "src",
   "entry": "src/main.iv",
   "dependencies": newJObject(),
-}))
+})
 writeFile(helper / "src" / "main.iv", "public constant help is \"helper\".\n")
-writeFile(stateful / "project.json", $(%*{
+configuration.writeProject(stateful, %*{
   "name": "stateful",
   "version": "0.4.0",
   "source": "src",
   "entry": "src/main.iv",
   "dependencies": {"helper": "path+../helper"},
-}))
+})
 writeFile(stateful / "src" / "main.iv",
   "use helper.\npublic constant label is help.\n")
-writeFile(root / "project.json", $(%*{
+configuration.writeProject(root, %*{
   "name": "consumer",
   "version": "0.1.0",
   "source": "src",
   "entry": "src/main.iv",
   "dependencies": newJObject(),
-}))
+})
 writeFile(root / "src" / "main.iv", "use stateful.\ndisplay label.\n")
 
-cliProject.dependency("add", "stateful", absolutePath(stateful), root)
-var declared = parseJson(readFile(root / "project.json"))
+commands.dependency("add", "stateful", absolutePath(stateful), root)
+var declared = configuration.readProject(root)
 doAssert declared["dependencies"]["stateful"].getStr() == "path+../stateful"
 declared["dependencies"]["remote"] = %"^1.0.0"
-writeFile(root / "project.json", $declared)
+configuration.writeProject(root, declared)
 
-let remoteContent = "public constant remote is \"registry\".\n"
-let remoteSource = %*{
+let remote = "public constant remote is \"registry\".\n"
+let source = %*{
   "format": "foo.source/v1",
-  "digest": sha256Hex("src/main.iv\0" & remoteContent & "\0"),
-  "files": [{"path": "src/main.iv", "content": remoteContent}],
+  "digest": digest("src/main.iv\0" & remote & "\0"),
+  "files": [{"path": "src/main.iv", "content": remote}],
 }
-let remoteEntry = %*{
+let entry = %*{
   "schema": "foo.entry/v1",
   "name": "remote",
   "version": "1.0.0",
   "versions": [{"version": "1.0.0", "path": "packages/remote/1.0.0.json"}],
 }
-var registryFiles = initTable[string, string]()
-registryFiles["indexes/index.json"] = $(%*{
+var files = initTable[string, string]()
+files["indexes/index.json"] = $(%*{
   "schema": "foo.registry/v1",
   "revision": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
   "shards": [{"path": "indexes/index-000001.jsonl"}],
 })
-registryFiles["indexes/index-000001.jsonl"] = $remoteEntry & "\n"
-registryFiles["registry/standard.json"] = $(%*{
+files["indexes/index-000001.jsonl"] = $entry & "\n"
+files["registry/standard.json"] = $(%*{
   "schema": "foo.standard-catalog/v1", "revision": "empty", "count": 0,
   "entries": [], "packages": [],
 })
-registryFiles["packages/remote/1.0.0.json"] = $(%*{
+files["packages/remote/1.0.0.json"] = $(%*{
   "schema": "foo.package/v1",
   "name": "remote",
   "version": "1.0.0",
   "repository": "https://example.invalid/remote",
   "revision": "0123456789abcdef0123456789abcdef01234567",
   "dependencies": newJArray(),
-  "source": remoteSource,
+  "source": source,
 })
-setRegistryTransport(proc(config: Registry; path, methodName, body, token: string): RegistryResponse =
+transport(proc(config: Registry; path, methodName, body, token: string): Response =
   discard config; discard methodName; discard body; discard token
-  if registryFiles.hasKey(path): RegistryResponse(status: 200, body: registryFiles[path])
-  else: RegistryResponse(status: 404, body: "{\"error\":\"not found\"}"))
+  if files.hasKey(path): Response(status: 200, body: files[path])
+  else: Response(status: 404, body: "{\"error\":\"not found\"}"))
 
 var events: seq[string]
 let installed = install(root, progress = proc(phase, name, detail: string) =
@@ -93,16 +94,16 @@ doAssert fileExists(root / ".foo" / "packages" / "helper" / "src" / "main.iv")
 doAssert fileExists(root / ".foo" / "packages" / "remote" / "src" / "main.iv")
 doAssert events.anyIt(it.startsWith("install:stateful@0.4.0:digest:"))
 
-let lock = parseJson(readFile(root / "foo.lock"))
-let statefulLock = lock["packages"].filterIt(it["name"].getStr() == "stateful")[0]
-let helperLock = lock["packages"].filterIt(it["name"].getStr() == "helper")[0]
-doAssert statefulLock["source"].getStr() == "path+../stateful"
-doAssert helperLock["source"].getStr() == "path+../helper"
-doAssert statefulLock["dependencies"][0].getStr() == "helper@1.1.0"
-doAssert statefulLock["digest"].getStr().len == 68
+let lock = parseJson(readFile(root / "foo.ivl"))
+let persistent = lock["packages"].filterIt(it["name"].getStr() == "stateful")[0]
+let pinned = lock["packages"].filterIt(it["name"].getStr() == "helper")[0]
+doAssert persistent["source"].getStr() == "path+../stateful"
+doAssert pinned["source"].getStr() == "path+../helper"
+doAssert persistent["dependencies"][0].getStr() == "helper@1.1.0"
+doAssert persistent["digest"].getStr().len == 68
 
-let nextContent = "public constant remote is \"new registry release\".\n"
-registryFiles["indexes/index-000001.jsonl"] = $(%*{
+let content = "public constant remote is \"new registry release\".\n"
+files["indexes/index-000001.jsonl"] = $(%*{
   "schema": "foo.entry/v1",
   "name": "remote",
   "version": "1.1.0",
@@ -111,7 +112,7 @@ registryFiles["indexes/index-000001.jsonl"] = $(%*{
     {"version": "1.0.0", "path": "packages/remote/1.0.0.json"},
   ],
 }) & "\n"
-registryFiles["packages/remote/1.1.0.json"] = $(%*{
+files["packages/remote/1.1.0.json"] = $(%*{
   "schema": "foo.package/v1",
   "name": "remote",
   "version": "1.1.0",
@@ -120,23 +121,23 @@ registryFiles["packages/remote/1.1.0.json"] = $(%*{
   "dependencies": newJArray(),
   "source": {
     "format": "foo.source/v1",
-    "digest": sha256Hex("src/main.iv\0" & nextContent & "\0"),
-    "files": [{"path": "src/main.iv", "content": nextContent}],
+    "digest": digest("src/main.iv\0" & content & "\0"),
+    "files": [{"path": "src/main.iv", "content": content}],
   },
 })
 let repeated = install(root)
 doAssert repeated.anyIt(it.name == "remote" and it.version == "1.0.0")
 let refreshed = update(root)
 doAssert refreshed.anyIt(it.name == "remote" and it.version == "1.1.0")
-var unsafe = parseJson(readFile(root / "project.json"))
+var unsafe = configuration.readProject(root)
 unsafe["dependencies"]["stateful"] = %"path+.foo/packages/stateful"
-writeFile(root / "project.json", $unsafe)
-var rejectedStore = false
+configuration.writeProject(root, unsafe)
+var store = false
 try:
   discard install(root)
 except ValueError as error:
-  rejectedStore = error.msg.contains("inside .foo/packages")
-doAssert rejectedStore
+  store = error.msg.contains("inside .foo/packages")
+doAssert store
 doAssert fileExists(root / ".foo" / "packages" / "stateful" / "src" / "main.iv")
 removeDir(base)
 echo "local package installation and transitive paths: ok"

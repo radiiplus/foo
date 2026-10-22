@@ -1,0 +1,62 @@
+{
+  "format": "foo.test-regions.v1",
+  "order": ["core", "net", "runtime", "targets", "packages", "release", "editor", "bench"],
+  "regions": {
+    "core": { "depends": [] },
+    "net": { "depends": ["core"] },
+    "runtime": { "depends": ["core"] },
+    "targets": { "depends": ["core", "runtime"] },
+    "packages": { "depends": ["core", "runtime"] },
+    "release": { "depends": ["packages", "targets", "net"] },
+    "editor": { "depends": ["core"] },
+    "bench": { "depends": ["core"] }
+  },
+  "nativeOwners": [
+    { "region": "bench", "paths": ["cli/benchmark.nim"] },
+    { "region": "release", "paths": ["backend/qbe/freestanding/release.nim", "backend/qbe/wasi/release.nim"] },
+    { "region": "net", "paths": ["runtime/net/"] },
+    { "region": "targets", "paths": ["backend/qbe/arm64/", "backend/qbe/irqdelivery.nim", "backend/qbe/x64/irqdelivery.nim", "backend/qbe/freestanding/", "backend/qbe/uefi.nim", "backend/qbe/wasm.nim", "backend/qbe/shader.nim"] },
+    { "region": "runtime", "paths": ["runtime/", "process.nim", "backend/qbe/abi", "backend/qbe/integers.nim", "backend/qbe/storage.nim", "backend/qbe/wasm.nim"] },
+    { "region": "packages", "paths": ["build/", "config/", "pkg/", "interop/sysroot.nim", "runner.nim"] },
+    { "region": "editor", "paths": ["cli/", "docs/", "editor/lsp.nim", "backend/icon.nim"] },
+    { "region": "core", "paths": ["ast/", "diag/", "lex/", "parse/", "sema/", "types/", "ir/", "language/", "backend/qbe/", "backend/", "interop/", "library/"] }
+  ],
+  "scripts": [
+    { "id": "test/matrix.mjs", "region": "core", "kind": "matrix" },
+    { "id": "test/library/check.mjs", "region": "core" },
+    { "id": "test/harness.mjs", "region": "core" },
+    { "id": "test/regional.mjs", "region": "core" },
+    { "id": "test/native/speed.mjs", "region": "core", "args": ["--integration"] },
+    { "id": "test/support/dylib.mjs", "region": "core", "kind": "setup", "args": ["--output=OUTPUT/dylib"] },
+    { "id": "test/library/tls.mjs", "region": "net", "kind": "tls" },
+    { "id": "test/runtime/tcp.mjs", "region": "net" },
+    { "id": "test/backend/qbe/scripts/qualification.mjs", "region": "targets", "requires": "windows-qbe" },
+    { "id": "test/backend-policy.mjs", "region": "packages" },
+    { "id": "test/support/audit.mjs", "region": "release" },
+    { "id": "tools/vendor/audit.mjs", "region": "release", "args": ["--artifacts"] },
+    { "id": "test/installers/npm.ps1", "region": "release", "requires": "release-stage" },
+    { "id": "test/installers/windows.ps1", "region": "release", "requires": "release-stage" },
+    { "id": "test/installers/linux.sh", "region": "release", "requires": "release-stage" },
+    { "id": "test/tools.mjs", "region": "editor" },
+    { "id": "test/editor/lsp.mjs", "region": "editor" },
+    { "id": "test/docs/run.mjs", "region": "editor" },
+    { "id": "test/editor/run.mjs", "region": "editor" },
+    { "id": "test/editor/snapshots.mjs", "region": "editor" },
+    { "id": "test/editor/theme.mjs", "region": "editor" },
+    { "id": "test/editor/probe.mjs", "region": "editor" },
+    { "id": "test/editor/editor.mjs", "region": "editor", "requires": "editor-host" },
+    { "id": "tools/catalog.mjs", "region": "editor", "args": ["--check"] }
+  ],
+  "impact": [
+    { "paths": ["src/ast/", "src/lex/", "src/sema/", "src/types/", "src/ir/", "src/backend/qbe/", "src/opt/substrate.nim", "src/interop/", "src/runtime/provider/", "src/runtime/wide.c", "src/runtime/cpu/", "toolchain/assets.json"], "regions": ["core", "net", "runtime", "targets", "packages", "release", "editor", "bench"] },
+    { "paths": ["src/runtime/net/", "lib/net.iv", "lib/http.iv", "lib/tls.iv", "test/library/tls.iv"], "regions": ["net", "release"] },
+    { "paths": ["src/cli/benchmark.nim"], "regions": ["bench", "packages"] },
+    { "paths": ["src/runtime/", "lib/file.iv", "lib/process.iv", "lib/task.iv", "lib/memory.iv", "lib/text.iv"], "regions": ["runtime", "net", "targets", "packages", "release"] },
+    { "paths": ["src/build/", "src/pkg/", "registry/", "project.ivc"], "regions": ["packages", "release"] },
+    { "paths": ["src/config/", "specs/configuration.md"], "regions": ["core", "packages", "release", "editor"] },
+    { "paths": ["src/cli/", "docs/", "editors/"], "regions": ["editor"] },
+    { "paths": ["installers/", "tools/build.mjs", "tools/build.ps1", "tools/binaries.mjs", "tools/sign.mjs"], "regions": ["release"] },
+    { "paths": ["benchmark/"], "regions": ["bench"] },
+    { "paths": ["tools/wsl.mjs", "tools/wsl/worker.mjs", "tools/artifacts.mjs", "test/regions.json", "test/run.mjs", "test/native/", "test/inventory.json", "package.json"], "regions": ["core", "net", "runtime", "targets", "packages", "release", "editor", "bench"] }
+  ]
+}

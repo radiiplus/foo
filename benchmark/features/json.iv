@@ -1,0 +1,19 @@
+use codec as codecs.
+use text as words.
+use system as machine.
+use testing as check.
+
+define Packet as record { id of type unsigned. active of type boolean. }.
+dynamic limit of type unsigned is 100`000.
+when machine.cores try greater than 0 { increase limit by 1. }
+dynamic index of type unsigned is 0.
+dynamic checksum of type unsigned is 0.
+while index less than limit {
+  constant encoded is codecs.encode[Packet](Packet(index remainder 1`000, true)) try.
+  constant decoded is codecs.decode[Packet](encoded) try.
+  set checksum to checksum plus decoded.id.
+  check.expect(decoded.active).
+  words.release(encoded) try.
+  increase index by 1.
+}
+check.number(checksum, 49`950`000).

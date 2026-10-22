@@ -1,0 +1,3 @@
+function bad {
+  dynamic cell aligned to 4096 is 0.
+}

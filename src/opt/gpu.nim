@@ -3,30 +3,30 @@ import ../ir/[kind, node]
 import ./spirv
 
 proc decimal(value: `Type`): bool =
-  value != nil and value.kind == TypeKind.Float and value.width == 32
+  value != nil and value.kind == Shape.Float and value.width == 32
 
 proc unsigned(value: `Type`): bool =
-  value != nil and value.kind == TypeKind.Uint and value.width == 32
+  value != nil and value.kind == Shape.Uint and value.width == 32
 
 proc slice(value: `Type`): bool =
-  value != nil and value.kind == TypeKind.Slice and value.elem.decimal()
+  value != nil and value.kind == Shape.Slice and value.elem.decimal()
 
 proc counter(value: `Type`): bool =
-  value != nil and value.kind == TypeKind.Slice and value.elem.unsigned()
+  value != nil and value.kind == Shape.Slice and value.elem.unsigned()
 
 type Kernel = object
   code: string
   limit: uint64
   requirements: uint64
-  localBytes: uint64
+  bytes: uint64
 
 proc fail(function: Function; detail: string) {.noreturn.} =
   raise newException(ValueError,
     "GPU kernel '" & function.name & "': " & detail)
 
 proc validate(function: Function): Kernel =
-  if function.public or function.typeParams.len > 0 or function.ret == nil or
-      function.ret.kind != TypeKind.Void or function.params.len == 0:
+  if function.public or function.generics.len > 0 or function.ret == nil or
+      function.ret.kind != Shape.Void or function.params.len == 0:
     function.fail("requires a private, concrete function returning nothing")
   var slices = initHashSet[string]()
   var writable = initHashSet[string]()
@@ -44,18 +44,18 @@ proc validate(function: Function): Kernel =
   if outputs.len == 0: function.fail("requires a writable output sequence")
   if function.blocks.len == 0: function.fail("requires a body")
   let body = function.blocks[0]
-  if body.term == nil or body.term.kind != InstrKind.Return or
+  if body.term == nil or body.term.kind != Opcode.Return or
       (body.term.value.`type` != nil and
-        body.term.value.`type`.kind != TypeKind.Void):
+        body.term.value.`type`.kind != Shape.Void):
     function.fail("requires straight-line work and no result")
   var indices = initHashSet[string]()
-  var localIndices = initHashSet[string]()
+  var local = initHashSet[string]()
   var addresses = initTable[string, string]()
   var traps = initHashSet[string]()
-  var wroteOutput = false
+  var output = false
   for instruction in body.instrs:
     case instruction.kind
-    of InstrKind.Call:
+    of Opcode.Call:
       if instruction.abi != "runtime.gpu":
         function.fail("can only call GPU intrinsics")
       case instruction.symbol
@@ -65,7 +65,7 @@ proc validate(function: Function): Kernel =
           function.fail("gpu.barrier cannot produce a value")
       of "shared":
         if instruction.args.len != 1 or
-            instruction.args[0].kind != ValueKind.Const or
+            instruction.args[0].kind != Flavor.Const or
             not instruction.dest.`type`.slice():
           function.fail("gpu.shared needs a constant decimal 32 size")
         var size: uint64
@@ -74,7 +74,7 @@ proc validate(function: Function): Kernel =
         except ValueError:
           function.fail("gpu.shared needs a positive constant size")
         if size == 0 or size > uint64(high(int)) or
-            size > (high(uint64) - result.localBytes) div 4:
+            size > (high(uint64) - result.bytes) div 4:
           function.fail("gpu.shared size is out of range")
         if instruction.dest.name in slices:
           function.fail("has an invalid or repeated result")
@@ -82,21 +82,21 @@ proc validate(function: Function): Kernel =
         slices.incl(instruction.dest.name)
         writable.incl(instruction.dest.name)
         result.limit = if result.limit == 0: size else: min(result.limit, size)
-        result.localBytes += size * 4
+        result.bytes += size * 4
         result.requirements = result.requirements or 1
       of "atomic":
         if instruction.args.len != 3 or
-            instruction.args[0].kind != ValueKind.Reg or
+            instruction.args[0].kind != Flavor.Reg or
             instruction.args[0].name notin counters or
             instruction.args[0].name notin writable or
             not instruction.dest.`type`.unsigned() or
             not instruction.args[2].`type`.unsigned():
           function.fail("gpu.atomic needs a writable unsigned 32 sequence")
         let position = instruction.args[1]
-        if position.kind == ValueKind.Const:
+        if position.kind == Flavor.Const:
           if position.name != "0":
             function.fail("gpu.atomic constant index must be zero")
-        elif position.kind != ValueKind.Reg or position.name notin indices:
+        elif position.kind != Flavor.Reg or position.name notin indices:
           function.fail("gpu.atomic needs a GPU index or constant")
         result.requirements = result.requirements or 2
       of "broadcast":
@@ -107,24 +107,24 @@ proc validate(function: Function): Kernel =
         result.requirements = result.requirements or 4
       of "index", "local", "group", "lane", "subgroup", "width":
         if instruction.args.len != 0 or instruction.dest.`type` == nil or
-            instruction.dest.`type`.kind != TypeKind.Uint:
+            instruction.dest.`type`.kind != Shape.Uint:
           function.fail("can only call GPU intrinsics")
         if instruction.symbol in ["index", "local", "group"]:
           indices.incl(instruction.dest.name)
         if instruction.symbol == "local":
-          localIndices.incl(instruction.dest.name)
+          local.incl(instruction.dest.name)
         if instruction.symbol in ["lane", "subgroup", "width"]:
           result.requirements = result.requirements or 4
       else:
         function.fail("can only call GPU intrinsics")
-    of InstrKind.Index:
-      if instruction.val.kind != ValueKind.Reg or
+    of Opcode.Index:
+      if instruction.val.kind != Flavor.Reg or
           (instruction.val.name notin slices and
             instruction.val.name notin counters):
         function.fail("can only index numeric parameters or shared storage")
       if shared.hasKey(instruction.val.name):
         let position = instruction.val2
-        if position.kind == ValueKind.Const:
+        if position.kind == Flavor.Const:
           var offset: uint64
           try:
             offset = parseBiggestUInt(position.name)
@@ -132,10 +132,10 @@ proc validate(function: Function): Kernel =
             function.fail("shared storage index must be nonnegative")
           if offset >= shared[instruction.val.name]:
             function.fail("shared storage index is out of bounds")
-        elif position.kind != ValueKind.Reg or
-            position.name notin localIndices:
+        elif position.kind != Flavor.Reg or
+            position.name notin local:
           function.fail("shared storage needs a local ID or constant index")
-      elif instruction.val2.kind != ValueKind.Reg or
+      elif instruction.val2.kind != Flavor.Reg or
           instruction.val2.name notin indices:
         function.fail("global storage needs a GPU index")
       if instruction.op == "address":
@@ -148,26 +148,26 @@ proc validate(function: Function): Kernel =
             not instruction.dest.`type`.decimal()):
         function.fail("indexed reads must match the parameter element type")
       if instruction.panic.len > 0: traps.incl(instruction.panic)
-    of InstrKind.Add, InstrKind.Sub, InstrKind.Mul, InstrKind.Div:
+    of Opcode.Add, Opcode.Sub, Opcode.Mul, Opcode.Div:
       if not instruction.dest.`type`.decimal() or
           instruction.panic.len > 0:
         function.fail("arithmetic must use decimal 32")
-    of InstrKind.Store:
-      if instruction.ptr.kind != ValueKind.Reg or
+    of Opcode.Store:
+      if instruction.ptr.kind != Flavor.Reg or
           not addresses.hasKey(instruction.ptr.name) or
           ((addresses[instruction.ptr.name] in counters and
             not instruction.val.`type`.unsigned()) or
             (addresses[instruction.ptr.name] notin counters and
               not instruction.val.`type`.decimal())):
         function.fail("stores must match the output element type")
-      if addresses[instruction.ptr.name] in outputs: wroteOutput = true
+      if addresses[instruction.ptr.name] in outputs: output = true
     else:
       function.fail("contains unsupported control flow or effects")
-  if not wroteOutput: function.fail("must write an output sequence")
+  if not output: function.fail("must write an output sequence")
   for index in 1 ..< function.blocks.len:
-    let basicBlock = function.blocks[index]
-    if basicBlock.label notin traps or basicBlock.instrs.len > 0 or
-        basicBlock.term == nil or basicBlock.term.kind != InstrKind.Panic:
+    let section = function.blocks[index]
+    if section.label notin traps or section.instrs.len > 0 or
+        section.term == nil or section.term.kind != Opcode.Panic:
       function.fail("contains unsupported control flow")
 
 proc compile*(function: Function): string =
@@ -199,17 +199,17 @@ proc apply*(module: Module): int =
   for function in module.funcs:
     if function.abi == "gpu": continue
     template reject(item: Value) =
-      if item.kind == ValueKind.Global and item.name in kernels:
+      if item.kind == Flavor.Global and item.name in kernels:
         function.fail("cannot use a GPU kernel as a host function value")
-    for basicBlock in function.blocks:
-      for instruction in basicBlock.instrs & @[basicBlock.term]:
+    for section in function.blocks:
+      for instruction in section.instrs & @[section.term]:
         if instruction == nil: continue
         for item in [instruction.target, instruction.ptr, instruction.val,
             instruction.val2, instruction.callee, instruction.cond,
             instruction.value, instruction.expr]:
           reject(item)
         for item in instruction.args: reject(item)
-        if instruction.kind != InstrKind.Call: continue
+        if instruction.kind != Opcode.Call: continue
         if instruction.func in kernels:
           function.fail("cannot call a GPU kernel on the host")
         if instruction.abi == "runtime.gpu" and
@@ -220,7 +220,7 @@ proc apply*(module: Module): int =
         if instruction.abi != "runtime.gpu" or
             instruction.symbol != "prepare": continue
         if prepare.name.len == 0 or instruction.args.len != 2 or
-            instruction.args[1].kind != ValueKind.Const:
+            instruction.args[1].kind != Flavor.Const:
           function.fail("gpu.prepare needs a constant kernel name")
         let data = bytes(instruction.args[1].name)
         var entry = ""
@@ -230,29 +230,29 @@ proc apply*(module: Module): int =
         let kernel = module.funcs.filterIt(it.name == entry)[0]
         let code = kernels[entry]
         let signature = repeat('4', kernel.params.len)
-        let textType = `Type`(kind: TypeKind.Slice, constant: true,
-          elem: `Type`(kind: TypeKind.Uint, width: 8))
+        let representation = `Type`(kind: Shape.Slice, constant: true,
+          elem: `Type`(kind: Shape.Uint, width: 8))
         if generated.name.len == 0:
           generated = Extern(name: name, symbol: "prepared",
             abi: "runtime.gpu", ret: prepare.ret,
-            params: @[prepare.params[0], textType, textType, textType,
-              `Type`(kind: TypeKind.Uint, width: 64),
-              `Type`(kind: TypeKind.Uint, width: 64),
-              `Type`(kind: TypeKind.Uint, width: 64)])
+            params: @[prepare.params[0], representation, representation, representation,
+              `Type`(kind: Shape.Uint, width: 64),
+              `Type`(kind: Shape.Uint, width: 64),
+              `Type`(kind: Shape.Uint, width: 64)])
           module.externs.add(generated)
         instruction.func = generated.name
         instruction.symbol = "prepared"
         instruction.args = @[instruction.args[0],
-          Value(kind: ValueKind.Const,
+          Value(kind: Flavor.Const,
             name: quoted(code.code.toOpenArrayByte(0, code.code.high)),
-            `type`: textType), instruction.args[1],
-          Value(kind: ValueKind.Const,
+            `type`: representation), instruction.args[1],
+          Value(kind: Flavor.Const,
             name: quoted(signature.toOpenArrayByte(0, signature.high)),
-            `type`: textType),
-          Value(kind: ValueKind.Const, name: $code.limit,
-            `type`: `Type`(kind: TypeKind.Uint, width: 64)),
-          Value(kind: ValueKind.Const, name: $code.requirements,
-            `type`: `Type`(kind: TypeKind.Uint, width: 64)),
-          Value(kind: ValueKind.Const, name: $code.localBytes,
-            `type`: `Type`(kind: TypeKind.Uint, width: 64))]
+            `type`: representation),
+          Value(kind: Flavor.Const, name: $code.limit,
+            `type`: `Type`(kind: Shape.Uint, width: 64)),
+          Value(kind: Flavor.Const, name: $code.requirements,
+            `type`: `Type`(kind: Shape.Uint, width: 64)),
+          Value(kind: Flavor.Const, name: $code.bytes,
+            `type`: `Type`(kind: Shape.Uint, width: 64))]
         inc result

@@ -1,0 +1,21 @@
+use codec as codecs.
+use "text" function release(content text) giving failable nothing.
+use testing as check.
+
+define Packet as record {
+  id of type unsigned.
+  active of type boolean.
+  value of type optional integer.
+}.
+
+start {
+  constant encoded is codecs.encode[Packet](Packet(42, true, 7)) try.
+  after { release(encoded) fallback nothing. }
+  check.expect(encoded is "{\"id\":42,\"active\":true,\"value\":7}").
+  constant decoded is codecs.decode[Packet](encoded) try.
+  check.expect(decoded is Packet(42, true, 7)).
+  constant absent is codecs.decode[Packet]("{\"id\":0,\"active\":false,\"value\":null}") try.
+  check.expect(absent is Packet(0, false, null)).
+  constant bad is codecs.decode[Packet]("{\"id\":1,\"active\":true,\"value\":\"bad\"}") fallback Packet(0, false, null).
+  check.expect(bad is Packet(0, false, null)).
+}

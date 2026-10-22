@@ -1,0 +1,100 @@
+-- Caller-owned byte operations for runtime:none targets. Invalid ranges leave
+-- the destination unchanged. Inputs and outputs to copy must not overlap.
+-- Alignment is relative to the start of storage; the caller must align the
+-- storage base for absolute alignment. Advance the cursor to result plus size.
+public function reserve(capacity unsigned, cursor unsigned, size unsigned,
+  alignment unsigned) giving optional unsigned {
+  when alignment is 0 or cursor greater than capacity { give null. }
+  dynamic aligned is cursor.
+  constant remainder is cursor remainder alignment.
+  when remainder is not 0 {
+    constant padding is alignment subtract remainder.
+    when padding greater than capacity subtract cursor { give null. }
+    set aligned to cursor plus padding.
+  }
+  when size greater than capacity subtract aligned { give null. }
+  give aligned.
+}
+
+public function fill(output sequence of byte, value byte) giving nothing {
+  dynamic index of type unsigned is 0.
+  while index less than lengthof(output) {
+    set output at index to value.
+    increase index by 1.
+  }
+}
+
+public function copy(source sequence of constant byte, output sequence of byte) giving boolean {
+  when lengthof(source) greater than lengthof(output) { give false. }
+  dynamic index of type unsigned is 0.
+  while index less than lengthof(source) {
+    set output at index to source at index.
+    increase index by 1.
+  }
+  give true.
+}
+
+-- Moves bytes within one owner; the ranges may overlap.
+public function move(buffer sequence of byte, origin unsigned, destination unsigned,
+  count unsigned) giving boolean {
+  constant size is lengthof(buffer).
+  when origin greater than size or destination greater than size { give false. }
+  when count greater than size subtract origin or count greater than size subtract destination {
+    give false.
+  }
+  when destination greater than origin and destination less than origin plus count {
+    dynamic remaining is count.
+    while remaining greater than 0 {
+      set remaining to remaining subtract 1.
+      set buffer at (destination plus remaining) to buffer at (origin plus remaining).
+    }
+  } otherwise {
+    dynamic index of type unsigned is 0.
+    while index less than count {
+      set buffer at (destination plus index) to buffer at (origin plus index).
+      increase index by 1.
+    }
+  }
+  give true.
+}
+
+public function identical(left sequence of constant byte, right sequence of constant byte) giving boolean {
+  when lengthof(left) is not lengthof(right) { give false. }
+  dynamic index of type unsigned is 0.
+  while index less than lengthof(left) {
+    when (left at index) is not (right at index) { give false. }
+    increase index by 1.
+  }
+  give true.
+}
+
+-- A byte-oriented search. Text is UTF-8; offsets are bytes, not code points.
+public function find(haystack text, needle text) giving optional unsigned {
+  constant available is lengthof(haystack).
+  constant needed is lengthof(needle).
+  when needed greater than available { give null. }
+  dynamic origin of type unsigned is 0.
+  while origin less than or equal to available subtract needed {
+    dynamic offset of type unsigned is 0.
+    while offset less than needed and (haystack at (origin plus offset)) is (needle at offset) {
+      increase offset by 1.
+    }
+    when offset is needed { give origin. }
+    increase origin by 1.
+  }
+  give null.
+}
+
+-- The callback ABI is declared in src/runtime/freestanding/host.h. A nonnegative
+-- result is the number of bytes transferred; negative results are host errors.
+public function version giving unsigned 32 {
+  give 1.
+}
+
+public function invoke(context pointer to byte,
+  callback function taking (pointer to byte, unsigned 32, pointer to byte,
+    unsigned 32, pointer to byte, unsigned 32) giving integer 32 for c,
+  operation unsigned 32, request pointer to byte, length unsigned 32,
+  response pointer to byte, capacity unsigned 32) giving integer 32 keeping call {
+  give callback(context, operation, request, length, response, capacity).
+}

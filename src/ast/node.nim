@@ -35,11 +35,11 @@ type
   Null* = ref object of Node
   Uninitialized* = ref object of Node
   Unreachable* = ref object of Node
-  NewlineExpr* = ref object of Node
+  Line* = ref object of Node
   Name* = ref object of Node
     text*: string
     invoke*: bool
-    invokeArgs*: seq[Expression]
+    arguments*: seq[Expression]
   Call* = ref object of Node
     callee*: Expression
     args*: seq[Expression]
@@ -50,7 +50,7 @@ type
     items*: seq[Expression]
   Closure* = ref object of Node
     params*: seq[Parameter]
-    returnType*: `Type`
+    returns*: `Type`
     captures*: seq[Name]
     body*: Block
   Allocation* = ref object of Node
@@ -82,13 +82,13 @@ type
     `object`*: Expression
     index*: Expression
 
-  TypeParam* = ref object of Node
+  Generic* = ref object of Node
     name*: Name
     bound*: Name
-  GenericInst* = ref object of Node
+  Instantiation* = ref object of Node
     name*: Name
     args*: seq[`Type`]
-  EvalBlock* = ref object of Node
+  Evaluation* = ref object of Node
     body*: Block
   Verify* = ref object of Node
     condition*: Expression
@@ -113,8 +113,10 @@ type
     name*: Name
     `type`*: `Type`
     value*: Expression
+    alignment*: int
+    section*: string
   Destructure* = ref object of Node
-    recordType*: `Type`
+    record*: `Type`
     fields*: seq[Name]
     bindings*: seq[Name]
     value*: Expression
@@ -122,9 +124,9 @@ type
     public*: bool
     name*: Name
     dispatch*: string
-    typeParams*: seq[TypeParam]
+    generics*: seq[Generic]
     params*: seq[Parameter]
-    returnType*: `Type`
+    returns*: `Type`
     abi*: string
     constraint*: Constraint
     constraints*: seq[Constraint]
@@ -134,7 +136,7 @@ type
   Alias* = ref object of Node
     public*: bool
     name*: Name
-    typeParams*: seq[TypeParam]
+    generics*: seq[Generic]
     body*: Node
     derives*: Derive
     constraints*: seq[Constraint]
@@ -144,19 +146,19 @@ type
     public*: bool
     name*: Name
     path*: string
-  NativeCode* = object
+  Fragment* = object
     substrate*: string
     code*: string
-  ExternFunction* = ref object of Node
-    native*: NativeCode
-    typeParams*: seq[TypeParam]
+  External* = ref object of Node
+    native*: Fragment
+    generics*: seq[Generic]
     constraints*: seq[Constraint]
     symbol*: string
     public*: bool
     abi*: string
     name*: Name
     params*: seq[Parameter]
-    returnType*: `Type`
+    returns*: `Type`
   CImport* = ref object of Node
     header*: string
   Native* = ref object of Node
@@ -193,8 +195,8 @@ type
     pattern*: Pattern
     guard*: Expression
     body*: Block
-  UnreachableStatement* = ref object of Node
-  TestBlock* = ref object of Node
+  Impossible* = ref object of Node
+  Test* = ref object of Node
     name*: Text
     body*: Block
 
@@ -233,7 +235,7 @@ type
   Vector* = ref object of Node
     length*: string
     elem*: `Type`
-  FunctionType* = ref object of Node
+  Signature* = ref object of Node
     params*: seq[`Type`]
     ret*: `Type`
     abi*: string
@@ -249,7 +251,7 @@ type
   Block* = ref object of Node
     stmts*: seq[Statement]
   Wildcard* = ref object of Node
-  VariantPattern* = ref object of Node
+  Arm* = ref object of Node
     name*: Name
     binding*: Name
   Broken* = ref object of Node

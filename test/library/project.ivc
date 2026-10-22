@@ -1,0 +1,10 @@
+capability "project"
+project {
+  name is "library"
+  tests {
+    services {
+      sources is ["../native/c/service.c"]
+    }
+  }
+  version is "0.1.0"
+}

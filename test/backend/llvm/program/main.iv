@@ -1,5 +1,0 @@
-function main giving integer 32 {
-  dynamic left of type integer 32 is 19.
-  dynamic right of type integer 32 is 23.
-  give left plus right.
-}

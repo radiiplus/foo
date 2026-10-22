@@ -1,0 +1,22 @@
+use memory as storage.
+use sequence as items.
+use testing as check.
+
+start {
+  constant owner is storage.arena try.
+  constant initial is storage.allocate(owner, 3) try.
+  storage.copy(owner, initial, "abc") try.
+  constant data is storage.expand(owner, initial, 5) try.
+  check.expect(storage.aligned(data, 1)).
+  constant viewed is storage.view(owner, data, 3) try.
+  check.same(viewed, "abc").
+  constant borrowed is storage.bytes(owner, data, 3) try.
+  constant target is items.sized[byte](3) try.
+  storage.transfer(borrowed, target) try.
+  check.expect(storage.compare(borrowed, target) is 0).
+  storage.clear(target).
+  check.expect(target at 0 is 0 and target at 2 is 0).
+  check.expect((storage.view(owner, data, 6) fallback "bounds") is "bounds").
+  items.release[byte](target) try.
+  storage.close(owner) try.
+}

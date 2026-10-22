@@ -1,0 +1,47 @@
+{
+  "backend": "qbe",
+  "policy": "qbe-freestanding-memory-v10",
+  "target": "windows-x64",
+  "mode": "release",
+  "cpu": "x86-64",
+  "runtimeOptimization": "O0",
+  "runtimeCopyPolicy": "libc-memcpy-v1",
+  "checkedInlinePolicy": "private-guarded-constructor-v1",
+  "qbe": {
+    "path": "C:\\Users\\vibes\\Desktop\\projects\\tratio\\.artifacts\\qbe-hosted-package-final\\bin\\qbe.exe",
+    "sha256": "5c4c7a8901c122c580af7050805759a2ce2386af832eeb83ba0bd3ff3126617c"
+  },
+  "cc": {
+    "path": "C:\\Users\\vibes\\Desktop\\projects\\tratio\\.artifacts\\qbe-hosted-package-final\\bin\\tcc.exe",
+    "sha256": "c682643fb75e91361256c9b57f694759eb76c909348c2b34ea95ec20fb4b50b3"
+  },
+  "assembler": {
+    "path": "C:\\Users\\vibes\\Desktop\\projects\\tratio\\.artifacts\\qbe-hosted-package-final\\bin\\tcc.exe",
+    "sha256": "c682643fb75e91361256c9b57f694759eb76c909348c2b34ea95ec20fb4b50b3"
+  },
+  "compilerSupportSha256": "506192b0897071035ee5775a047e856fe1ec228cec82d843e7256c46c5d35094",
+  "nativeInputsSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "nativeSources": [],
+  "nativeObjects": [],
+  "nativeLibraries": [],
+  "nativeIncludes": [],
+  "nativeFlags": [],
+  "winapiSha256": "0a4403dd2dd8a60357d47fd999a9e0183beff6846a347c7c3c311b9658bde692",
+  "linker": {
+    "path": "C:\\Users\\vibes\\Desktop\\projects\\tratio\\.artifacts\\qbe-hosted-package-final\\bin\\tcc.exe",
+    "sha256": "c682643fb75e91361256c9b57f694759eb76c909348c2b34ea95ec20fb4b50b3"
+  },
+  "scriptSha256": "",
+  "emitterSha256": "64048459bd8a111dd184c9ae54b84579a64175055fdb83791824776cd6da85b3",
+  "abiSha256": "ead2e3eb090343cb23003f137a5b4b991f0f618fde04d449be2b6a9353970241",
+  "layoutSha256": "69d5651d3cab837885268f3d5d4d04629e50a3f9ba6171fe02044e40c123c06d",
+  "driverSha256": "bb3e49325252348284ce20acead3cfedf668c0d2b076161ff53f002d5d1458eb",
+  "linkPolicy": "hosted-v1",
+  "runtimeSha256": "0b2e80af5fa7c477a8c75936d72aabb12d4db88c556ae320dc4cd092f3f6c735",
+  "syscallAssemblySha256": "",
+  "archiver": "",
+  "archiverSha256": "",
+  "qbeTarget": "amd64_win",
+  "functionAssemblySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "functionAttributesSha256": "3fb9c2ca4951e9989b2fcdcd4c953dddd80c129916ce21ffe14922ecb21374e4"
+}

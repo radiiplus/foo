@@ -17,7 +17,7 @@ manifest version, and whether the worktree was dirty. The command refuses to
 overwrite an existing candidate; pass `--output=PATH` for another candidate.
 The candidate is for review and local builds, not a versioned publication.
 Update the release version in `package.json`, `package-lock.json`, and
-`project.json` and complete release checks before publishing.
+`project.ivc` and complete release checks before publishing.
 
 Use one command from the repository root:
 
@@ -32,7 +32,7 @@ operating system will run on another.
 | --- | --- |
 | Windows x64 with WSL | Builds Windows locally, then builds Linux x64 and Linux ARM64 inside WSL. |
 | Windows without WSL | Builds Windows and prints the `wsl --install -d Ubuntu-22.04` setup command. |
-| Linux x64 | Builds Linux x64 natively and cross-builds Linux ARM64 with managed Zig. |
+| Linux x64 | Builds Linux x64 natively and cross-builds Linux ARM64 when the explicit target toolchain and SDK are present. |
 | Linux ARM64 | Builds Linux ARM64 natively. |
 
 Output is staged under `release/foo-vVERSION/` using names such as
@@ -59,13 +59,45 @@ both Linux TAR archives, the npm package, and `SHA256SUMS.txt`.
 
 ## Prerequisites
 
-Windows builds require Node.js, Nim 2.2.12, Clang, and `llvm-rc`. The resource
-compiler is included with standard LLVM installations and embeds
+Windows builds require Node.js, Nim 2.2.12, a Nim C compiler, and the Windows
+SDK `rc.exe` resource compiler. The resource compiler embeds
 `installers/assets/installer.ico` in `foo.exe`.
 
-Linux and WSL builds require Node.js, Nim 2.2.12, Clang, and the OpenSSL
-development package. The Linux ARM64 cross-build uses FOO's pinned managed Zig
-toolchain. Debian packaging additionally requires `fakeroot`, `dpkg-deb`, and
+Linux and WSL source builds require Node.js, Nim 2.2.12, Clang for building the
+frontend, QBE, TinyCC, and the target native dependencies. The Linux x64
+release staging path requires the x64 and ARM64 TinyCC binaries and matching
+musl headers, startup object, and static library. The Linux ARM64 release also
+requires native ARM64 TinyCC and GNU `as` binaries. Target assemblers and
+linkers are staged from the bundled binutils assets; see
+[Build Dependencies](dependencies.md).
+Build the vendored QBE executables on Linux x64 or WSL before staging Linux
+packages:
+
+```sh
+node tools/qbe/linux/build.mjs --target x64
+node tools/qbe/linux/build.mjs --target arm64
+node tools/tcc/linux/build.mjs
+```
+
+The ARM64 command uses the managed Zig toolchain and writes
+`.artifacts/toolchain/qbe/qbe-linux-arm64`. Release staging checks that each
+bundled QBE executable matches its package architecture. The TinyCC command
+builds `.artifacts/toolchain/tcc/linux-arm64/arm64-tcc`. Build the ARM64 static
+assembler once from the pinned Ubuntu 22.04 `binutils-source` package:
+
+```sh
+cd .artifacts/toolchain
+apt download binutils-source=2.38-4ubuntu2.12
+cd ../..
+node tools/binutils/linux/build.mjs
+```
+
+The TinyCC and assembler builds require `llvm-strip` and the managed Zig
+toolchain; the assembler also requires `dpkg-deb`. It checks the source
+package SHA-256 before building. The native
+ARM64 toolchain can be checked with `FOO_QBE_QEMU_AARCH64=/path/to/qemu-aarch64-static
+node test/backend/qbe/scripts/arm64-toolchain.mjs`.
+Debian packaging additionally requires `fakeroot`, `dpkg-deb`, and
 `readelf`. These programs must be installed inside WSL, not only on Windows.
 
 ## Signing Linux
@@ -146,4 +178,15 @@ npm run sign -- --verify release/foo-vVERSION/foo-vVERSION-linux-x64/bin/foo
 ELF executables do not have a desktop-shell icon resource equivalent to a
 Windows PE icon. The Debian package therefore installs the FOO SVG into the
 system icon theme and includes a `.desktop` launcher and AppStream icon
-metadata. The Windows executable receives the icon directly as a PE resource.
+metadata. It also installs a 256-pixel PNG for software centers that prefer
+raster icons. The Windows executable receives the icon directly as a PE resource.
+
+The `.deb` carries AppStream icon, license, and project-link metadata for
+software catalogs. Its Debian control description repeats the license and
+access model for local-package views. Ubuntu App Center's current local `.deb`
+preview reads PackageKit details and does not display the embedded icon or all
+AppStream links before installation. It shows Debian apps as unrestricted,
+without permission switches. FOO runs with the current user's filesystem and
+network access, and package or toolchain commands may download dependencies.
+A raw ELF executable has no App Center listing metadata; use the `.deb` built
+by `npm run build:installers`.

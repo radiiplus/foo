@@ -1,0 +1,16 @@
+{
+  "version": "3.5.9-r0",
+  "repository": "https://dl-cdn.alpinelinux.org/alpine/v3.23/main",
+  "targets": {
+    "linux-musl-x64": {
+      "architecture": "x86_64",
+      "devSha256": "4d7ead8a1b93e9f0d8dabad2594ca5ac1c414ff5688d0bd42077e784795fe923",
+      "staticSha256": "590473c68160d70834164b83daf325a8e3798bf03e40124c6a816e6781d0f649"
+    },
+    "linux-musl-arm64": {
+      "architecture": "aarch64",
+      "devSha256": "c3ae49acc49425d6b3a14ef467d933006fcfb085497d1e7efed056cd0ab0c61d",
+      "staticSha256": "a5386adfa6cf51aa5c8f10b8cd7c5c08e878805834c9526517811a332df93a98"
+    }
+  }
+}

@@ -4,7 +4,7 @@ import ./span
 import ./note
 
 type
-  RelatedSpan* = object
+  Related* = object
     span*: Span
     text*: string
     file*: string
@@ -24,7 +24,7 @@ type
     notes*: seq[Note]
     suggestion*: string
     context*: string
-    relatedSpans*: seq[RelatedSpan]
+    related*: seq[Related]
     fixes*: seq[Fix]
     source*: string
     file*: string
@@ -35,13 +35,13 @@ type
     file: string
     sources: Table[string, string]
 
-proc newEngine*(): Engine =
+proc engine*(): Engine =
   Engine(sources: initTable[string, string]())
 
 proc register*(engine: Engine; file, source: string) =
   engine.sources[file] = source
 
-proc setSource*(engine: Engine; source: string; file: string = "") =
+proc source*(engine: Engine; source: string; file: string = "") =
   engine.source = source
   engine.file = file
   if file.len > 0: engine.register(file, source)
@@ -69,11 +69,11 @@ proc suggestion*(engine: Engine; text: string) =
 
 proc related*(engine: Engine; span: Span; text: string; file: string = ""; source: string = "") =
   if engine.list.len == 0: return
-  let resolvedFile = if file.len > 0: file elif span.file.len > 0: span.file else: engine.file
-  let resolvedSource = if source.len > 0: source elif resolvedFile.len > 0 and engine.sources.hasKey(resolvedFile): engine.sources[resolvedFile] else: engine.source
-  engine.list[^1].relatedSpans.add(RelatedSpan(span: span, text: text, file: resolvedFile, source: resolvedSource))
+  let path = if file.len > 0: file elif span.file.len > 0: span.file else: engine.file
+  let input = if source.len > 0: source elif path.len > 0 and engine.sources.hasKey(path): engine.sources[path] else: engine.source
+  engine.list[^1].related.add(Related(span: span, text: text, file: path, source: input))
 
 proc messages*(engine: Engine): seq[Message] = engine.list
 proc failed*(engine: Engine): bool = engine.list.len > 0
-proc getSource*(engine: Engine): string = engine.source
-proc getFile*(engine: Engine): string = engine.file
+proc content*(engine: Engine): string = engine.source
+proc file*(engine: Engine): string = engine.file

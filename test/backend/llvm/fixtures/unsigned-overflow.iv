@@ -1,2 +1,0 @@
-function advance(value unsigned 3) giving unsigned 3 { give value plus 1. }
-start { advance(7). }

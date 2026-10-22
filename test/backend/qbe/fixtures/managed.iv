@@ -1,0 +1,11 @@
+use "../../../../lib/memory.iv" as memory.
+use testing as check.
+
+start {
+  constant owner is memory.arena try.
+  constant data is allocate 4 using owner try.
+  check.expect(data at 0 is 0 and data at 3 is 0).
+  set data at 2 to 42.
+  check.expect(data at 2 is 42).
+  memory.close(owner) try.
+}

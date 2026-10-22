@@ -1,4 +1,4 @@
-# Chapter 6: Concurrency
+# Concurrency
 
 Concurrency means making progress on more than one piece of work during the
 same period. FOO provides two concurrency families. `thread` runs
@@ -45,8 +45,8 @@ function protect(mutex pointer to threads.guard)
 
 The hosted C task pool dispatches callbacks (functions run after work becomes
 ready) through IOCP (Windows completion events) on Windows and epoll with
-`eventfd` (Linux readiness and wake-up services) on Linux. Zig, Darwin/BSD, and
-other targets currently select the threaded fallback. Scoped work still uses
+`eventfd` (Linux readiness and wake-up services) on Linux. Other native
+targets are not qualified by the current QBE build route. Scoped work still uses
 native threads, while pools reuse a bounded worker set (a limited number of
 reusable workers). Socket readiness (whether network work can proceed) and
 suspended language continuations (saved work that will resume later) are not
@@ -98,3 +98,11 @@ constant current is atomic.load(counter, "sequential") try.
 
 Prefer channels and scoped work when ownership must move between workers. Use
 atomics only for small shared values with a deliberately chosen memory order.
+Shared non-atomic writes require synchronization. The compiler does not promise
+automatic race detection or that every operation is lock-free; consult the
+relevant module contract for stronger guarantees.
+
+Lock files make dependency resolution repeatable, but runtime scheduling,
+clocks, network responses, process state, and random input remain external.
+Tests that require repeatable results should supply controlled clocks, seeds,
+inputs, and services. There is no `deterministic` source modifier.

@@ -1,17 +1,17 @@
-import ../../src/backend/native/service
+import ../../src/runtime/provider/service
 import ../../src/ir/node
 import ../../src/build/options
 
-let ioModule = Module(name: "demo", funcs: @[], externs: @[Extern(name: "print", abi: "runtime.io")])
-let fileModule = Module(name: "demo", funcs: @[], externs: @[Extern(name: "open", abi: "runtime.fs")])
-doAssert hosted(ioModule)
-doAssert not hosted(ioModule, includeIo = false)
-doAssert hosted(fileModule)
+let unit = Module(name: "demo", funcs: @[], externs: @[Extern(name: "print", abi: "runtime.io")])
+let module = Module(name: "demo", funcs: @[], externs: @[Extern(name: "open", abi: "runtime.fs")])
+doAssert hosted(unit)
+doAssert not hosted(unit, includeIo = false)
+doAssert hosted(module)
 doAssert not hosted(Module(name: "task", externs: @[
   Extern(name: "run", abi: "runtime")]), includeTask = false)
-doAssert resourceDefines(ioModule) == @[
+doAssert resources(unit) == @[
   "-DFOO_SERVICE_SELECTIVE", "-DFOO_SERVICE_FS"]
-doAssert resourceDefines(Module(name: "mixed", externs: @[
+doAssert resources(Module(name: "mixed", externs: @[
   Extern(name: "connect", abi: "runtime.net"),
   Extern(name: "pool", abi: "runtime")])) == @[
     "-DFOO_SERVICE_SELECTIVE", "-DFOO_SERVICE_NET",

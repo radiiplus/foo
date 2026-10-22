@@ -17,6 +17,11 @@ changing how the rest of your workspace looks.
 Open any `.iv` file for expressive syntax highlighting, live compiler
 diagnostics, checked hover information, go-to-definition, distinct file icons,
 smart brackets and indentation, comment shortcuts, and ready-made snippets.
+The extension also colors configuration sources (`.ivc`), generated
+capability definitions (`.cap`), and JSON lockfiles (`.ivl`). Configuration
+comments, fields, and values have distinct scopes.
+The file icons retain the FOO mark: `.ivc` adds a gear and `.ivl` adds a
+dependency-lock badge, with light and dark variants.
 
 ---
 
@@ -95,7 +100,7 @@ Use **FOO: Restart Language Server** after changing toolchains.
 
 To install a downloaded
 package instead, choose **Install from VSIX** in the Extensions view and select
-`foo.iv-2.7.0.vsix`.
+`foo.iv-2.8.0.vsix`.
 
 ---
 

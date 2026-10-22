@@ -1,0 +1,13 @@
+public function probe giving integer 32 for c {
+  give 42.
+}
+
+native asm {
+  .text
+  .globl _start
+  _start:
+    call probe
+    mov %eax, %edi
+    mov $60, %eax
+    syscall
+}

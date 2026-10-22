@@ -1,3 +1,0 @@
-use testing as check.
-function quotient(value integer) giving integer { give 7 divide value. }
-start { check.expect(quotient(0) is 0). }

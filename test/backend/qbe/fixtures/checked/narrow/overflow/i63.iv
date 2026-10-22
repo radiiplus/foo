@@ -1,0 +1,6 @@
+function main giving integer 32 {
+  dynamic left of type integer 63 is (0 subtract 4611686018427387903) subtract 1.
+  dynamic right of type integer 63 is 0 subtract 1.
+  set left to left divide right.
+  give 0.
+}

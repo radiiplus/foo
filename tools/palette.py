@@ -45,10 +45,10 @@ small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18
 bold = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 27)
 
 W = 1500
-row_h = 92
-title_h = 70
+row = 92
+heading = 70
 gap = 32
-H = title_h + len(palettes) * (title_h + 7 * row_h + gap)
+H = heading + len(palettes) * (heading + 7 * row + gap)
 
 img = Image.new("RGB", (W, H), "#101110")
 draw = ImageDraw.Draw(img)
@@ -56,19 +56,19 @@ draw = ImageDraw.Draw(img)
 y = 24
 for palette_name, colors in palettes.items():
     draw.text((35, y), palette_name, font=bold, fill="#F0ECE2")
-    y += title_h - 10
+    y += heading - 10
 
     x = 35
     sw = 145
     for label, hx in colors:
-        draw.rounded_rectangle((x, y, x + sw, y + row_h - 18), radius=12, fill=hx)
+        draw.rounded_rectangle((x, y, x + sw, y + row - 18), radius=12, fill=hx)
         draw.text((x + sw + 18, y + 8), label, font=small, fill="#D7D4CB")
         draw.text((x + sw + 18, y + 34), hx, font=small, fill="#8F928B")
         x += 300
         if x > W - 300:
             x = 35
-            y += row_h
-    y += row_h + gap
+            y += row
+    y += row + gap
 
 path = Path(__file__).resolve().parent.parent / ".artifacts" / "editor" / "palette.png"
 path.parent.mkdir(parents=True, exist_ok=True)

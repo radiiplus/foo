@@ -1,0 +1,9 @@
+use sequence as items.
+use testing as check.
+
+start {
+  constant values is items.sized[integer](1) try.
+  after { items.release[integer](values) fallback nothing. }
+  set values at 0 to 4.
+  check.expect(values at 1 is 4).
+}

@@ -74,8 +74,18 @@ public function merge[T](left heap[T], right heap[T]) giving failable heap[T] wh
 }
 
 public function push[T](value heap[T], item T) giving failable heap[T] where T is Ord {
-  dynamic result is heap[T](items.append[T](value.values, item) try).
-  dynamic cursor is length[T](result) subtract 1.
+  constant count is length[T](value).
+  when count is 18446744073709551615 { give fail(Error.Overflow). }
+  constant values is items.sized[T](count plus 1) try.
+  after error { items.release[T](values) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than count {
+    set values at index to value.values at index.
+    increase index by 1.
+  }
+  set values at count to item.
+  dynamic result is heap[T](values).
+  dynamic cursor is count.
   while cursor greater than 0 {
     constant parent is (cursor subtract 1) divide 2.
     when not ((result.values at cursor) less than (result.values at parent)) { stop. }

@@ -2,9 +2,9 @@ import { AlertTriangle, ArrowLeft, ArrowRight, BookOpen, Check, ChevronRight, Co
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Code } from "../components/code";
-import { PackageArtwork } from "../components/package-artwork";
+import { Artwork } from "../components/artwork";
 import { Markdown } from "../components/markdown";
-import { item as loadItem, type Package, type PublicApiItem, type VersionSummary } from "../utils/registry";
+import { item as loadItem, type Package, type Declaration, type Version } from "../utils/registry";
 import { date, displayPackageName } from "../utils/format";
 import { seo } from "../utils/seo";
 
@@ -16,7 +16,7 @@ type DetailProps = {
 };
 
 type View = "api" | "docs" | "source" | "releases";
-type ApiRow = { id: string; module: string; path: string; entry: PublicApiItem };
+type ApiRow = { id: string; module: string; path: string; entry: Declaration };
 const views = [
   { id: "api", label: "Cards", icon: LayoutGrid },
   { id: "docs", label: "Documentation", icon: BookOpen },
@@ -28,7 +28,7 @@ const kinds = ["all", "function", "type", "constant", "value"] as const;
 export default function Detail({ name, backLabel, onBack, onTag }: DetailProps) {
   const [item, setItem] = useState<Package>();
   const [previous, setPrevious] = useState<Package>();
-  const [versions, setVersions] = useState<VersionSummary[]>([]);
+  const [versions, setVersions] = useState<Version[]>([]);
   const [version, setVersion] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
@@ -170,7 +170,7 @@ export default function Detail({ name, backLabel, onBack, onTag }: DetailProps) 
 
         <header className="registry-package-head">
           <div className="registry-package-main">
-            <div className={`registry-package-icon${item.icon ? " custom" : ""}`} aria-hidden="true"><PackageArtwork name={item.name} kind={item.kind} icon={item.icon} size={24} /></div>
+            <div className={`registry-package-icon${item.icon ? " custom" : ""}`} aria-hidden="true"><Artwork name={item.name} kind={item.kind} icon={item.icon} size={24} /></div>
             <div className="registry-package-identity">
             <p className="registry-kicker">{item.kind === "standard" ? "FOO / Standard library" : `FOO / ${item.category}`}</p>
             <div className="registry-title-line">
@@ -222,7 +222,7 @@ export default function Detail({ name, backLabel, onBack, onTag }: DetailProps) 
         {view === "docs" && <div className="registry-docs-view">
           {selected && <section className="registry-full-reference">
             <div className="registry-section-heading"><div><p className="registry-kicker">{selected.module} / {selected.entry.kind}</p><h2>{selected.entry.name}</h2></div><button type="button" onClick={() => navigateView("api", selected.id)}>API index <ArrowRight size={15} /></button></div>
-            <SymbolReference row={selected} packageItem={item} copied={copied} onCopy={copy} onSource={openSource} showSource />
+            <SymbolReference row={selected} product={item} copied={copied} onCopy={copy} onSource={openSource} showSource />
           </section>}
           <section className="registry-section"><p className="registry-kicker">Package documentation</p><h2>{displayPackageName(item.name)} README</h2>
             {readme ? <div className="docs-prose registry-readme"><Markdown source={readme} /></div> : <p className="registry-muted">No README was published for this release.</p>}
@@ -245,7 +245,7 @@ export default function Detail({ name, backLabel, onBack, onTag }: DetailProps) 
       <dialog ref={dialogRef} className="registry-symbol-dialog" aria-labelledby="registry-symbol-title" onCancel={(event) => { event.preventDefault(); closeSymbol(); }} onClick={(event) => { if (event.target === event.currentTarget) closeSymbol(); }}>
         {selected && <div className="registry-symbol-sheet">
           <header><div><p className="registry-kicker">{selected.module} / {selected.entry.kind}</p><h2 id="registry-symbol-title">{selected.entry.name}</h2></div><button type="button" onClick={closeSymbol} title="Close symbol detail" aria-label="Close symbol detail"><X size={18} /></button></header>
-          <div className="registry-symbol-body"><SymbolReference row={selected} packageItem={item} copied={copied} onCopy={copy} onSource={openSource} /></div>
+          <div className="registry-symbol-body"><SymbolReference row={selected} product={item} copied={copied} onCopy={copy} onSource={openSource} /></div>
           <footer><button type="button" onClick={() => navigateView("docs", selected.id)}><FileCode2 size={15} /> Full reference <ArrowRight size={15} /></button></footer>
         </div>}
       </dialog>
@@ -265,16 +265,16 @@ function SymbolCard({ row, onOpen }: { row: ApiRow; onOpen: (button: HTMLButtonE
   </button>;
 }
 
-function SymbolReference({ row, packageItem, copied, onCopy, onSource, showSource = false }: {
+function SymbolReference({ row, product, copied, onCopy, onSource, showSource = false }: {
   row: ApiRow;
-  packageItem: Package;
+  product: Package;
   copied: string;
   onCopy: (value: string, key: string) => Promise<void>;
   onSource: (path: string) => void;
   showSource?: boolean;
 }) {
-  const example = readmeExample(packageItem.readme.join("\n"), row.entry.name);
-  const source = packageItem.source.files.find((file) => file.path === row.path);
+  const example = readmeExample(product.readme.join("\n"), row.entry.name);
+  const source = product.source.files.find((file) => file.path === row.path);
   const excerpt = source && sourceExcerpt(source.content, row.entry);
   return <div className="registry-reference">
     <section><div className="registry-reference-label"><h3>Declaration</h3><button type="button" title="Copy signature" aria-label="Copy signature" onClick={() => void onCopy(row.entry.declaration, `signature:${row.id}`)}>{copied === `signature:${row.id}` ? <Check size={15} /> : <Copy size={15} />}</button></div><pre><code>{row.entry.declaration}</code></pre></section>
@@ -290,7 +290,7 @@ function readmeExample(readme: string, name: string) {
   return match ? { code: match[2].trim() } : undefined;
 }
 
-function sourceExcerpt(content: string, entry: PublicApiItem) {
+function sourceExcerpt(content: string, entry: Declaration) {
   const lines = content.split(/\r?\n/);
   const lead = entry.declaration.split("\n")[0].replace(/\s*[.{]\s*$/, "").slice(0, 50);
   const start = lines.findIndex((line) => line.trimStart().startsWith(lead));

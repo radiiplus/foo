@@ -1,0 +1,18 @@
+use system as machine.
+use testing as check.
+
+define Pair as record { left of type unsigned. right of type unsigned. } derives Equatable, Ord.
+function make(value unsigned) giving Pair {
+  give Pair(value, value plus 1).
+}
+
+dynamic limit of type unsigned is 5`000`000.
+when machine.cores try greater than 0 { increase limit by 1. }
+dynamic index of type unsigned is 0.
+dynamic checksum of type unsigned is 0.
+while index less than limit {
+  constant pair is make(index).
+  set checksum to checksum plus pair.left plus pair.right.
+  increase index by 1.
+}
+check.number(checksum, limit multiply limit).

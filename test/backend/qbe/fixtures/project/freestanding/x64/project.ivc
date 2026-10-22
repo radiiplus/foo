@@ -1,0 +1,17 @@
+capability "project"
+project {
+  name is "qbe-freestanding-project"
+  version is "0.1.0"
+  entry is "src/main.iv"
+  build {
+    backend is "qbe"
+    target is "x64-freestanding"
+    runtime is "none"
+    products {
+      app {
+        kind is "exe"
+        entry is "src/main.iv"
+      }
+    }
+  }
+}

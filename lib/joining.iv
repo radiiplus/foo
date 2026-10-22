@@ -1,0 +1,22 @@
+-- The caller allocates and releases output; it must be disjoint from both inputs.
+public function join(left text, right text, output sequence of byte) giving boolean {
+  constant first is lengthof(left).
+  constant second is lengthof(right).
+  constant available is lengthof(output).
+  when first greater than available { give false. }
+  when second is not (available subtract first) { give false. }
+  dynamic cursor of type unsigned is 0.
+  for each value in left {
+    set output at cursor to value.
+    increase cursor by 1.
+  }
+  for each value in right {
+    set output at cursor to value.
+    increase cursor by 1.
+  }
+  give true.
+}
+
+public function join_into(left text, right text, output sequence of byte) giving boolean {
+  give join(left, right, output).
+}

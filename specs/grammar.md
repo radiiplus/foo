@@ -307,9 +307,10 @@ start {
 }
 ```
 
-Packed records and vector types require hardware capability. Native and unsafe
-operations require the level of their effects, at least system. Capability
-checks do not alter parsing. Removed spellings are listed in
+Packed records and vector types require hardware capability. Native operations
+require the level of their effects, at least system. An `unsafe {}` block is
+accepted by the parser but does not relax checking or grant an operation.
+Capability checks do not alter parsing. Removed spellings are listed in
 [consolidation](consolidation.md); they are not alternative v1 syntax.
 
 `define Name as c record { ... }.` and the corresponding union declaration

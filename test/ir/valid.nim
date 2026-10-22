@@ -3,178 +3,209 @@ import ../../src/ir/valid
 import ../../src/ir/node
 import ../../src/ir/kind
 
-let term = Instruction(kind: InstrKind.Return)
-let fallback = Block(label: "fallback", instrs: @[Instruction(kind: InstrKind.Trace)], term: Instruction(kind: InstrKind.Return))
-let basicBlock = Block(label: "entry", instrs: @[Instruction(kind: InstrKind.Load, fallback: fallback)], term: term)
-let function = Function(name: "main", ret: `Type`(kind: TypeKind.Void), blocks: @[basicBlock])
+let term = Instruction(kind: Opcode.Return)
+let fallback = Block(label: "fallback", instrs: @[Instruction(kind: Opcode.Trace)], term: Instruction(kind: Opcode.Return))
+let section = Block(label: "entry", instrs: @[Instruction(kind: Opcode.Load, fallback: fallback)], term: term)
+let function = Function(name: "main", ret: `Type`(kind: Shape.Void), blocks: @[section])
 let module = Module(name: "demo", funcs: @[function], externs: @[])
 discard seal(module)
-doAssert basicBlock.params.len == 1
-doAssert basicBlock.instrs[0].memory.input == "$memory0"
+doAssert section.params.len == 1
+doAssert section.instrs[0].memory.input == "$memory0"
 doAssert fallback.params.len == 1
 doAssert fallback.instrs[0].memory.input == "$memory2"
-let emptyErrors = validate(Module(name: "bad", funcs: @[Function(name: "empty", blocks: @[])]))
-doAssert emptyErrors.anyIt("no entry block" in it.msg)
+let errors = validate(Module(name: "bad", funcs: @[Function(name: "empty", blocks: @[])]))
+doAssert errors.anyIt("no entry block" in it.msg)
 
-let invalidWidth = `Type`(kind: TypeKind.Int, width: 129)
-doAssert validate(Module(types: @[TypeDecl(name: "wide", `type`: invalidWidth)])).anyIt("Integer width" in it.msg)
+let invalidFallback = Module(funcs: @[Function(name: "invalid_fallback",
+  ret: `Type`(kind: Shape.Void), blocks: @[Block(label: "entry",
+    instrs: @[Instruction(kind: Opcode.Defer,
+      fallback: Block(label: "cleanup", term:
+        Instruction(kind: Opcode.Jump, label: "missing")))],
+    term: Instruction(kind: Opcode.Return))])])
+doAssert validate(invalidFallback).anyIt("Unknown fallback jump target" in it.msg)
 
-let badStorage = Module(storage: @[Storage(name: "counter", value: Value(kind: ValueKind.Const,
-  name: "300", `type`: `Type`(kind: TypeKind.Uint, width: 8)))])
-doAssert validate(badStorage).anyIt("Invalid static initializer" in it.msg)
+let invalid = `Type`(kind: Shape.Int, width: 129)
+doAssert validate(Module(types: @[Definition(name: "wide", `type`: invalid)])).anyIt("Integer width" in it.msg)
 
-let jump = Instruction(kind: InstrKind.Jump, label: "next", args: @[])
-let target = Block(label: "next", params: @[Value(kind: ValueKind.Reg, name: "input",
-  `type`: `Type`(kind: TypeKind.Int, width: 32))], term: Instruction(kind: InstrKind.Return))
-let badEdge = Module(funcs: @[Function(name: "edge", ret: `Type`(kind: TypeKind.Void),
+let corrupt = Module(storage: @[Storage(name: "counter", value: Value(kind: Flavor.Const,
+  name: "300", `type`: `Type`(kind: Shape.Uint, width: 8)))])
+doAssert validate(corrupt).anyIt("Invalid static initializer" in it.msg)
+
+let jump = Instruction(kind: Opcode.Jump, label: "next", args: @[])
+let target = Block(label: "next", params: @[Value(kind: Flavor.Reg, name: "input",
+  `type`: `Type`(kind: Shape.Int, width: 32))], term: Instruction(kind: Opcode.Return))
+let edge = Module(funcs: @[Function(name: "edge", ret: `Type`(kind: Shape.Void),
   blocks: @[Block(label: "entry", term: jump), target])])
-doAssert validate(badEdge).anyIt("block parameters" in it.msg)
+doAssert validate(edge).anyIt("block parameters" in it.msg)
 
-let missing = Value(kind: ValueKind.Reg, name: "missing", `type`: `Type`(kind: TypeKind.Int, width: 32))
-let badUse = Module(funcs: @[Function(name: "use", ret: `Type`(kind: TypeKind.Void),
-  blocks: @[Block(label: "entry", instrs: @[Instruction(kind: InstrKind.Add, val: missing)],
-    term: Instruction(kind: InstrKind.Return))])])
-doAssert validate(badUse).anyIt("undefined register" in it.msg)
+let missing = Value(kind: Flavor.Reg, name: "missing", `type`: `Type`(kind: Shape.Int, width: 32))
+let use = Module(funcs: @[Function(name: "use", ret: `Type`(kind: Shape.Void),
+  blocks: @[Block(label: "entry", instrs: @[Instruction(kind: Opcode.Add, val: missing)],
+    term: Instruction(kind: Opcode.Return))])])
+doAssert validate(use).anyIt("undefined register" in it.msg)
 
-let badNative = Module(native: @[NativeContract(id: "contract", stage: "@c", code: "{}",
+let bad = Module(native: @[Contract(id: "contract", stage: "@c", code: "{}",
   abi: "foo.native:1", effects: @["external"])])
-doAssert validate(badNative).anyIt("native binding payload" in it.msg)
+doAssert validate(bad).anyIt("native binding payload" in it.msg)
 
-let nativePayload = """{"format":"foo.native","version":1,"parameters":["value"],"source":"return value;"}"""
-let validNative = Module(
-  externs: @[Extern(name: "bound", symbol: "contract", params: @[`Type`(kind: TypeKind.Int, width: 32)], ret: `Type`(kind: TypeKind.Void))],
-  native: @[NativeContract(id: "contract", stage: "@c", code: nativePayload,
+let payload = """{"format":"foo.native","version":1,"parameters":["value"],"source":"return value;"}"""
+let accepted = Module(
+  externs: @[Extern(name: "bound", symbol: "contract", params: @[`Type`(kind: Shape.Int, width: 32)], ret: `Type`(kind: Shape.Void))],
+  native: @[Contract(id: "contract", stage: "@c", code: payload,
     abi: "foo.native:1", effects: @["external"])])
-doAssert validate(validNative).len == 0
+doAssert validate(accepted).len == 0
 
-let boolType = `Type`(kind: TypeKind.Bool)
-let intType = `Type`(kind: TypeKind.Int, width: 32)
-let branchCondition = Value(kind: ValueKind.Reg, name: "condition", `type`: boolType)
-let definedOnLeft = Value(kind: ValueKind.Reg, name: "left_value", `type`: intType)
-let dominance = Module(funcs: @[Function(name: "dominance", params: @[branchCondition], ret: `Type`(kind: TypeKind.Void), blocks: @[
-  Block(label: "entry", term: Instruction(kind: InstrKind.Cjump, cond: branchCondition, trueLabel: "left", falseLabel: "right")),
-  Block(label: "left", instrs: @[Instruction(kind: InstrKind.Add, dest: definedOnLeft,
-    val: Value(kind: ValueKind.Const, name: "1", `type`: intType),
-    val2: Value(kind: ValueKind.Const, name: "2", `type`: intType))], term: Instruction(kind: InstrKind.Return)),
-  Block(label: "right", instrs: @[Instruction(kind: InstrKind.Add,
-    dest: Value(kind: ValueKind.Reg, name: "sum", `type`: intType), val: definedOnLeft,
-    val2: Value(kind: ValueKind.Const, name: "1", `type`: intType))], term: Instruction(kind: InstrKind.Return))
+let shape = `Type`(kind: Shape.Bool)
+let member = `Type`(kind: Shape.Int, width: 32)
+let condition = Value(kind: Flavor.Reg, name: "condition", `type`: shape)
+let left = Value(kind: Flavor.Reg, name: "left_value", `type`: member)
+let dominance = Module(funcs: @[Function(name: "dominance", params: @[condition], ret: `Type`(kind: Shape.Void), blocks: @[
+  Block(label: "entry", term: Instruction(kind: Opcode.Cjump, cond: condition, yes: "left", no: "right")),
+  Block(label: "left", instrs: @[Instruction(kind: Opcode.Add, dest: left,
+    val: Value(kind: Flavor.Const, name: "1", `type`: member),
+    val2: Value(kind: Flavor.Const, name: "2", `type`: member))], term: Instruction(kind: Opcode.Return)),
+  Block(label: "right", instrs: @[Instruction(kind: Opcode.Add,
+    dest: Value(kind: Flavor.Reg, name: "sum", `type`: member), val: left,
+    val2: Value(kind: Flavor.Const, name: "1", `type`: member))], term: Instruction(kind: Opcode.Return))
 ])])
 doAssert validate(dominance).anyIt("does not dominate" in it.msg)
 
-let badReturn = Module(funcs: @[Function(name: "returning", ret: intType,
-  blocks: @[Block(label: "entry", term: Instruction(kind: InstrKind.Return,
-    value: Value(kind: ValueKind.Const, name: "true", `type`: boolType)))])])
-doAssert validate(badReturn).anyIt("Return does not match" in it.msg)
+let returned = Module(funcs: @[Function(name: "returning", ret: member,
+  blocks: @[Block(label: "entry", term: Instruction(kind: Opcode.Return,
+    value: Value(kind: Flavor.Const, name: "true", `type`: shape)))])])
+doAssert validate(returned).anyIt("Return does not match" in it.msg)
 
-let missingMemory = Module(version: 1, funcs: @[Function(name: "memory", ret: `Type`(kind: TypeKind.Void),
-  blocks: @[Block(label: "entry", instrs: @[Instruction(kind: InstrKind.Load,
-    dest: Value(kind: ValueKind.Reg, name: "loaded", `type`: intType),
-    `ptr`: Value(kind: ValueKind.Reg, name: "pointer", `type`: `Type`(kind: TypeKind.Ptr, elem: intType)),
-    effects: @["read"])], term: Instruction(kind: InstrKind.Return))])])
-doAssert validate(missingMemory).anyIt("explicit effects and a memory dependency" in it.msg)
+let absent = Module(version: 1, funcs: @[Function(name: "memory", ret: `Type`(kind: Shape.Void),
+  blocks: @[Block(label: "entry", instrs: @[Instruction(kind: Opcode.Load,
+    dest: Value(kind: Flavor.Reg, name: "loaded", `type`: member),
+    `ptr`: Value(kind: Flavor.Reg, name: "pointer", `type`: `Type`(kind: Shape.Ptr, elem: member)),
+    effects: @["read"])], term: Instruction(kind: Opcode.Return))])])
+doAssert validate(absent).anyIt("explicit effects and a memory dependency" in it.msg)
 
-let recursive = `Type`(kind: TypeKind.Struct, name: "Recursive")
+let option = `Type`(kind: Shape.Optional, elem: member)
+let wrapped = Value(kind: Flavor.Reg, name: "wrapped", `type`: option)
+let projected = Instruction(kind: Opcode.Extract, val: wrapped, field: "present",
+  dest: Value(kind: Flavor.Reg, name: "present", `type`: `Type`(kind: Shape.Bool)))
+let optionModule = Module(funcs: @[Function(name: "option", ret: `Type`(kind: Shape.Void),
+  blocks: @[Block(label: "entry", instrs: @[
+    Instruction(kind: Opcode.Convert, val: Value(kind: Flavor.Const, name: "7", `type`: member),
+      dest: wrapped), projected], term: Instruction(kind: Opcode.Return))])])
+doAssert validate(optionModule).len == 0, $validate(optionModule)
+projected.dest.type = member
+doAssert validate(optionModule).anyIt("Projection does not match" in it.msg)
+
+let opened = Instruction(kind: Opcode.Region, op: "open", region: "arena")
+let closed = Instruction(kind: Opcode.Region, op: "close", region: "arena")
+let regionModule = Module(version: 1, regions: @[Region(id: "arena", kind: "managed")],
+  funcs: @[Function(name: "region", ret: `Type`(kind: Shape.Void), blocks: @[
+    Block(label: "entry", instrs: @[opened, closed],
+      term: Instruction(kind: Opcode.Return))])])
+discard seal(regionModule)
+doAssert opened.memory.input.len > 0 and opened.memory.output == closed.memory.input
+doAssert "write" in opened.effects and "write" in closed.effects
+doAssert validate(regionModule).len == 0, $validate(regionModule)
+
+let recursive = `Type`(kind: Shape.Struct, name: "Recursive")
 recursive.fields["self"] = recursive
-doAssert validate(Module(types: @[TypeDecl(name: "Recursive", `type`: recursive)])).anyIt("no finite layout" in it.msg)
+doAssert validate(Module(types: @[Definition(name: "Recursive", `type`: recursive)])).anyIt("no finite layout" in it.msg)
 
 doAssert validate(Module(requires: "impossible")).anyIt("Unknown capability" in it.msg)
 
-let atomicElement = `Type`(kind: TypeKind.Int, width: 32, attributes: @["atomic"])
-let invalidAtomic = Module(funcs: @[Function(name: "atomic", ret: `Type`(kind: TypeKind.Void), blocks: @[
-  Block(label: "entry", instrs: @[Instruction(kind: InstrKind.Atomic, op: "load", field: "release",
-    `ptr`: Value(kind: ValueKind.Global, name: "cell", `type`: `Type`(kind: TypeKind.Ptr, elem: atomicElement)),
-    dest: Value(kind: ValueKind.Reg, name: "value", `type`: intType), effects: @["synchronize"])],
-    term: Instruction(kind: InstrKind.Return))
+let element = `Type`(kind: Shape.Int, width: 32, attributes: @["atomic"])
+let atomic = Module(funcs: @[Function(name: "atomic", ret: `Type`(kind: Shape.Void), blocks: @[
+  Block(label: "entry", instrs: @[Instruction(kind: Opcode.Atomic, op: "load", field: "release",
+    `ptr`: Value(kind: Flavor.Global, name: "cell", `type`: `Type`(kind: Shape.Ptr, elem: element)),
+    dest: Value(kind: Flavor.Reg, name: "value", `type`: member), effects: @["synchronize"])],
+    term: Instruction(kind: Opcode.Return))
 ])])
-doAssert validate(invalidAtomic).anyIt("Invalid memory ordering" in it.msg)
+doAssert validate(atomic).anyIt("Invalid memory ordering" in it.msg)
 
-let narrowing = Module(funcs: @[Function(name: "narrow", ret: `Type`(kind: TypeKind.Void), blocks: @[
-  Block(label: "entry", instrs: @[Instruction(kind: InstrKind.Convert,
-    val: Value(kind: ValueKind.Const, name: "1", `type`: `Type`(kind: TypeKind.Int, width: 64)),
-    dest: Value(kind: ValueKind.Reg, name: "small", `type`: `Type`(kind: TypeKind.Int, width: 8)))],
-    term: Instruction(kind: InstrKind.Return))
+let narrowing = Module(funcs: @[Function(name: "narrow", ret: `Type`(kind: Shape.Void), blocks: @[
+  Block(label: "entry", instrs: @[Instruction(kind: Opcode.Convert,
+    val: Value(kind: Flavor.Const, name: "1", `type`: `Type`(kind: Shape.Int, width: 64)),
+    dest: Value(kind: Flavor.Reg, name: "small", `type`: `Type`(kind: Shape.Int, width: 8)))],
+    term: Instruction(kind: Opcode.Return))
 ])])
 doAssert validate(narrowing).anyIt("lossless widening" in it.msg)
 
-let invalidIndex = Module(funcs: @[Function(name: "index", ret: `Type`(kind: TypeKind.Void), blocks: @[
-  Block(label: "entry", instrs: @[Instruction(kind: InstrKind.Index,
-    val: Value(kind: ValueKind.Const, name: "undefined", `type`: `Type`(kind: TypeKind.Slice, elem: intType)),
-    val2: Value(kind: ValueKind.Const, name: "0", `type`: intType),
-    dest: Value(kind: ValueKind.Reg, name: "item", `type`: boolType))],
-    term: Instruction(kind: InstrKind.Return))
+let position = Module(funcs: @[Function(name: "index", ret: `Type`(kind: Shape.Void), blocks: @[
+  Block(label: "entry", instrs: @[Instruction(kind: Opcode.Index,
+    val: Value(kind: Flavor.Const, name: "undefined", `type`: `Type`(kind: Shape.Slice, elem: member)),
+    val2: Value(kind: Flavor.Const, name: "0", `type`: member),
+    dest: Value(kind: Flavor.Reg, name: "item", `type`: shape))],
+    term: Instruction(kind: Opcode.Return))
 ])])
-doAssert validate(invalidIndex).anyIt("matching element result" in it.msg)
+doAssert validate(position).anyIt("matching element result" in it.msg)
 echo "IR validation parity: ok"
 
 # Static storage uses the same exact width proof as frontend literals.
 for entry in [
-    (kind: TypeKind.Uint,width: 128,value: "340282366920938463463374607431768211455",ok: true),
-    (kind: TypeKind.Uint,width: 128,value: "340282366920938463463374607431768211456",ok: false),
-    (kind: TypeKind.Int,width: 128,value: "-170141183460469231731687303715884105728",ok: true),
-    (kind: TypeKind.Int,width: 128,value: "-170141183460469231731687303715884105729",ok: false),
-    (kind: TypeKind.Int,width: 64,value: "-9223372036854775808",ok: true),
-    (kind: TypeKind.Uint,width: 64,value: "18446744073709551615",ok: true),
-    (kind: TypeKind.Int,width: 1,value: "-1",ok: true),
-    (kind: TypeKind.Int,width: 1,value: "1",ok: false)]:
-  let storage=Module(storage: @[Storage(name: "boundary",value: Value(kind: ValueKind.Const,name: entry.value,
+    (kind: Shape.Uint,width: 128,value: "340282366920938463463374607431768211455",ok: true),
+    (kind: Shape.Uint,width: 128,value: "340282366920938463463374607431768211456",ok: false),
+    (kind: Shape.Int,width: 128,value: "-170141183460469231731687303715884105728",ok: true),
+    (kind: Shape.Int,width: 128,value: "-170141183460469231731687303715884105729",ok: false),
+    (kind: Shape.Int,width: 64,value: "-9223372036854775808",ok: true),
+    (kind: Shape.Uint,width: 64,value: "18446744073709551615",ok: true),
+    (kind: Shape.Int,width: 1,value: "-1",ok: true),
+    (kind: Shape.Int,width: 1,value: "1",ok: false)]:
+  let storage=Module(storage: @[Storage(name: "boundary",value: Value(kind: Flavor.Const,name: entry.value,
     `type`: `Type`(kind: entry.kind,width: entry.width)))])
   doAssert (validate(storage).len == 0) == entry.ok
 
-let optionalStorage=Module(storage: @[Storage(name: "present",value: Value(kind: ValueKind.Const,name: "42",
-  `type`: `Type`(kind: TypeKind.Optional,elem: intType)))])
-doAssert validate(optionalStorage).len == 0
-optionalStorage.storage[0].value.name="2147483648"
-doAssert validate(optionalStorage).anyIt("Invalid static initializer" in it.msg)
+let optional=Module(storage: @[Storage(name: "present",value: Value(kind: Flavor.Const,name: "42",
+  `type`: `Type`(kind: Shape.Optional,elem: member)))])
+doAssert validate(optional).len == 0
+optional.storage[0].value.name="2147483648"
+doAssert validate(optional).anyIt("Invalid static initializer" in it.msg)
 
-let arrayType=`Type`(kind: TypeKind.Array,elem: intType,width: 2)
-let arrayInstruction=Instruction(kind: InstrKind.Construct,
-  dest: Value(kind: ValueKind.Reg,name: "array",`type`: arrayType),args: @[
-    Value(kind: ValueKind.Const,name: "1",`type`: intType),Value(kind: ValueKind.Const,name: "2",`type`: intType)])
-let arrayModule=Module(funcs: @[Function(name: "array",ret: `Type`(kind: TypeKind.Void),blocks: @[
-  Block(label: "entry",instrs: @[arrayInstruction],term: Instruction(kind: InstrKind.Return))])])
-doAssert validate(arrayModule).len == 0
-arrayInstruction.args.setLen(1)
-doAssert validate(arrayModule).anyIt("Construction does not match" in it.msg)
+let representation=`Type`(kind: Shape.Array,elem: member,width: 2)
+let instruction=Instruction(kind: Opcode.Construct,
+  dest: Value(kind: Flavor.Reg,name: "array",`type`: representation),args: @[
+    Value(kind: Flavor.Const,name: "1",`type`: member),Value(kind: Flavor.Const,name: "2",`type`: member)])
+let unit=Module(funcs: @[Function(name: "array",ret: `Type`(kind: Shape.Void),blocks: @[
+  Block(label: "entry",instrs: @[instruction],term: Instruction(kind: Opcode.Return))])])
+doAssert validate(unit).len == 0
+instruction.args.setLen(1)
+doAssert validate(unit).anyIt("Construction does not match" in it.msg)
 
 # A long chain of diamonds exercises cross-word dominator sets and merges.
-let denseSeed = Value(kind: ValueKind.Reg, name: "denseSeed", `type`: intType)
-let denseBranch = Value(kind: ValueKind.Const, name: "true", `type`: `Type`(kind: TypeKind.Bool))
-var denseBlocks = @[Block(label: "entry", instrs: @[
-  Instruction(kind: InstrKind.Add, dest: denseSeed,
-    val: Value(kind: ValueKind.Const, name: "1", `type`: intType),
-    val2: Value(kind: ValueKind.Const, name: "2", `type`: intType))],
-  term: Instruction(kind: InstrKind.Jump, label: "join0"))]
+let seed = Value(kind: Flavor.Reg, name: "denseSeed", `type`: member)
+let branch = Value(kind: Flavor.Const, name: "true", `type`: `Type`(kind: Shape.Bool))
+var dense = @[Block(label: "entry", instrs: @[
+  Instruction(kind: Opcode.Add, dest: seed,
+    val: Value(kind: Flavor.Const, name: "1", `type`: member),
+    val2: Value(kind: Flavor.Const, name: "2", `type`: member))],
+  term: Instruction(kind: Opcode.Jump, label: "join0"))]
 for index in 0..<128:
   let suffix = $index
-  denseBlocks.add(Block(label: "join" & suffix,
-    term: Instruction(kind: InstrKind.Cjump, cond: denseBranch,
-      trueLabel: "left" & suffix, falseLabel: "right" & suffix)))
+  dense.add(Block(label: "join" & suffix,
+    term: Instruction(kind: Opcode.Cjump, cond: branch,
+      yes: "left" & suffix, no: "right" & suffix)))
   for side in ["left", "right"]:
-    denseBlocks.add(Block(label: side & suffix,
-      term: Instruction(kind: InstrKind.Jump, label: "join" & $(index + 1))))
-denseBlocks.add(Block(label: "join128", term: Instruction(kind: InstrKind.Return, value: denseSeed)))
-let denseModule = Module(funcs: @[Function(name: "dense", ret: intType, blocks: denseBlocks)])
-doAssert validate(denseModule).len == 0
+    dense.add(Block(label: side & suffix,
+      term: Instruction(kind: Opcode.Jump, label: "join" & $(index + 1))))
+dense.add(Block(label: "join128", term: Instruction(kind: Opcode.Return, value: seed)))
+let namespace = Module(funcs: @[Function(name: "dense", ret: member, blocks: dense)])
+doAssert validate(namespace).len == 0
 # A definition from only one branch must not dominate the common exit.
-denseBlocks[0].instrs.setLen(0)
-denseBlocks[2].instrs.add(Instruction(kind: InstrKind.Add, dest: denseSeed,
-  val: Value(kind: ValueKind.Const, name: "1", `type`: intType),
-  val2: Value(kind: ValueKind.Const, name: "2", `type`: intType)))
-doAssert validate(denseModule).anyIt("does not dominate" in it.msg)
+dense[0].instrs.setLen(0)
+dense[2].instrs.add(Instruction(kind: Opcode.Add, dest: seed,
+  val: Value(kind: Flavor.Const, name: "1", `type`: member),
+  val2: Value(kind: Flavor.Const, name: "2", `type`: member)))
+doAssert validate(namespace).anyIt("does not dominate" in it.msg)
 
 # Effect sealing generates memory types whose defining tables live for only
 # one function. Deferred layout validation must keep them alive across a large
 # module, including collections triggered while validating later functions.
-var effectFunctions: seq[Function]
+var functions: seq[Function]
 for index in 0..<2048:
-  let value = Value(kind: ValueKind.Reg, name: "result", `type`: intType)
-  effectFunctions.add(Function(name: "effect" & $index, ret: intType,
+  let value = Value(kind: Flavor.Reg, name: "result", `type`: member)
+  functions.add(Function(name: "effect" & $index, ret: member,
     blocks: @[Block(label: "entry", instrs: @[
-      Instruction(kind: InstrKind.Call, `func`: "identity", dest: value,
-        args: @[Value(kind: ValueKind.Const, name: "42", `type`: intType)])],
-      term: Instruction(kind: InstrKind.Return, value: value))]))
-let effectModule = Module(funcs: effectFunctions,
-  externs: @[Extern(name: "identity", abi: "c", params: @[intType], ret: intType)])
-discard seal(effectModule)
-doAssert validate(effectModule).len == 0
+      Instruction(kind: Opcode.Call, `func`: "identity", dest: value,
+        args: @[Value(kind: Flavor.Const, name: "42", `type`: member)])],
+      term: Instruction(kind: Opcode.Return, value: value))]))
+let declaration = Module(funcs: functions,
+  externs: @[Extern(name: "identity", abi: "c", params: @[member], ret: member)])
+discard seal(declaration)
+doAssert validate(declaration).len == 0

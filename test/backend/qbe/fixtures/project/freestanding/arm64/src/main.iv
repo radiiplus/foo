@@ -1,0 +1,16 @@
+public function probe giving integer 32 for c {
+  give 42.
+}
+
+native asm {
+  .text
+  .globl _start
+  _start:
+    movz x2, #0x4028, lsl #16
+    mov sp, x2
+    bl probe
+    mov x1, #0x09000000
+    strb w0, [x1]
+  1: wfe
+    b 1b
+}

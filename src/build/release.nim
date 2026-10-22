@@ -1,5 +1,5 @@
 import std/[algorithm, json, os, osproc, strutils, tables]
-import ./[config, files, project]
+import ./[config, files, project, targets]
 import ../pkg/hash
 
 type Bundle* = object
@@ -20,10 +20,14 @@ proc copy(source, target: string) =
     raise newException(ValueError,
       "Release files cannot be symbolic links: " & source)
   if info.kind == pcDir:
+    if fileExists(target):
+      raise newException(ValueError, "Release file conflicts with a staged artifact: " & target)
     createDir(target)
     for _, child in walkDir(source):
       copy(child, target / child.lastPathPart)
   elif info.kind == pcFile:
+    if fileExists(target) or dirExists(target):
+      raise newException(ValueError, "Release file conflicts with a staged artifact: " & target)
     createDir(parentDir(target))
     copyFileWithPermissions(source, target)
   else:
@@ -109,12 +113,18 @@ proc collect(root: string): seq[string] =
   visit(root, result)
   result.sort()
 
+proc encloses(parent, child: string): bool =
+  let relative = relativePath(child, parent)
+  relative == "." or relative.len == 0 or
+    (not isAbsolute(relative) and relative != ".." and
+      not relative.startsWith(".." & DirSep))
+
 proc bundle*(source: Project; signing = false; selected = ""): Bundle =
   let manifest = source.manifest()
   let deployment = manifest.deployment
   if deployment.directory.len == 0:
     raise newException(ValueError,
-      "Release support is optional. Add a release object to project.json before running foo release")
+      "Release support is optional. Add a release section to the project manifest before running foo release")
   let config = source.config()
   var protected = @["src", "test", "benchmark"]
   if manifest.source notin ["", ".", "src"]: protected.add(manifest.source)
@@ -124,47 +134,89 @@ proc bundle*(source: Project; signing = false; selected = ""): Bundle =
   let root = files.destination(source.root, deployment.directory,
     protected)
   let target = triple(if source.options.target.len > 0: source.options.target
-    elif config.target.len > 0: config.target[0] else: host)
+    else: targets.choose(config.target, host))
   let folder = slug(manifest.name) & "-" & slug(manifest.version) & "-" & slug(target)
   result.directory = root / folder
-  let artifacts = source.build()
   let staging = result.directory & ".partial"
+
+  var additions = @[deployment.icon, deployment.license, deployment.readme]
+  additions.add(deployment.files)
+  for relative in additions:
+    if relative.len == 0: continue
+    if isAbsolute(relative):
+      raise newException(ValueError,
+        "Release file paths must be project-relative: " & relative)
+    for part in relative.replace('\\', '/').split('/'):
+      if part in ["", ".", ".."]:
+        raise newException(ValueError,
+          "Release file paths must not contain empty, dot or parent components: " & relative)
+    let location = confined(source.root, relative)
+    if not fileExists(location) and not dirExists(location):
+      raise newException(IOError, "Release file not found: " & relative)
+    if dirExists(location) and encloses(location, root):
+      raise newException(ValueError,
+        "Release files cannot contain the release directory: " & relative)
+    if relative.toLowerAscii() in ["release.json", "sha256sums"]:
+      raise newException(ValueError,
+        "Release file conflicts with release metadata: " & relative)
+
+  let artifacts = source.build()
   if dirExists(staging): erase(staging)
   createDir(staging)
   try:
-    var stagedArtifacts, stagedSignatures: seq[string]
+    var copies, seals: seq[string]
     for name, artifact in artifacts:
-      let targetPath = staging / artifact.lastPathPart
-      copyFileWithPermissions(artifact, targetPath)
+      let file = staging / artifact.lastPathPart
+      copyFileWithPermissions(artifact, file)
       let shared = artifact.parentDir / "libcurl.so.4"
       if fileExists(shared):
         copyFileWithPermissions(shared, staging / shared.lastPathPart)
-      stagedArtifacts.add(targetPath)
+      copies.add(file)
+      for suffix in [".dependencies.json", ".qbe.json"]:
+        if fileExists(artifact & suffix):
+          copyFile(artifact & suffix, file & suffix)
+          copies.add(file & suffix)
+      if artifact.endsWith(".spv") and fileExists(artifact & ".json"):
+        copyFile(artifact & ".json", file & ".json")
+        copies.add(file & ".json")
+      let metadata = artifact & ".qbe.json"
+      if fileExists(metadata):
+        let descriptor = parseFile(metadata)
+        if descriptor.hasKey("sharedAliases"):
+          for alias in descriptor["sharedAliases"]:
+            let name = alias.getStr()
+            if name != name.lastPathPart or name in ["", ".", ".."]:
+              raise newException(ValueError, "Unsafe shared-library alias: " & name)
+            let staged = staging / name
+            copy(artifact.parentDir / name, staged)
+            copies.add(staged)
+      let pdb = not fileExists(metadata) or
+        parseFile(metadata).getOrDefault("debug").getStr() == "CodeView/PDB"
+      for extension in ["pdb", "lib"]:
+        if extension == "pdb" and not pdb: continue
+        let sidecar = changeFileExt(artifact,extension)
+        if sidecar != artifact and fileExists(sidecar):
+          let staged = changeFileExt(file,extension)
+          copyFileWithPermissions(sidecar,staged)
+          copies.add(staged)
       let kind = if config.products.hasKey(name) and
           config.products[name].kind.len > 0: config.products[name].kind
         else: "exe"
       if signing and kind != "static":
-        let signature = sign(targetPath, deployment.signing, target, selected)
-        if signature != targetPath: stagedSignatures.add(signature)
+        let signature = sign(file, deployment.signing, target, selected)
+        if signature != file: seals.add(signature)
 
-    var additions = @[deployment.icon, deployment.license, deployment.readme]
-    additions.add(deployment.files)
     for relative in additions:
       if relative.len == 0: continue
-      if isAbsolute(relative):
-        raise newException(ValueError,
-          "Release file paths must be project-relative: " & relative)
-      let sourcePath = confined(source.root, relative)
-      if not fileExists(sourcePath) and not dirExists(sourcePath):
-        raise newException(IOError, "Release file not found: " & relative)
-      copy(sourcePath, staging / relative)
+      let location = confined(source.root, relative)
+      copy(location, staging / relative)
 
     var products = newJArray()
-    for artifact in stagedArtifacts:
+    for artifact in collect(staging):
       products.add(%*{
-        "file": artifact.lastPathPart,
+        "file": relativePath(artifact, staging).replace('\\', '/'),
         "bytes": getFileSize(artifact),
-        "sha256": sha256Hex(readFile(artifact))
+        "sha256": digest(readFile(artifact))
       })
     let metadata = %*{
       "format": "foo.release",
@@ -180,15 +232,15 @@ proc bundle*(source: Project; signing = false; selected = ""): Bundle =
     var checksums = ""
     for path in collect(staging):
       if path.lastPathPart == "SHA256SUMS": continue
-      checksums.add(sha256Hex(readFile(path)) & "  " &
+      checksums.add(digest(readFile(path)) & "  " &
         relativePath(path, staging).replace('\\', '/') & "\n")
     writeFile(staging / "SHA256SUMS", checksums)
 
     if dirExists(result.directory): erase(result.directory)
     moveDir(staging, result.directory)
-    for path in stagedArtifacts:
+    for path in copies:
       result.artifacts.add(result.directory / path.lastPathPart)
-    for path in stagedSignatures:
+    for path in seals:
       result.signatures.add(result.directory / path.lastPathPart)
   except:
     if dirExists(staging): erase(staging)

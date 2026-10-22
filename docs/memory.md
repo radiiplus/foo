@@ -1,4 +1,4 @@
- # Chapter 4: Data and Memory (Safe, Fast, and Automatic)
+# Data and Memory
 
 In many high-performance languages, managing memory (RAM) is a manual, error-prone nightmare. You have to remember to free every single byte you allocate, or your app will crash. 
 
@@ -166,28 +166,21 @@ ownership, layout, and lifetime behavior stays the same.
 Storage is never silently promoted to a longer-lived arena. Explicit allocators
 provide allocate, resize, release, and close contracts.
 
-Alignment control, address arithmetic, and lifetime assertions require an
-`unsafe` or native block at the appropriate capability level. Ordinary pointers
-are non-null and provenance-aware (the compiler tracks where an address came
-from); nullability is written as
-`optional pointer to T`.
+FOO has no ordinary expression for raw address arithmetic or lifetime
+assertions. Use a verified native boundary when direct address or alignment
+control is required. Ordinary pointers are non-null and
+provenance-aware (the compiler tracks where an address came from); nullability
+is written as `optional pointer to T`.
 
 ---
 
 ## 6. Optimized Storage Operations
 
 Runtime copy, clearing, allocation growth, hashing, text splitting, and
-collection transforms use backend-specific implementations behind one portable
-contract. Release builds may select AVX2, AArch64, Zig, or portable C paths for
-a compatible target. This does not change record layout or weaken bounds and
-overlap checks.
-
-Copy selection also considers size and overlap. AVX2 serves the measured medium
-range, `rep movsb` is restricted to non-overlapping 1 KiB through 8 KiB machine
-copies, and other C transfers retain `memmove`. Zig copies forward or backward
-in target-sized blocks. Zero-length and identical-address transfers do no work.
-See [Optimization Under the Hood](tuning.md) for the exact path table and
-benchmark rules.
+collection transforms use target runtime implementations behind one portable
+contract. The QBE path retains checked bounds, ownership and overlap behavior.
+Copy selection considers size and overlap; unsupported paths retain the
+portable implementation. See [Optimization](tuning.md) for qualification rules.
 
 ---
 
@@ -198,4 +191,4 @@ hatches. Safe code prevents the ownership errors it can prove; native code,
 panic paths, and external resources still require deliberate contracts and
 testing.
 
-In the next chapter, we will look at **Systems**, where we will learn how to talk to files, processes, and the operating system itself!
+Next: [Patterns](patterns.md) or [Systems](systems.md).

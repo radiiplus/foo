@@ -3,13 +3,13 @@ import std/[algorithm, sequtils, strutils]
 type
   Version* = object
     major*, minor*, patch*: int
-  ConstraintKind* = enum
+  Operator* = enum
     Exact, Caret, Tilde
   Constraint* = object
-    kind*: ConstraintKind
+    kind*: Operator
     version*: Version
 
-proc parseVersion*(value: string): Version =
+proc version*(value: string): Version =
   let parts = value.split('.')
   if parts.len != 3:
     raise newException(ValueError, "Version must use major.minor.patch: " & value)
@@ -21,7 +21,7 @@ proc parseVersion*(value: string): Version =
     numbers.add(parseInt(part))
   Version(major: numbers[0], minor: numbers[1], patch: numbers[2])
 
-proc parseConstraint*(value: string): Constraint =
+proc constraint*(value: string): Constraint =
   if value.len == 0: raise newException(ValueError, "Empty version constraint")
   var version = value
   result.kind = Exact
@@ -31,7 +31,7 @@ proc parseConstraint*(value: string): Constraint =
   elif value[0] == '~':
     result.kind = Tilde
     version = value[1 .. ^1]
-  result.version = parseVersion(version)
+  result.version = version(version)
 
 proc compare*(left, right: Version): int =
   if left.major != right.major: return cmp(left.major, right.major)
@@ -59,13 +59,13 @@ proc satisfies*(version: Version; constraint: Constraint): bool =
         version.patch == constraint.version.patch
 
 proc satisfies*(version, constraint: string): bool =
-  parseVersion(version).satisfies(parseConstraint(constraint))
+  version(version).satisfies(constraint(constraint))
 
 proc select*(versions: seq[string]; constraints: seq[string]): string =
   var candidates: seq[Version]
   for value in versions:
-    let version = parseVersion(value)
-    if constraints.allIt(version.satisfies(parseConstraint(it))):
+    let version = version(value)
+    if constraints.allIt(version.satisfies(constraint(it))):
       candidates.add(version)
   candidates.sort(proc(left, right: Version): int = compare(right, left))
   if candidates.len > 0: $candidates[0] else: ""

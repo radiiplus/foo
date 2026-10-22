@@ -1,0 +1,18 @@
+capability "project"
+project {
+  name is "qbe-shader-project"
+  version is "0.1.0"
+  entry is "src/main.iv"
+  release {
+    directory is "release"
+  }
+  build {
+    backend is "qbe"
+    products {
+      shade {
+        kind is "shader"
+        entry is "src/main.iv"
+      }
+    }
+  }
+}

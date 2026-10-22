@@ -1,5 +1,14 @@
 import std/[os, sequtils, strutils, algorithm, sets]
 
+proc erase*(path: string) =
+  ## Shared cleanup for already selected project/package directories. Links
+  ## remain leaves; callers retain their existing confinement checks.
+  if not dirExists(path): return
+  for kind, child in walkDir(path):
+    if kind == pcDir: erase(child)
+    else: removeFile(child)
+  removeDir(path)
+
 proc inside(root, path: string): string =
   let base = absolutePath(root)
   let target = absolutePath(path, base)
@@ -46,33 +55,33 @@ proc destination*(root, selected: string; protected: seq[string] = @[]): string 
       "build.output must name a dedicated project-relative directory")
   result = confined(root, normalized)
   for reserved in @[".git", ".foo", ".artifacts", "node_modules",
-      "project.json", "foo.lock"] & protected:
+      "project.ivc", "foo.ivl", "project.ivl"] & protected:
     let path = absolutePath(reserved, root)
     if overlap(result, path) or overlap(path, result):
       raise newException(ValueError,
         "build.output must not overlap project data: " & reserved)
 
-proc globMatch(pattern, value: string; pi = 0; vi = 0): bool =
+proc matches(pattern, value: string; pi = 0; vi = 0): bool =
   if pi == pattern.len:
     return vi == value.len
   if pattern[pi] == '*':
     if pi + 1 < pattern.len and pattern[pi + 1] == '*':
       var next = pi + 2
       if next < pattern.len and pattern[next] == '/':
-        if globMatch(pattern, value, next + 1, vi): return true
+        if matches(pattern, value, next + 1, vi): return true
         next.inc
       for index in vi .. value.len:
-        if globMatch(pattern, value, next, index): return true
+        if matches(pattern, value, next, index): return true
       return false
     var index = vi
     while true:
-      if globMatch(pattern, value, pi + 1, index): return true
+      if matches(pattern, value, pi + 1, index): return true
       if index == value.len or value[index] == '/': break
       index.inc
     return false
   if vi == value.len or (pattern[pi] != '?' and pattern[pi] != value[vi]): return false
   if pattern[pi] == '?' and value[vi] == '/': return false
-  globMatch(pattern, value, pi + 1, vi + 1)
+  matches(pattern, value, pi + 1, vi + 1)
 
 proc glob*(root, pattern: string; excluded: seq[string] = @[]): seq[string] =
   if isAbsolute(pattern) or pattern.contains('\\') or pattern.split('/').anyIt(it == ".."): 
@@ -92,7 +101,7 @@ proc glob*(root, pattern: string; excluded: seq[string] = @[]): seq[string] =
         visit(path, found)
       else:
         let rel = relativePath(path, base).replace(DirSep, '/')
-        if globMatch(pattern, rel): found.add(rel)
+        if matches(pattern, rel): found.add(rel)
   visit(base, result)
   result.sort()
 

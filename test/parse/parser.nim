@@ -1,23 +1,23 @@
 import std/[sequtils, strutils]
 import ../../src/lex/lexer
-import ../../src/parse/parser
+import ../../src/ast/parser
 import ../../src/diag/engine
 import ../../src/ast/node
 
 let source = "constant answer is 42.\nstart {\n  give answer.\n}"
-let diagnostics = newEngine()
-diagnostics.setSource(source, "main.iv")
-let tokens = newLexer(source, diagnostics).lex()
-let program = newParser(tokens, diagnostics).parse()
+let diagnostics = engine()
+diagnostics.source(source, "main.iv")
+let tokens = lexer(source, diagnostics).lex()
+let program = parser(tokens, diagnostics).parse()
 doAssert program.units[0].body.stmts.len == 2
 doAssert program.units[0].body.stmts[0].tag == "constant"
 doAssert program.units[0].body.stmts[1].tag == "function"
 doAssert not diagnostics.failed
 
 let allocation = "start {\n  constant buffer is allocate 4 using owner try.\n}"
-let issues = newEngine()
-issues.setSource(allocation, "allocation.iv")
-discard newParser(newLexer(allocation, issues).lex(), issues).parse()
+let issues = engine()
+issues.source(allocation, "allocation.iv")
+discard parser(lexer(allocation, issues).lex(), issues).parse()
 doAssert not issues.failed
 
 let natural = """
@@ -30,9 +30,9 @@ function load giving failable integer {
   give socket.
 }
 """
-let notices = newEngine()
-notices.setSource(natural, "natural.iv")
-let tree = newParser(newLexer(natural, notices).lex(), notices).parse()
+let notices = engine()
+notices.source(natural, "natural.iv")
+let tree = parser(lexer(natural, notices).lex(), notices).parse()
 doAssert not notices.failed
 let body = Function(tree.units[0].body.stmts[1]).body
 doAssert Constant(body.stmts[0]).value.tag == "unary"
@@ -57,9 +57,9 @@ constant users are 2.
 constant next is function giving integer { give 1. }.
 connect(host "example.com", port 8080).
 """
-let reports = newEngine()
-reports.setSource(sample, "expressive.iv")
-let parsed = newParser(newLexer(sample, reports).lex(), reports).parse()
+let reports = engine()
+reports.source(sample, "expressive.iv")
+let parsed = parser(lexer(sample, reports).lex(), reports).parse()
 doAssert not reports.failed
 let unit = parsed.units[0].body
 doAssert Function(unit.stmts[0]).params[1].default != nil
@@ -71,32 +71,32 @@ let action = Action(unit.stmts[5])
 doAssert action.value.tag == "call"
 doAssert Call(action.value).names == @["host", "port"]
 
-let optionalSource = "constant missing of type optional integer is null."
-let optionalDiagnostics = newEngine()
-optionalDiagnostics.setSource(optionalSource, "optional.iv")
-let optionalTree = newParser(newLexer(optionalSource,
-  optionalDiagnostics).lex(), optionalDiagnostics).parse()
-doAssert not optionalDiagnostics.failed
-doAssert Constant(optionalTree.units[0].body.stmts[0]).value.tag == "null"
+let content = "constant missing of type optional integer is null."
+let optional = engine()
+optional.source(content, "optional.iv")
+let nullable = parser(lexer(content,
+  optional).lex(), optional).parse()
+doAssert not optional.failed
+doAssert Constant(nullable.units[0].body.stmts[0]).value.tag == "null"
 
-for removedWidth in ["integer 64", "unsigned 64", "decimal 64"]:
-  let widthSource = "constant value of type " & removedWidth & " is 0."
-  let widthDiagnostics = newEngine()
-  widthDiagnostics.setSource(widthSource, "width.iv")
-  discard newParser(newLexer(widthSource, widthDiagnostics).lex(),
-    widthDiagnostics).parse()
-  doAssert widthDiagnostics.failed
-  doAssert widthDiagnostics.messages.anyIt("Use bare" in it.text)
+for removed in ["integer 64", "unsigned 64", "decimal 64"]:
+  let representation = "constant value of type " & removed & " is 0."
+  let precision = engine()
+  precision.source(representation, "width.iv")
+  discard parser(lexer(representation, precision).lex(),
+    precision).parse()
+  doAssert precision.failed
+  doAssert precision.messages.anyIt("Use bare" in it.text)
 
-for invalidWidth in ["boolean 8", "text 16", "nothing 32"]:
-  let widthSource = "constant value of type " & invalidWidth & " is 0."
-  let widthDiagnostics = newEngine()
-  widthDiagnostics.setSource(widthSource, "width.iv")
-  discard newParser(newLexer(widthSource, widthDiagnostics).lex(),
-    widthDiagnostics).parse()
-  doAssert widthDiagnostics.failed
+for width in ["boolean 8", "text 16", "nothing 32"]:
+  let representation = "constant value of type " & width & " is 0."
+  let precision = engine()
+  precision.source(representation, "width.iv")
+  discard parser(lexer(representation, precision).lex(),
+    precision).parse()
+  doAssert precision.failed
 
-for removedFunction in [
+for routine in [
     "function old(value of type integer) giving integer { give value. }",
     "function old(value integer) of type integer { give value. }",
     "constant old of type function(integer) of type integer is uninitialized.",
@@ -104,44 +104,44 @@ for removedFunction in [
     "function old value integer giving integer { give value. }",
     "function old() giving integer { give 1. }",
     "use \"c\" function old() giving integer."]:
-  let functionDiagnostics = newEngine()
-  functionDiagnostics.setSource(removedFunction, "function.iv")
-  discard newParser(newLexer(removedFunction, functionDiagnostics).lex(),
-    functionDiagnostics).parse()
-  doAssert functionDiagnostics.failed
+  let function = engine()
+  function.source(routine, "function.iv")
+  discard parser(lexer(routine, function).lex(),
+    function).parse()
+  doAssert function.failed
 
-let destructureSource = "constant User(name, age) is user."
-let destructureDiagnostics = newEngine()
-destructureDiagnostics.setSource(destructureSource, "destructure.iv")
-let destructureTree = newParser(newLexer(destructureSource,
-  destructureDiagnostics).lex(), destructureDiagnostics).parse()
-doAssert not destructureDiagnostics.failed
-let destructure = Destructure(destructureTree.units[0].body.stmts[0])
+let origin = "constant User(name, age) is user."
+let unpacking = engine()
+unpacking.source(origin, "destructure.iv")
+let destructuring = parser(lexer(origin,
+  unpacking).lex(), unpacking).parse()
+doAssert not unpacking.failed
+let destructure = Destructure(destructuring.units[0].body.stmts[0])
 doAssert destructure.fields.len == 2
 doAssert destructure.fields[0].text == "name"
 doAssert destructure.bindings[1].text == "age"
 
-let branchesSource = """
+let input = """
 when score greater than 80 { display "high". }
 otherwise when score greater than 50 { display "middle". }
 otherwise { display "low". }
 """
-let branchesDiagnostics = newEngine()
-branchesDiagnostics.setSource(branchesSource, "branches.iv")
-let branchesTree = newParser(newLexer(branchesSource,
-  branchesDiagnostics).lex(), branchesDiagnostics).parse()
-doAssert not branchesDiagnostics.failed
-let firstBranch = `When`(branchesTree.units[0].body.stmts[0])
-doAssert firstBranch.`else`.tag == "when"
-doAssert `When`(firstBranch.`else`).`else`.tag == "block"
+let faults = engine()
+faults.source(input, "branches.iv")
+let branches = parser(lexer(input,
+  faults).lex(), faults).parse()
+doAssert not faults.failed
+let branch = `When`(branches.units[0].body.stmts[0])
+doAssert branch.`else`.tag == "when"
+doAssert `When`(branch.`else`).`else`.tag == "block"
 
-let remainderSource = "constant remainderValue is 5 remainder 2."
-let remainderDiagnostics = newEngine()
-remainderDiagnostics.setSource(remainderSource, "remainder.iv")
-let remainderTree = newParser(newLexer(remainderSource,
-  remainderDiagnostics).lex(), remainderDiagnostics).parse()
-doAssert not remainderDiagnostics.failed
-let remainderValue = Constant(remainderTree.units[0].body.stmts[0]).value
-doAssert remainderValue.tag == "binary"
-doAssert Binary(remainderValue).op == "remainder"
+let modulo = "constant remainderValue is 5 remainder 2."
+let remainder = engine()
+remainder.source(modulo, "remainder.iv")
+let residual = parser(lexer(modulo,
+  remainder).lex(), remainder).parse()
+doAssert not remainder.failed
+let operand = Constant(residual.units[0].body.stmts[0]).value
+doAssert operand.tag == "binary"
+doAssert Binary(operand).op == "remainder"
 echo "parser foundation parity: ok"

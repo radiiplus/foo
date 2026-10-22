@@ -4,12 +4,12 @@ import ./kind
 
 type
   `Type`* = ref object
-    kind*: TypeKind
+    kind*: Shape
     name*: string
     elem*: `Type`
     width*: int
     fields*: OrderedTable[string, `Type`]
-    fieldAttrs*: Table[string, seq[string]]
+    annotations*: Table[string, seq[string]]
     variants*: OrderedTable[string, `Type`]
     params*: seq[`Type`]
     ret*: `Type`
@@ -19,7 +19,7 @@ type
     constant*: bool
 
   Value* = object
-    kind*: ValueKind
+    kind*: Flavor
     name*: string
     `type`*: `Type`
     bits*: string
@@ -28,25 +28,26 @@ type
     input*: string
     output*: string
 
-  SourceSpan* = object
+  Location* = object
     file*: string
     start*: int
     `end`*: int
 
   Instruction* = ref object
     memory*: Memory
-    trueArgs*: seq[Value]
-    falseArgs*: seq[Value]
+    positive*: seq[Value]
+    negative*: seq[Value]
     op*: string
     field*: string
     panic*: string
     trace*: string
     effects*: seq[string]
-    span*: SourceSpan
+    span*: Location
     error*: bool
     fallback*: Block
+    fallbackBlocks*: seq[Block]
     symbol*: string
-    kind*: InstrKind
+    kind*: Opcode
     dest*: Value
     region*: string
     target*: Value
@@ -60,19 +61,19 @@ type
     args*: seq[Value]
     label*: string
     cond*: Value
-    trueLabel*: string
-    falseLabel*: string
+    yes*: string
+    no*: string
     value*: Value
     blocks*: seq[tuple[label: string, value: Value]]
     msg*: string
     expr*: Value
     handler*: string
     path*: string
-    typeArg*: `Type`
-    evalBody*: string
-    typeArgs*: seq[`Type`]
+    argument*: `Type`
+    evaluation*: string
+    arguments*: seq[`Type`]
     mask*: seq[int]
-    reduceOp*: string
+    reduction*: string
     code*: string
 
   Block* = ref object
@@ -87,21 +88,21 @@ type
     name*: string
     abi*: string
     attributes*: seq[string]
-    typeParams*: seq[string]
+    generics*: seq[string]
     params*: seq[Value]
     ret*: `Type`
     blocks*: seq[Block]
     derives*: seq[string]
 
   Extern* = object
-    typeParams*: seq[string]
+    generics*: seq[string]
     symbol*: string
     name*: string
     params*: seq[`Type`]
     ret*: `Type`
     abi*: string
 
-  TypeDecl* = object
+  Definition* = object
     name*: string
     `type`*: `Type`
 
@@ -109,6 +110,9 @@ type
     name*: string
     value*: Value
     public*: bool
+    thread*: bool
+    alignment*: int
+    section*: string
 
   Region* = object
     id*: string
@@ -120,7 +124,7 @@ type
     id*: string
     `function`*: string
 
-  NativeContract* = object
+  Contract* = object
     id*: string
     stage*: string
     code*: string
@@ -139,6 +143,7 @@ type
     functions*: int
     dead*: int
     inlined*: int
+    callbacks*: int
     boundaries*: int
     allocations*: int
     pipelines*: int
@@ -148,52 +153,53 @@ type
     bounds*: int
 
   Module* = ref object
+    inputs*: seq[tuple[path, sha256: string]]
     storage*: seq[Storage]
     version*: int
     stage*: string
-    unitPackage*: string
-    unitPath*: string
+    package*: string
+    path*: string
     target*: Table[string, string]
     requires*: string
     regions*: seq[Region]
     traces*: seq[Trace]
-    native*: seq[NativeContract]
+    native*: seq[Contract]
     residue*: seq[Residue]
     optimization*: Optimization
     name*: string
     funcs*: seq[Function]
     externs*: seq[Extern]
-    types*: seq[TypeDecl]
+    types*: seq[Definition]
 
 proc label*(value: `Type`): string =
   if value == nil: return "type"
   if value.name.len > 0: return value.name
   case value.kind
-  of TypeKind.Slice:
-    if value.constant and value.elem != nil and value.elem.kind == TypeKind.Uint and value.elem.width == 8: return "text"
+  of Shape.Slice:
+    if value.constant and value.elem != nil and value.elem.kind == Shape.Uint and value.elem.width == 8: return "text"
     return "sequence of " & label(value.elem)
-  of TypeKind.Ptr: return "pointer to " & label(value.elem)
-  of TypeKind.Optional: return "optional " & label(value.elem)
-  of TypeKind.Failable: return "failable " & label(value.elem)
+  of Shape.Ptr: return "pointer to " & label(value.elem)
+  of Shape.Optional: return "optional " & label(value.elem)
+  of Shape.Failable: return "failable " & label(value.elem)
   else: discard
   let name = case value.kind
-    of TypeKind.Int: "integer"
-    of TypeKind.Uint: "unsigned"
-    of TypeKind.Float: "decimal"
-    of TypeKind.Bool: "boolean"
-    of TypeKind.Void: "nothing"
-    of TypeKind.Struct: "record"
-    of TypeKind.TaggedUnion: "choice"
-    of TypeKind.Error: "Error"
-    of TypeKind.Function: "function"
-    of TypeKind.Vector: "vector"
-    of TypeKind.PackedStruct: "packed"
-    of TypeKind.ExternUnion: "union"
-    of TypeKind.Opaque: "opaque"
-    of TypeKind.Array: "sequence"
+    of Shape.Int: "integer"
+    of Shape.Uint: "unsigned"
+    of Shape.Float: "decimal"
+    of Shape.Bool: "boolean"
+    of Shape.Void: "nothing"
+    of Shape.Struct: "record"
+    of Shape.TaggedUnion: "choice"
+    of Shape.Error: "Error"
+    of Shape.Function: "function"
+    of Shape.Vector: "vector"
+    of Shape.PackedStruct: "packed"
+    of Shape.ExternUnion: "union"
+    of Shape.Opaque: "opaque"
+    of Shape.Array: "sequence"
     else: "type"
   if value.width > 0 and value.width != 64 and
-      value.kind in {TypeKind.Int, TypeKind.Uint, TypeKind.Float}:
+      value.kind in {Shape.Int, Shape.Uint, Shape.Float}:
     name & " " & $value.width
   else:
     name

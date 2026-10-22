@@ -1,0 +1,30 @@
+use net as network.
+use testing as check.
+use "text" function release(content text) giving failable nothing.
+
+start {
+  constant listener is network.listen("127.0.0.1", 0) try.
+  constant port is network.port(listener) try.
+  check.expect(port is greater than 0).
+  constant client is network.connect("127.0.0.1", port) try.
+  constant server is network.accept(listener) try.
+  check.expect((network.send(client, "hello") try) is 5).
+  constant request is network.receive(server, 16) try.
+  check.same(request, "hello").
+  release(request) try.
+  check.expect((network.push(server, "ok") try) is 2).
+  constant response is network.receive(client, 16) try.
+  check.same(response, "ok").
+  release(response) try.
+  network.shutdown(client, "write") try.
+  constant ended is network.receive(server, 16) try.
+  check.same(ended, "").
+  release(ended) try.
+  check.expect((network.send(server, "after") try) is 5).
+  constant tail is network.receive(client, 16) try.
+  check.same(tail, "after").
+  release(tail) try.
+  network.close(server) try.
+  network.close(client) try.
+  network.close(listener) try.
+}

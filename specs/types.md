@@ -1,5 +1,7 @@
 # Types
 
+Version: 1.
+
 Reflection produces an immutable description with name and kind as text, and
 size and alignment as unsigned-bit values. Names use FOO type vocabulary.
 Sizes and alignments describe the selected target, not the compiler host.
@@ -7,8 +9,6 @@ Inside `eval`, size and alignment also fold for fixed-width scalars, pointers,
 slices, text, and C records. C records expose a field count and compile-time
 queries for a field's offset, name, and FOO type spelling. The offset and type
 queries accept a field name or zero-based index; the name query accepts an index.
-
-Version: 1.
 
 Types express values, representation requirements, effects and lifetimes.
 Equal storage sizes do not make two types interchangeable. Type aliases name an
@@ -121,7 +121,9 @@ buffer. Text indexing is deliberately absent; Unicode iteration is a library
 operation. Mutating a sequence requires a mutable, unaliased write permission.
 
 Pointer identity includes the allocation it came from. Raw address arithmetic,
-alignment changes and provenance removal require unsafe or native access.
+alignment changes and provenance removal are not ordinary FOO expressions;
+supported uses require a verified native boundary. An `unsafe {}` block does
+not change this rule.
 Ordinary code cannot fabricate a pointer from a number. Nullability is expressed
 only by `optional pointer to T`; `null` constructs the absent optional state and
 never a bare pointer.

@@ -1,4 +1,4 @@
-# Chapter 5: Systems (Talking to the Real World)
+# Systems
 
 FOO isn't just for crunching numbers; it's built to interact with the world around it. Whether you need to read a file, download data from the internet, or talk directly to a piece of hardware, FOO has a dedicated "Systems" layer that makes these complex operations feel like simple English sentences.
 
@@ -97,13 +97,12 @@ FOO was built with the modern web in mind. The `net` module abstracts away
 (hides the lower-level details of) sockets (operating-system network
 connections) and TCP/IP, giving you clean, high-performance networking.
 
-**The benefit:** the target selects IOCP (Windows completion events) on Windows,
-kqueue (Apple and BSD readiness events) on Apple and BSD systems, epoll (Linux
-readiness events) on Linux, or a threaded fallback elsewhere. These services avoid
-one blocked thread per asynchronous socket operation (network work that can
-wait without stopping other work) where the platform backend supports event
-polling (asking the operating system which operations are ready); no backend is
-claimed to be universally fastest.
+`net` provides TCP and UDP operations with explicit connection lifetimes. The
+`poll` module reports socket readiness. The hosted task pool uses IOCP on Windows
+and epoll on Linux, but socket readiness and suspended language continuations
+are not attached to those task queues. The current QBE route does not qualify
+Apple or BSD targets; check [QBE support](qbe.md) before using a service on a
+new target.
 
 ```foo
 use net as network.
@@ -220,6 +219,9 @@ extern "C" function add(left integer, right integer) giving integer.
 `foo bind header.h` generates these declarations for larger C APIs. Assembly
 belongs behind a native contract with explicit target and effect requirements;
 it is not an ordinary standalone FOO statement.
+Check the C ABI, system ABI, symbol spelling, calling convention, and record
+layout separately. A valid foreign declaration does not prove that foreign
+memory is live or safe to access.
 
 ---
 
@@ -232,4 +234,4 @@ FOO’s systems layer is designed to be **Progressive**.
 
 You are never forced into a "walled garden." FOO gives you the keys to the entire computer.
 
-In the next chapter, we will look at **Concurrency**, where we will learn how to do multiple things at once without crashing!
+Next: [Concurrency](concurrency.md).

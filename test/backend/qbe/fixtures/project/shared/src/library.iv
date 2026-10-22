@@ -1,0 +1,11 @@
+public function answer giving integer 32 for c {
+  give 42.
+}
+
+public function add(value integer 32) giving integer 32 for c {
+  give value plus 1.
+}
+
+public function native_answer giving integer 32 {
+  give 43.
+}

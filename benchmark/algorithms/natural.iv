@@ -1,0 +1,116 @@
+-- Adaptive stable prototype; promotion requires the recorded measurement gate.
+use sequence as items.
+
+function exchange[T](values sequence of T, left unsigned, right unsigned) giving nothing where T is Ord {
+  when (values at right) less than (values at left) {
+    constant saved is values at left.
+    set values at left to values at right.
+    set values at right to saved.
+  }
+}
+function finish[T](values sequence of T, first unsigned, size unsigned) giving unsigned where T is Ord {
+  dynamic end is first plus 1.
+  while end less than size and not ((values at end) less than (values at (end subtract 1))) {
+    increase end by 1.
+  }
+  give end.
+}
+public function sort[T](source sequence of T) giving failable sequence of T where T is Ord {
+  constant result is items.copy[T](source) try.
+  after error { items.release[T](result) fallback nothing. }
+  constant size is items.length[T](result).
+  when size less than 2 { give result. }
+  when size less than or equal to 4 {
+    exchange[T](result, 0, 1).
+    when size is 3 {
+      exchange[T](result, 1, 2).
+      exchange[T](result, 0, 1).
+    } otherwise when size is 4 {
+      exchange[T](result, 2, 3).
+      exchange[T](result, 1, 2).
+      exchange[T](result, 0, 1).
+      exchange[T](result, 2, 3).
+      exchange[T](result, 1, 2).
+    }
+    give result.
+  }
+  when size less than or equal to 16 {
+    dynamic index of type unsigned is 1.
+    while index less than size {
+      dynamic cursor is index.
+      while cursor greater than 0 and (result at cursor) less than (result at (cursor subtract 1)) {
+        exchange[T](result, cursor subtract 1, cursor).
+        set cursor to cursor subtract 1.
+      }
+      increase index by 1.
+    }
+    give result.
+  }
+  dynamic origin of type unsigned is 0.
+  while origin less than size {
+    dynamic end is origin plus 1.
+    when end less than size and (result at end) less than (result at origin) {
+      while end less than size and (result at end) less than (result at (end subtract 1)) {
+        increase end by 1.
+      }
+      dynamic left is origin.
+      dynamic right is end subtract 1.
+      while left less than right {
+        constant saved is result at left.
+        set result at left to result at right.
+        set result at right to saved.
+        increase left by 1.
+        set right to right subtract 1.
+      }
+    } otherwise {
+      set end to finish[T](result, origin, size).
+    }
+    set origin to end.
+  }
+  when finish[T](result, 0, size) is size { give result. }
+  constant scratch is items.sized[T](size) try.
+  after { items.release[T](scratch) fallback nothing. }
+  while true {
+    set origin to 0.
+    dynamic pairs of type unsigned is 0.
+    while origin less than size {
+      constant middle is finish[T](result, origin, size).
+      dynamic end is size.
+      when middle less than size {
+        set end to finish[T](result, middle, size).
+        increase pairs by 1.
+      }
+      dynamic left is origin.
+      dynamic right is middle.
+      dynamic cursor is origin.
+      while left less than middle and right less than end {
+        when (result at right) less than (result at left) {
+          set scratch at cursor to result at right.
+          increase right by 1.
+        } otherwise {
+          set scratch at cursor to result at left.
+          increase left by 1.
+        }
+        increase cursor by 1.
+      }
+      while left less than middle {
+        set scratch at cursor to result at left.
+        increase left by 1.
+        increase cursor by 1.
+      }
+      while right less than end {
+        set scratch at cursor to result at right.
+        increase right by 1.
+        increase cursor by 1.
+      }
+      set origin to end.
+    }
+    when pairs is 0 { stop. }
+    dynamic index of type unsigned is 0.
+    while index less than size {
+      set result at index to scratch at index.
+      increase index by 1.
+    }
+  }
+  give result.
+}

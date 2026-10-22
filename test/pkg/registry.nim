@@ -22,7 +22,7 @@ let package = %*{
   "version": "1.4.2",
   "description": "HTTP networking for Foo.",
 }
-let scopedEntry = %*{
+let scoped = %*{
   "schema": "foo.entry/v1",
   "name": "@radiiplus/foo-http",
   "version": "2.0.0",
@@ -42,7 +42,7 @@ let built = %*{
 }
 var files = initTable[string, string]()
 files["indexes/index.json"] = $index
-files["indexes/index-000001.jsonl"] = $entry & "\n" & $scopedEntry & "\n" & $built & "\n"
+files["indexes/index-000001.jsonl"] = $entry & "\n" & $scoped & "\n" & $built & "\n"
 files["packages/foo-http/1.4.2.json"] = $package
 files["registry/standard.json"] = $(%*{
   "schema": "foo.standard-catalog/v1", "revision": "standard-revision", "count": 1,
@@ -50,20 +50,20 @@ files["registry/standard.json"] = $(%*{
   "packages": [{"schema": "foo.package/v1", "kind": "standard",
     "name": "lib/json", "version": "1.0.0", "description": "Bundled JSON module."}],
 })
-setRegistryTransport(proc(config: Registry; path, methodName, body, token: string): RegistryResponse =
+transport(proc(config: Registry; path, methodName, body, token: string): Response =
   discard config; discard methodName; discard body; discard token
-  if files.hasKey(path): RegistryResponse(status: 200, body: files[path])
-  else: RegistryResponse(status: 404, body: "{\"error\":\"not found\"}")
+  if files.hasKey(path): Response(status: 200, body: files[path])
+  else: Response(status: 404, body: "{\"error\":\"not found\"}")
 )
 
-doAssert exactVersion("1.2.3")
-doAssert exactVersion("1.2.3-beta.1")
-doAssert not exactVersion("^1.2.3")
+doAssert exact("1.2.3")
+doAssert exact("1.2.3-beta.1")
+doAssert not exact("^1.2.3")
 doAssert search(".", "websocket").len == 1
 doAssert search(".", "connect").len == 1
-doAssert latestVersion(".", "foo-http") == "1.4.2"
-doAssert latestVersion(".", "@radiiplus/foo-http") == "2.0.0"
-doAssert latestVersion(".", "lib/json") == "1.0.0"
+doAssert latest(".", "foo-http") == "1.4.2"
+doAssert latest(".", "@radiiplus/foo-http") == "2.0.0"
+doAssert latest(".", "lib/json") == "1.0.0"
 doAssert info(".", "foo-http")["version"].getStr() == "1.4.2"
 doAssert info(".", "lib/json")["version"].getStr() == "1.0.0"
 echo "pkg registry discovery: ok"

@@ -1,5 +1,0 @@
-function quotient(value integer 128) giving integer 128 { give value divide (0 subtract 1). }
-start {
-  constant minimum of type integer 128 is 0 subtract 170141183460469231731687303715884105727 subtract 1.
-  quotient(minimum).
-}

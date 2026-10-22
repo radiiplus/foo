@@ -1,0 +1,105 @@
+use sequence as items.
+use text as words.
+use "../../benchmark/algorithms/baseline.iv" as prior.
+use "../../benchmark/algorithms/candidate/sorting.iv" as sorting.
+use "../../benchmark/algorithms/candidate/ordered.iv" as ordered.
+use "../../benchmark/algorithms/candidate/searching.iv" as searching.
+use testing as check.
+
+function compare(left sequence of constant unsigned, right sequence of constant unsigned) giving nothing {
+  check.expect(items.extent[unsigned](left) is items.extent[unsigned](right)).
+  dynamic index of type unsigned is 0.
+  while index less than items.extent[unsigned](left) { check.expect(left at index is right at index). increase index by 1. }
+}
+function repeated(size unsigned) giving failable text {
+  dynamic result of type text is words.concatenate("a", "") try.
+  after error { words.release(result) fallback nothing. }
+  while words.length(result) less than size {
+    constant old is result.
+    set result to words.concatenate(result, result) try.
+    words.release(old) try.
+  }
+  constant exact is words.slice(result, 0, size) try.
+  words.release(result) try.
+  give exact.
+}
+
+test "stable network exhausts repeated-key assignments" {
+  dynamic code of type unsigned is 0.
+  while code less than 81 {
+    constant values is items.sized[unsigned](4) try.
+    constant labelled is items.sort[unsigned](items values) try.
+    items.release[unsigned](labelled) try.
+    dynamic encoding is code.
+    dynamic index of type unsigned is 0.
+    while index less than 4 { set values at index to encoding remainder 3. set encoding to encoding divide 3. increase index by 1. }
+    constant actual is sorting.sort[unsigned](values) try.
+    constant expected is prior.sort[unsigned](values) try.
+    compare(actual, expected).
+    items.release[unsigned](actual) try. items.release[unsigned](expected) try. items.release[unsigned](values) try.
+    increase code by 1.
+  }
+}
+
+test "adaptive boundaries preserve baseline ordering and ownership" {
+  constant sizes is items.sized[unsigned](8) try.
+  after { items.release[unsigned](sizes) fallback nothing. }
+  set sizes at 0 to 31. set sizes at 1 to 32. set sizes at 2 to 33. set sizes at 3 to 4096.
+  set sizes at 4 to 65535. set sizes at 5 to 65536. set sizes at 6 to 65537. set sizes at 7 to 4.
+  for each size in sizes {
+    constant values is items.sized[unsigned](size) try.
+    dynamic index of type unsigned is 0.
+    while index less than size { set values at index to (size subtract index) divide 3. increase index by 1. }
+    constant expected is prior.sort[unsigned](values) try.
+    constant actual is sorting.sort[unsigned](values) try.
+    compare(actual, expected).
+    check.expect(values at 0 is size divide 3).
+    items.release[unsigned](expected) try. items.release[unsigned](actual) try. items.release[unsigned](values) try.
+  }
+}
+
+test "galloping boundaries preserve all-equal duplicates disjoint and reversed inputs" {
+  dynamic run of type unsigned is 0.
+  while run less than 30 {
+    dynamic size of type unsigned is 1024 plus run.
+    when run greater than 20 { set size to 65536 plus (run remainder 3). }
+    constant left is items.sized[unsigned](size) try.
+    constant right is items.sized[unsigned](size divide 16) try.
+    dynamic index of type unsigned is 0.
+    while index less than size { set left at index to index divide 7. increase index by 1. }
+    set index to 0.
+    while index less than items.length[unsigned](right) {
+      dynamic value is index multiply 17.
+      when run remainder 3 is 0 { set value to 0. }
+      otherwise when run remainder 3 is 1 { set value to size plus index. }
+      set right at index to value. increase index by 1.
+    }
+    constant expected is prior.intersect[unsigned](left, right) try.
+    constant actual is items.intersect[unsigned](left, right) try.
+    constant reversed is items.intersect[unsigned](right, left) try.
+    compare(actual, expected). compare(reversed, expected).
+    items.release[unsigned](expected) try. items.release[unsigned](actual) try. items.release[unsigned](reversed) try.
+    items.release[unsigned](left) try. items.release[unsigned](right) try.
+    increase run by 1.
+  }
+}
+
+test "two-way dispatch handles repeated prefixes and last legal matches" {
+  constant widths is items.sized[unsigned](6) try.
+  after { items.release[unsigned](widths) fallback nothing. }
+  set widths at 0 to 255. set widths at 1 to 256. set widths at 2 to 257.
+  set widths at 3 to 4095. set widths at 4 to 4096. set widths at 5 to 4097.
+  for each width in widths {
+    constant content is repeated(65536) try.
+    constant prefix is words.slice(content, 0, width subtract 2) try.
+    constant needle is words.concatenate(prefix, "ba") try.
+    constant near is words.concatenate(content, "ba") try.
+    check.expect(searching.find(content, needle) is null).
+    check.expect(searching.linear(content, needle) is null).
+    check.expect(searching.find(near, needle) is 65536 subtract width plus 2).
+    check.expect(searching.linear(near, needle) is 65536 subtract width plus 2).
+    check.expect(searching.find(near, needle) is prior.find(near, needle)).
+    words.release(content) try. words.release(prefix) try. words.release(needle) try. words.release(near) try.
+  }
+  check.expect(searching.find("\0abc\0abc", "\0abc") is 0).
+}

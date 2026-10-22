@@ -21,8 +21,8 @@ let escaping = ast.Block(tag: "block", span: position, stmts: @[
         target: name("outer"), value: name("inner")))
     ])))
 ])
-let diagnostics = newEngine()
-checkEscape(escaping, newEnvironment(), diagnostics)
+let diagnostics = engine()
+escape(escaping, environment(), diagnostics)
 doAssert diagnostics.failed
 doAssert diagnostics.messages[0].text.contains("shorter-lived value")
 
@@ -39,8 +39,8 @@ let safe = ast.Block(tag: "block", span: position, stmts: @[
         target: name("outer"), value: allocation(owner)))
     ])))
 ])
-let safeDiagnostics = newEngine()
-checkEscape(safe, newEnvironment(), safeDiagnostics)
-doAssert not safeDiagnostics.failed
+let issues = engine()
+escape(safe, environment(), issues)
+doAssert not issues.failed
 
 echo "type escape parity: ok"

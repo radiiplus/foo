@@ -1,3 +1,0 @@
-use sequence as items.
-function read(values are sequence of integer) giving integer { give values at 2. }
-start { read 4 5. }

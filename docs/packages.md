@@ -1,4 +1,4 @@
-# Chapter 8: Packages
+# Packages
 
 Foo's package registry is a public Git repository. Package records live under
 `packages/`, while deterministic (the same input always produces the same
@@ -14,14 +14,14 @@ foo init my-package
 cd my-package
 ```
 
-The scaffold contains `project.json`, `README.md`, `.gitignore`, the package
+The scaffold contains `project.ivc`, `README.md`, `.gitignore`, the package
 source under `src/`, a starter test under `test/`, and a starter performance
 scenario under `benchmark/`. Before publication, set the repository URL and
-package metadata in `project.json`, write at least 100 non-empty lines of
+package metadata in `project.ivc`, write at least 100 non-empty lines of
 documentation, and commit every source change.
 
-To display a package icon in the registry, add `"icon": "assets/icon.svg"` to
-`project.json` and commit that SVG. The path stays inside the package and the
+To display a package icon in the registry, add `icon is "assets/icon.svg"` to
+`project.ivc` and commit that SVG. The path stays inside the package and the
 file must be at most 64 KiB. Publication accepts basic vector shapes and paint
 attributes, then displays the validated icon as an image in registry listings
 and package details. Scripts, links, styles, and external resources are rejected.
@@ -74,12 +74,12 @@ registry package; do not write an internal `registry+...` locator. The optional
 second argument is reserved for an external URL, Git repository, or local path.
 
 Local paths are resolved from the directory containing the declaring
-`project.json`. An absolute path is converted to a project-relative path when
+project manifest. An absolute path is converted to a project-relative path when
 the two locations permit it. `foo add local-tools ../local-tools` stores
 `path+../local-tools`; `foo install` then checks the local package's declared
-name, reads its exact version from that package's `project.json`, installs it
+name, reads its exact version from that package's manifest, installs it
 under `.foo/packages/local-tools`, and writes the path and content digest (a
-fingerprint of the installed source) to `foo.lock`. Relative paths inside a
+fingerprint of the installed source) to `foo.ivl`. Relative paths inside a
 local dependency are resolved from that dependency's own directory. Repeating
 `foo install` rereads local packages, so local development changes replace the
 previous installed copy and digest. Registry packages in the same project stay
@@ -88,7 +88,7 @@ current constraints; use `foo update` to select newer registry releases.
 
 `foo add foo-http` selects the current indexed release. Exact versions and
 compatible `^` or `~` constraints are also accepted. The dependency is written
-to `project.json`; install the complete graph afterward:
+to `project.ivc`; install the complete graph afterward:
 
 ```sh
 foo install
@@ -102,11 +102,11 @@ one compatible version for every package)
 chooses one compatible version per package and records the exact result in the
 lockfile.
 
-Installed sources live under `.foo/packages/`. The generated `foo.lock` is
+Installed sources live under `.foo/packages/`. The generated `foo.ivl` is
 deterministic (the same inputs produce the same file) and records the registry
 revision, exact package version, source digest, direct status, and dependency
 identities for every package. Adding, removing, or changing a dependency
-constraint (a rule limiting acceptable versions) directly in `project.json`
+constraint (a rule limiting acceptable versions) directly in `project.ivc`
 makes `foo install` resolve the changed graph and rewrite the lockfile. An
 unchanged manifest (project configuration) installs from the lock exactly;
 `foo update` resolves newer compatible releases within the existing
@@ -131,7 +131,7 @@ modules). Consumers need no full filesystem path after `foo install`.
 
 Writing `use package.` does not silently download code during a build. FOO
 looks for a local module, then `.foo/packages/package`, then a standard
-module. When the package is declared in `project.json` but has not been
+module. When the package is declared in `project.ivc` but has not been
 installed, checking stops with a package-not-found diagnostic and directs the
 developer to run:
 

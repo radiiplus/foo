@@ -29,6 +29,26 @@ Bare zero-argument names invoke by default. When the expected type is a
 function, the same name is preserved as a function value, so callbacks remain
 composable. Empty `()` is not accepted.
 
+## Sentence-call shorthand
+
+Parenthesized calls are the form printed by `foo fmt`. When argument
+boundaries are unambiguous, a call can also read as a sentence:
+
+```foo
+function add(left integer, right integer) giving integer {
+  give left plus right.
+}
+
+constant result is add 10 20.
+```
+
+The values follow declaration order. Parameter labels can make a longer call
+clearer; write each label directly before its value, without a colon or equals
+sign. Positional values come before labeled values. Use parentheses for nested
+calls and when an operator should apply to the call result. Library sentence
+forms may require linking words such as `with` or `from`; the
+[grammar specification](../specs/grammar.md) lists their exact forms.
+
 ## Default and named arguments
 
 Write `default` after a parameter type. A missing argument uses that expression
@@ -46,12 +66,15 @@ function connect(
 constant ordinary is connect("example.com").
 constant local is connect("localhost", port 8080).
 constant explicit is connect(host "example.com", timeout 10000).
+constant sentence is connect "example.com" timeout 10000.
+constant labeled is connect host "example.com" port 443 timeout 5000.
 ```
 
 A label is the parameter name followed directly by its value. FOO does not
 require a colon or equals sign. Positional arguments must come first. Each
-label may appear once, and an unknown label is a compile error. An ordinary
-expression may begin with a parameter named `value`; for example,
+label may appear once; unknown, repeated, or ambiguous labels are compile
+errors. An ordinary expression may begin with a parameter named `value`; for
+example,
 `digit(value remainder 16)` is one positional argument, not a named argument.
 
 ## Variadic parameters (one parameter accepting several arguments)
@@ -235,6 +258,101 @@ function withdraw(amount decimal)
 Arguments are evaluated before the guard. A false guard stops execution with a
 `FunctionGuard` panic; it is not a recoverable `failable` error.
 
+## Handling failure
+
+Use `giving failable T` when a function can return either a value of type `T`
+or an error. Postfix `try` passes a failure to the caller while continuing with
+the success value:
+
+```foo
+use file as files.
+
+function copy giving failable text {
+  constant content is files.read("notes.txt") try.
+  files.write("copy.txt", content) try.
+  give content.
+}
+```
+
+`try` applies to the failable expression immediately before it. Use
+parentheses when its success value takes part in a larger expression. Repeating
+`try` is meaningful only when each application unwraps another failable layer.
+A non-failable function cannot propagate an error this way.
+
+Use `fallback` when this scope has a valid replacement:
+
+```foo
+use file as files.
+
+constant settings is files.read("settings.json") fallback "{}".
+display settings.
+```
+
+The replacement has the success type of the operation and runs only on failure.
+`fallback` handles the error locally; it does not propagate it. Every failable
+result must be propagated with `try`, recovered with `fallback`, returned from
+a compatible failable function, or consumed by an API that accepts it.
+`failable nothing` can still report failure; plain `nothing` cannot.
+
+| Situation | Use |
+| --- | --- |
+| The caller should decide | Postfix `try` |
+| A default value is genuinely valid | `fallback value` |
+| Cleanup fails and ignoring that failure is intentional | `fallback nothing` |
+| Failure must terminate the process | An explicit panic or top-level policy |
+
+A fallback chosen only to silence the compiler can hide lost data or a bad
+configuration. Panics are separate from failable errors and cannot be recovered
+with `fallback`.
+
+### Cleanup on scope exit
+
+Register cleanup with `after` immediately after acquiring a resource:
+
+```foo
+use file as files.
+use io as streams.
+
+function chunk giving failable text {
+  constant stream is files.open("data.txt", "read") try.
+  after { streams.close(stream) fallback nothing. }
+  give streams.read(stream, 4096) try.
+}
+```
+
+`after` runs when its nearest enclosing scope finishes normally, returns early,
+propagates failure, or exits with `stop` or `skip`. Several cleanup blocks run
+in reverse registration order. A block registered in a loop belongs to that
+iteration's scope. Forced process termination cannot guarantee cleanup.
+
+Use `after error` when an owned result must be released only if a failure
+leaves the scope:
+
+```foo
+use memory.
+
+constant allocator is memory.system.
+constant buffer is memory.allocate(allocator, 4096) try.
+after error { memory.release(allocator, buffer) fallback nothing. }
+```
+
+On success, ownership can transfer to the caller. `after error` does not run on
+a successful `give`, `stop`, or `skip`; it runs during failure propagation and
+shares the reverse cleanup order with `after`. Deferred blocks must handle
+their own failures and cannot change control flow.
+
+Low-level APIs should preserve error context across module boundaries instead
+of replacing every failure with the same default. For error identity, trace,
+and cleanup ordering rules, read the [error specification](../specs/errors.md).
+For compiler error output, read [Diagnostics](diagnostics.md).
+
+| Common mistake | Fix |
+| --- | --- |
+| Writing `is try` | Bind the expression, then put `try` after the call. |
+| Ignoring a failable call | Add postfix `try` or a meaningful `fallback`. |
+| Using a fallback of another type | Return the operation's success type. |
+| Registering cleanup too late | Put `after` immediately after acquisition. |
+
 ## Recursion (a function calling itself)
 
 Functions may call themselves when the result type is explicit. There is no
@@ -275,9 +393,8 @@ feature clause cannot add a feature that the target profile did not promise.
 Runtime-free code also cannot allocate memory or call file, network, process, or
 other hosted services.
 
-Both native backends preserve these contracts. The C backend expresses them
-with target compiler attributes; the Zig backend expresses them with Zig calling
-conventions and target features. Unsupported combinations fail during checking
+QBE preserves these contracts in the selected target's calling convention and
+function attributes. Unsupported combinations fail during checking
 or emission instead of quietly becoming ordinary functions.
 
 ```foo

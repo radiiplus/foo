@@ -1,0 +1,24 @@
+use file as files.
+use io as streams.
+use resource as usage.
+use testing as check.
+use "text" function release(content text) giving failable nothing.
+
+start {
+  constant name is "wasi-service-probe.txt".
+  check.expect(not (files.exists(name) try)).
+  files.write(name, "A\0B") try.
+  check.expect(files.exists(name) try).
+  constant content is files.read(name) try.
+  check.expect(lengthof(content) is 3).
+  check.same(content, "A\0B").
+  release(content) try.
+  constant handle is files.open(name, "read") try.
+  constant part is streams.read(handle, 2) try.
+  check.same(part, "A\0").
+  release(part) try.
+  streams.close(handle) try.
+  check.expect(usage.files is 0).
+  files.remove(name) try.
+  check.expect(not (files.exists(name) try)).
+}

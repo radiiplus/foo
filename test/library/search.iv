@@ -1,6 +1,10 @@
 use sequence as items.
 use testing as check.
 
+function tail(value sequence of constant byte) giving failable sequence of constant byte borrowing value {
+  give items.view[byte](value, 1, 2) try.
+}
+
 test "ordered binary search" {
   constant empty is items.create[integer].
   check.expect(items.lower[integer](empty, 2) is 0).
@@ -27,7 +31,7 @@ test "ordered binary search" {
   check.expect(items.search[integer](sorted, 10) is null).
 }
 
-test "unique ascending values owns its result" {
+test "sequence results and borrowed views retain ownership" {
   constant values is items.sized[integer](5) try.
   after { items.release[integer](values) fallback nothing. }
   set values at 0 to 1.
@@ -43,4 +47,21 @@ test "unique ascending values owns its result" {
   check.expect((distinct at 2) is 5).
   set values at 0 to 9.
   check.expect((distinct at 0) is 1).
+
+  constant source is items.sized[byte](4) try.
+  after { items.release[byte](source) fallback nothing. }
+  set source at 0 to 1.
+  set source at 1 to 2.
+  set source at 2 to 3.
+  set source at 3 to 4.
+  constant middle is items.view[byte](source, 1, 2) try.
+  check.expect(middle at 0 is 2).
+  check.expect(middle at 1 is 3).
+  constant ending is items.view[byte](source, 4, 0) try.
+  constant last is items.view[byte](source, 3, 1) try.
+  check.expect(last at 0 is 4).
+  constant nested is items.view[byte](middle, 1, 1) try.
+  check.expect(nested at 0 is 3).
+  constant wrapped is tail(source) try.
+  check.expect(wrapped at 0 is 2).
 }

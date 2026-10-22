@@ -1,0 +1,33 @@
+use sequence as items.
+use codec as codecs.
+use testing as check.
+use "text" function release(content text) giving failable nothing.
+function total(values are sequence of integer) giving integer {
+  dynamic result is 0.
+  for each value in values { set result to result plus value. }
+  give result.
+}
+function consume(values sequence of integer) giving failable nothing releasing values {
+  items.release[integer](values) try.
+  give nothing.
+}
+start {
+  constant summed is total 4 9 1.
+  check.expect(summed is 14).
+  constant values is items.sized[integer](3) try.
+  after { items.release[integer](values) fallback nothing. }
+  set values at 0 to 4.
+  set values at 1 to 9.
+  set values at 2 to 1.
+  constant copied is items.copy[integer](values) try.
+  check.expect(copied is values).
+  set copied at 0 to 3.
+  check.expect(copied is less than values).
+  consume(copied) try.
+  constant encoded is codecs.encode[sequence of integer](values) fallback "failed".
+  after { release(encoded) fallback nothing. }
+  check.same(encoded, "[4,9,1]").
+  constant decoded is codecs.decode[sequence of integer](encoded) fallback items.create[integer].
+  after { items.release[integer](decoded) fallback nothing. }
+  check.expect(decoded is values).
+}

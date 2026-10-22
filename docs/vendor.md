@@ -5,11 +5,12 @@
 | Dependency | Bundled form and provenance | Build use |
 | --- | --- | --- |
 | BLAKE3 1.8.7 | C sources and headers, commit `f3149ec5bb5449af877ba20377a11008ff499fa2`, Apache-2.0 | C crypto programs; portable, SSE2, and NEON sources as selected by target. |
-| libsodium 1.0.22 | Windows x64 static library and matching headers, archive SHA-256 in `vendor/libsodium/README.md` | Windows C crypto programs; Linux package provisioner supplies the target build. |
-| zlib 1.3.1 | Windows x64 static library and matching headers, source and library hashes in `vendor/zlib/README.md` | Windows C compression programs; Linux package provisioner supplies the target build. |
+| libsodium 1.0.22 | Windows x64 static library and matching headers, archive SHA-256 in `vendor/libsodium/README.md` | Windows C crypto programs; Linux uses the explicit offline source bootstrap; normal builds never provision packages. |
+| zlib 1.3.1 | Windows x64 static library and matching headers, source and library hashes in `vendor/zlib/README.md` | Windows C compression programs; Linux uses the explicit offline source bootstrap; normal builds never provision packages. |
 | SPIR-V Headers | `spirv.h`, commit `86f980c731e62ae4eaf383d320449d71687936bf`, MIT | Compiler GPU generation. |
 | Vulkan Headers and volk | Headers commit `c46850864f4661461b0f6cb9922c058ffea4915e`; volk commit `0dc3ce00bf98b9f0b6fe708ca0f7eb74e2830173` | Vulkan programs only. The loader and driver come from the OS. |
 | MoltenVK | Source snapshot commit `67b2682699d7903606b97a0392061d85d27d49e6` | Not linked in Windows builds; its macOS upstream dependencies and ICD are external. |
+| TinyCC 0.9.28rc | Source snapshot commit `e23dabed154a8495f3ac1ff3cc9d04fa1c207893`, LGPL-2.1-or-later, with local Windows x64 vectorcall support; official 0.9.27 Windows x64 bootstrap archive SHA-256 `34a721949a2583fdff725312da092fa0f5f1f284b702e6f811c6954714faabb2` | `node tools/tcc/build.mjs` uses the vendored TinyCC bootstrap to build the Windows QBE linker into `.artifacts/toolchain/tcc/vendor-build/source/win32`. |
 
 Headers for a bundled library stay at the same upstream revision as its
 implementation or binary. Add more library headers only when a build actually
@@ -25,6 +26,7 @@ configuration issue, not missing third-party headers.
 | Date | Dependency | Local patch | Validation |
 | --- | --- | --- | --- |
 | 2026-10-09 | All above | No upstream source patch in this optimization pass. | Inventory and build gates inspected. |
+| 2026-10-20 | TinyCC 0.9.28rc (`e23dabed`) | `tcc.h`, `tcctok.h`, `tccgen.c`, `x86_64-gen.c`, `win32/build-tcc.bat`, and `tcc_vectorcall_abi.h`: scalar Windows x64 vectorcall parsing, decoration, positional registers, and vendored TinyCC bootstrap. Reproducible upstream diff: `vendor/tcc/patches/windows-x64-vectorcall.patch`. | `node tools/tcc/build.mjs` and `node tools/tcc/verify.mjs` use only TinyCC; QBE's Windows adapter harness covers foreign calls, callbacks, and exports. A separate Clang interoperability probe passed during development. Aggregate and SIMD vectorcall parameters remain unsupported. |
 
 Add a row for every future source patch, including the upstream revision,
 changed files, reason, benchmark or correctness evidence, and the upstream
@@ -42,12 +44,19 @@ commit retrievable, and store a reproducible patch against it.
 3. Reapply local patches one at a time, review conflicts, and update the patch
    log. Confirm optional services remain linked only when imported.
 4. Rebuild the native compiler and run the complete relevant library, native,
-   backend, and platform tests. At minimum run `npm test`,
-   `node bin/foo.mjs test lib --backend c`, and
-   `node bin/foo.mjs test lib --backend zig` on available hosts, plus the
+   backend, and platform tests. At minimum run the affected `npm run test:REGION` commands,
+   `node bin/foo.mjs test lib --backend qbe` on available hosts, plus the
    dependency's own conformance tests and target cross-builds.
 5. Repeat the same performance fixtures and parameters used for the baseline.
    Record raw samples, executable size, startup, peak memory, dependency
    versions, compiler flags, and hardware. Reject the patch if it regresses
    correctness, security, portability, or the intended workload without a
    documented trade-off.
+
+## Batch 5 lock and offline acceptance
+
+`vendor/manifest.json` is the authoritative content/license/provenance lock.
+Run `node tools/vendor/audit.mjs --artifacts` before release packaging. See
+[native dependency audit](dependencies.md) for build/runtime separation,
+SDK/tool requirements, supported artifact targets and clean/offline acceptance.
+Missing inputs fail closed; developer/bootstrap downloads are explicit only.

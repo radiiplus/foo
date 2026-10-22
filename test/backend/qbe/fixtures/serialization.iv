@@ -1,0 +1,34 @@
+use codec as codecs.
+use "text" function release(content text) giving failable nothing.
+use testing as check.
+define Value as choice { number(integer 128). empty. }.
+start {
+  constant wide is codecs.encode[unsigned 128](340282366920938463463374607431768211455) try.
+  after { release(wide) fallback nothing. }
+  check.same(wide,"340282366920938463463374607431768211455").
+  check.expect((codecs.decode[unsigned 128](wide) try) is 340282366920938463463374607431768211455).
+  display wide.
+  constant selected of type Value is number(170141183460469231731687303715884105727).
+  constant encoded is codecs.encode[Value](selected) try.
+  after { release(encoded) fallback nothing. }
+  check.same(encoded,"{\"number\":170141183460469231731687303715884105727}").
+  check.expect((codecs.decode[Value](encoded) try) is selected).
+  display encoded.
+  constant absence of type Value is empty.
+  constant vacant is codecs.encode[Value](absence) try.
+  after { release(vacant) fallback nothing. }
+  check.same(vacant,"{\"empty\":{}}").
+  check.expect((codecs.decode[Value](vacant) try) is empty).
+  display vacant.
+  constant octet is codecs.encode[byte](255) try.
+  after { release(octet) fallback nothing. }
+  check.same(octet,"255").
+  check.expect((codecs.decode[byte](octet) try) is 255).
+  display octet.
+  constant truth is codecs.encode[boolean](false) try.
+  after { release(truth) fallback nothing. }
+  check.same(truth,"false").
+  check.expect(not (codecs.decode[boolean](truth) try)).
+  display truth.
+  display "\n".
+}

@@ -83,6 +83,12 @@ parameters use `name Type`, as shown later on this page.
 | Ordering | `less than`, `greater than`, and their `or equal to` forms |
 | Boolean logic | `not`, `and`, `or` |
 
+Fixed-width integer bit operations use `bit(value, operand, "mode")`, with
+`"shl"`, `"lshr"`, `"ashr"`, `"and"`, `"or"`, `"xor"`, `"set"`, `"clear"`, or
+`"toggle"`. Complement uses `bit(value, "not")`. The mode must be a literal;
+`"ashr"` requires a signed value, and shift counts and bit positions must be
+smaller than the value's declared width. Check target support in [QBE Backend Support](qbe.md).
+
 Multiplication, division, and remainder bind more tightly than addition and
 subtraction. Use parentheses when mixed Boolean conditions would be easier to
 misread.

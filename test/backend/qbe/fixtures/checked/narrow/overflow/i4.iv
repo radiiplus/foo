@@ -1,0 +1,6 @@
+function main giving integer 32 {
+  dynamic minimum of type integer 4 is (0 subtract 7) subtract 1.
+  dynamic negative of type integer 4 is 0 subtract 1.
+  set minimum to minimum divide negative.
+  give 0.
+}

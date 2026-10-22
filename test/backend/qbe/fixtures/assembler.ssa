@@ -1,0 +1,5 @@
+export function w $foo_qbe_assembler_probe() {
+@entry
+    %answer =w add 40, 2
+    ret %answer
+}

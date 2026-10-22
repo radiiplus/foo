@@ -1,0 +1,89 @@
+use "../../lib/codec.iv" as codecs.
+use "../../lib/hex.iv" as hex.
+use "../../lib/base64.iv" as base.
+use "../../lib/unicode.iv" as unicode.
+use sequence as items.
+use text as words.
+use testing as check.
+
+function invalidnumber(value text) giving failable boolean {
+  constant parsed is codecs.decode[decimal](value) try.
+  give false.
+}
+function invalidhex(value text) giving failable boolean {
+  constant parsed is hex.decode(value) try.
+  items.release[byte](parsed) try.
+  give false.
+}
+function invalidbase(value text) giving failable boolean {
+  constant parsed is base.decode(value) try.
+  items.release[byte](parsed) try.
+  give false.
+}
+function invalidwide(value sequence of unsigned 16) giving failable boolean {
+  constant parsed is unicode.narrow(value) try.
+  words.release(parsed) try.
+  give false.
+}
+
+test "decimal baseline retains seventeen-digit formatting signed zero and errors" {
+  constant encoded is codecs.encode[decimal](0.1) try.
+  after { words.release(encoded) fallback nothing. }
+  check.same(encoded, "0.10000000000000001").
+  constant zero is codecs.decode[decimal]("-0") try.
+  constant signed is codecs.encode[decimal](zero) try.
+  after { words.release(signed) fallback nothing. }
+  check.same(signed, "-0").
+  check.expect(invalidnumber("1junk") fallback true).
+  check.expect(invalidnumber("+1") fallback true).
+  check.expect(invalidnumber("1e99999") fallback true).
+  check.expect(invalidnumber("1e-99999") fallback true).
+}
+
+test "hex and Base64 malformed offsets retain canonical rejection" {
+  constant illegal of type text is "AZ+/= \t\r\n".
+  dynamic offset of type unsigned is 0.
+  while offset less than 32 {
+    constant sample of type text is "00000000000000000000000000000000".
+    constant prefix is words.slice(sample, 0, offset) try.
+    constant suffix is words.slice(sample, offset plus 1, 32) try.
+    dynamic position of type unsigned is 0.
+    while position less than words.length(illegal) {
+      constant digit is words.slice(illegal, position, position plus 1) try.
+      constant first is words.concatenate(prefix, digit) try.
+      constant changed is words.concatenate(first, suffix) try.
+      check.expect(invalidhex(changed) fallback true).
+      -- A and Z are legal Base64url digits; the remaining characters are not.
+      when position greater than or equal to 2 { check.expect(invalidbase(changed) fallback true). }
+      words.release(digit) try. words.release(first) try. words.release(changed) try.
+      increase position by 1.
+    }
+    words.release(prefix) try. words.release(suffix) try.
+    increase offset by 1.
+  }
+  check.expect(invalidbase("Zh") fallback true).
+  check.expect(invalidbase("Zm9") fallback true).
+  check.expect(invalidbase("A") fallback true).
+  check.expect(invalidhex("0") fallback true).
+}
+
+test "Unicode surrogate boundaries retain scalar rejection and cleanup" {
+  constant values is items.sized[unsigned 16](2) try.
+  after { items.release[unsigned 16](values) fallback nothing. }
+  set values at 0 to 55296. set values at 1 to 56320.
+  constant smallest is unicode.narrow(values) try.
+  check.expect(unicode.valid(smallest)).
+  words.release(smallest) try.
+  set values at 0 to 56319. set values at 1 to 57343.
+  constant largest is unicode.narrow(values) try.
+  check.expect(unicode.valid(largest)).
+  words.release(largest) try.
+  set values at 0 to 55296. set values at 1 to 55296.
+  check.expect(invalidwide(values) fallback true).
+  set values at 0 to 56320. set values at 1 to 65.
+  check.expect(invalidwide(values) fallback true).
+  constant short is items.sized[unsigned 16](1) try.
+  after { items.release[unsigned 16](short) fallback nothing. }
+  set short at 0 to 55296.
+  check.expect(invalidwide(short) fallback true).
+}

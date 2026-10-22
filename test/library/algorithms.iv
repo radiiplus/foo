@@ -1,0 +1,176 @@
+use sequence as items.
+use "../../benchmark/algorithms/baseline.iv" as prior.
+use "../../benchmark/algorithms/sorting.iv" as sorting.
+use "../../benchmark/algorithms/ordered.iv" as ordered.
+use "../../benchmark/algorithms/searching.iv" as search.
+use text as words.
+use testing as check.
+use "../../lib/memory.iv" as mem.
+
+function compare(left sequence of constant unsigned, right sequence of constant unsigned) giving nothing {
+  check.expect(items.extent[unsigned](left) is items.extent[unsigned](right)).
+  dynamic index of type unsigned is 0.
+  while index less than items.extent[unsigned](left) {
+    check.expect(left at index is right at index).
+    increase index by 1.
+  }
+}
+function plain(content text, value text) giving optional unsigned {
+  constant size is words.length(content).
+  constant width is words.length(value).
+  when width greater than size { give null. }
+  dynamic origin of type unsigned is 0.
+  while origin less than or equal to size subtract width {
+    dynamic index of type unsigned is 0.
+    while index less than width and content at (origin plus index) is value at index { increase index by 1. }
+    when index is width { give origin. }
+    increase origin by 1.
+  }
+  give null.
+}
+function generated(size unsigned, seed unsigned) giving failable text {
+  dynamic state is seed.
+  dynamic result of type text is "".
+  after error { words.release(result) fallback nothing. }
+  dynamic index of type unsigned is 0.
+  while index less than size {
+    set state to (state multiply 48271 plus 1) remainder 65521.
+    dynamic next of type text is "a".
+    when state remainder 3 is 1 { set next to "b". }
+    otherwise when state remainder 3 is 2 { set next to "\0". }
+    constant previous is result.
+    set result to words.concatenate(result, next) try.
+    words.release(previous) fallback nothing.
+    increase index by 1.
+  }
+  give result.
+}
+
+test "adaptive stable sort matches baseline and preserves equal-text identities" {
+  dynamic seed of type unsigned is 1.
+  dynamic run of type unsigned is 0.
+  while run less than 300 {
+    constant size is run remainder 97.
+    constant values is items.sized[unsigned](size) try.
+    dynamic index of type unsigned is 0.
+    while index less than size {
+      set seed to (seed multiply 48271 plus 1) remainder 65521.
+      set values at index to seed remainder 101.
+      increase index by 1.
+    }
+    constant expected is prior.sort[unsigned](values) try.
+    constant actual is sorting.sort[unsigned](values) try.
+    compare(actual, expected).
+    set index to 1.
+    while index less than size {
+      check.expect(actual at index greater than or equal to actual at (index subtract 1)).
+      increase index by 1.
+    }
+    when size greater than 0 {
+      constant original is values at 0.
+      set actual at 0 to 999.
+      check.expect(values at 0 is original).
+    }
+    items.release[unsigned](actual) try.
+    items.release[unsigned](expected) try.
+    items.release[unsigned](values) try.
+    increase run by 1.
+  }
+  constant owner is mem.system.
+  constant first is mem.allocate(owner, 1) try.
+  constant second is mem.allocate(owner, 1) try.
+  after { mem.release(owner, first) fallback nothing. mem.release(owner, second) fallback nothing. }
+  mem.copy(owner, first, "a") try.
+  mem.copy(owner, second, "a") try.
+  constant one is mem.view(owner, first, 1) try.
+  constant two is mem.view(owner, second, 1) try.
+  dynamic size of type unsigned is 0.
+  while size less than 40 {
+    constant values is items.sized[text](size) try.
+    dynamic index of type unsigned is 0.
+    while index less than size {
+      set values at index to one.
+      when index remainder 2 is 1 { set values at index to two. }
+      increase index by 1.
+    }
+    constant actual is sorting.sort[text](values) try.
+    mem.copy(owner, first, "b") try.
+    set index to 0.
+    while index less than size {
+      when index remainder 2 is 0 { check.same(actual at index, "b"). }
+      otherwise { check.same(actual at index, "a"). }
+      increase index by 1.
+    }
+    mem.copy(owner, first, "a") try.
+    items.release[text](actual) try.
+    items.release[text](values) try.
+    increase size by 1.
+  }
+  constant many is items.sized[text](4096) try.
+  dynamic index of type unsigned is 0.
+  while index less than 4096 {
+    set many at index to one.
+    when index remainder 2 is 1 { set many at index to two. }
+    when index greater than 8 and index remainder 7 is 0 { set many at index to "c". }
+    increase index by 1.
+  }
+  constant stable is prior.sort[text](many) try.
+  constant adaptive is sorting.sort[text](many) try.
+  mem.copy(owner, first, "b") try.
+  set index to 0.
+  while index less than 4096 { check.same(stable at index, adaptive at index). increase index by 1. }
+  mem.copy(owner, first, "a") try.
+  items.release[text](stable) try. items.release[text](adaptive) try. items.release[text](many) try.
+}
+
+test "galloping intersection matches scalar for skew duplicates and empty inputs" {
+  dynamic run of type unsigned is 0.
+  while run less than 150 {
+    constant left is items.sized[unsigned](run multiply 17) try.
+    constant right is items.sized[unsigned](run remainder 13) try.
+    dynamic index of type unsigned is 0.
+    while index less than items.length[unsigned](left) { set left at index to index divide 3. increase index by 1. }
+    set index to 0.
+    while index less than items.length[unsigned](right) { set right at index to index multiply 29 plus (run remainder 7). increase index by 1. }
+    constant expected is prior.intersect[unsigned](left, right) try.
+    constant actual is items.intersect[unsigned](left, right) try.
+    constant reversed is items.intersect[unsigned](right, left) try.
+    compare(actual, expected).
+    compare(reversed, expected).
+    when items.length[unsigned](actual) greater than 0 {
+      constant saved is left at 0.
+      set actual at 0 to 999.
+      check.expect(left at 0 is saved).
+    }
+    items.release[unsigned](expected) try.
+    items.release[unsigned](actual) try.
+    items.release[unsigned](reversed) try.
+    items.release[unsigned](left) try.
+    items.release[unsigned](right) try.
+    increase run by 1.
+  }
+}
+
+test "two-way byte search preserves first offsets NUL and periodic boundaries" {
+  check.expect(search.linear("", "") is 0).
+  check.expect(search.linear("a", "aa") is null).
+  check.expect(search.linear("a\0b\0b", "\0b") is 1).
+  check.expect(search.linear("abababababa", "ababa") is 0).
+  check.expect(search.linear("abababababa", "baba") is 1).
+  check.expect(search.linear("aaaaaaaaaa", "aaaab") is null).
+  check.expect(search.linear("aaaaaaaaab", "aaaab") is 5).
+  dynamic run of type unsigned is 0.
+  while run less than 500 {
+    constant content is generated(run remainder 89, run plus 1) try.
+    constant value is generated(run remainder 17, run multiply 7 plus 1) try.
+    check.expect(search.linear(content, value) is plain(content, value)).
+    when words.length(content) greater than 4 {
+      constant part is words.slice(content, words.length(content) subtract 4, words.length(content)) try.
+      check.expect(search.linear(content, part) is plain(content, part)).
+      words.release(part) try.
+    }
+    words.release(content) try.
+    words.release(value) try.
+    increase run by 1.
+  }
+}

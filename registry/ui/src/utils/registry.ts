@@ -11,26 +11,26 @@ export type Dependency = {
   platforms?: string[];
 };
 
-export type PublicApiItem = {
+export type Declaration = {
   kind: "function" | "type" | "constant" | "value";
   name: string;
   declaration: string;
   documentation: string;
 };
 
-export type PublicApi = {
+export type Api = {
   schema: "foo.api/v1";
-  modules: Array<{ name: string; path: string; summary: string; items: PublicApiItem[] }>;
+  modules: Array<{ name: string; path: string; summary: string; items: Declaration[] }>;
 };
 
-export type VersionSummary = {
+export type Version = {
   version: string;
   updated: string;
   deprecated: string;
   path: string;
 };
 
-export type PackageSummary = {
+export type Summary = {
   kind: "package" | "standard";
   name: string;
   version: string;
@@ -48,18 +48,18 @@ export type PackageSummary = {
   revision: string;
   exports: string[];
   path: string;
-  versions: VersionSummary[];
+  versions: Version[];
 };
 
-export type Package = Omit<PackageSummary, "path" | "versions"> & {
+export type Package = Omit<Summary, "path" | "versions"> & {
   install: string;
   dependencies: Dependency[];
   readme: string[];
-  api: PublicApi;
+  api: Api;
   source: { format: "foo.source/v1"; digest: string; files: Array<{ path: string; content: string }> };
 };
 
-export type StandardPackage = Pick<Package, "kind" | "name" | "version" | "description" | "owner" | "install" | "api">;
+export type Standard = Pick<Package, "kind" | "name" | "version" | "description" | "owner" | "install" | "api">;
 
 export type Category = { name: string; count: number };
 export type Tag = { name: string; count: number };
@@ -74,9 +74,9 @@ export type Query = {
   limit?: number;
 };
 
-type SearchResponse = {
+type Response = {
   schema: "foo.search/v1";
-  packages: PackageSummary[];
+  packages: Summary[];
   total: number;
   query: string;
   offset: number;
@@ -85,38 +85,38 @@ type SearchResponse = {
   facets: { categories: Category[]; tags: Tag[] };
 };
 
-type RegistryManifest = {
+type Manifest = {
   schema: "foo.registry/v1";
   revision: string;
   count: number;
   shards: Array<{ path: string; count: number }>;
 };
 
-type StandardCatalog = {
+type Inventory = {
   schema: "foo.standard-catalog/v1";
   revision: string;
   count: number;
-  entries: PackageSummary[];
+  entries: Summary[];
   packages: Package[];
 };
-type Catalog = { manifest: RegistryManifest; entries: PackageSummary[]; standard: Map<string, Package>; revision: string };
+type Catalog = { manifest: Manifest; entries: Summary[]; standard: Map<string, Package>; revision: string };
 
 const source = (import.meta.env.VITE_REGISTRY_URL ?? (import.meta.env.DEV
   ? "/registry-data"
   : "https://raw.githubusercontent.com/radiiplus/foo.registry/main")).replace(/\/$/, "");
-const fooSource = (import.meta.env.VITE_FOO_SOURCE_URL ?? (import.meta.env.DEV
+const upstream = (import.meta.env.VITE_FOO_SOURCE_URL ?? (import.meta.env.DEV
   ? "/foo-data"
   : "https://raw.githubusercontent.com/radiiplus/foo/main")).replace(/\/$/, "");
-const catalogLifetime = 60_000;
-let catalogCache: { expires: number; value: Promise<Catalog> } | undefined;
+const lifetime = 60_000;
+let cache: { expires: number; value: Promise<Catalog> } | undefined;
 
 export async function health(signal?: AbortSignal): Promise<Health> {
-  const catalog = await loadCatalog(signal);
+  const catalog = await load(signal);
   return { service: "foo-registry-git", status: "ok", version: catalog.revision };
 }
 
 export async function packages(query: Query = {}, signal?: AbortSignal) {
-  const catalog = await loadCatalog(signal);
+  const catalog = await load(signal);
   const needle = query.query?.trim().toLowerCase() ?? "";
   const category = query.category?.trim().toLowerCase() ?? "";
   const tag = query.tag?.trim().toLowerCase() ?? "";
@@ -129,7 +129,7 @@ export async function packages(query: Query = {}, signal?: AbortSignal) {
   });
   matches.sort(sorter(query.sort ?? (needle ? "relevance" : "category"), needle));
   const selected = matches.slice(offset, offset + limit);
-  const response: SearchResponse = {
+  const response: Response = {
     schema: "foo.search/v1",
     packages: selected,
     total: matches.length,
@@ -143,27 +143,27 @@ export async function packages(query: Query = {}, signal?: AbortSignal) {
 }
 
 export async function categories(signal?: AbortSignal) {
-  return { categories: facets((await loadCatalog(signal)).entries).categories };
+  return { categories: facets((await load(signal)).entries).categories };
 }
 
 export async function tags(signal?: AbortSignal) {
-  return { tags: facets((await loadCatalog(signal)).entries).tags };
+  return { tags: facets((await load(signal)).entries).tags };
 }
 
 export async function item(name: string, signal?: AbortSignal, version?: string) {
-  const catalog = await loadCatalog(signal);
+  const catalog = await load(signal);
   const entry = catalog.entries.find((candidate) => candidate.name === name);
   if (!entry) throw new Error(`Package not found: ${name}`);
-  const selectedVersion = version || entry.version;
-  const selected = entry.versions.find((candidate) => candidate.version === selectedVersion);
-  if (!selected) throw new Error(`Package version not found: ${name}@${selectedVersion}`);
+  const revision = version || entry.version;
+  const selected = entry.versions.find((candidate) => candidate.version === revision);
+  if (!selected) throw new Error(`Package version not found: ${name}@${revision}`);
   const record = entry.kind === "standard" ? catalog.standard.get(name) :
-    await fetchRegistryJson<Package>(selected.path, catalog.manifest.revision, signal);
+    await json<Package>(selected.path, catalog.manifest.revision, signal);
   if (!record) throw new Error(`Standard module not found: ${name}`);
-  if (record.name !== name || record.version !== selectedVersion) throw new Error(`Registry package identity mismatch: ${name}@${selectedVersion}`);
+  if (record.name !== name || record.version !== revision) throw new Error(`Registry package identity mismatch: ${name}@${revision}`);
   const versions = entry.versions;
-  const summary = normalizeSummary({ ...entry, ...record, path: selected.path, versions, exports: entry.exports });
-  const packageItem: Package = {
+  const summary = normalize({ ...entry, ...record, path: selected.path, versions, exports: entry.exports });
+  const product: Package = {
     ...record,
     ...summary,
     dependencies: Array.isArray(record.dependencies) ? record.dependencies : [],
@@ -171,59 +171,59 @@ export async function item(name: string, signal?: AbortSignal, version?: string)
     api: record.api ?? { schema: "foo.api/v1", modules: [] },
     source: record.source ?? { format: "foo.source/v1", digest: "", files: [] },
   };
-  return { package: packageItem, versions };
+  return { package: product, versions };
 }
 
 export async function standards(signal?: AbortSignal) {
-  const catalog = await loadCatalog(signal);
+  const catalog = await load(signal);
   return [...catalog.standard.values()].sort((left, right) => compare(left.name, right.name))
-    .map(({ kind, name, version, description, owner, install, api }): StandardPackage =>
+    .map(({ kind, name, version, description, owner, install, api }): Standard =>
       ({ kind, name, version, description, owner, install, api }));
 }
 
-export function standardIndex() {
-  return `${fooSource}/registry/standard.json`;
+export function index() {
+  return `${upstream}/registry/standard.json`;
 }
 
-async function loadCatalog(signal?: AbortSignal): Promise<Catalog> {
-  throwIfAborted(signal);
-  if (!catalogCache || catalogCache.expires <= Date.now()) {
-    const value = readCatalog();
-    catalogCache = { expires: Date.now() + catalogLifetime, value };
+async function load(signal?: AbortSignal): Promise<Catalog> {
+  abort(signal);
+  if (!cache || cache.expires <= Date.now()) {
+    const value = read();
+    cache = { expires: Date.now() + lifetime, value };
     void value.catch(() => {
-      if (catalogCache?.value === value) catalogCache = undefined;
+      if (cache?.value === value) cache = undefined;
     });
   }
-  const catalog = await catalogCache.value;
-  throwIfAborted(signal);
+  const catalog = await cache.value;
+  abort(signal);
   return catalog;
 }
 
-async function readCatalog(): Promise<Catalog> {
+async function read(): Promise<Catalog> {
   const [manifest, standard] = await Promise.all([
-    fetchRegistryJson<RegistryManifest>("indexes/index.json"),
-    fetchFooCatalog(),
+    json<Manifest>("indexes/index.json"),
+    builtin(),
   ]);
   if (manifest.schema !== "foo.registry/v1" || !Array.isArray(manifest.shards)) throw new Error("Invalid registry manifest");
   const batches = await Promise.all(manifest.shards.map(async (shard) => {
     if (!/^indexes\/index-\d{6}\.jsonl$/.test(shard.path)) throw new Error(`Invalid registry shard path: ${shard.path}`);
-    const text = await fetchRegistryText(shard.path, manifest.revision);
-    const entries = text.split(/\r?\n/).filter((line) => line.trim()).map((line) => normalizeSummary(JSON.parse(line) as PackageSummary));
+    const text = await plain(shard.path, manifest.revision);
+    const entries = text.split(/\r?\n/).filter((line) => line.trim()).map((line) => normalize(JSON.parse(line) as Summary));
     if (entries.length !== shard.count) throw new Error(`Registry shard count mismatch: ${shard.path}`);
     return entries;
   }));
   const published = batches.flat();
   if (published.length !== manifest.count) throw new Error("Registry package count mismatch");
-  const entries = [...published.filter((entry) => entry.kind !== "standard"), ...standard.entries.map(normalizeSummary)];
+  const entries = [...published.filter((entry) => entry.kind !== "standard"), ...standard.entries.map(normalize)];
   if (new Set(entries.map((entry) => entry.name)).size !== entries.length) throw new Error("Duplicate registry package name");
   return { manifest, entries, standard: new Map(standard.packages.map((record) => [record.name, record])),
     revision: `${manifest.revision}:${standard.revision}` };
 }
 
-async function fetchFooCatalog(): Promise<StandardCatalog> {
-  const response = await fetch(`${fooSource}/registry/standard.json`, { headers: { accept: "application/json" } });
+async function builtin(): Promise<Inventory> {
+  const response = await fetch(`${upstream}/registry/standard.json`, { headers: { accept: "application/json" } });
   if (!response.ok) throw new Error("FOO standard catalog unavailable");
-  const catalog = await response.json() as StandardCatalog;
+  const catalog = await response.json() as Inventory;
   if (catalog.schema !== "foo.standard-catalog/v1" || !Array.isArray(catalog.entries) ||
       !Array.isArray(catalog.packages) || catalog.count !== catalog.entries.length ||
       catalog.count !== catalog.packages.length || catalog.entries.some((entry, index) =>
@@ -234,7 +234,7 @@ async function fetchFooCatalog(): Promise<StandardCatalog> {
   return catalog;
 }
 
-function normalizeSummary(item: PackageSummary): PackageSummary {
+function normalize(item: Summary): Summary {
   return {
     ...item,
     kind: item.kind === "standard" ? "standard" : "package",
@@ -245,7 +245,7 @@ function normalizeSummary(item: PackageSummary): PackageSummary {
   };
 }
 
-function facets(entries: PackageSummary[]) {
+function facets(entries: Summary[]) {
   const categories = new Map<string, number>();
   const tags = new Map<string, number>();
   for (const entry of entries) {
@@ -259,13 +259,13 @@ function facets(entries: PackageSummary[]) {
 }
 
 function sorter(sort: Query["sort"] | "relevance", query: string) {
-  if (sort === "name") return (left: PackageSummary, right: PackageSummary) => compare(left.name, right.name);
-  if (sort === "recent") return (left: PackageSummary, right: PackageSummary) => compare(right.updated, left.updated) || compare(left.name, right.name);
-  if (sort === "relevance") return (left: PackageSummary, right: PackageSummary) => relevance(left, query) - relevance(right, query) || compare(left.name, right.name);
-  return (left: PackageSummary, right: PackageSummary) => compare(left.category, right.category) || compare(left.name, right.name);
+  if (sort === "name") return (left: Summary, right: Summary) => compare(left.name, right.name);
+  if (sort === "recent") return (left: Summary, right: Summary) => compare(right.updated, left.updated) || compare(left.name, right.name);
+  if (sort === "relevance") return (left: Summary, right: Summary) => relevance(left, query) - relevance(right, query) || compare(left.name, right.name);
+  return (left: Summary, right: Summary) => compare(left.category, right.category) || compare(left.name, right.name);
 }
 
-function relevance(entry: PackageSummary, query: string) {
+function relevance(entry: Summary, query: string) {
   if (entry.name === query) return 0;
   if (entry.name.startsWith(query)) return 1;
   if (entry.name.includes(query)) return 2;
@@ -281,8 +281,8 @@ function integer(value: number | undefined, fallback: number, minimum: number, m
   return selected;
 }
 
-async function fetchRegistryJson<T>(path: string, revision = "", signal?: AbortSignal): Promise<T> {
-  const text = await fetchRegistryText(path, revision, signal);
+async function json<T>(path: string, revision = "", signal?: AbortSignal): Promise<T> {
+  const text = await plain(path, revision, signal);
   try {
     return JSON.parse(text) as T;
   } catch {
@@ -290,20 +290,20 @@ async function fetchRegistryJson<T>(path: string, revision = "", signal?: AbortS
   }
 }
 
-async function fetchRegistryText(path: string, revision = "", signal?: AbortSignal): Promise<string> {
-  if (!safePath(path)) throw new Error(`Unsafe registry path: ${path}`);
+async function plain(path: string, revision = "", signal?: AbortSignal): Promise<string> {
+  if (!safe(path)) throw new Error(`Unsafe registry path: ${path}`);
   const suffix = revision ? `?v=${encodeURIComponent(revision)}` : "";
   const response = await fetch(`${source}/${path}${suffix}`, { signal, headers: { accept: "application/json" } });
   if (!response.ok) throw new Error(response.status === 404 ? `Registry content not found: ${path}` : `Registry content unavailable: ${path}`);
   return response.text();
 }
 
-function safePath(path: string) {
+function safe(path: string) {
   return (path.startsWith("indexes/") || path.startsWith("packages/")) &&
     !path.startsWith("/") && path.split("/").every((part) => part && part !== "." && part !== "..");
 }
 
-function throwIfAborted(signal?: AbortSignal) {
+function abort(signal?: AbortSignal) {
   if (signal?.aborted) throw new DOMException("The operation was aborted", "AbortError");
 }
 

@@ -1,8 +1,8 @@
-import ../cli/dispatch as clidispatch
-import ../cli/display as clidisplay
-import ../cli/link as clilink
-import ../cli/main as climain
-import ../cli/project as cliproject
-import ../cli/runner as clirunner
+import ../cli/display as display
+import ../cli/link as link
+import ../cli/main as main
+import ../cli/project as project
+import ../cli/registry as registry
+import ../cli/benchmark as benchmark
 
 echo "cli suite: ok"

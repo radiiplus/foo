@@ -4,27 +4,27 @@ import ../build/options
 import ../diag/palette
 
 type
-  ProgressPhase* = enum
+  Phase* = enum
     ppCheck = "check", ppBuild = "build", ppReuse = "reuse", ppDone = "done"
   Progress* = object
-    phase*: ProgressPhase
+    phase*: Phase
     name*: string
     file*: string
     cached*: bool
     elapsed*: float
     stages*: seq[Step]
-  OperationState* = enum
+  State* = enum
     stateWorking, stateComplete, stateFailed, stateAttention, stateSkipped
-  OperationTask = object
+  Task = object
     stage: string
     name: string
     detail: string
-    state: OperationState
+    state: State
   Timing = object
     count: int
     mean: float
     m2: float
-  WorkBudget = object
+  Budget = object
     stage: string
     total: int
     completed: int
@@ -36,20 +36,20 @@ type
     timing: Timing
   Operation* = ref object
     name: string
-    jsonOutput: bool
+    json: bool
     explain: bool
     compact: bool
     interactive: bool
     color: bool
     started: float
-    lastRender: float
+    rendered: float
     last: float
     phase: string
-    renderedLines: int
-    tasks: seq[OperationTask]
-    work: seq[WorkBudget]
+    rows: int
+    tasks: seq[Task]
+    work: seq[Budget]
     context: string
-    historyFile: string
+    receipt: string
     history: Table[string, Timing]
     finished: bool
     successful: bool
@@ -74,9 +74,9 @@ proc history(path: string): Table[string, Timing] =
   except CatchableError:
     discard
 
-proc saveHistory(operation: Operation) =
-  if operation.historyFile.len == 0: return
-  var stored = history(operation.historyFile)
+proc history(operation: Operation) =
+  if operation.receipt.len == 0: return
+  var stored = history(operation.receipt)
   var changed = false
   for item in operation.work:
     if item.samples == 0: continue
@@ -87,8 +87,8 @@ proc saveHistory(operation: Operation) =
   var seconds = newJObject()
   for key, value in stored:
     seconds[key] = %*{"count": value.count, "mean": value.mean, "m2": value.m2}
-  createDir(parentDir(operation.historyFile))
-  writeFile(operation.historyFile, $(%*{"version": 2, "seconds": seconds}) & "\n")
+  createDir(parentDir(operation.receipt))
+  writeFile(operation.receipt, $(%*{"version": 2, "seconds": seconds}) & "\n")
 
 proc paint(operation: Operation; value, role: string): string =
   if operation.color: shade(role) & value & "\e[0m" else: value
@@ -110,7 +110,7 @@ proc wrap(value: string; width: int): seq[string] =
     result.add(value[offset ..< offset + count])
     offset += count
 
-proc glyph(operation: Operation; state: OperationState): string =
+proc glyph(operation: Operation; state: State): string =
   case state
   of stateWorking: operation.paint("◐", "info")
   of stateComplete: operation.paint("✓", "success")
@@ -125,11 +125,11 @@ proc estimate*(operation: Operation): tuple[known, timingKnown: bool,
     percent, completed, total: int, remaining: float] =
   if operation == nil: return
   result.timingKnown = true
-  var elapsedTotal: float
+  var aggregate: float
   for item in operation.work:
     result.total += item.total
     result.completed += item.completed
-    elapsedTotal += item.spent
+    aggregate += item.spent
     let pending = item.total - item.completed
     if pending <= 0: continue
     # A clock estimate needs repeatable timings for every unfinished stage.
@@ -145,13 +145,13 @@ proc estimate*(operation: Operation): tuple[known, timingKnown: bool,
       if elapsed > item.predicted * 1.5:
         result.timingKnown = false
       let credited = min(elapsed, item.predicted * 0.95)
-      elapsedTotal += credited
+      aggregate += credited
       result.remaining -= credited
   result.known = result.total > 0
   if result.timingKnown and result.known:
-    let expected = elapsedTotal + result.remaining
+    let expected = aggregate + result.remaining
     if expected > 0:
-      result.percent = min(99, int(elapsedTotal * 100 / expected))
+      result.percent = min(99, int(aggregate * 100 / expected))
   if result.known and result.completed == result.total:
     result.percent = 99
   if operation.finished and operation.successful and
@@ -185,8 +185,8 @@ proc snapshot(operation: Operation; complete = false; successful = true;
           result.add("     " & operation.paint(line, "muted"))
       else:
         let detail = if task.detail.len > 0: "  " & task.detail else: ""
-        let suffixWidth = detail.len + 3
-        let available = max(10, width - 4 - suffixWidth)
+        let padding = detail.len + 3
+        let available = max(10, width - 4 - padding)
         let label = clip(branch & task.name, available)
         result.add("  " & label.alignLeft(available) &
           (if detail.len > 0: operation.paint(detail, "muted") else: "") &
@@ -218,11 +218,11 @@ proc snapshot(operation: Operation; complete = false; successful = true;
     result.add("  " & operation.paint(operation.name &
       (if successful: " COMPLETE" else: " FAILED"),
       if successful: "success" else: "error"))
-    let finalSummary = summary & (if summary.len > 0: " · " else: "") &
+    let final = summary & (if summary.len > 0: " · " else: "") &
       duration(epochTime() - operation.started)
-    result.add("  " & finalSummary)
+    result.add("  " & final)
 
-proc compactLine(operation: Operation; complete, successful: bool;
+proc compact(operation: Operation; complete, successful: bool;
     summary: string): string =
   let progress = operation.estimate()
   let width = if operation.interactive: max(1, min(72, terminalWidth() - 1))
@@ -244,44 +244,44 @@ proc compactLine(operation: Operation; complete, successful: bool;
   if active.len == 0 and operation.tasks.len > 0:
     let task = operation.tasks[^1]
     active = task.stage & ": " & task.name
-  var progressText = if progress.timingKnown: $progress.percent & "%" else: "?%"
+  var text = if progress.timingKnown: $progress.percent & "%" else: "?%"
   if progress.known:
-    progressText.add(" " & $progress.completed & "/" & $progress.total)
-  progressText.add(" | " & elapsed)
+    text.add(" " & $progress.completed & "/" & $progress.total)
+  text.add(" | " & elapsed)
   if progress.timingKnown and progress.remaining > 0:
-    progressText.add(" | ~" & duration(progress.remaining) & " left")
+    text.add(" | ~" & duration(progress.remaining) & " left")
   let prefix = "FOO / " & operation.name &
     (if active.len > 0: "  " & active else: "")
-  let suffix = clip(progressText, max(1, width - 12))
+  let suffix = clip(text, max(1, width - 12))
   if suffix.len + 10 >= width: return suffix
   clip(prefix, width - suffix.len - 2) & "  " & suffix
 
 proc render(operation: Operation; force = false; complete = false;
     successful = true; summary = "") =
-  if operation.jsonOutput or (not operation.interactive and not force): return
+  if operation.json or (not operation.interactive and not force): return
   let current = epochTime()
-  if operation.interactive and not force and operation.lastRender > 0 and
-      current - operation.lastRender < 0.25: return
+  if operation.interactive and not force and operation.rendered > 0 and
+      current - operation.rendered < 0.25: return
   if operation.compact:
-    let line = operation.compactLine(complete, successful, summary)
+    let line = operation.compact(complete, successful, summary)
     if operation.interactive:
       stderr.write("\r\e[2K" & line & (if complete: "\n" else: ""))
     else:
       stderr.writeLine(line)
     stderr.flushFile()
-    operation.lastRender = current
+    operation.rendered = current
     return
   let lines = operation.snapshot(complete, successful, summary)
-  if operation.interactive and operation.renderedLines > 0:
-    stderr.write("\e[" & $operation.renderedLines & "A\r\e[J")
+  if operation.interactive and operation.rows > 0:
+    stderr.write("\e[" & $operation.rows & "A\r\e[J")
   stderr.write(lines.join("\n") & "\n")
   stderr.flushFile()
-  operation.renderedLines = lines.len
-  operation.lastRender = current
+  operation.rows = lines.len
+  operation.rendered = current
 
-proc newOperation*(name: string; jsonOutput = false; explain = false;
+proc operation*(name: string; jsonOutput = false; explain = false;
     compact = false): Operation =
-  result = Operation(name: name.toUpperAscii(), jsonOutput: jsonOutput,
+  result = Operation(name: name.toUpperAscii(), json: jsonOutput,
     explain: explain, compact: compact,
     interactive: not jsonOutput and isatty(stderr),
     color: getEnv("NO_COLOR").len == 0 and getEnv("TERM") != "dumb",
@@ -291,11 +291,11 @@ proc newOperation*(name: string; jsonOutput = false; explain = false;
 proc configure*(operation: Operation; root, backend, target, mode: string) =
   if operation == nil or operation.finished: return
   operation.context = operation.name & "|" & backend & "|" & target & "|" & mode
-  operation.historyFile = root / ".artifacts" / "progress.json"
-  operation.history = history(operation.historyFile)
+  operation.receipt = root / ".artifacts" / "progress.json"
+  operation.history = history(operation.receipt)
 
 proc plan*(operation: Operation; stage: string; count: int;
-    secondsPerJob: float) =
+    job: float) =
   if operation == nil or operation.finished or count <= 0: return
   for item in operation.work.mitems:
     if item.stage == stage:
@@ -304,19 +304,19 @@ proc plan*(operation: Operation; stage: string; count: int;
       return
   let key = operation.context & "|" & stage
   let previous = operation.history.getOrDefault(key)
-  let predicted = if previous.count > 0: previous.mean else: secondsPerJob
-  operation.work.add(WorkBudget(stage: stage, total: count,
+  let predicted = if previous.count > 0: previous.mean else: job
+  operation.work.add(Budget(stage: stage, total: count,
     predicted: predicted, timing: previous))
   operation.render()
 
-proc startWork*(operation: Operation; stage: string) =
+proc start*(operation: Operation; stage: string) =
   if operation == nil or operation.finished: return
   for item in operation.work.mitems:
     if item.stage == stage and item.completed < item.total:
       item.started = epochTime()
       return
 
-proc finishWork*(operation: Operation; stage: string; cached = false) =
+proc finish*(operation: Operation; stage: string; cached = false) =
   if operation == nil or operation.finished: return
   for item in operation.work.mitems:
     if item.stage == stage and item.completed < item.total:
@@ -335,26 +335,26 @@ proc finishWork*(operation: Operation; stage: string; cached = false) =
       operation.render()
       return
 
-proc update*(operation: Operation; stage, name: string; state: OperationState;
-    detail = ""; alwaysShowDetail = false) =
+proc update*(operation: Operation; stage, name: string; state: State;
+    detail = ""; show = false) =
   if operation == nil or operation.finished: return
-  let visibleDetail = if operation.explain or alwaysShowDetail: detail else: ""
+  let visible = if operation.explain or show: detail else: ""
   for task in operation.tasks.mitems:
     if task.stage == stage and task.name == name:
       task.state = state
-      if visibleDetail.len > 0: task.detail = visibleDetail
+      if visible.len > 0: task.detail = visible
       operation.render()
       return
-  operation.tasks.add(OperationTask(stage: stage, name: name,
-    detail: visibleDetail, state: state))
+  operation.tasks.add(Task(stage: stage, name: name,
+    detail: visible, state: state))
   operation.render()
 
-proc completeStage(operation: Operation; stage: string) =
+proc complete(operation: Operation; stage: string) =
   for task in operation.tasks.mitems:
     if task.stage == stage and task.state == stateWorking:
       task.state = stateComplete
 
-proc failWorking(operation: Operation) =
+proc fail(operation: Operation) =
   for index in countdown(operation.tasks.high, 0):
     if operation.tasks[index].state == stateWorking:
       operation.tasks[index].state = stateFailed
@@ -382,59 +382,60 @@ proc report*(operation: Operation; phase, name, detail: string; cached = false) 
       else: 1.0
     operation.plan(name, parseInt(detail), seconds)
   of "check":
-    operation.startWork("Source")
+    operation.start("Source")
     operation.update("Source", name, stateWorking, detail)
   of "checked":
     operation.update("Source", name, stateComplete)
-    operation.finishWork("Source")
+    operation.finish("Source")
   of "build":
-    operation.startWork("Compilation")
+    operation.start("Compilation")
     operation.update("Compilation", name, stateWorking)
   of "path": operation.update("Compilation", "path", stateComplete, detail, true)
+  of "cache": operation.update("Compilation", name, stateComplete, detail, true)
   of "strategy": operation.update("Optimization", name, stateComplete, detail)
   of "tick":
     operation.render()
   of "done":
     operation.update("Compilation", name, stateComplete)
-    operation.finishWork("Compilation")
+    operation.finish("Compilation")
   of "run":
-    operation.startWork("Execution")
+    operation.start("Execution")
     operation.update("Execution", name, stateWorking)
   of "ran":
     operation.update("Execution", name, stateComplete)
-    operation.finishWork("Execution")
+    operation.finish("Execution")
   of "sample":
-    operation.startWork("Measurement")
+    operation.start("Measurement")
     operation.update("Measurement", name, stateWorking)
   of "sampled":
     operation.update("Measurement", name, stateComplete)
-    operation.finishWork("Measurement")
+    operation.finish("Measurement")
   of "link":
-    operation.completeStage("Compilation")
+    operation.complete("Compilation")
     operation.update("Linking", name, stateWorking, detail)
   of "linked": operation.update("Linking", name, stateComplete, detail)
   of "failed":
-    operation.failWorking()
+    operation.fail()
     operation.render()
   of "reuse":
     operation.update("Compilation", name, stateComplete,
       "project cache", true)
-    operation.finishWork("Compilation", cached = true)
+    operation.finish("Compilation", cached = true)
   of "package": operation.update("Preparing", "metadata", stateComplete, detail)
   of "bundle": operation.update("Preparing", "source bundle", stateComplete, detail)
   of "upload": operation.update("Publishing", "registry", stateWorking, detail)
   of "commit":
-    operation.completeStage("Publishing")
+    operation.complete("Publishing")
     operation.update("Publishing", name, stateComplete, detail)
   of "resolve": operation.update("Resolving", name, stateWorking, detail)
   of "fetch":
-    operation.completeStage("Resolving")
+    operation.complete("Resolving")
     operation.update("Downloading", name, stateWorking, detail)
   of "install":
     operation.update("Downloading", name, stateComplete)
     operation.update("Installing", name, stateComplete, detail)
   of "locked":
-    operation.completeStage("Resolving")
+    operation.complete("Resolving")
     operation.update("Resolving", name, stateComplete, detail)
   of "lock": operation.update("Installing", name, stateComplete, detail)
   of "remove": operation.update("Removing", name, stateComplete, detail)
@@ -444,10 +445,10 @@ proc report*(operation: Operation; phase, name, detail: string; cached = false) 
   of "verified": operation.update("Verifying", name, stateComplete, detail)
   of "extract": operation.update("Installing", "archive", stateWorking, detail)
   of "ready":
-    operation.completeStage("Installing")
+    operation.complete("Installing")
     operation.update("Toolchain", name, stateComplete, detail)
   else: operation.update(phase.capitalizeAscii(), name, stateComplete, detail)
-  if operation.jsonOutput and phase != "tick":
+  if operation.json and phase != "tick":
     let progress = operation.estimate()
     echo $(%*{"event": phase, "name": name, "file": detail,
       "cached": cached, "progress": {"known": progress.known,
@@ -455,7 +456,7 @@ proc report*(operation: Operation; phase, name, detail: string; cached = false) 
       "percent": progress.percent, "completed": progress.completed,
       "total": progress.total, "remainingSeconds": progress.remaining}})
 
-proc reporter*(operation: Operation): BuildProgress =
+proc reporter*(operation: Operation): Observer =
   result = proc(phase, name, detail: string; cached: bool) =
     operation.report(phase, name, detail, cached)
 
@@ -465,14 +466,14 @@ proc finish*(operation: Operation; successful = true; summary = "") =
     for task in operation.tasks.mitems:
       if task.state == stateWorking: task.state = stateComplete
   else:
-    operation.failWorking()
+    operation.fail()
   operation.finished = true
   operation.successful = successful
   try:
-    operation.saveHistory()
+    operation.history()
   except CatchableError:
     discard
-  if operation.jsonOutput:
+  if operation.json:
     let progress = operation.estimate()
     echo $(%*{"event": "complete", "operation": operation.name,
       "success": successful, "summary": summary,
@@ -486,7 +487,7 @@ proc finish*(operation: Operation; successful = true; summary = "") =
     operation.render(force = true, complete = true, successful = successful,
       summary = summary)
 
-proc isFinished*(operation: Operation): bool =
+proc finished*(operation: Operation): bool =
   operation == nil or operation.finished
 
 proc display*(jsonOutput = false; verbose = false): proc(event: Progress) {.closure.} =

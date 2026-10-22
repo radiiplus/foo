@@ -3,12 +3,12 @@ import ../ast/doc
 import ../ast/node
 import ../diag/engine
 import ../lex/lexer
-import ../parse/parser
+import ../ast/parser
 
-proc parseSource(source, path: string): Program =
-  let diagnostics = newEngine()
-  diagnostics.setSource(source, path)
-  result = newParser(newLexer(source, diagnostics).lex(), diagnostics).parse()
+proc parse(source, path: string): Program =
+  let diagnostics = engine()
+  diagnostics.source(source, path)
+  result = parser(lexer(source, diagnostics).lex(), diagnostics).parse()
   if diagnostics.failed: raise newException(ValueError, "Unable to index public API in " & path)
 
 proc summary(source: string): string =
@@ -23,7 +23,7 @@ proc summary(source: string): string =
     if text.len > 0: lines.add(text)
   lines.join(" ")
 
-proc moduleName(path: string): string =
+proc module(path: string): string =
   result = path.replace('\\', '/')
   if result.endsWith(".iv"): result.setLen(result.len - 3)
   if result.startsWith("src/"): result = result[4 .. ^1]
@@ -48,18 +48,18 @@ proc documentation(source: string; offset: int): string =
   comments.reverse()
   comments.join(" ")
 
-proc publicApi*(source: JsonNode): JsonNode =
+proc public*(source: JsonNode): JsonNode =
   result = %*{"schema": "foo.api/v1", "modules": newJArray()}
   if source == nil or source.kind != JObject or source.getOrDefault("files").kind != JArray: return
   for file in source["files"]:
     let path = file.getOrDefault("path").getStr()
     if not path.endsWith(".iv"): continue
     let content = file.getOrDefault("content").getStr()
-    let parsed = parseSource(content, path)
+    let parsed = parse(content, path)
     var items = newJArray()
-    for item in publicItems(parsed):
+    for item in exports(parsed):
       items.add(%*{"kind": item.kind, "name": item.name,
         "declaration": item.declaration,
         "documentation": documentation(content, item.start)})
-    result["modules"].add(%*{"name": moduleName(path), "path": path,
+    result["modules"].add(%*{"name": module(path), "path": path,
       "summary": summary(content), "items": items})

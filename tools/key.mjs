@@ -1,12 +1,13 @@
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync as invoke } from "node:child_process";
+import { existsSync as exists, mkdirSync as mkdir, readFileSync as read, writeFileSync as write } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath as filename } from "node:url";
+import { run as wsl } from './wsl.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(filename(import.meta.url)), "..");
 const settings = resolve(process.env.FOOSIGNENV || join(root, ".env.sign"));
-if (!existsSync(settings)) {
+if (!exists(settings)) {
   throw Error("Create .env.sign from .env.sign.example and set FOOSIGNEMAIL");
 }
 process.loadEnvFile(settings);
@@ -23,23 +24,19 @@ const home = process.env.FOOGPGHOME || "";
 function prepare() {
   if (!home) return;
   if (process.platform === "win32") {
-    const result = spawnSync("wsl.exe", ["-d", distro, "--", "mkdir", "-p", "-m", "700", "--", home], {
-      cwd: root,
-      stdio: "inherit",
-      windowsHide: true,
-    });
+    const [result] = wsl([{ command: 'mkdir', args: ['-p', '-m', '700', '--', home] }]);
     if (result.status !== 0) throw Error(`Unable to create GPG home ${home}`);
     return;
   }
-  mkdirSync(home, { recursive: true, mode: 0o700 });
+  mkdir(home, { recursive: true, mode: 0o700 });
 }
 
 function run(parameters, capture = false, allow = [], input) {
-  const command = process.platform === "win32" ? "wsl.exe" : gpg;
   const options = home ? ["--homedir", home, ...parameters] : parameters;
-  const args = process.platform === "win32" ? ["-d", distro, "--", gpg, ...options] : options;
   const piped = input !== undefined;
-  const result = spawnSync(command, args, {
+  const result = process.platform === 'win32' ? wsl([{
+    command: gpg, args: options, input, timeoutMs: 600000,
+  }], { distro })[0] : invoke(gpg, options, {
     cwd: root,
     encoding: capture ? "utf8" : undefined,
     input,
@@ -56,6 +53,10 @@ function run(parameters, capture = false, allow = [], input) {
     const detail = capture ? result.stderr.trim() : "";
     throw Error(detail || `GPG exited with status ${result.status ?? "unknown"}`);
   }
+  if (process.platform === 'win32' && !capture) {
+    process.stdout.write(result.stdout);
+    process.stderr.write(result.stderr);
+  }
   return capture ? result.stdout : "";
 }
 
@@ -70,7 +71,7 @@ function password() {
       'if ($left -cne $right) { Write-Error "Passphrases do not match"; exit 3 }',
       '[Console]::Out.Write($left)',
     ].join("; ");
-    const result = spawnSync("powershell.exe", ["-NoProfile", "-Command", script], {
+    const result = invoke("powershell.exe", ["-NoProfile", "-Command", script], {
       cwd: root,
       encoding: "utf8",
       stdio: ["inherit", "pipe", "inherit"],
@@ -92,7 +93,7 @@ function password() {
     '[ "$first" = "$second" ] || { echo "Passphrases do not match" >/dev/tty; exit 3; }',
     'printf %s "$first"',
   ].join("; ");
-  const result = spawnSync("bash", ["-c", script], {
+  const result = invoke("bash", ["-c", script], {
     cwd: root,
     encoding: "utf8",
     stdio: ["inherit", "pipe", "inherit"],
@@ -114,11 +115,11 @@ function fingerprint(identity) {
 
 function save(key) {
   const line = `FOOSIGNER=${key}`;
-  const source = readFileSync(settings, "utf8");
+  const source = read(settings, "utf8");
   const updated = /^FOOSIGNER=.*$/m.test(source)
     ? source.replace(/^FOOSIGNER=.*$/m, line)
     : `${source.trimEnd()}\n${line}\n`;
-  writeFileSync(settings, updated);
+  write(settings, updated);
 }
 
 if (process.argv.includes("--help")) {
@@ -134,7 +135,7 @@ prepare();
 const name = process.env.FOOSIGNNAME || "FOO Releases";
 const email = process.env.FOOSIGNEMAIL || "";
 const expires = process.env.FOOSIGNEXPIRES || "2y";
-const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+const manifest = JSON.parse(read(join(root, "package.json"), "utf8"));
 const output = resolve(process.env.FOOSIGNPUBLIC ||
   join(root, "release", `foo-v${manifest.version}`, "key.asc"));
 const backup = resolve(process.env.FOOSIGNBACKUP ||
@@ -180,11 +181,11 @@ const secret = run(options, true, [], unprotected ? undefined : `${phrase}\n`);
 phrase = "";
 if (!secret.includes("BEGIN PGP PRIVATE KEY BLOCK")) throw Error("GPG did not export a private-key backup");
 const vault = join(backup, key);
-mkdirSync(vault, { recursive: true });
-writeFileSync(join(vault, "public.asc"), exported.endsWith("\n") ? exported : `${exported}\n`, { mode: 0o600 });
-writeFileSync(join(vault, "private.asc"), secret.endsWith("\n") ? secret : `${secret}\n`, { mode: 0o600 });
-mkdirSync(dirname(output), { recursive: true });
-writeFileSync(output, exported.endsWith("\n") ? exported : `${exported}\n`);
+mkdir(vault, { recursive: true });
+write(join(vault, "public.asc"), exported.endsWith("\n") ? exported : `${exported}\n`, { mode: 0o600 });
+write(join(vault, "private.asc"), secret.endsWith("\n") ? secret : `${secret}\n`, { mode: 0o600 });
+mkdir(dirname(output), { recursive: true });
+write(output, exported.endsWith("\n") ? exported : `${exported}\n`);
 save(key);
 
 console.log(`Signing fingerprint: ${key}`);

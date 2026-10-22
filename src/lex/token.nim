@@ -3,7 +3,7 @@ import ./kind
 import ../diag/span
 
 type
-  NativeInfo* = object
+  Lexeme* = object
     substrate*: string
     header*: Option[string]
 
@@ -12,7 +12,7 @@ type
     span*: Span
     text*: string
     spelling*: string
-    native*: Option[NativeInfo]
+    native*: Option[Lexeme]
     raw*: Option[string]
     leading*: Option[string]
 

@@ -1,0 +1,29 @@
+namespace is "project"
+version is 1
+fields {
+  schema { type is "integer" default is 1 allowed is [1] }
+  name { type is "string" required enable minLength is 1 }
+  version { type is "string" required enable minLength is 1 }
+  language { type is "string" default is "1" minLength is 1 }
+  requires { type is "string" default is "base" minLength is 1 }
+  dependencies { type is "object" default is {} }
+  license { type is "string" }
+  source { type is "string" }
+  entry { type is "string" }
+  entries { type is "object" }
+  devDependencies { type is "object" }
+  optionalDependencies { type is "object" }
+  platformDependencies { type is "object" }
+  build { type is "object" }
+  release { type is "object" }
+  tests { type is "object" }
+  publish { type is "object" }
+  repository { type is "string" }
+  description { type is "string" }
+  category { type is "string" }
+  tags { type is "list" }
+  compatible { type is "boolean" }
+  platforms { type is "list" }
+  icon { type is "string" }
+  registry { type is "object" }
+}

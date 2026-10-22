@@ -1,0 +1,8 @@
+capability "project"
+project {
+  name is "myapp"
+  version is "1.0.0"
+  build {
+    optimize is "dev"
+  }
+}

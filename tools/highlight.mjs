@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync as mkdir, readFileSync as read, writeFileSync as write } from 'node:fs';
 import { createRequire } from 'node:module';
 import onig from 'vscode-oniguruma';
 import tm from 'vscode-textmate';
@@ -6,14 +6,14 @@ import tm from 'vscode-textmate';
 const require = createRequire(import.meta.url);
 const root = new URL('../', import.meta.url);
 const readme = new URL('README.md', root);
-const manifest = JSON.parse(readFileSync(new URL('editors/textmate/package.json', root), 'utf8'));
+const manifest = JSON.parse(read(new URL('editors/textmate/package.json', root), 'utf8'));
 const grammarfile = new URL('editors/textmate/grammars/foo.json', root);
-const raw = tm.parseRawGrammar(readFileSync(grammarfile, 'utf8'), grammarfile.pathname);
+const raw = tm.parseRawGrammar(read(grammarfile, 'utf8'), grammarfile.pathname);
 const rules = manifest.contributes.configurationDefaults['editor.tokenColorCustomizations'].textMateRules;
 const foreground = '#D4D4D4';
 const background = '#1E1E1E';
 
-await onig.loadWASM(readFileSync(require.resolve('vscode-oniguruma/release/onig.wasm')));
+await onig.loadWASM(read(require.resolve('vscode-oniguruma/release/onig.wasm')));
 
 const registry = new tm.Registry({
   theme: {
@@ -32,17 +32,17 @@ const registry = new tm.Registry({
 const grammar = await registry.loadGrammar('source.foo');
 if (!grammar) throw new Error('Unable to load the FOO TextMate grammar.');
 
-const source = readFileSync(readme, 'utf8');
+const source = read(readme, 'utf8');
 const examples = [...source.matchAll(/<!-- highlight:([a-z][a-z0-9]*) -->[\s\S]*?```foo\r?\n([\s\S]*?)\r?\n```/g)];
 if (examples.length === 0) throw new Error('README.md contains no marked FOO examples.');
 
 const output = new URL('assets/readme/', root);
-mkdirSync(output, { recursive: true });
+mkdir(output, { recursive: true });
 const colors = registry.getColorMap();
 
 for (const match of examples) {
   const [, name, code] = match;
-  writeFileSync(new URL(`${name}.svg`, output), render(name, code));
+  write(new URL(`${name}.svg`, output), render(name, code));
 }
 
 registry.dispose();

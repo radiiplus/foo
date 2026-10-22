@@ -1,0 +1,19 @@
+use codec as codecs.
+use "text" function release(content text) giving failable nothing.
+use testing as check.
+define Message as record { body of type text. value of type optional integer 9. }.
+start {
+  constant encoded is codecs.encode[Message](Message("a\0b\n\"\\",null)) try.
+  after { release(encoded) fallback nothing. }
+  check.same(encoded,"{\"body\":\"a\\u0000b\\n\\\"\\\\\",\"value\":null}").
+  display encoded.
+  constant decoded is codecs.decode[Message](encoded) try.
+  after { release(decoded.body) fallback nothing. }
+  check.same(decoded.body,"a\0b\n\"\\").
+  check.expect(decoded.value is null).
+  check.expect((codecs.decode[integer 9]("256") fallback (0 subtract 1)) is (0 subtract 1)).
+  check.expect((codecs.decode[integer 9]("-257") fallback (0 subtract 1)) is (0 subtract 1)).
+  check.expect((codecs.decode[boolean]("false trailing") fallback true)).
+  check.expect((codecs.decode[integer]("null") fallback (0 subtract 1)) is (0 subtract 1)).
+  display "\n".
+}

@@ -1,114 +1,167 @@
 [CmdletBinding()]
 param(
   [string]$Version,
-  [string]$ReleaseDirectory,
-  [switch]$SkipWindows,
-  [switch]$SkipLinux,
-  [switch]$SkipLinuxArm64
+  [Alias('ReleaseDirectory')][string]$Directory,
+  [Alias('SkipWindows')][switch]$Windows,
+  [Alias('SkipLinux')][switch]$Linux,
+  [Alias('SkipLinuxArm64')][switch]$Arm,
+  [switch]$Sign
 )
 
 $ErrorActionPreference = 'Stop'
-$projectRoot = Split-Path -Parent $PSScriptRoot
+$root = Split-Path -Parent $PSScriptRoot
+if ($Sign -and $env:FOOSIGNER -notmatch '^[A-Fa-f0-9]{40}([A-Fa-f0-9]{24})?$') {
+  throw 'Signed releases require FOOSIGNER with the full GPG key fingerprint.'
+}
+if ($Sign -and -not $Windows) {
+  if ($env:FOO_WINDOWS_SIGN_CERT_SHA1 -notmatch '^[A-Fa-f0-9]{40}$') {
+    throw 'Signed Windows releases require FOO_WINDOWS_SIGN_CERT_SHA1 with the certificate thumbprint.'
+  }
+  $timestamp = $null
+  $validTimestamp = $false
+  if ($env:FOO_WINDOWS_TIMESTAMP_URL) {
+    $validTimestamp = [Uri]::TryCreate([string]$env:FOO_WINDOWS_TIMESTAMP_URL, [UriKind]::Absolute, [ref]$timestamp)
+  }
+  if (-not $validTimestamp -or $timestamp.Scheme -ne 'https') {
+    throw 'Signed Windows releases require FOO_WINDOWS_TIMESTAMP_URL with an HTTPS RFC 3161 endpoint.'
+  }
+  $signTool = Get-Command signtool.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+  if (-not $signTool) {
+    $signTool = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin' -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
+      Where-Object { $_.DirectoryName -like '*\x64' } | Sort-Object FullName -Descending |
+      Select-Object -First 1 -ExpandProperty FullName
+  }
+  if (-not $signTool) { throw 'Signed Windows releases require signtool.exe from the Windows SDK.' }
+}
 
 if (-not $Version) {
-  $Version = (Get-Content (Join-Path $projectRoot 'package.json') -Raw | ConvertFrom-Json).version
+  $Version = (Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json).version
 }
 
-if (-not $ReleaseDirectory) {
-  $ReleaseDirectory = Join-Path $projectRoot "release\foo-v$Version"
+if (-not $Directory) {
+  $Directory = Join-Path $root "release\foo-v$Version"
 }
-$ReleaseDirectory = [IO.Path]::GetFullPath($ReleaseDirectory)
+$Directory = [IO.Path]::GetFullPath($Directory)
 
-$windowsSource = Join-Path $ReleaseDirectory "foo-v$Version-windows-x64"
-$linuxTargets = @(
+$staging = Join-Path $Directory "foo-v$Version-windows-x64"
+$targets = @(
   [PSCustomObject]@{ Name = 'linux-x64'; DebianArchitecture = 'amd64' },
   [PSCustomObject]@{ Name = 'linux-arm64'; DebianArchitecture = 'arm64' }
 )
 
-function ConvertTo-WslPath([string]$Path) {
-  $fullPath = [IO.Path]::GetFullPath($Path)
-  if ($fullPath -notmatch '^([A-Za-z]):\\(.*)$') {
-    throw "Only local Windows paths can be passed to WSL: $fullPath"
-  }
-  $drive = $Matches[1].ToLowerInvariant()
-  $tail = $Matches[2].Replace('\', '/')
-  return "/mnt/$drive/$tail"
+function Translate([string]$Path) {
+  $mapped = & node (Join-Path $root 'tools\wsl.mjs') --path $Path
+  if ($LASTEXITCODE -ne 0) { throw "Cannot map WSL path: $Path" }
+  return $mapped.Trim()
 }
 
-if (-not $SkipWindows) {
-  if (-not (Test-Path (Join-Path $windowsSource 'bin\foo.exe'))) {
-    throw "Windows release staging directory is missing: $windowsSource"
+function Invoke-WslJob([object[]]$Operations) {
+  $request = @{ operations = $Operations } | ConvertTo-Json -Depth 10 -Compress
+  $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($request))
+  $response = $encoded | & node (Join-Path $root 'tools\wsl.mjs') --base64
+  if ($LASTEXITCODE -ne 0) {
+    if ($response) {
+      $failed = ($response | ConvertFrom-Json).results | Where-Object { $_.status -ne 0 -or $_.error } | Select-Object -First 1
+      throw "WSL job failed: $($failed.error) $($failed.stderr)"
+    }
+    throw 'WSL job failed before returning results.'
   }
+  foreach ($result in ($response | ConvertFrom-Json).results) {
+    if ($result.stdout) { Write-Host $result.stdout.TrimEnd() }
+    if ($result.stderr) { Write-Host $result.stderr.TrimEnd() }
+  }
+}
 
-  $isccCandidates = @(@(
+function Sign-Windows([string]$Path) {
+  & $signTool sign /sha1 $env:FOO_WINDOWS_SIGN_CERT_SHA1 /fd SHA256 /tr $env:FOO_WINDOWS_TIMESTAMP_URL /td SHA256 $Path
+  if ($LASTEXITCODE -ne 0) { throw "Authenticode signing failed: $Path" }
+  & $signTool verify /pa $Path
+  if ($LASTEXITCODE -ne 0) { throw "Authenticode verification failed: $Path" }
+}
+
+if (-not $Windows) {
+  if (-not (Test-Path (Join-Path $staging 'bin\foo.exe'))) {
+    throw "Windows release staging directory is missing: $staging"
+  }
+  if ($Sign) { Sign-Windows (Join-Path $staging 'bin\foo.exe') }
+
+  $candidates = @(@(
       (Get-Command ISCC.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source),
       (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
       (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe')
     ) | Where-Object { $_ -and (Test-Path $_) })
-  if (-not $isccCandidates) {
+  if (-not $candidates) {
     throw 'Inno Setup 6 is required. Install it with: winget install --id JRSoftware.InnoSetup --exact'
   }
 
-  & $isccCandidates[0] "/DAppVersion=$Version" "/DSourceDir=$windowsSource" "/DOutputDir=$ReleaseDirectory" "/DProjectRoot=$projectRoot" (Join-Path $projectRoot 'installers\windows\foo.iss')
+  & $candidates[0] "/DAppVersion=$Version" "/DSourceDir=$staging" "/DOutputDir=$Directory" "/DProjectRoot=$root" (Join-Path $root 'installers\windows\foo.iss')
   if ($LASTEXITCODE -ne 0) { throw 'The Windows installer build failed.' }
+  if ($Sign) { Sign-Windows (Join-Path $Directory 'foo-windows-x64.exe') }
 
-  $windowsArchive = Join-Path $ReleaseDirectory 'foo-windows-x64.zip'
-  if (Test-Path $windowsArchive) { Remove-Item -LiteralPath $windowsArchive -Force }
-  & tar -a -cf $windowsArchive -C $ReleaseDirectory (Split-Path -Leaf $windowsSource)
+  $archive = Join-Path $Directory 'foo-windows-x64.zip'
+  if (Test-Path $archive) { Remove-Item -LiteralPath $archive -Force }
+  & tar -a -cf $archive -C $Directory (Split-Path -Leaf $staging)
   if ($LASTEXITCODE -ne 0) { throw 'The Windows archive build failed.' }
-  Write-Host "Created $windowsArchive"
+  Write-Host "Created $archive"
 }
 
-if (-not $SkipLinux) {
-  $linuxScript = ConvertTo-WslPath (Join-Path $projectRoot 'installers\linux\package.sh')
-  $linuxOutput = ConvertTo-WslPath $ReleaseDirectory
-  foreach ($target in $linuxTargets) {
-    if ($target.Name -eq 'linux-arm64' -and $SkipLinuxArm64) { continue }
-    $linuxSource = Join-Path $ReleaseDirectory "foo-v$Version-$($target.Name)"
-    if (-not (Test-Path (Join-Path $linuxSource 'bin\foo'))) {
-      throw "Linux release staging directory is missing: $linuxSource"
+if (-not $Linux) {
+  $script = Translate (Join-Path $root 'installers\linux\package.sh')
+  $output = Translate $Directory
+  $operations = @()
+  foreach ($target in $targets) {
+    if ($target.Name -eq 'linux-arm64' -and $Arm) { continue }
+    $source = Join-Path $Directory "foo-v$Version-$($target.Name)"
+    if (-not (Test-Path (Join-Path $source 'bin\foo'))) {
+      throw "Linux release staging directory is missing: $source"
     }
-    $linuxInput = ConvertTo-WslPath $linuxSource
-    & wsl -d Ubuntu-22.04 -- sh $linuxScript $Version $linuxInput $linuxOutput $target.DebianArchitecture
-    if ($LASTEXITCODE -ne 0) { throw "The $($target.Name) installer build failed." }
+    $submission = Translate $source
+    $operations += @{ command = 'sh'; args = @($script, $Version, $submission, $output, $target.DebianArchitecture); tools = @('fakeroot', 'dpkg-deb', 'readelf') }
 
-    $linuxArchive = Join-Path $ReleaseDirectory "foo-$($target.Name).tar.gz"
-    $linuxArchivePath = ConvertTo-WslPath $linuxArchive
-    $linuxParent = ConvertTo-WslPath (Split-Path -Parent $linuxSource)
-    $linuxName = Split-Path -Leaf $linuxSource
-    & wsl -d Ubuntu-22.04 -- tar -C $linuxParent -czf $linuxArchivePath $linuxName
-    if ($LASTEXITCODE -ne 0) { throw "The $($target.Name) archive build failed." }
-    Write-Host "Created $linuxArchive"
+    $bundle = Join-Path $Directory "foo-$($target.Name).tar.gz"
+    $destination = Translate $bundle
+    $parent = Translate (Split-Path -Parent $source)
+    $name = Split-Path -Leaf $source
+    $operations += @{ command = 'tar'; args = @('-C', $parent, '-czf', $destination, $name) }
   }
+  if ($operations.Count -gt 0) { Invoke-WslJob $operations }
 }
 
-Push-Location $projectRoot
-try {
-  & npm pack --pack-destination $ReleaseDirectory
-  if ($LASTEXITCODE -ne 0) { throw 'The npm release archive build failed.' }
-}
-finally {
-  Pop-Location
+if (-not $Windows) {
+  & npm pack --offline --pack-destination $Directory $staging
+  if ($LASTEXITCODE -ne 0) { throw 'The staged npm release archive build failed.' }
 }
 
-$installers = Get-ChildItem $ReleaseDirectory -File | Where-Object { $_.Name -match '\.exe$|\.deb$' }
+$installers = Get-ChildItem $Directory -File | Where-Object { $_.Name -match '\.exe$|\.deb$' }
 if (-not $installers) { throw 'No installer artifacts were produced.' }
 $installers | ForEach-Object { Write-Host "Created $($_.FullName)" }
 
-$releaseFiles = Get-ChildItem $ReleaseDirectory -File | Where-Object {
+$files = Get-ChildItem $Directory -File | Where-Object {
   $_.Name -ne 'SHA256SUMS.txt.asc' -and (
     $_.Name -match '\.(asc|deb|exe|tgz|vsix|zip)$' -or
     $_.Name -match '\.tar\.gz$' -or $_.Name -eq 'notes.md'
   )
 } | Sort-Object Name
-$checksumLines = $releaseFiles | ForEach-Object {
+$checksums = $files | ForEach-Object {
   $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()
   "$hash  $($_.Name)"
 }
 $utf8WithoutBom = [Text.UTF8Encoding]::new($false)
 [IO.File]::WriteAllText(
-  (Join-Path $ReleaseDirectory 'SHA256SUMS.txt'),
-  (($checksumLines -join "`n") + "`n"),
+  (Join-Path $Directory 'SHA256SUMS.txt'),
+  (($checksums -join "`n") + "`n"),
   $utf8WithoutBom
 )
-Write-Host "Updated $(Join-Path $ReleaseDirectory 'SHA256SUMS.txt')"
+Write-Host "Updated $(Join-Path $Directory 'SHA256SUMS.txt')"
+if ($Sign) {
+  $script = Translate (Join-Path $root 'tools\sign.mjs')
+  $manifest = Translate (Join-Path $Directory 'SHA256SUMS.txt')
+  $secret = Read-Host 'GPG passphrase' -AsSecureString
+  $phrase = [System.Net.NetworkCredential]::new('', $secret).Password
+  if (-not $phrase) { throw 'A GPG passphrase is required for release signing.' }
+  Invoke-WslJob @(
+    @{ command = 'node'; args = @($script, '--manifest', $manifest); env = @{ FOOSIGNER = $env:FOOSIGNER; FOOSIGNPIPE = '1' }; input = "$phrase`n"; tools = @('gpg') },
+    @{ command = 'node'; args = @($script, '--verify', '--manifest', $manifest); env = @{ FOOSIGNER = $env:FOOSIGNER }; tools = @('gpg') }
+  )
+  $phrase = ''
+}

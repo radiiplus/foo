@@ -34,6 +34,20 @@ Prism.languages.shell = {
   punctuation: /[|;&]/,
 };
 
+const config = {
+  string: { pattern: /"(?:\\.|[^"\\])*"/, greedy: true },
+  comment: /(?:#|\/\/|--).*$/m,
+  control: word("capability|import|override"),
+  operator: word("is|enable|disable|using"),
+  boolean: word("true|false|null"),
+  number: /(?<![A-Za-z0-9_.-])-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(?:KiB|MiB|GiB|TiB|KB|MB|GB|TB|min|ms|s|h)?\b/,
+  property: /\b[A-Za-z][A-Za-z0-9_-]*(?=\s+(?:is|enable|disable|using)\b|\s*\{)/,
+  punctuation: /[{}[\],]/,
+};
+
+Prism.languages.ivc = config;
+Prism.languages.cap = config;
+
 type Props = {
   code: string;
   language: string;

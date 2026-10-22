@@ -7,12 +7,12 @@ import ../diag/code
 import ../diag/span
 import ./type as types
 
-proc checkExhaustiveness*(value: types.Type; cases: seq[ast.Case]; location: Span; diagnostics: Engine) =
+proc exhaust*(value: types.Type; cases: seq[ast.Case]; location: Span; diagnostics: Engine) =
   var covered = initTable[string, ast.Case]()
   var wildcard: ast.Case
   for arm in cases:
     let pattern = arm.pattern
-    let key = if pattern.tag == "name": ast.Name(pattern).text elif pattern.tag == "variant-pattern": ast.VariantPattern(pattern).name.text elif pattern.tag == "integer": ast.Integer(pattern).value else: pattern.tag
+    let key = if pattern.tag == "name": ast.Name(pattern).text elif pattern.tag == "variant-pattern": ast.Arm(pattern).name.text elif pattern.tag == "integer": ast.Integer(pattern).value else: pattern.tag
     let previous = if wildcard != nil: wildcard elif key in covered: covered[key] else: nil
     if previous != nil:
       diagnostics.emit(Code.UnreachableCase, arm.span, "An earlier case already covers this value")

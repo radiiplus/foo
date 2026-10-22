@@ -1,0 +1,2 @@
+-- Frozen byte-search provider used as the portable fallback.
+public use "text" function find(content text, value text) giving optional unsigned.

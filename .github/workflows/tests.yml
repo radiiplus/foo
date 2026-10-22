@@ -1,0 +1,69 @@
+name: QBE execution
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node test/support/audit.mjs
+      - run: node test/backend-policy.mjs
+      - run: node test/docs/links.mjs
+
+  windows-qbe:
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 120
+    env:
+      FOO_QBE: '${{ github.workspace }}/.artifacts/toolchain/qbe/qbe-win.exe'
+      FOO_QBE_TCC: '${{ github.workspace }}/.artifacts/toolchain/tcc/vendor-build/source/win32/tcc.exe'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: node tools/vendor/audit.mjs
+      - run: node tools/tcc/build.mjs
+      - run: node tools/qbe/build.mjs
+      - run: node tools/qbe/verify.mjs
+      - run: node tools/native.mjs --mm refc --cache .artifacts/ci-compiler/windows-nimcache --output .artifacts/ci-compiler/foo.exe
+      - name: Native QBE gates
+        env:
+          FOO_COMPILER: '${{ github.workspace }}/.artifacts/ci-compiler/foo.exe'
+          FOO_OFFLINE: '1'
+        run: node test/native/run.mjs --filter=backend/qbe/ --no-batching --jobs=2
+      - name: Cross-target execution gates
+        run: node test/backend/qbe/scripts/qualification.mjs
+      - name: Hosted release gate
+        env:
+          FOO_OFFLINE: '1'
+        run: node tools/qbe/hosted/verify.mjs --compiler .artifacts/ci-compiler/foo.exe --target windows-x64
+      - name: Shared library gate
+        run: node tools/qbe/shared/verify.mjs --compiler .artifacts/ci-compiler/foo.exe --tcc .artifacts/toolchain/tcc/vendor-build/source/win32/tcc.exe
+
+  linux-qbe:
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 120
+    env:
+      FOO_QBE: '${{ github.workspace }}/.artifacts/toolchain/qbe/qbe-linux'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: node tools/vendor/audit.mjs
+      - run: node tools/qbe/linux/build.mjs
+      - run: node tools/native.mjs --cache .artifacts/ci-compiler/linux-nimcache --output .artifacts/compiler/bin/foo
+      - name: WASM and WASI execution gates
+        env:
+          FOO_COMPILER: '${{ github.workspace }}/.artifacts/compiler/bin/foo'
+          FOO_OFFLINE: '1'
+        run: node test/native/run.mjs --filter=backend/qbe/wasm.nim --no-batching --jobs=1
+      - name: Hosted release gate
+        run: node tools/qbe/hosted/verify.mjs --compiler .artifacts/compiler/bin/foo --target linux-x64

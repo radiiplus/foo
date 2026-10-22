@@ -5,7 +5,7 @@
 <h1 align="center">FOO</h1>
 
 <p align="center">
-  A compiled systems language with sentence-like syntax and native C and Zig backends.
+  A compiled systems language with sentence-like syntax and QBE code generation.
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 
 Start with one line that prints a message. As your program grows, FOO lets you
 name values, handle failures, and work with memory and the system while keeping
-the source readable. The compiler builds native programs through C or Zig.
+the source readable. The compiler's active native build route uses QBE.
 
 > [!NOTE]
 > FOO is under active development. Review the [feature status](docs/status.md)
@@ -52,7 +52,7 @@ foo run
 | Area | Current direction |
 | --- | --- |
 | Language | Checked, sentence-like syntax with top-level statements, pattern matching, generics, choices, postfix `try`, and `fallback`. |
-| Native output | C and Zig backends with target-aware builds and reachability-based executable emission. |
+| Native output | QBE code generation with target-aware dev builds; see [current support](docs/qbe.md). |
 | Memory and safety | Explicit ownership, regions, cleanup, sealing, checked arithmetic, and low-level capabilities. |
 | Standard library | Portable `file`, `http`, `json`, task, thread, channel, process, and system services with advanced operations where needed. |
 | Tooling | Project scaffolding, incremental builds, tests, benchmarks, package resolution, live LSP diagnostics, and formatter support. |
@@ -111,14 +111,14 @@ hello/
 |-- test/
 |   `-- main.iv
 |-- .gitignore
-`-- project.json
+`-- project.ivc
 ```
 
 Application source belongs in `src/`; correctness checks and performance
 scenarios have separate discovery roots. Finished applications and libraries
 are written to `output/` by default, while `.artifacts/` remains compiler-owned
 workspace. Both the entry file and product directory can be changed in
-`project.json`.
+`project.ivc`.
 
 ## Language at a glance
 
@@ -157,14 +157,15 @@ standard library in depth.
 | --- | --- |
 | `foo check` | Type-check the project without producing a final application. |
 | `foo run` | Build and run the default entry. |
-| `foo run worker` | Build and run a named entry from `project.json`. |
+| `foo run worker` | Build and run a named entry from `project.ivc`. |
 | `foo build` | Build products without running them. |
 | `foo test [file.iv]` | Run all tests or select one test file. |
 | `foo benchmark [name\|file.iv]` | Measure all benchmarks or a selected scenario. |
 | `foo watch` | Recheck the project as files change. |
 | `foo doctor` | Report the state of the compiler and managed toolchain. |
 
-Use `--backend c` or `--backend zig` where backend selection is supported.
+QBE is the build backend; `--backend qbe` selects it explicitly. See
+[QBE backend support](docs/qbe.md) for current target and feature limits.
 Application arguments follow `--`, for example
 `foo run worker -- input.json --verbose`.
 
@@ -187,20 +188,18 @@ foo install
 ```
 
 After installation, source code imports the package name, such as
-`use shared.`. The package manager records exact resolutions in `foo.lock`.
+`use shared.`. The package manager records exact resolutions in `foo.ivl`.
 See [Packages and Dependencies](docs/packages.md) for local, Git, optional,
 development, and platform-specific dependencies.
 
 ## Multiple programs and direct commands
 
-Projects can map short names to additional entry files in `project.json`:
+Projects can map short names to additional entry files in `project.ivc`:
 
-```json
-{
-  "entry": "src/main.iv",
-  "entries": {
-    "worker": "src/worker.iv"
-  }
+```ivc
+project {
+  entry is "src/main.iv"
+  entries { worker is "src/worker.iv" }
 }
 ```
 
@@ -230,7 +229,7 @@ foo release --sign
 foo sign output/hello.exe --provider authenticode
 ```
 
-Signing identities remain outside `project.json`. GPG, Authenticode, and Apple
+Signing identities remain outside `project.ivc`. GPG, Authenticode, and Apple
 codesign providers read the selected identity or fingerprint from
 `FOOSIGNER`. See [Projects and Entry Points](docs/projects.md#optional-application-releases)
 and the [release guide](docs/releasing.md) before preparing distributable
@@ -254,7 +253,7 @@ also useful.
 | [Package Guide](docs/packages.md) | Registry, URL, Git, and local dependencies. |
 | [CLI Reference](docs/reference.md) | Commands and selection rules. |
 | [Feature Status](docs/status.md) | Implemented, partial, and planned behavior. |
-| [Changelog](CHANGELOG.md) | Latest changes and release history. |
+| [Changelog](CHANGELOG.md) | Current unreleased changes. |
 
 The hosted documentation is available at
 [fooregistry.web.app/docs/overview](https://fooregistry.web.app/docs/overview).

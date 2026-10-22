@@ -1,0 +1,23 @@
+use thread as threads.
+use testing as check.
+
+dynamic count of type integer is 0.
+
+function pulse giving nothing {
+  set count to count plus 1.
+}
+
+start {
+  constant worker is threads.spawn(pulse) try.
+  threads.wait(worker) try.
+  check.expect(count is 1).
+  threads.close(worker) try.
+
+  constant guard is threads.mutex try.
+  constant event is threads.condition try.
+  threads.lock(guard) try.
+  threads.signal(event) try.
+  threads.unlock(guard) try.
+  threads.close(event) try.
+  threads.close(guard) try.
+}

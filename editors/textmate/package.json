@@ -3,7 +3,7 @@
   "displayName": "foo.iv",
   "description": "FOO language support with live diagnostics and Ultraviolet / Acid syntax accents.",
   "icon": "images/icon.png",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "publisher": "radiiplus",
   "repository": {
     "type": "git",
@@ -82,6 +82,26 @@
         "icon": {
           "light": "./icons/light.svg",
           "dark": "./icons/dark.svg"
+        }
+      },
+      {
+        "id": "foo-config",
+        "aliases": ["FOO Configuration", "foo-config"],
+        "extensions": [".ivc", ".cap"],
+        "configuration": "./config-language.json",
+        "icon": {
+          "light": "./icons/config-light.svg",
+          "dark": "./icons/config-dark.svg"
+        }
+      },
+      {
+        "id": "foo-lock",
+        "aliases": ["FOO Lockfile", "foo-lock"],
+        "extensions": [".ivl"],
+        "configuration": "./lock-language.json",
+        "icon": {
+          "light": "./icons/lock-light.svg",
+          "dark": "./icons/lock-dark.svg"
         }
       }
     ],
@@ -320,6 +340,61 @@
             "settings": {
               "foreground": "#FF3864"
             }
+          },
+          {
+            "name": "Configuration directives",
+            "scope": ["source.foo.config keyword.control.foo.config"],
+            "settings": {"foreground": "#F15BB5"}
+          },
+          {
+            "name": "Configuration operators",
+            "scope": ["source.foo.config keyword.operator.foo.config"],
+            "settings": {"foreground": "#FF79C6"}
+          },
+          {
+            "name": "Configuration fields",
+            "scope": ["source.foo.config variable.other.property.foo.config"],
+            "settings": {"foreground": "#8BD3FF"}
+          },
+          {
+            "name": "Configuration strings",
+            "scope": ["source.foo.config string.quoted.double.foo.config"],
+            "settings": {"foreground": "#00E5FF"}
+          },
+          {
+            "name": "Configuration numbers",
+            "scope": ["source.foo.config constant.numeric.foo.config"],
+            "settings": {"foreground": "#B6FF00"}
+          },
+          {
+            "name": "Configuration values",
+            "scope": ["source.foo.config constant.language.foo.config"],
+            "settings": {"foreground": "#D66BFF"}
+          },
+          {
+            "name": "Configuration comments",
+            "scope": ["source.foo.config comment.line.foo.config"],
+            "settings": {"foreground": "#8A9099"}
+          },
+          {
+            "name": "Lockfile keys",
+            "scope": ["source.foo.ivl variable.other.property.foo.ivl"],
+            "settings": {"foreground": "#8BD3FF"}
+          },
+          {
+            "name": "Lockfile strings",
+            "scope": ["source.foo.ivl string.quoted.double.foo.ivl"],
+            "settings": {"foreground": "#00E5FF"}
+          },
+          {
+            "name": "Lockfile numbers",
+            "scope": ["source.foo.ivl constant.numeric.foo.ivl"],
+            "settings": {"foreground": "#B6FF00"}
+          },
+          {
+            "name": "Lockfile values",
+            "scope": ["source.foo.ivl constant.language.foo.ivl"],
+            "settings": {"foreground": "#D66BFF"}
           }
         ]
       },
@@ -346,6 +421,16 @@
         "language": "foo",
         "scopeName": "source.foo",
         "path": "./grammars/foo.json"
+      },
+      {
+        "language": "foo-config",
+        "scopeName": "source.foo.config",
+        "path": "./grammars/config.json"
+      },
+      {
+        "language": "foo-lock",
+        "scopeName": "source.foo.ivl",
+        "path": "./grammars/lock.json"
       }
     ],
     "snippets": [
@@ -356,7 +441,7 @@
     ]
   },
   "scripts": {
-    "test": "node ../../test/editor/run.mjs && node ../../test/editor/snapshots.mjs && node ../../test/editor/theme.mjs",
+    "test": "node ../../test/editor/run.mjs && node ../../test/editor/config.mjs && node ../../test/editor/snapshots.mjs && node ../../test/editor/theme.mjs",
     "test:editor": "node ../../test/editor/editor.mjs",
     "snapshots": "node ../../test/editor/snapshots.mjs --update"
   }

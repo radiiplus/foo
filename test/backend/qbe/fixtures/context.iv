@@ -1,0 +1,14 @@
+use thread as tasks.
+use testing as check.
+
+dynamic count is 0.
+
+function pulse giving nothing {
+  set count to count plus 1.
+}
+
+start {
+  constant task is tasks.spawn(pulse) try.
+  tasks.wait(task) try.
+  check.expect(count is 1).
+}

@@ -8,7 +8,7 @@ proc name(value: string): ast.Name = ast.Name(tag: "name", span: position, text:
 let native = ast.Native(tag: "native", span: position, substrate: "c", code: "int hidden;")
 let exposed = ast.Function(tag: "function", span: position, public: true,
   name: name("exposed"), body: ast.Block(tag: "block", span: position,
-    stmts: @[ast.Statement(ast.EvalBlock(tag: "eval", span: position,
+    stmts: @[ast.Statement(ast.Evaluation(tag: "eval", span: position,
       body: ast.Block(tag: "block", span: position, stmts: @[ast.Statement(native)])))]))
 let machine = ast.Machine(tag: "machine", span: position, operation: "atomic",
   target: name("value"), value: ast.Integer(tag: "integer", span: position, value: "1"))
@@ -18,16 +18,16 @@ let program = ast.Program(tag: "program", span: position, units: @[
       ast.Statement(exposed), ast.Statement(machine)
     ]))
 ])
-let diagnostics = newEngine()
+let diagnostics = engine()
 lint(program, diagnostics)
 doAssert diagnostics.failed
 doAssert diagnostics.messages[0].code == Code.NativePublic
 
-let capabilityDiagnostics = newEngine()
-capabilities(program, capabilityDiagnostics)
-doAssert capabilityDiagnostics.messages.len == 1
-doAssert capabilityDiagnostics.messages[0].text.contains("machine")
-let allowed = newEngine()
+let issues = engine()
+capabilities(program, issues)
+doAssert issues.messages.len == 1
+doAssert issues.messages[0].text.contains("machine")
+let allowed = engine()
 capabilities(program, allowed, "machine")
 doAssert not allowed.failed
 

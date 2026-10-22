@@ -1,5 +1,0 @@
-{
-  "name": "llvm-slice",
-  "requires": "system",
-  "build": { "backend": "llvm", "target": ["windows-x64"] }
-}

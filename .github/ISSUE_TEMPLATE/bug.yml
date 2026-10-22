@@ -37,14 +37,14 @@ body:
     id: target
     attributes:
       label: Target and command
-      placeholder: "foo run --backend zig --target linux-x64"
+      placeholder: "foo run --backend qbe --target linux-x64"
     validations:
       required: true
   - type: textarea
     id: source
     attributes:
       label: Minimal source and project configuration
-      description: Include the smallest `.iv` source and relevant `project.json` fields.
+      description: Include the smallest `.iv` source and relevant `project.ivc` fields.
       render: text
     validations:
       required: true

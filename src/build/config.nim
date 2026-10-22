@@ -1,10 +1,10 @@
 import std/[json, tables]
 
 type
-  NativeSelection* = object
+  Bindings* = object
     substrate*: string
     clobbers*: seq[string]
-  ProductConfig* = object
+  Product* = object
     entry*: string
     kind*: string
     needs*: seq[string]
@@ -13,11 +13,12 @@ type
     script*: string
     exports*: string
     rpath*: seq[string]
-  CConfig* = object
+  Sources* = object
     sources*: seq[JsonNode]
     `include`*: seq[string]
+    sysroot*: string
     flags*: seq[string]
-  LinkConfig* = object
+  Link* = object
     libs*: seq[string]
     frameworks*: seq[string]
     cpp*: bool
@@ -26,12 +27,12 @@ type
     exports*: string
     script*: string
     rpath*: seq[string]
-  BuildConfig* = object
-    native*: NativeSelection
+  Build* = object
+    native*: Bindings
     substrate*: string
     backend*: string
     compiler*: string
-    products*: Table[string, ProductConfig]
+    products*: Table[string, Product]
     tasks*: JsonNode
     hooks*: JsonNode
     resources*: seq[string]
@@ -45,13 +46,14 @@ type
     cpu*: string
     sanitize*: string
     docs*: bool
+    debug*: bool
     output*: string
     icon*: string
-    c*: CConfig
-    link*: LinkConfig
-  PublishConfig* = object
+    c*: Sources
+    link*: Link
+  Publication* = object
     files*: seq[string]
-  RegistryConfig* = object
+  Registry* = object
     url*: string
     mirrors*: seq[string]
     keys*: Table[string, Table[string, string]]
@@ -75,19 +77,19 @@ type
     source*: string
     entry*: string
     entries*: Table[string, string]
-    build*: BuildConfig
+    build*: Build
     dependencies*: Table[string, string]
-    registry*: RegistryConfig
-    publish*: PublishConfig
+    registry*: Registry
+    publish*: Publication
     deployment*: Deployment
 
-proc defaultManifest*(): Manifest =
+proc manifest*(): Manifest =
   result.name = "app"
   result.version = "0.1.0"
   result.language = "1"
   result.entries = initTable[string, string]()
 
-proc hasBuild*(manifest: Manifest): bool =
+proc configured*(manifest: Manifest): bool =
   manifest.build.backend.len > 0 or manifest.build.compiler.len > 0 or
     manifest.build.output.len > 0 or manifest.build.icon.len > 0 or
     manifest.build.products.len > 0 or manifest.build.resources.len > 0 or

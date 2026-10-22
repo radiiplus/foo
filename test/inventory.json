@@ -1,0 +1,6070 @@
+{
+  "format": "foo.test-inventory",
+  "version": 1,
+  "hashEncoding": "utf8-lf",
+  "defaultPromotion": {
+    "backend": "qbe",
+    "status": "pending-full-coverage",
+    "gate": ".github/workflows/tests.yml"
+  },
+  "testBackendPolicy": {
+    "active": [
+      "qbe"
+    ],
+    "change": "QBE/WASM execution qualification"
+  },
+  "entries": [
+    {
+      "path": "test/ast/doc.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "f8dac8b6575ae23a17426753d17268955634354d244fe10d79c4c1e17d76109d",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ast/formatter.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "684430de6b3aa1cc11bc3731662e7caa5e5f439766957be0e0cc2a9a2c064e1d",
+      "assertionsInSource": 19,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ast/print.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "2cba0be284cc8d43caa3d233285646f305e41e77cd1caa485f86173c483a14f2",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/arch.json",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d9e4185ec4fe0057c2d3f54dfdfbc4c07cbc6e501a06342c64874a399e960676",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/escape.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "ec7357d76af6560537999f21c57d797621624a2e92c7a63db2bf0ef571eb9055",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/icon.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "0a497fb7803114cae1473160585eba34b42e3787534478c7eabf031ce10a1525",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/abi/windows.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "ce9a54f36fa94b3cc859aeb902defa57266df3a4fc5ac20b5da02cc26f7940b2",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/abi/windows.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "54f6629163a659640a462b8f7e511ba902c1ccab7863e5957808aa9aa84c8c5b",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/abi.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "2a2a58e0b47b7ed4abb08e8757990feb695c2f9976249dd07f6c80295ff47b86",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/arm64/irqdelivery.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "e8ab95c15f35c3c3096a8fb9443b2de3a3065928dee6405b9dcb7704e21b7324",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/arm64/levels.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "26cdb24fd0bdc7267cbeebc0aff29ba7cdd7fa23bb3318427ed4e3388950f8d4",
+      "assertionsInSource": 6,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/atomic/foreign.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "fefd30cb106822aac6170f1bcaea5f9ba85a587d923958ed7150f91dda02d389",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/atomic/interop.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d8faeec158a083407a56c082fdf55047bf045576b04926d391b1b4a97c221d88",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/atomic/interop.mjs",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "e5d096f85ee11366be735eec06cb7ef6566c1f19de23eda7bc688b3388e487df",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/atomic/stress.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "35511a0f9940b386b9a376c1a38ab4626d7375599c42988f097bf107a9a28fa2",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/abi.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "69a1e9dc2aa61606149f4f159929ccae30a2ae71edb74a606692e891842d0433",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/integers.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "cd8345bf6de548596e79a0d57711af2b89fee9dfa92d89a3b5bc0d4b92bd6c9d",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/ownership.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "79a81456acfae6e99f96685e84e8f905eaec76b1f62295f50f0fcc102b62de45",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/probe.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "666fc54fb08a49a382b133c52c243c2295625d404258cc58d999d3cf40e94213",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/storage.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "3bc538e5d60db3360b0e2bbfe9488494e0ddca9521daa610e9e2b7933975201b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/syscall.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "680bf3e8ca27c5da5b7acd6dea4c3208df1fdd6c4fbf3cfcf6c315652c7413bb",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/tcc-inline-memcpy.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "651439c1c71c69ada8445a4025504eb626d3c650cca3855d614a395505b84482",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/tcc-linux-runtime.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "66463359851b7940d9a1e6f18a180ecbb7eeeb8a1bc21caf8c38a0b0a7ee2c34",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/tcc-runtime.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "8fb488e94b5f5138953252f7aa00a51e089a12f8577d4b687510cd0b0495bb22",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/c/tcc-sse.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "9630a757e9a621d99693d3f2015879a8dbeb0c3e724b616abd47607ceab3f436",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/driver/abi.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "73dc2e30072429ca1aedd1b89801f67fda319f08ddb6781ad9b6853a0fb91a44",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/driver/aggregate.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "acbecbd7761a2d65ce6b898cd8907eeeb86fa94d78d136e1829d089f15c977d8",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/driver/aggregate.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "93edbf8e499fc0d8f7db8376b36730db4a5cd874c9254c7fdc9d00fa7c270bfc",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/driver.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "04cffd60fdb72d4e065eb797522053c92e145e07d5209e7c4445fa046fc39f2e",
+      "assertionsInSource": 26,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/embed.txt",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "969c43a91cdf09226bd0a01b8f35c0dae9b0c790457b16270327aded96cbd87f",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/emitter.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "364a0350ec73a50ee1ce88ba0c076ad83c2cf86d9dba4fff73c4f4035bf7e04b",
+      "assertionsInSource": 74,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/allocate.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "079357e121cf1abd447648940c8ff2d637f5c49797b56c8039776d77d6d6830e",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/arena.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "7d5957a32e96c7aa040718027ae87436067a319d3bad6b4a4980411cb9e00dea",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/arm.ld",
+      "category": "cross-target",
+      "tags": [
+        "cross-target"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0f4f66207885f15b04eddf722b87432e2f52243435af850b440dd0ec38543a45",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/arm64-toolchain.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "14a5d55d8fd2b13e535dbdba1a72e6b3339af3c56c09b70b0b4a3c2ac59c09a1",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/assert.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "44e6083e35a1c8164420592c939c34d81b2f57a0c5db147a4861cf51bf9ddaba",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/backend/qbe/fixtures/atomic.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e1ee8caaa83a9764be7bf683a977f903f49d98bd70863cd79959435418c03e27",
+      "assertionsInSource": 16,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/bounds.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "bf6f41ccba1c413685793b4b45df60ebf53d6f16640318e7f522f702cb4fdb36",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/narrow/overflow/i31.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "9d9a8c1b597afd47030d05dd432625404583fd46da1fc67052718c2f96cd9d1f",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/narrow/overflow/i4.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6715c40c707b1b1648a326033238c7a4927b4ecedcff40b38e092d7561d216f8",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/narrow/overflow/i63.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e541d3a74034c76b5373af05188198219b8b626e5af6bb6f72fc962f22579f3a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/narrow/overflow/u2.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "20f61e80bbb425cecab2f7269f76e64ce260ab2536d5cb59301ad6cc1ae67bf6",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/narrow/overflow/u31.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "931a43fb72ce51f770248f2540f7fd0bc0e38edc32affa3856b9c11f035e6533",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/narrow/overflow/u33.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1bcd16fe7d72655aa7b43f28339f1cc2346bc39b40d6680415b316a253e97cf1",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/narrow/overflow/u63.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "602c6db3dbcf047b19e462df5d5cd80c2fe88cf47f4b0547fa40a572dad52dc5",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/narrow/zero.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4237342053ae5a4b46dfdc58c59d0d75dc176e2027d920ceff5b5863720270c1",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/narrow.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "309d84aad798196520b8c4ff92d87b7529263f2eb85638325598694a3dc73c15",
+      "assertionsInSource": 58,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/checked/overflow.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4c2f910c7f6b981874ff5c17e218956eb133207451f71b5cebc16890f7224428",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/cleanup.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c241195fe3eb32f59f4450b991ae97bd36b9b33369da7cbe73e688e48094578f",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/codec/choice.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c7aedba97996fb307ccf77ae5683f6bfd0ea67e70283a4feedf40a5e4fb1bf4f",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/codec/optionals.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6ea9a4101c39deed926d7a656d3fabffc5c046f56f56fcf0732607acb00d4f7f",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/codec/wide.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "68df8295b991b8520024b8701d8f27355f30c90ac212be80081e0c97faddba5a",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/codecs.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1613342fed9bd208e890a05cac8baf088c8dd6e4254b4d4d05b9272e9972b595",
+      "assertionsInSource": 2,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/context.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "28c10de39ee07f8256cd8a8b619ce07182335af33f89fa25ee235d7aebba8e61",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/encoding.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "069246fcb90953f3fd5ad4c83373814f69c71d9abb69c64b42690d5e7e0d76f5",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/entry.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d37431ecbbb97df55920a97fa00a11ce4a1875316b6062d62ce0b9e0f78dd4d1",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/exits.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0af0dca7c4a25c2f170df9231e2b0dfc76a2cbbc0bf12bceb25dada1b9bd7491",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/file/errors.iv",
+      "category": "language semantics",
+      "tags": [
+        "failure injection/crash behavior",
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "cf7ead50f05ab95443b224f53977589ace051edea0e5047f0bb4bba07072d72f",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/file.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b7a74c318c104d14564ae5a722d325202daeba9131e456698010d17c442090bb",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/handling.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "64972732722f79a85b196b73a13c5b1d23f311765db1e13abff0566d0a16e17a",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/host.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c34217ca9efcf64a841f925e57111db769a29b9b4dcf54d2bc09f15cb363b1c2",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/json.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e243fa55336bd703a62011643891c8c2e1a5705c46ebd1ebfa5702aa3a9f02e1",
+      "assertionsInSource": 13,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/malformed.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "5575140b2f26979ba1e59f9a8e9f7789bbf3d192d31f151ffa93b637a740dbf9",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/managed.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "ba296aa960ada9ec2c229d20d1d6b4e7c61d474d3b8fed743cb4a8c377c71f47",
+      "assertionsInSource": 2,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/net.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "cf1a4c9f2fee55a56f33630101655128e2a95e59a550f60d55aa680b3b5d0a66",
+      "assertionsInSource": 8,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/output/app.exe.qbe.json",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0b91474806b6487a99a811dccf531a0e828dc2fb1779850372baeded028243ef",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/packedjson.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b58650dd0d7f700367e05174c867f4814b704cb898e518fb232cde105d637cec",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/placement/local.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1e9a404a508901a78fea2a661b3ee81fdb2f3a018d0c48e54184eba7f4f6af89",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/placement.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "5ba90560458c1bb17af2eac8b5a1aec68f14b082ad34c82994a0b7c9dc7d25a7",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/pointers.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0a8266e0e5e72c0eb0912f4e4f2905060a9ed919e34b3ce99c852c5c9bd2e032",
+      "assertionsInSource": 2,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/process.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "117241dcec2a3e0c7932e48b353096a4bee8e3b61bccdb0de96c12aade87f806",
+      "assertionsInSource": 16,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/freestanding/arm64/board.ld",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e94656c56853c14a3ae1ae9d6c0cda8bf694e9d67888dd77074559f398f9f4ae",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/freestanding/arm64/project.ivc",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "848d77886cc7f77da083688328a290fbcb8e99f268e5f6a8a8eab72c5479011a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/freestanding/arm64/src/main.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "def26269f103e3a7b335c07bf26c7c3a5b40b4eca280bc3f46ea3e86642be567",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/freestanding/riscv64/board.ld",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6f64ffc57bfe173b9e3e1cc0c599956a33a329a5cc2cc8b9a0c2798e58c956fd",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/freestanding/riscv64/project.ivc",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c950205ab69176ed9035280f2628284caaccbb45de9ec90ed2869579de9092a6",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/freestanding/riscv64/src/main.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4068dd9cbdb48e1ee518218d8ca0ad1a33c8eec76ccbb958bded57a0a211b72e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/freestanding/x64/project.ivc",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e9c57b5f06ed7a1ea2badceb9b5cb660b9c0c86244ca3496e7f42a0de4a12999",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/freestanding/x64/src/main.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "593a2a5a1121b1cc46e540f7c960b5104bd82b3dd9939765f953145095ab199e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/native/project.ivc",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "017bc85c1785859673238eafc1ac91fe7088e5eaa361df1bb6ea601204122cae",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/native/src/foreign.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "07d7e79b79df53106f73203be370c034652c53d9254752b7c21c93089ffdac9f",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/native/src/main.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "f81f63387377814e782e0f03b23490f3dc40c698c187f0360d9d25cf285101e8",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/shader/project.ivc",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b2de8ee2c7d5d08a747cedf949b62a4cb555ee73aa137eeda1c41ebbcbfa9467",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/shader/src/main.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "10e6a22bdc3849a77cc3a72286781264ad683f1069927bce9fcd66c5c2b2a062",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/shared/project.ivc",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "f3b6a29673c6690fbf1024d4410c60fec1a46990e4912ab1b8ceca83bfe5e91a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/shared/src/library.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "9ab3c4228182a300f400961df688fcf7484dee81599582a767a09b3a5a129256",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/wasi/check.mjs",
+      "category": "cross-target",
+      "tags": [
+        "cross-target"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "545c308dce15ca088df8f5fb4db24077fcf819fdd379d71520bc5a564b762d6a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/wasi/project.ivc",
+      "category": "cross-target",
+      "tags": [
+        "cross-target"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "93374de836f2bc76802d6d39cd83a5d7d56b22f65c942886aba8f5fdbaef4a74",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/project/wasi/src/main.iv",
+      "category": "cross-target",
+      "tags": [
+        "cross-target"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "03193a751d8403bc812b44519dd8def608faca4a2fb55e966ce9dbc8628bd726",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/reference.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "5fc6872bb7f33c11d2ef84cea1118953dc6494370a1bf9e2bb8413871c6ad498",
+      "assertionsInSource": 2,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/riscv.ld",
+      "category": "cross-target",
+      "tags": [
+        "cross-target"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6f64ffc57bfe173b9e3e1cc0c599956a33a329a5cc2cc8b9a0c2798e58c956fd",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/sequences.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "cad5d0fe7f88880d291b750360cbb8d6150e0821d5807ff88b1a16723558333c",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/serialization.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "685f78c2fed5ed6c176ac59fd2a3dfc494278c1a209925fd87b2913c292c6c1e",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/storage.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b7730d584a66ec0336be622bc5fc5964794defd1b3a2268510adaa018e023285",
+      "assertionsInSource": 8,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/taskcancel.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4d64f5eeb0449d6d105d327c0a5ca6fe22689f7ffad0e5369adecb45dea16ab9",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/tasks.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4c1ec5f8c23837ee1d77656f33cda56d6f55f1c74a43a0297edcbe8c011bbd43",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/threads.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "02ba89f302e067e5ab762ce5ab56cc46149df9ddb9abd18168e40467b85db047",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/threads.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "9d615257a345733bbd5a6da9bf145ef5056cf68754613a57a5042ff2f0c5c8cb",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/typed.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "5d2105b4cec7527ff76c48fd4f9cc1ca9530a9b2bfce7bd816619e4f283aa0ae",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/x64/irq/bootstrap.ld",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "95ac3057a02569745bbb74d66208981dbc4f99dfbd3e73d73d74ef9978b12edb",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/fixtures/x64/irq/link.ld",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "cf3be4338d89524f6742a262bfa343b619147cac4ba45db46a44eedf0721cfff",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/freestanding/integers.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "2ed8325881cba49cfedb307b0c150ae7ae430022a1fbd9c397eae70264a0d22e",
+      "assertionsInSource": 2,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/freestanding/memory.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "b181cf6021be3835343b7607cd5e09e541afabbd1382a11bba845f3b6a413f75",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/freestanding/project.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "1fdc2ef5d4d2cd5da360ddb8e590f721a2c70b236bb4061540849dcf70b01461",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/freestanding/rejections.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "1f1c6e73002c71689e938dd2d98c7cdf35d05099e2b3f7af7d20d035b15eacba",
+      "assertionsInSource": 6,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/freestanding/release.nim",
+      "category": "release/signing",
+      "tags": [
+        "release/signing"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "8a68cecde2c9516ef565f4e9c9710f3eb1b9248d7fe092c68b13c65b13427dea",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/integer/fuzz.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "075d4a622b76cb846a2612eb63643f730b8923dbdc9d7e0dc34d9068d0a35baf",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/integer/runtime.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "86cf3c998f26b7b4fafadbbd21d963b234553c8135839e5b02bd8cee9001b0a5",
+      "assertionsInSource": 26,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/integers.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "b9ba48be53219d41e24ea69f231a353b82773bcf06c513d6fc98e82f06ef9dca",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/irqdelivery.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "4fd28ea069552156cf8b64d0d807d45bbf2cb7c6b878b23d6c2770152725b870",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/layout.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "c11cd16e95a6d6f80fd9d3c10a37f91dd74dc346fd64028ef80ee0f1358e2697",
+      "assertionsInSource": 12,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/native/functions.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "aecff6e9454d25cba7b48b9b5b9e38b1db855d2aa6e46d35f2096ebc5ea655cb",
+      "assertionsInSource": 20,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/native/inputs.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "ca09b63fae3c789a2e325d40a9c5b02044ecf5b4b2c940f7286211a902269c42",
+      "assertionsInSource": 17,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/placement/source.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "083b1ec1fc3aec9f798f146145503596794df99c7e225d911ee2fa9734e50d8e",
+      "assertionsInSource": 6,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/project/library.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "0eccdecacdd7e1205c41519411d4f023377193488ced31fd32c9e6182954d4e3",
+      "assertionsInSource": 6,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/riscv/board.mjs",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "8652bdbd2dd93851055b3a0319af5e23b25fdf9c8087a2f78b58fda0ee77ccd5",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/riscv/tcc-board.mjs",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "1847eb90cc548a873e54b84b0e639df79e3de680d671a6969eb64107c77b30f4",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/scripts/arm64-toolchain.mjs",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "69af3123cd1ef6b43ed00ac3571dec66d62b706b387fd6ad76a5ab2c0a6d1a48",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/scripts/qualification.mjs",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "cd9f1a8c466592a8bef51496686a2e05254047a6edf2d49b7e101e33a2a0c893",
+      "assertionsInSource": 17,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/scripts/uefi-boot.mjs",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "bfc450f71ac0410b4e583d7197cff3d9682bb7c4539b4c361448d33c203bc40e",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/scripts/wasi-thread-exe.mjs",
+      "category": "cross-target",
+      "tags": [
+        "cross-target"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "22bfd31c311cb43a3a19e5c30c24e3fb3f9f8d19f2532033dd0b351ad851b5f1",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/scripts/wasi-threads.mjs",
+      "category": "cross-target",
+      "tags": [
+        "cross-target"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "db513c0657676d3601ea1872a963effe40c5a18c1196c8d817b9c53b94eba952",
+      "assertionsInSource": 2,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/scripts/wasm-run.mjs",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "add3d4c60d2d935755a4c3ba6d5934010d44035654f10f1872243dae296017f8",
+      "assertionsInSource": 27,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/shader.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "15b1e8052cbb88a127b71a4ffe2aac89ea0640da91a6eff7ad772d3290b9decf",
+      "assertionsInSource": 11,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/shared/probe.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6aeace7fb3948c762c83021734d03ccab6698dbe98f756abe0d570cb53e3e296",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/shared/runtime.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6a6d0fb193b2425004ff2560de714e0b283956009aad185d9fbeef99de7a1c47",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/storage.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "9b388ec4fbc474a2bdc9ffc5876845d6cf0dacbdf27b697cc1e1143d279526a9",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/TARGETS.md",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "fd2997163d7c3ad515a14546b059676462c55fbcc5e4aa75464d8e164ff5101f",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/uefi/probe.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "158bf3c33834095b867c1d0fcf6c2137ae5f2c3b4a33b45da682830855b954af",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/uefi.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "1e5113cd5e9301976247ff4f5a2db7b31955063415a0c183eaa0875dc03b5660",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/vectorcall/clang.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "f01126d4454852a534d752320e8a5f768188b44bca9ead2234a6d1b7f4b9d148",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/vectorcall/self.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "abb426258d5c6ed90c1679dc449d2b1db024f6b35c8e5961cd2f4bc87dbb38a7",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/vectorcall/tcc.c",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "636ed2bbbffee7506ab268e45a19f11c142a6eff70b52124c1127237c721871a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/wasi/release.nim",
+      "category": "cross-target",
+      "tags": [
+        "cross-target"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "ab4b295a1e44113fc85ea12b49eb1dc05b356cdb97cbd9b8a52e91f41d30a06f",
+      "assertionsInSource": 6,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/wasm.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "56eb4ffc28ea8b1697a5831653af0ac0bebc17998e73089a8589d8264ed3f053",
+      "assertionsInSource": 26,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/qbe/x64/irqdelivery.nim",
+      "category": "QBE IR",
+      "tags": [
+        "QBE IR"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "a20f76a013b35e0ca4921e907db45da8b98854bfba4ad0658b524c23e1d0f192",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend/service.nim",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "e48822606e9fa908a93e13226f062bd7ca8195e41491d0af0781fb35e1dbc3fc",
+      "assertionsInSource": 13,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/backend-policy.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "eb1c1cecc4e7100736489dfafe803e9427fb930f81132c4228f147e0de129cb7",
+      "assertionsInSource": 2,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/dependencies.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "1e537e744226152f43438f49e2ce04df5b7fc82e59f3f45ce8d2e9f3381331be",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/execute.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "bb61c6e26acd3f1cb38c4bb34c8d817c59ce26b439dc9316ce8ec928a7375500",
+      "assertionsInSource": 13,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/files.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "0aaf3e35610e1a590fd57b0c1b87f7753039e6962ec072756c92d99e5d37dec7",
+      "assertionsInSource": 13,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/planner.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "d800389660dbc14cb43565fab65aff49542c3a35a0e7477d2916e8876465b214",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/portable.iv",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1b8cfd9508bc4f87458977f06adcf31b9ea5b7abcfb89e84ca3789ac786eafa8",
+      "assertionsInSource": 38,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/project.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "da9d5039a8ae360e56df277270a4bed60edae8870b607ac3928c161ea526626f",
+      "assertionsInSource": 31,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/qbe-cache.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "a5e6f30ab89d2230ddf52d31dc48ecaea8eab3c3fc1c67a3b6eac1cff17a111b",
+      "assertionsInSource": 20,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/qbe-worker.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "7ee797a8c74708b14978a95a464fbc1d4270abab34d6b845c8702c5a30567675",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/query.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "6f6ac8a726fe36eb950a9f3d2a199095d620ca1afecac204f65d37748f5c055a",
+      "assertionsInSource": 33,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/targets.nim",
+      "category": "cross-target",
+      "tags": [
+        "cross-target"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "b8976e670d3629cce0dde80d3e15094b0debd248844c0653c17d3b88bf964430",
+      "assertionsInSource": 8,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/tasks.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "b56ea0bfb24ece9199af1cd7d3a6800b81d891a6be755294de169b3307fe6780",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/toolchain.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "9366cb0f9e26000c8db6dc69d4995a0488d8cfa7c2a4cd2570751a52ee26adea",
+      "assertionsInSource": 20,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/build/upgrade.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "d3dc938eba9574037354cf7b173d640cc7e96700179b5ff249dafdcb9d79397d",
+      "assertionsInSource": 13,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/cli/benchmark.nim",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "33d094d8aabc962d03869dffa7bd6fd68297e9996ae602c9c03cd71e4d38c705",
+      "assertionsInSource": 32,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/cli/display.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "f1fd3345e92ede0645df04b3beca4e5e6a1bce714ed470e9f8a63db586219f4a",
+      "assertionsInSource": 30,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/cli/link.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "98256d17ea6328801ac02619d663f06e7cef6a7f42bbe38d5c034a6b4ce63cfd",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/cli/main.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "5a40530d8cd63aaeeeb735fb28b6cb091cd21431c59a4fb2025f963e383fe7dc",
+      "assertionsInSource": 14,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/cli/project.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "21505d72886e316159904a9e97310e8b81b75f37d938ece57fcbe1c737017611",
+      "assertionsInSource": 42,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/cli/registry.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "ff4ab41438675dc364332238c8a982a135519396b513b70453a4a1a123b9d855",
+      "assertionsInSource": 15,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/composition/project.ivc",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b0c787f8fcc64c34d9bb792310a3ed55832da18f766c88dba926362999f94e90",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/composition/src/main.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6e3558d139125f722d7049fe37494c34952ae4348168933fe33f7049f6355375",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/composition/src/values.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "81993dcef6e04d585a97e46fc9c0e3e1e1122e25a100dfc04bdc3abe005122f5",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/composition/test/contract.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "24faa76b7c82666905e26f178c1a4d4854891cfc02f4b834304ec8fceb3d8337",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/config/capability.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "928c326c44e7cec590dde475f5642a7ffa0703e5fa07a37290efb77ae30b6de1",
+      "assertionsInSource": 24,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/config/document.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "bb23454abdec99e2f86ee073495c252797c559311c619116a249c5a1a2f5084b",
+      "assertionsInSource": 15,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/config/image.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "9083634eaea8e3bc76419ddb54ea62d594de432610464b857c4f0bdac4a71100",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/config/source.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "15c8c92017e20c4fa68fa0563c43a86452a473fa1647c78315152449be33062d",
+      "assertionsInSource": 23,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/diag/engine.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "dec582df0f9333c2bd331cab24d168618a52a009cd801c60b5821b54040732a1",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/diag/render.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "f69708364016e4a27f15dea97d0dfa0d4441133c674c4360a856bf7aa11c88a8",
+      "assertionsInSource": 14,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/docs/links.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "d7ec700179b7fa30828f7bd5aca81d7086e34de91300a3ba43c8fd23187d4e07",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/docs/run.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "437a45b0abbf7f98ce621e7026ca2fbb02132882e77f57353cc53b3ca5c02978",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/docs/snippets.nim",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "d2b4b7dd76691c14a028c941e47b8c3b243bc64dadef77b42b723c7095f3a3de",
+      "assertionsInSource": 2,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/docs/status.nim",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "5aaad37f16746be8ee1a819a166ba48ed47ee10916a653c05af01088993a2733",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/concurrency.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e4d1222f64525766218c4fcef21dd4611a51a92740cfabeae4e858e81dda2e5b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/concurrency.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "8f94c1d93a88bceb90173249ec83206b3d136d7d4c328d7688dac2cf00962685",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/control.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1793c7eda6b957f0da9691baba820590dfac01a2e40a5eb02130de8193d51cf4",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/control.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "be37290520294a1281babac0e8d1af36133222b1d2fe43a96b33e1f5749edb71",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/declarations.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "45fcfe1da353ee8a83cab16679f7291a6948c3523b00f47504134f6738d0fb99",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/declarations.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0731edc81b38e8fa40f5c59c0a4a26a2ca65564a547863a80077d992d71c34ea",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/errors.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "70d2c169268bfcac3e03a23813d41218ef42a3ea0d7d9eb9d42d439e07a93698",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/errors.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "50a801581d0d39ca292c0054110cce121b9c4b902545776563dde39b06d2ad5c",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/interop.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c34f52d08649070e91844c20f7547e8500baab9b33922288eff3171c43e411f2",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/interop.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "99eecca187b609ca86a9aa6699e26c9569012f11c693b45ddac884e1a44e2f7d",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/library.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a0f1af8a099c0c7be0846484b02f15588fdd2f02577e81e109837527ed877710",
+      "assertionsInSource": 109,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/library.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "240451410977ef0f40ebcaaa99fa4775c272c9058a6944190e8c365e7be3c508",
+      "assertionsInSource": 109,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/platforms.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "fad809a7d4ceafee69b644d247b6958dc78b4e88fcd33e905410ce0b1e54b383",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/platforms.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "46661e83a0d345609d56c06b781357360bd08f66ee47e42d6d45954e85e7c9b0",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/pointers.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "9506f2dafb4994f01a357fc6317e3891fc330ac2309991b3945b2be95e5b4971",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/pointers.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "16e04b37d013a94c76ffb5ed16dae1f32f7aa176f4cc56791bda1672a754730a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/sources.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "2e65f8093d4c428cb54d0e86748035cbd018983ccc39b91cf1da26e71fbd93fb",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/types.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "bfd0efb5893189442baf6934d672dee41802cc32c915709a7bea8afc73be0b08",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/cases/types.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "49922373c413835cd4cebc31651ade35e8a7ec27db3b2df587d5cd526b85ac0c",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/collect.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "dccf3b9c3d9447f85dc4ea477f467b861e6249ef45e6bc2128b39faedc1cee30",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/config.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "2ec1fa4392fafac54139489f17d71949ee995fd837223027bc8e582615f42893",
+      "assertionsInSource": 20,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/editor.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "28a13b03b29800c7579feee866aa86f6b6f40e209064f2da6aba81708c905628",
+      "assertionsInSource": 12,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/fixtures/forms.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "92dfc8f817668a762d774daf79ba7a08899723ca5a40182feaa20730819740a7",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/editor/fixtures/forms.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "f208c70a05084bada3c690c8538a3b430009057b70281cf34bb02b6cec23f144",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/fixtures/keywords.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "739ebda490755771f9b318914186496a4dc8bde5757e5233eed0b16549478f9b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/fixtures/keywords.json",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/fixtures/pointers.iv",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e453cb0a608aa1311fd7fd4f07035ebac13a4c900d66fd55749378eb1ea672b9",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/host.cjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "a717284c3f6175f789136b59fcfe48e983276fda00af9826b0453967e26018a1",
+      "assertionsInSource": 20,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/lsp.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "8300f109737ee68a0d5f54506fafc3d95a1a390aac6e3eb4956674302f53f5da",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/lsp.nim",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "12f3028226b6da39d081359e4518bba714a5c2382722be8810bcce160848d449",
+      "assertionsInSource": 15,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/probe.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "a40ddd87ecfa1a4aa9fe79660ad9eea0d0bf46b7ce4e972c8ec6490ba8d86e50",
+      "assertionsInSource": 2,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/README.md",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "e5607520c002dbbc46a85c56d5d26c7af6d94cddb77ce5791b1c6cf1eb740f0b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/run.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "59d158a1a4a9e768fda3bfc46c67e1677a3d213d221aae1e9b771107cb18a22b",
+      "assertionsInSource": 35,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/snapshots.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "c6369044a277c0197e7462f0a90eb5d1ff52a3a922de8590e013b0ca35f8ec10",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/editor/theme.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "0cc578a52882a6e3b108fc1cf0e94efe694e8b6a81ad74ff92a8a5783e5ec17a",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/harness.mjs",
+      "category": "language semantics",
+      "tags": [
+        "failure injection/crash behavior",
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "91c6a1332c4564a59f0fd2c15209a1bc51410809ecd672dc4e0b77b99a978f6f",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/installers/linux.sh",
+      "category": "release/signing",
+      "tags": [
+        "release/signing"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "6254dc4676acdaaca0f8cd057a573b0c62a30c3c3e3499f87f61d3b15df856e1",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 8
+    },
+    {
+      "path": "test/installers/npm.ps1",
+      "category": "release/signing",
+      "tags": [
+        "release/signing"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "74562f7714aa3a58ada6c5e294dddc35710c71cfa1d0289fdd3f1bcdcfa21ca6",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/installers/windows.ps1",
+      "category": "release/signing",
+      "tags": [
+        "release/signing"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "ba503f13ababe1755d5e2b0f0a47feca32d46b0a24fb40445b5485cbeb3ec102",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/interop/bind.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "19d2a5ce0fcae902467a3d1ca740f16009986023698539c7ab0ea879dad457f9",
+      "assertionsInSource": 75,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/interop/expand.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "279403a3ba98c4c81d37655d1fcfed0ffaff13ad5c99ee81b1b077fb6cd64301",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/interop/fixtures/callbacks.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "f1ec6645dcc0d5b87c014cc8878e67aa584fced2296315bb9998cabb0c6a721d",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/interop/fixtures/native.c",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "7656e306b4938fb0c608264cb5ca60ff5d56062339d017658a9a94c541cb3d5e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/interop/fixtures/native.cpp",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a0f03b8b9203ca28f1217a2bde3fd462d78baca9de4b2b39f0bda0f9dcec7f1e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/interop/fixtures/native.h",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d7996d42ebdab9eaf3cfb588e9ead7df556574a3e621b652b4cb34943d9d8b23",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/interop/fixtures/unbindable.h",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "aea84651c0211bd724931f131d587670c35be618e335411e6b8226f4d77387b5",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/interop/library.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "59d87b6db6b32154edc334c55277300c06414cecc2d0eca35745021d340070f7",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/fixtures/core.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "40718d924370f215ba82a6a9020e658d373464d796a3f433aa2006d85ea81a1a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/fixtures/core.json",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "42982f3e076913b442e30ad6e63cb8153d1872172af1a8e20020e86bf85931e7",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/fixtures/sample.golden",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b4efeee0f4cbb46899f4d955e8ff3b49235a3389323f1fba0a274aa7c914dc95",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/fixtures/sample.ir",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a300d6ecfab57e776c954705a6b0aa91fa3c9e79f005d228c6aa0e4b9f7d6ab3",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/fixtures/storage.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e1ef19c9b006c927ebb4c8ab1dc899a6435538a69d543940c28e23100bb18439",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/fixtures/storage.json",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "447fcd753a10eb5c57313f0d07ec0ae9eebc6a1ad8efc3f4801d0ab7de20eff1",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/lower.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "c1aca91b1e8ad0dfcdb4b1177c62695804ad3ab685fd7820841e60e2f7077470",
+      "assertionsInSource": 50,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/node.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "38d540632251785d0a9e8d40969479a0ce1c04a41eb9da967152541efacfd627",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/parse.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "b7d0d3933bf03806a1e348d10003fcdd61f203caea239b3f0d96b2d7c587ee0f",
+      "assertionsInSource": 32,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/print.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "5b2a15dfd354868c0daeb6d25b7f33fe9b6d407b69655faed8a5d2b7f4bce1a0",
+      "assertionsInSource": 17,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/reach.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "7cd5ba046884b207393c3aa9917479a387afdb67576fca7fb2796982ddfad8f7",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/shapes.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "126bd3c358f50718727713e9135203eb7cde7401cb3fc6798156b4a68ef6163f",
+      "assertionsInSource": 14,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/ir/valid.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "bce1ac4601198401c3042d9cfaf0448e04ccf8b6f20acb57cb85cf744ddc5a48",
+      "assertionsInSource": 33,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/language/calls.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "673ec0f2da6aa8125cfa0f11c0d26ecc93db2c3ccab0fea56f4299695b99fc64",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/lex/fixtures/sample.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1265a34b616cffd84b3d94dbef9a1e78d62b0334d5fc98149da334504525e4a9",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/lex/fixtures/sample.json",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c5fa73323cf43df846455026ad23182d8bed5d1d1adf8f3c35586fdf54e3d1f5",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/lex/lexer.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "51e0f1225744d4de0231f360887c731517a41a07fd5449d51f702cd93e8d6d6d",
+      "assertionsInSource": 25,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/algebra.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "db5a7b4e4872e81741cefa3d0c9bbec3c9f183cc140533d7794a87f18371ee1d",
+      "assertionsInSource": 19,
+      "fooTestsInSource": 6
+    },
+    {
+      "path": "test/library/algorithms.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "8871a9972a50ddeabc91658af47d556dbcb4c0213a8d32bb4cb19b8fa07cdfac",
+      "assertionsInSource": 17,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/atomic.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c7c6714894683e6f07df163f92f5fe5bbfbf178dabc0a9ebfadbd090e8f0e8f1",
+      "assertionsInSource": 19,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/auth.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1af0d69c09f9cf6739eee4bc9510337052d856ac3ac09d6204000d1377189be0",
+      "assertionsInSource": 16,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/binary.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d8eb5e7712f39148575cdf76f0cfa9b6313e474c0e309a017f89d34c9bc88167",
+      "assertionsInSource": 15,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/bitmap.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d1b0061cce7197557f12a290083c56a76d6d1aac060ea0d1a0931e77ff5fd9a3",
+      "assertionsInSource": 24,
+      "fooTestsInSource": 4
+    },
+    {
+      "path": "test/library/bits/main.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0c81f73f70dfc03e8d57e83e51639db2de4ee92fddc8092b7a3a8804d2769931",
+      "assertionsInSource": 36,
+      "fooTestsInSource": 5
+    },
+    {
+      "path": "test/library/block.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b1a942b9e92a38ab3aa7c53e12e40475b5edd8f4de435c1fe14a98b8da5b59b7",
+      "assertionsInSource": 12,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/bloom.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0dc7009a3d02f11dd0789efa74b47f7065c6f8b32158f69e011a1ce2bc8f5ebb",
+      "assertionsInSource": 12,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/bounds.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "09d03998ff7f8b884d8eb9e04684854ecff025906abb79534e3817a9237ea38f",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 4
+    },
+    {
+      "path": "test/library/broadcast.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b5d86aa0c2df2d808acbbb26e06db3ece15968bbd0d0cec3b46f0433d96a27e1",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/cache.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "654b2bec43857c921bdc6bcbcc866f44a078429bf62911f88d98d466cc1b1969",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/cancellation.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "88abdcc99d296646b41210b6f490c73d3d4a1c0472f070eee18f4eea595d2b76",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/cast.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "468937d05a66c430ddee95ecd8f5c2cffda45025090989a690de2e84ba1a3d74",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/check.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "7e2d69647156e2c536822b0c58635ae79fb33a1a15f29ad32b87a192d07894a3",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/checksum.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "5773855edc76997b6e85cc041c2f868b709421cbf01f6e0d9f11f9f4c61bdf17",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/clocks.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "3900d359911176827afad8f3db5c5f3172c487a4d1947a55c13e3f84e9963b0a",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/codec.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c6ba39f65290a4e7df5c28fea89a9ccf1d5c1bdd1bfcddd6386d33d0b5b5155c",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/collections.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "2d749390e7cc58841257d1c4dd4554178e37021313fb95268f5b350cc6fdc3d1",
+      "assertionsInSource": 42,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/compression.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d1f5b3d560355dea47e0a65781e534e814d8a91698873416b7bf68027bfc4f72",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/console.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "2fadfe631b5feee8a99b607e508334e2f573ca4ede993690425ecf2c0b51f006",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/crypto.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "9ffab3a7e1a2a5796f745a47ab28f9db4ff77503560e0a6b5d81cc506bcc6a71",
+      "assertionsInSource": 13,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/deadlines.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "2949232fc655711e2559cdd44c1bdff1792b358f58eb62ddd0f7b503705fc18f",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/derive.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b51e5edbadfa3db7149ed7fbbe9059806d0fa7a11f0ed3717d54fda0785674bb",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/device.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0b30ec29acf07f1356f106b5f27a43530937fe36507a5cab9e2bc9f0a1164f20",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/dylib.c",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "71feacc76c1b6e8720985b82347e2ff017d6057e88c3cd01608a9f48b34364cd",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/dylib.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "74963790b068237ec2e73b1a69906fff5752811c9348987f2dc4a68d90ea237e",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/encoding.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "3dfe9b8d136df02bb0db40394b4bbe1b71690466ffeb4f0b00902b3803649d74",
+      "assertionsInSource": 30,
+      "fooTestsInSource": 4
+    },
+    {
+      "path": "test/library/frame.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "ae765e6294a202f9ee0672b83bb9afdb0432418b3771547bb2b7fe95cc9a3a1f",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/heap/main.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "cd9a84ab86c8b2aa1460ca0e21b0b3a187d4ffa4692e705d11108bc330ae7d48",
+      "assertionsInSource": 26,
+      "fooTestsInSource": 5
+    },
+    {
+      "path": "test/library/heap.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "83444790f8d356c3ca460420bd4ca4a5fe19fbb7a92a4366aac36b586b5acaac",
+      "assertionsInSource": 21,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/hints.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1c8b9c0eb9f63b0f9f08f081b71db9f18335fb34933334998944549339492452",
+      "assertionsInSource": 32,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/instruments.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "37c4a2d72e462241ce603efb75ffd65e0efbff9db7155c72ea51f4632e640b9a",
+      "assertionsInSource": 21,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/ipc.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1f3245fb345df2879e99e24af6d2db7d352541420c20a3ba8af5330f08c32114",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/issue.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "bc239d71e269363405e3ea03e641db5c747664c56cbe9af986751b886431f495",
+      "assertionsInSource": 12,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/joining.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "7bd475ea5ce9efbab8f2e41d6f5763013a0c71dcc3e6412901eb5ff76c6ca8ed",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/layout.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "ef2239ba5b7ed9dae8370746bddf14dd5b717a257b7abb0355f84c0cb332595e",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/list.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "be30caad31a5171364c2903450ca2f521103420bdcf8b019b27a4ab272557663",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/mapping.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1d7fadd35e3941f64842699dd38375c9cbca025ce9d43d5701b67fa40d47f25b",
+      "assertionsInSource": 18,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/members.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "7979a4a072b15935d7f58b6f2fac885dbf5b37efbaa52d98e19019d287829c62",
+      "assertionsInSource": 6,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/memory.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a8a11c0e2241797797da03e860e2be2f20458512dfdae7cb0bd5c10b28a3cf8a",
+      "assertionsInSource": 17,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/options.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d869c88587f007f14267ab5f77ecd02a0c74929cf52b2ec8b2ef52a6edab73c7",
+      "assertionsInSource": 15,
+      "fooTestsInSource": 4
+    },
+    {
+      "path": "test/library/ordered.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c5a0c47c346741d52ad3330cdd35441d606d7d8f3028794ccc788685829fdc4a",
+      "assertionsInSource": 15,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/ordering.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0d10fc11a5c20772e239f66c016ecf4c475a7d47fa887fdf13af62bd88a9a282",
+      "assertionsInSource": 24,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/packing.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "ebf689c936dbd558312363cd7f71394c1e2ee51800839a38e7f5c563ee322e43",
+      "assertionsInSource": 21,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/patterns.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c0fd4576a5cd83a0fa89c6ae7d7b8edcc815484e77c05c9f55a023cecd5f9013",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/pipes.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "2cc21c00b0e6c72609b0fab5de44e67aa3e6864cda3b37c1862c7637a4ad0745",
+      "assertionsInSource": 11,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/platform.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "13694396c5a979c4b5f85a19bbe45d5b51cfa3b389a595c9e69646996b4be1db",
+      "assertionsInSource": 8,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/poll.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "eb1ac8db3b1ef3369d329fe7ed3d2dcb474f1427824df04b158e4ea36a26c7e9",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 4
+    },
+    {
+      "path": "test/library/positioned.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c7cae3cac8822b0339520868ef62212920ec2c7bddf771b148622a67609f1a8f",
+      "assertionsInSource": 33,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/process.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "bf671b221f8b4715d85a8f6ce065ce7b159721820937c2d69b48d3bd36793544",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 4
+    },
+    {
+      "path": "test/library/project.ivc",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "62b6d78111f51f52fd73d4344701553d13c4fdeea75edc0d0904f5264423fdf8",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/public.txt",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c93af96beea0a51198a8adb7a693b8a6f7409377b160c3707e8fc990b5e9c1e8",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/quotas.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e7feba0286a20d6b69b03ff283b4fbe72ea5c9a32007e54abcd14c83e641a2d8",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/radix.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "165afaa10d591bf5c552b5f0b7fa2e4cca74d7a5f8ea7ea373c620cb6df00058",
+      "assertionsInSource": 25,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/reductions.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "166a3d6a4b58f89e2ba0437b5562d5cfdd2bcf1b1510f44047ec64644b613dc9",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/regions.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6a6509cf0fcfd9cb992bdcc3672ad1be7d687fd5ba3a2296c61797e3a23cf6cb",
+      "assertionsInSource": 6,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/resource.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "3fdbc9c747c567b8629c49796a92472405fa3f8a93c1c3e0512d587db87331a7",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/ring.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "615204a6e5953ba7b675c3c624e521bc218bc06f99a91083c4a61f6dc814e001",
+      "assertionsInSource": 39,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/search.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "f9ffb92f1fc5933e607e1b8159db1f4cbff39342f75d7712169dc93bef59420b",
+      "assertionsInSource": 21,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/secrets.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6547df2ebe448109feb5c4fdcb6e3118d4aa017088cc9311cbb38fc5b92a0e63",
+      "assertionsInSource": 13,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/sentences.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "63337719ed100e77ae655996dc0dba1f94278603c9a2b1110798b1f6e5f480e0",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/serialization.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "eca8ce789166cb7d0bf24bfc00edf85a150e13e5ed766e0cacdccd6152036cf2",
+      "assertionsInSource": 17,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/services.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "61e62eef985760a89395cb2602ea6e6b4054e670749a545247a3369e24a639b3",
+      "assertionsInSource": 67,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/shapes.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e2b2772ea2930d63899a64da873c9e635b29ac2372f51fa66032a421d43237b2",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/simd.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b0b35cf2f545795d35ceb4af7351d0d2fe5d5d55b512e3a40ef0311bcc5e5251",
+      "assertionsInSource": 8,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/socket.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "97c0634c371f599cd99810b0b461ba02bd4a49024de21eb9a71b0f739545b696",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 4
+    },
+    {
+      "path": "test/library/spans.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a6f2e8f1d2348da4e7d03dc29e2fa41ae7e69201774612416b30b9cd90579770",
+      "assertionsInSource": 13,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/storage.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "861bbc03130a2a43869837286945f47d95f36d1c001333ed385613680d585768",
+      "assertionsInSource": 8,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/stream.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "20b4b5834ec56c00f2e2dbd8f2293c31aae7b8c2a44e93d2c3d960df1c9d3feb",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/timer.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "86d4b292b2b3557b88ad4f0130fdab166506051a08f51086daca71d498f593a7",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 2
+    },
+    {
+      "path": "test/library/tls.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "14034ce4b78eecfbbf5ada5d074e441ec81587ead04f1d97892f49a19440a259",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/tls.mjs",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "968cdfc5e3369cfca6d48d8fa8f5b24ba35a35cfb5eac3ce598b2c7cf6a2fddf",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/library/topology.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "9dfa4ea6f987e4cd9af9dffaf95b727852c51facf00812cfa721360478a50d0d",
+      "assertionsInSource": 8,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/library/tree.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4cbf46ff7eb963353538b49e5d3188fe468b73d6808e122d62d058725bb906b3",
+      "assertionsInSource": 20,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/library/virtual.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6d6b491782ce88047e411aee241831ba9dc8932b3c3aec3a35389063298f9e8c",
+      "assertionsInSource": 12,
+      "fooTestsInSource": 4
+    },
+    {
+      "path": "test/library/wire.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0901eff049c08ef0dda6bbe43750719577c7897495772554a356492936001e1f",
+      "assertionsInSource": 28,
+      "fooTestsInSource": 3
+    },
+    {
+      "path": "test/location.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "c6d87fdfe690cd4f977d37fbec214272cdb755d3c4163c537540adf849296589",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/matrix.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "a8d15e47a8bce66204bbd686f114625caa6231f4962847b692d6cb9db9f4c56e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/c/arch.c",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "221f04191fc3b719517cec6ff5928be561386cf00310cfc17fe066f2ca5c35ef",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/c/copy.c",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "39e8d02b018fb8ec6a1573eb6cab21166f8e44c48ea0e758a1e0eac117b80aea",
+      "assertionsInSource": 4,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/c/service.c",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "44c5818757732de72f459c9eae72c2c9f09ecc4259c9732e1c32f973cb3da3e9",
+      "assertionsInSource": 394,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/c/vendor.c",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "5fad3761a48aa3291bfd21c8ddcd155d7597690d8e5eef571ee4ed92d841be21",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/events.mjs",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "0e400462469115ad2bf4ffbf8fd7a32910d7286694749931d676a59486a181cc",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/fixtures/copy.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "ff7611def2465cdf5fa7727240fefc0e02612a204e004a5dfc404b8c3aee6220",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/fixtures/escape.golden",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e564167fd09a344165ac90f1a9b855fe038b52c2788c46be64228509500d71e5",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/fixtures/escape.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "06b1f79f9994765271ec152dfe1bb892dfe15200cba833c51b5ad444dd59f187",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/fixtures/machine.golden",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a45af92b4f8981402e47431054c8f53c26f02fe3828d86080e2c11e684239a27",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/fixtures/machine.iv",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a45af92b4f8981402e47431054c8f53c26f02fe3828d86080e2c11e684239a27",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/library.zig",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "8903c48f82ed2d705ec1adb98f3cfa177bd5ebf2ec10f93879d4230a01e94e53",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 10
+    },
+    {
+      "path": "test/native/plan.mjs",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "fbcfa7fbbd687d74e4ec2fa6131e7e1d4a23da0b8510cffd6480c09f6e07f2eb",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/run.mjs",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "4e04f2477fa906358b6fbfd538e6f4ceed927c115c78d8782745ab052ffd24d9",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/native/speed.mjs",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "72fcceafa86ddfc6ba3e4f2e2ae9a44b387c76f2e6283351a55dc5ca0325703d",
+      "assertionsInSource": 52,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/optimization/project.ivc",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4592da49b0c66659df5e09b2ef1318b74d5d6eca2de00ba846956a038e9eeb60",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/optimization/src/main.iv",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "00193a6197cd8f103d53f5970787c37fbb496acdba045920dba7ce7b5f4dc103",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/control.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "a4ed6b4ef857ad34a224d1b5277da40e6f28db30e072f12de3b1afb5721df74f",
+      "assertionsInSource": 11,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/expression.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "f3d5043179cce01f89af22c24af42061f25dd0f1cb28471fd5ef1a8d88de3a09",
+      "assertionsInSource": 27,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/fixtures/basic.golden",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "0f2f1bdc60c3dbb9ce68480106f233c2d839ceec831a38b9d7252bb068507802",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/fixtures/basic.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b1ec3c8663ec32667830da0dfad8a5bd5fc5903dba440c5e15ea13de2eaa748e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/fixtures/error.golden",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "2f66fbcc7da7956b1a5fd8c616ffe3853b33f8d28098849791e57ca18d268019",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/fixtures/error.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "7915c7997eabe680190bd1d7e4e1e59408142bf7f7b4025288a04e8d1615ef54",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/generics.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "36c6ee3f21eea17d96cc5c10334fbec5b0ca05807dec7a9ae76987849c420dd4",
+      "assertionsInSource": 12,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/machine.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "39686d7a764511ebd5f9164cdefd3ee615293b78d3c6d0ffd83c333acc43fae5",
+      "assertionsInSource": 21,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/native.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "ac0ea11d6c1213eda2550c09a2b23132697cb23113f21538f61d6ab0caf4d058",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/parse/parser.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "918e5d87f6305c2df03e5a5cd28efd3cb307456d07c8518d8642155dce0ee3b1",
+      "assertionsInSource": 35,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/pkg/cache.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "0ac1159e4f90a2daa3b4943be1239f6fd8bbe8b1149eca4d7c8898f65d32fd5a",
+      "assertionsInSource": 12,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/pkg/lint.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "0df9e6a9315e8df76ff645566a92c22c5baaaf059ed108dd90ce16b7cae242b2",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/pkg/local.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "a7f3ba7a7f2a9e284f811cf2d67bf70e4502392e164ea024917b24e571de02a9",
+      "assertionsInSource": 17,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/pkg/lock.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "031af05e8dae7f2876a5a5bcc58e2a0c789a9a7e2390e72de58ed469b719288a",
+      "assertionsInSource": 7,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/pkg/publish.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "81d7db7ea53b2a86b093c211eadd832ec46361d0df00f33f276d039349a75a92",
+      "assertionsInSource": 18,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/pkg/registry.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "6aa93c68a013067789859c5899c859348b7382ef0e1565bc2352307f8d3e0db4",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/pkg/resolve.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "3ba9e2a8ed4d2a26b9fc2a7d2392467a0e355815e83a0082c9d4c6a0b4b6ed09",
+      "assertionsInSource": 12,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/pkg/scaling.nim",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "d20e6278ecd42acab27f8f637d20d7ee343250b2e29f2477600d4e459b73d3c6",
+      "assertionsInSource": 22,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/POLICY.md",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "7c3aa492e34c07df72caa30126a3198e7d46bb27cfe2918582986ce75a4fe204",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/process.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "cb3b683190dc1cd0d88368c6e0bfe2f166982748b755bb5d275c2b6e2f1d91b8",
+      "assertionsInSource": 6,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/README.md",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "6029f4210e5bb12da6e2f8f93977e2537b3d7a8266ea9da52e7589274698525b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/regional.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "3d79df8af70fba7e9f081677d9f2fe3a30ebfe2bac9dbdbf3ea90157c3bb976a",
+      "assertionsInSource": 48,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/regions.json",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d082528b901fb020b4dd151c8464fd586615b0ec78d8a5de637a65c0e39b9375",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/regions.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "4645f45ff81797b035f25073b6d7441c6f867ace1e572479a28fc247f0e652a9",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/run.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "1722f68fb23f91b392cf9ccce9c40853173ece61e5d315cd920d9131a1a28278",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/runner.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "bf407195da631cdfd1c68fee718f07673b57cdd81590547fcd3a57b62e2afe81",
+      "assertionsInSource": 22,
+      "fooTestsInSource": 1
+    },
+    {
+      "path": "test/runtime/copy.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "2c9b5e38019d236a857ea7359605b2acb4d41b95f16345c34bc36fd7c3a382f1",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/runtime/tcp.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "42325fb9d78f0bbe7c48c60ac25e33055145724186ce5df73541276e453d40ac",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/basic/main.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e87e7eeb4447ddb09bd97b29f4f2895c0d957ad5873ee25ee81f51a060ef2052",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/basic/math.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "13e8a46fe26f4f6ff1f0dfecf2105d60072aa06f27663441f4939f286fe5f5d4",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/basic/nested.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4d7c2c5e0e90c3f51627736d1d0f3670ad75a6540aac8646e27a72f2f565e901",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/basic/path.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "71e00a075f0b71c3cc8cff963e371382d6d22978db461591719356cbfb29cfb6",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/basic/sub/module.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e2fee934f97aebaf8765321811c291841ed3a88d7497bc9c53977ad280a69164",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/errors/dup.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e3a5962b7856375bbffd65680fb661ea113298e242f557ddc427ca46bfec0787",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/errors/duplicate.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "5cf49ca3d3d8e227dc2e98675685306f41eff9961c7b73dc5b8cb347bcef838d",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/errors/field.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "2b5b28265b0a714f1a1c69f677c21db75d6091f0610be40c09843535908a9c05",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/errors/hidden/main.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e4bd0128e93d4618040141b357999e222403a1289b94f9c9bb60036ed256c129",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/errors/hidden/secret.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4d733f211340031a9f85069ba8084b3a300450b2b2ae1d7047f4a4d477cfe9fd",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/fixtures/errors/missing.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "408b6aa15a8cf4f1f96d6c12fb7c516bef6c4f5946894f9e86898a8ce3ed674f",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/link.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "801befe64a1fd5c24a0d2c8bb611c9b8d56c8da0740ae6f647a8aaf38fda8211",
+      "assertionsInSource": 10,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/resolver.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "fbf02ce0a3d3e95a6413dcb974bae80ce762ad53da3af20744220318b8dec52d",
+      "assertionsInSource": 23,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/sema/scope.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "f23c11f3b2f3dbb26691abb7c2f252e87c11be63bbfc65e33e31f4c8a60cd2da",
+      "assertionsInSource": 9,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/suites/build.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "c42e211e024f64a09c8224487f2a28e79ae8903bdc88144b042b4670ad907002",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/suites/cli.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "f2990e80e96bfd83a12931c79642c4049c0744dbb655c0dca2926b80cd85da65",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/suites/engine.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "4b8fcb7a8c2ff51088b17b00569fb79668cf8d17de6b94f09879452a99f7b0ed",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/suites/package.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "2aac142d99995dec19301b1db631ecd03ada5e7059ec89144f256836dd22a420",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/suites/syntax.nim",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "2ab0df25be778479bb3506215734f7a24be97867bc4b5d1d3c0476f054f789d9",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/support/audit.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "4dcd2a1562ca19c31683c998c421a9c8e9297ca53ca964da25fa9aa2f7ffae8b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/support/dylib.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "04a0b85036454efa63028c64124ab9aa0c2ee08fa3fa4cd03cab0e3c1dd8a8cf",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/support/inventory.py",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "37ec3b329524a3228ada1dd9b9cf292b2da3df1437075e1814da2c2228a7689b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/support/tls.mjs",
+      "category": "runtime/service",
+      "tags": [
+        "runtime/service"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "5454a0741303754b9186c5cb0c735fe0a741233271a2b83a01b3769d722a163a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/support/wsl.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "25a000e28a2feb68c97357473ec30ee4deb3ccd0a9f585fa3788563648d43732",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/tools.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "143edbb8af4dd6f813a8f3d6a5b0d6f9723d95ef7d3902cad8ee98f8368c35b3",
+      "assertionsInSource": 43,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/borrow.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "40fc2761327a0c84d4884680b07e76549f60d0593dd73cdf80a98d4161c02ca9",
+      "assertionsInSource": 45,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/checker.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "54d52b76ee06150040150cb32454ae45453ddbcf69b77322fb32c2263c7495f0",
+      "assertionsInSource": 25,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/coerce.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "297d37d270602183a1d5e281b976cddfe8f207f4d57ccc7c4f5d45275853fdb9",
+      "assertionsInSource": 21,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/escape.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "128a58bb7498b6475297a9f888810f069fc6a8a03c54a74f289904a69dc7c63f",
+      "assertionsInSource": 3,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/fixtures/basic/functions.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "17ae0592d04b11a8023f1b516a35feeb47f2ab75698a484b1963ca750e06787c",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/fixtures/basic/literal.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "75649f8acd599285fed7d3d131fda289d260b51d37e0b7493f25dabb5a1bd5f6",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/fixtures/errors/escape.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "3a25df4871cebadbeb33e7858c2878beaa6064ca8d359d1b385967e567afaf6c",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/fixtures/errors/mismatch.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "11c9901307587baa812f742d85b432f4a213e1eaf04fbf55169af18820ca36fd",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/fixtures/errors/missing.iv",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "11ac89c42f84efabbd2871487f55264859f55363179ad539048d75b11e80e865",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "test/types/layout.nim",
+      "category": "compiler frontend/type checker",
+      "tags": [
+        "compiler frontend/type checker"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "82e72e96abeb097cda3a2f5de81d5873a46a13a51eef173491e6220596195ebc",
+      "assertionsInSource": 5,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/algorithms/baseline.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d18349081551b68850ff488f640d18afb497401ddf47f6464b99fd6668c70cd7",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/algorithms/candidate/finding.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c481fae8c8ce91abfe47eb5317ebb93962ed725b397a70831640d9c8f3d525b8",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/algorithms/candidate/ordered.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "39ba0f3c2375da63f7f19f501d680a09981d1113e0f67bceaeba2e43acd9204c",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/algorithms/candidate/searching.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "3cf2173b71bdfdb3cf3056f9f5d56b98464142953df42a4cb4fca43f60f23859",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/algorithms/candidate/sorting.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "04c6ed2e14393a1ad9ed8fa563882501fdca2366134f0a808ef67ab7c813163a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/algorithms/natural.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d8214bbf52259e6674f8e9ded6f8ca1a7640770986b0ae7a11161a66270f6ca0",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/algorithms/ordered.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "ac8d1c34ab59c4cfe3f8835a9821436af141d1c9b2fa14af3942a07f975544bc",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/algorithms/searching.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "2dc1298811872c4a2451ac30a8c5add2750d6a296fc3b3dcc8d0998c1e666f49",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/algorithms/sorting.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c6a20816f2afb5c3786fde876f80d140557562e300e2e07efb5bee8048e7bb19",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/catalog.json",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4f7c3bf959cf236e2c07d12e8e0db1e3d0f3fc2ff7e6777be6d68466a97be98e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/collections/engine.c",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a10fa56ec3af95928dcf72d0fc8dfa306947f2637f0dd3bca63d5adfb6bdf491",
+      "assertionsInSource": 15,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/compare.mjs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "cf48eed0c13bfa1b45342b760d41d43b4c9c351088cb8fbb43bf4014b00286a2",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/compilation/fixtures/hello.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "8877f3412f14d234c750ac64baebe8ac694f86f296a84f3f7efb9495d77d0fe1",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/compilation/fixtures/hello.rs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "c8e0583694bb1e0188dbe28fe0d65ac1130723c55f968b6262b906c147f72549",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/compilation/qbe/cache.mjs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "2e50dec58bdaceb6c33c4e6bfcf0bdd0fc19ab5b4fd76cea90d5a5c1a29d30dd",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/compilation/qbe/profile.mjs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "ff692d6f9b34f38137ac53df602a870592619f3cdd87d3dc47ac757fea57b6f0",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/compilation/qbe/shader.mjs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "b23c80ddca5684fc2e694b3c38d8e0aec18f9aedef209d846a317f6c47f9926a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/compilation/qbe/wasm.mjs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "e3f43b3322b4d5d52d90dbb1076e60eb895b7633d5c04e7e7d48f559d099f750",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/controls/c/control.cpp",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "6ad50b547fbfd7b7c8164d315bfa8b4f6536d6db9028492b977c6873f99fb834",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/controls/c/native.c",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1445897ee4b56a8c0083da2c09b68dcc4146bfefb7efa22677a55ad85699c9c5",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/controls/c/native.cpp",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "24366021d9791645186595d2a69797a5a9555767443559ec2c08c473bf8cf45a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/controls/rust/native.rs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "4469967f351dfee9c2147e912d8d10658027d941bd809a496c62461a34aec5df",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/controls/zig/native.zig",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "f858b7a05ca9cd0d6d5c59f374ba8d2692ba9a5b1106f73e96054bcac0ac05cc",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/features/decimal.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e283edc5b600bd1efb44fc28a31a744272feeaa910b78e604dcc26a3b815ad46",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/features/json.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "342a36f219d0981b864a3273f2802f88e08831c27b7e57958d409df59e1ff774",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/features/README.md",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "2918ef5ea148de774ff403c95db658830052a3413cd3cd0dc616b77ebf36687f",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/features/record.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "76726d01a42077ecb797a958f86faf406b988b58042de2314af1774faee21140",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/features/rust/src/main.rs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a98f3107093c4b6c51a8e2558a62b65a4d8ddcb35559198494bba15fac46496c",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/features/table.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "fe3206c97981154c6d9a1a6e9e23f1ae3dbbc25e57ad56eb50ebd39342d9d865",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/features/text.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "f7d2246bca071c169fafec41f399102375323016bd964741170a0353dde61fd3",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/POLICY.md",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "e065588877a27480efc6936ab0822134482399d2efaa8e8c54065d3d7aaed377",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/algebra.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "3969993fbee436b5031051df2f2b72a7feaf395c30e42a4f93a7dc8910217cad",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/allocation.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "1e3189da5f671deb1127c55e4eea7b25a4a06eff4098b9e67f66499762760193",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/arithmetic.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "361b18942b7f2dcbf4c1f7969cd3edbcbc614d86bf19ae5ab9b4a36ca21bf2d2",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/branch.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "347108e806d260610361773380f9bc39645fe0c07c18a93b76e00f20594a4c62",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/calls.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "bfd3d30ce27921a1c3f433fd176380ef5b17fe760c0d3d0cb5b99ad51beabb82",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/failure.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks",
+        "failure injection/crash behavior"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "eb03ed2f7efd2f90c26c69e2ca86379b199a9402ad25a8e875cd03bc8b420b70",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/generic.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a802a71f7fa3f4e8e98cb6aa9004e42801812ff07f9bb31fdb760af94a948ffe",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/global.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "89a1a92ba641caad23b05b8d50bcf996d8f98f226a9e55d4df969d40698bcd89",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/growth.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d1fe1b3ec6270922f656745456a8ef5d1d6fbe0f03831c4ec4c43ab5f1bb811c",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/iteration.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a85f306b4520e76469a6dd73a9a33a5b4f2511de3518b2a874f85b24c2c025d5",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/known.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "efad7b95574a7c429b40f959729d4d014b66fcbd2a60a71bc0714a546de8eb4f",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/lookup.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "01b0c61b28f85d1bcb09775f6b02ef2d980c5eac2bf1af5b21d62f32142a00a4",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/population.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "52bca725c35da002556263d62536541d5a60dcc88fb202b7cff5d31fedc43d85",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/prior.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "2a8734ac17481baa4dfc994767bb0a338fd7ee72b010508c3d7fe60afcf495d6",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/radix.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "d5fdaac88e6dff0af2f8995005b68b67be5d71225a3cb8de703578643dd61b2e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/returned.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "a78f3ab57569e559018006649e6f091d34b316d5d15b960640f0edd401820f57",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/runtime.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "b167c2cca21aac045e5039a2c503a721bfac00353413f5b5cd70efb87f31a4c7",
+      "assertionsInSource": 1,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "benchmark/workloads/startup.iv",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "7d032a2444aa77ba7b793aa3256c5dcf4c756e4be9ad9bef2ea05896aaa36933",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/arguments.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "b69b95292527aa6a45f4d78478e56de38d5e9094120e950843b6e5e20bb0323e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/artifacts.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "304b97ece749190b3261cd9f36fc05059f1fe19110368cbebaea9d8a29fa7afc",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/benchmark.mjs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "f7cf43e0315de6f8737fe489bf1342b6feba831f260bb3c5367a428efcb80a2d",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/binaries.mjs",
+      "category": "release/signing",
+      "tags": [
+        "release/signing"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "5e04bde7239756849133bce43657fb60267ae85bb84d345a4237fdfe588fa7f1",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/binutils/linux/build.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "33f41dbabc19a4d4515270161b5c8b00c774cd2f03e9bb0476bd595f41526fba",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/build.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "315911a83442f623cb8f13b2e33f054df5e72406a3d9f65c5281590d71498352",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/build.ps1",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "9899cc0b9eb85b83c606c712ad68f03560eb675e40f9852874ddcae1d0eb33e6",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/catalog.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "b3da18d24883bbdded4bc19b2f109a2953793d96d8c2c901a35ec74f8119fa60",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/export.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "41cea4aab15996a014678afa1f118f80495b96fb38aa43abc799e739636ea8bd",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/highlight.mjs",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "faea4b6d4a357cdc1d06a94256c0fd4a6d8209c0ca05cb2f13cb556a0977c8fd",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/host/runner.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "5b818aad21de1e2c151fa8da146cbc779ce1a936718d55dcafdd6bc55ecbd725",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/host/windows.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "e02b7361ee2e78f904edab259df9a427d1996d687ea404da1b9c7ac1041b9a25",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/host/worker.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "d81b72a1ce772f91f08c8158e6d417fbc87bcc49709545ecea723ab6020ce15b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/inputs.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "e9f5f97a8a6cb12d01cacf65cabd9fdcd74f7a87e26fe246a1dc5b80308b9b3b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/key.mjs",
+      "category": "release/signing",
+      "tags": [
+        "release/signing"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "d2f6638ac4fa668b0f88cc1519ece2c7cc4af1b5d1630dbc8a20606bdaeadfbf",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/latency.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "adf599d94cf5a0d29d1f30d0326b13b178c6e245be0a721c08d14c0b2cbaf4fa",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/native.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "40718729a043bcc09812c2ff801f45451b101e830dd65669a56cf4b15bb29502",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/nim.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "1a88c260248dc47d0051879ac0188da2dded15814ed9141f89cca79956cb4fc7",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/palette.py",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "fb73e1131af49d02d6c56055f64813977d6c033cb4cac138f349491dcadf5e8e",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/benchmark/hosted.mjs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "3b09d76aef6ec3f17e51dc90579a5719ad2648f7c29e56d1b57c3068191e2f85",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/benchmark/paired.mjs",
+      "category": "benchmarks",
+      "tags": [
+        "benchmarks"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "3d32707d7123aa7066b710bed4771643704b741af6aae65cb79b8c827e4f7891",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/build.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "4be755c96442d3f64ad1d5f75dd6c1ddded4de457f3cd724cdc04597b61f0ce9",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/getopt.c",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "5e963d7351831fb1c9bbe331c0a76773d946050ad568bdc2cde046c9a8100569",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/getopt.h",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "fixture",
+      "status": "retained",
+      "sha256": "e25402795382870f64e7bf1798627b6f6c523a1fdde531bd3a8e47e07504d1ef",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/hosted/verify.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "356f310b5f39941a6070d142f77f1bce8e8aa29d754761e796712e980b4d07c7",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/linux/build.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "7265e6c627240c857cb737838d7e3ca602c89b49fccd18df8c8e2d4908359dca",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/linux/install.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "447eec761d215539deacf0087b7d518ef89fc63bdf6d4f9fd73f3bd562afce78",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/linux/verify.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "bb28b2d94ff479efac536d8658d5f12e88e3f5b7513a9986f0ce0f6fd79638ae",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/minimal/stage.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "07944c56b5dc0c84faa44ac7079d3ec2c11cdcb6f67e90c6d2c51d562766b345",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/runtime/probe.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "7fe84836a56c08580c1dafbc325f4232dc93c0e8fe8267b37b3d979926337b4c",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/shared/verify.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "530c4ae9a13a7fbadcc9fffa73ef239ed7d5fc538b85b4505cc6ca50fb20b935",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/qbe/verify.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "85d719553e96ba649c1ad19f2098e96cc3af401156235c2525c77faefe97b1d0",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/runtime/audit.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "0d74f6256bf0c774513d2f887ca4008ad9eb823d32fe0f05e066eaba35a7fde9",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/sign.mjs",
+      "category": "release/signing",
+      "tags": [
+        "release/signing"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "2c754c95213ba9f350820ad1a099aef778751433bdb305552be3bcf11922bb66",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/source.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "a91c165dbddc57a868f26afde42199613d15a145248e91698d8cb0d3e6d8659a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/statistics.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "1861a8f8541473e92087c5bdcfbacfc6df45a49937794d33b4907a2277a422c5",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/tcc/build.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "6d35e43e73d54014cae3c05f4aa49482c17b5feee2ab669e5dd8df174fc0a3f6",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/tcc/freestanding/build.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "e4b6705f77097e315d4412566849894ce7520c137d9aead2f676cc52b51a6491",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/tcc/linux/build.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "f593ab16a5ebc174f447e5d14c0ee3fc4713257accebf51a41edc784fe6d17ad",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/tcc/verify.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "6ec5b4660bad6df775b466f2d0604f79be115cc1edbc7c199e7a75f726dfb335",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/toolchain.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "bb34143c677784c1e701346186a4b93c00de7740533e36f0ccdd07c10bee33bf",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/tree.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "af66723e64baa2b5faceee87adbfbc18bf1711172dd912bcec3951a497c9f144",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/upgrade.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "d81a500fda5f9e695ef342442f532350a243a35525c3a37aa1939748f1304658",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/vendor/audit.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "849c64d9273ef38a59d260a7b4f0156c1bcf89b16249f371e6d7edd17dd4bd41",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/vendor/build.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "43b753e651bd91a545ae45e1660d62d377f56c17d4e18dcb332994acf0da6814",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/vendor/curl.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "23394eb1228fa3251972320c3e1b38706ecd6102341992db12571747141fca49",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/vendor/qbe/lock.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "8e703c5b9317635e4092398da5da3d3237a311f462b011bf000d2f1976bcfe74",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/vendor/tcc/lock.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "1d31c6e740e27eab48241d51f9d26a3688b510ed6561a2add319b50a0f5de4e5",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/vendor/verify.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "48f1ad03f5ad3d64547574c7b4cc09051e7723d7849855b73a9a5d6d06d0279d",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/worker.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "3e3a07d7b95a9f5687cf8553c5fb6279d0d5126ba24c96fb67c12743131d6db9",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/wsl/worker.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "793c483185ea337b83c7d6dd639ada4b08a3e713858e26ccaac62c648ca018c4",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "tools/wsl.mjs",
+      "category": "package/CLI",
+      "tags": [
+        "package/CLI"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "65637f11a010be9026c11eabcea45018dcb10863f5ae670b38253a384db0118d",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug.yml",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "a003392a0715735db263dbd955ee406626876a873f9b2f912e4520127e1bba55",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "1f5dbcb7b5b4782c43606f7db0e6d1ec572aec254036fa19f7b228840c71fa7b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature.yml",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "62a79e9b4f3cd457a878b856d9d2c3c0f043b957da290a55f28d9ad0a153fc79",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/inconsistency.yml",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "f61677c8483afaffc1f2b1d2552ffa0594162f1ab624004b35b2c04d587ab8cc",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "category": "documentation/editor/registry",
+      "tags": [
+        "documentation/editor/registry"
+      ],
+      "role": "test",
+      "status": "retained",
+      "sha256": "8ff0bf1bb24ff97721857fb5644df86a9fb354615cd38e1192f4f91b0b3b8fe5",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": ".github/workflows/tests.yml",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "8e9c67e601e717b9efd34aeacf5df595554245fad213967d189c1225e2b8a91a",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "bin/foo.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "acc37f8d4a8c726f8e7254c0850a10f7ce28c1205eeb522b5b5978633dfe3467",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "bin/version.mjs",
+      "category": "language semantics",
+      "tags": [
+        "language semantics"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "2c9ed3a550d305b53f7d37870b3c55025b07d60f11458197ae4bd767ca9814eb",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    },
+    {
+      "path": "installers/linux/package.sh",
+      "category": "release/signing",
+      "tags": [
+        "release/signing"
+      ],
+      "role": "runner",
+      "status": "retained",
+      "sha256": "c9fc2ee1b7783f0e7ac561e936b4fa9d071a242f5c8a2566fc431d03561d136b",
+      "assertionsInSource": 0,
+      "fooTestsInSource": 0
+    }
+  ]
+}

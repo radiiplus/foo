@@ -1,4 +1,4 @@
-# Chapter 11: Reference (The Quick Cheat Sheet)
+# Reference
 
 You don't need to memorize every single word in FOO. This chapter is your quick-reference guide, designed to be scanned in seconds when you need to remember a specific command or keyword.
 
@@ -12,17 +12,17 @@ You don't need to memorize every single word in FOO. This chapter is your quick-
 | `foo init [directory\|.]` | Scaffolds a publishable package. |
 | `foo publish` | Validates and publishes the current committed package. |
 | `foo add <package[@version]> [url\|path]` | Adds a registry, URL, Git, or local dependency. |
-| `foo install` | Resolves the manifest (project configuration), fetches exact commits, and writes `foo.lock`. |
+| `foo install` | Resolves the manifest (project configuration), fetches exact commits, and writes `foo.ivl`. |
 | `foo search <query>` | Searches the public Git registry index. |
 | `foo info <package[@version]>` | Shows a canonical package release. |
 | `foo new <name>` | Creates a brand new project folder. |
 | `foo new .` | Initializes the current directory without overwriting project files. |
 | `foo check` | Reads your code and checks for errors (without running it). |
-| `foo build` | Compiles your code into a final, optimized executable. |
+| `foo build` | Builds the selected product in the configured mode. |
 | `foo run` | Builds and immediately runs your app. |
 | `foo test` | Finds and runs all your test blocks. |
 | `foo benchmark [name\|file.iv]` | Builds and repeatedly measures programs under `benchmark/`. |
-| `foo fmt` | Automatically formats your code to look perfect. |
+| `foo fmt` | Formats FOO source using the canonical style. |
 | `foo watch` | Re-checks your code instantly every time you hit save. |
 | `foo doctor` | Reports installed and missing toolchain components. |
 | `foo bind <file.h>` | Automatically generates FOO bindings from a C header file. |
@@ -50,7 +50,7 @@ JSON and LSP output retain every individual source span.
 
 | Command | Selection |
 | :--- | :--- |
-| `foo run` | The `entry` path in `project.json`. |
+| `foo run` | The `entry` path in `project.ivc`. |
 | `foo run worker` | The `worker` path in the `entries` object. |
 | `foo benchmark` | Every `.iv` file below `benchmark/`. |
 | `foo benchmark parser` | Benchmark names containing `parser`. |
@@ -150,4 +150,4 @@ For contracts that are easy to assume incorrectly, see
 [Feature Status](status.md). For tests and error output, see
 [Testing](testing.md) and [Diagnostics](diagnostics.md).
 
-In the next chapter, we will look at **Advanced** features, where we will explore compile-time execution, custom allocators, and hardware-level programming!
+Next: [Advanced](advanced.md).

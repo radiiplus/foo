@@ -1,18 +1,18 @@
 import std/[algorithm, os, osproc, sequtils, strutils, tables]
 import ../ast/node
-import ../ast/doc as astDoc
+import ../ast/doc as documentation
 import ../build/[project, files, options]
 import ../diag/engine
-import ../fmt/formatter
+import ../ast/print as formatter
 import ../lex/lexer
-import ../parse/parser
-import ../test/runner as testRunner
+import ../ast/parser
+import ../test/runner as testing
 
-proc parseFile(path: string): Program =
+proc read(path: string): Program =
   let source = readFile(path)
-  let diag = newEngine()
-  diag.setSource(source, path)
-  result = newParser(newLexer(source, diag).lex(), diag).parse()
+  let diag = engine()
+  diag.source(source, path)
+  result = parser(lexer(source, diag).lex(), diag).parse()
   if diag.failed: raise newException(ValueError, "Unable to parse " & path)
 
 proc doc*(selection = ""; standard = "lib"): string =
@@ -25,17 +25,17 @@ proc doc*(selection = ""; standard = "lib"): string =
     paths.sort()
   for path in paths:
     if not fileExists(path): raise newException(IOError, "No FOO library or source file named '" & selection & "'")
-    result.add(astDoc.doc(parseFile(path)))
+    result.add(documentation.doc(read(path)))
 
-proc check*(entryFile: string; root = getCurrentDir(); options = ProjectOptions()): bool =
-  newProject(root, options).check(entryFile)
+proc check*(location: string; root = getCurrentDir(); options = Settings()): bool =
+  project(root, options).check(location)
   true
 
-proc build*(entryFile = ""; root = getCurrentDir(); options = ProjectOptions()): Table[string, string] =
-  newProject(root, options).build(entryFile)
+proc build*(location = ""; root = getCurrentDir(); options = Settings()): Table[string, string] =
+  project(root, options).build(location)
 
-proc run*(entryFile = ""; root = getCurrentDir(); options = ProjectOptions()) =
-  let products = build(entryFile, root, options)
+proc run*(location = ""; root = getCurrentDir(); options = Settings()) =
+  let products = project(root, options).build(location, executable = true)
   if products.len != 1: raise newException(ValueError, "Choose an entry file when a project has multiple executables")
   let artifact = products.values.toSeq[0]
   if fileExists(artifact):
@@ -43,18 +43,18 @@ proc run*(entryFile = ""; root = getCurrentDir(); options = ProjectOptions()) =
     if response.output.len > 0: stdout.write(response.output)
     if response.exitCode != 0: raise newException(OSError, response.output)
 
-proc test*(root = getCurrentDir(); filter = ""; backend = "zig";
-    executor: TestExecutor = nil; progress: BuildProgress = nil;
-    mode = "dev"): seq[TestResult] =
-  testRunner.runTests(root, filter, backend, executor, progress, mode)
+proc test*(root = getCurrentDir(); filter = ""; backend = "qbe";
+    executor: Executor = nil; progress: Observer = nil;
+    mode = "dev"): seq[Result] =
+  testing.run(root, filter, backend, executor, progress, mode)
 
 proc fmt*(file: string): string =
   if not fileExists(file): raise newException(IOError, "File not found: " & file)
-  result = formatter.format(parseFile(file), readFile(file))
+  result = formatter.format(read(file), readFile(file))
   write(file, result)
 
-proc cc*(args: seq[string]; compiler = "zig") =
-  var command = quoteShell(compiler) & " cc"
+proc cc*(args: seq[string]; compiler = "clang") =
+  var command = quoteShell(compiler)
   for argument in args: command.add(" " & quoteShell(argument))
   let response = execCmdEx(command)
   if response.exitCode != 0: raise newException(OSError, response.output)

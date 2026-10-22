@@ -1,172 +1,203 @@
+## Offline, repository-controlled native dependency resolution. Never provisions.
+import std/[algorithm, json, os, osproc, strutils]
 import ../build/options
+import ../pkg/hash
 
 type Supply* = object
-  headers*: seq[string]
+  headers*, sources*: seq[string]
   links*: seq[tuple[name: string, path: string]]
-  runtime*: seq[string]
-  defines*: seq[string]
+  runtime*, defines*: seq[string]
 
-when defined(windows):
-  import std/[os, strutils]
+proc vendor*(): string =
+  let configured = getEnv("FOO_VENDOR_ROOT")
+  if configured.len > 0:
+    if not fileExists(configured / "manifest.json"):
+      raise newException(IOError, "FOO_VENDOR_ROOT lacks manifest.json: " & configured)
+    return absolutePath(configured)
+  var directory = getAppDir()
+  for depth in 0 .. 6:
+    if fileExists(directory / "vendor" / "manifest.json"):
+      return directory / "vendor"
+    directory = parentDir(directory)
+  let fallback = currentSourcePath().parentDir.parentDir.parentDir / "vendor"
+  if fileExists(fallback / "manifest.json"): return fallback
+  raise newException(IOError, "Controlled vendor inputs missing; install the complete FOO release or set FOO_VENDOR_ROOT")
 
-  proc bundledSodium(): string =
-    var directory = getAppDir()
-    for depth in 0 .. 3:
-      let root = directory / "vendor" / "libsodium" / "windows-x64"
-      if fileExists(root / "include" / "sodium.h") and
-          fileExists(root / "libsodium.lib"):
-        return root
-      directory = parentDir(directory)
+proc verified*(relative: string): string =
+  let root = vendor()
+  let manifest = parseFile(root / "manifest.json")
+  if not manifest["files"].hasKey(relative):
+    raise newException(IOError, "Unapproved vendor input: " & relative)
+  result = root / relative
+  if not fileExists(result) or digest(readFile(result)) != manifest["files"][relative].getStr():
+    raise newException(IOError, "Vendor checksum mismatch or missing file: " & relative)
 
-  proc bundledZlib(): string =
-    var directory = getAppDir()
-    for depth in 0 .. 3:
-      let root = directory / "vendor" / "zlib" / "windows-x64"
-      if fileExists(root / "include" / "zlib.h") and
-          fileExists(root / "include" / "zconf.h") and
-          fileExists(root / "zlib.lib"):
-        return root
-      directory = parentDir(directory)
+proc container*(relative: string): string =
+  let manifest = parseFile(vendor() / "manifest.json")
+  var found = false
+  for path, digest in manifest["files"]:
+    if path.startsWith(relative & "/"):
+      if not fileExists(vendor() / path) or digest(readFile(vendor() / path)) != digest.getStr():
+        raise newException(IOError, "Vendor checksum mismatch or missing file: " & path)
+      found = true
+  if not found: raise newException(IOError, "Unapproved vendor directory: " & relative)
+  vendor() / relative
 
-when defined(linux):
-  import std/[os, osproc, strutils]
-  import ../pkg/hash
-  import ./manager
+proc identity*(): string =
+  let root = vendor()
+  let contents = readFile(root / "manifest.json")
+  let document = parseJson(contents)
+  for path, digest in document["files"]:
+    if not fileExists(root / path) or digest(readFile(root / path)) != digest.getStr():
+      raise newException(IOError, "Vendor cache input changed or missing: " & path)
+  result = digest(contents)
+  # External build records participate in cache identity; all inputs are
+  # separately checked before compilation, including their artifact digests.
+  if not dirExists(root.parentDir / ".artifacts" / "vendor"): return
+  var records: seq[string]
+  for kind, path in walkDir(root.parentDir / ".artifacts" / "vendor"):
+    if kind != pcDir or not fileExists(path / "provenance.json"): continue
+    let name = path.lastPathPart
+    when defined(windows):
+      if name.startsWith("linux-"): continue
+    elif defined(linux):
+      if name.startsWith("linux-musl-"): continue
+    records.add(path / "provenance.json")
+  records.sort()
+  for path in records:
+    let contents = readFile(path)
+    let record = parseJson(contents)
+    if record["vendorIdentity"].getStr() != digest(readFile(root / "manifest.json")):
+      raise newException(IOError, "Native build record does not match vendor lock: " & path)
+    for name, digest in record["files"]:
+      if isAbsolute(name) or ".." in name.split('/'):
+        raise newException(IOError, "Unsafe native artifact path")
+      let artifact = path.parentDir / name
+      if not fileExists(artifact) or digest(readFile(artifact)) != digest.getStr():
+        raise newException(IOError, "Native cache input checksum mismatch: " & name)
+    result.add(digest(contents))
 
-  proc distro(): string =
-    if not fileExists("/etc/os-release"): return
-    var id: string
-    var version: string
-    for line in readFile("/etc/os-release").splitLines:
-      if line.startsWith("ID="): id = line[3 .. ^1].strip(chars = {'\"'})
-      if line.startsWith("VERSION_ID="):
-        version = line[11 .. ^1].strip(chars = {'\"'})
-    if id in ["ubuntu", "debian"]: result = id & "-" & version
-
-  proc candidate(name: string): string =
-    let checked = execCmdEx("apt-cache policy " & quoteShell(name))
-    if checked.exitCode != 0: return
-    for line in checked.output.splitLines:
-      let clean = line.strip()
-      if clean.startsWith("Candidate: "):
-        result = clean[11 .. ^1].strip()
-        if result == "(none)": result = ""
-        return
-
-  proc fetch(name, version, root: string; progress: BuildProgress) =
-    if progress != nil: progress("download", name, "native dependency", false)
-    let downloaded = execCmdEx("apt-get download " &
-      quoteShell(name & "=" & version), workingDir = root)
-    if downloaded.exitCode != 0:
-      raise newException(IOError, "Unable to provision " & name & ": " & downloaded.output)
-    var archive: string
-    for path in walkFiles(root / "*.deb"):
-      if path.lastPathPart.startsWith(name & "_"):
-        archive = path
-        break
-    if archive.len == 0:
-      raise newException(IOError, "The " & name & " download did not contain a Debian package.")
-    let extracted = execCmdEx("dpkg-deb -x " & quoteShell(archive) & " " & quoteShell(root))
-    if extracted.exitCode != 0:
-      raise newException(IOError, "Unable to extract " & name & ": " & extracted.output)
-    removeFile(archive)
-    if progress != nil: progress("downloaded", name, "native dependency", false)
-
-  proc runtime(): string =
-    let checked = execCmdEx("apt-cache depends libcurl4-openssl-dev")
-    if checked.exitCode != 0: return
-    for line in checked.output.splitLines:
-      let clean = line.strip()
-      if clean.startsWith("Depends: libcurl") and not clean.endsWith("-dev"):
-        return clean[9 .. ^1].strip()
-
-  proc probe(compiler, name, header: string; paths: seq[string]): bool =
-    var command = quoteShell(compiler)
-    if splitFile(compiler).name.toLowerAscii() == "zig": command.add(" cc")
-    command.add(" -x c - -o /dev/null")
-    for path in paths: command.add(" -I " & quoteShell(path))
-    command.add(" -l" & quoteShell(name))
-    try:
-      let checked = execCmdEx(command,
-        input = "#include <" & header & ">\nint main(void) { return 0; }\n")
-      checked.exitCode == 0
-    except CatchableError:
-      false
+proc muslidentity*(target: string): string =
+  let key = if target.contains("aarch64"): "linux-musl-arm64" else: "linux-musl-x64"
+  let record = vendor().parentDir / ".artifacts" / "vendor" / key / "provenance.json"
+  digest(readFile(vendor() / "manifest.json") & key &
+    (if fileExists(record): readFile(record) else: "not provisioned"))
 
 proc prepare*(libs, paths: seq[string]; compiler, target: string;
-    progress: BuildProgress = nil): Supply =
-  when defined(windows) and defined(amd64):
-    let selected = target.toLowerAscii()
-    if "z" in libs and (selected.len == 0 or
-        (("windows" in selected or "win32" in selected) and
-         ("x86_64" in selected or "amd64" in selected))):
-      let root = bundledZlib()
-      if root.len > 0:
-        result.headers.add(root / "include")
-        result.links.add(("z", root / "zlib.lib"))
-    if "sodium" in libs and (selected.len == 0 or
-        (("windows" in selected or "win32" in selected) and
-         ("x86_64" in selected or "amd64" in selected))):
-      let root = bundledSodium()
-      if root.len > 0:
-        result.headers.add(root / "include")
-        result.links.add(("sodium", root / "libsodium.lib"))
-        result.defines.add("SODIUM_STATIC=1")
-  when defined(linux):
-    if target.len > 0 and (not target.contains("linux") or
-        (defined(amd64) and not target.contains("x86_64")) or
-        (defined(arm64) and not target.contains("aarch64"))): return
-    if findExe("apt-get").len == 0 or findExe("dpkg-deb").len == 0 or
-        findExe("apt-cache").len == 0: return
-    let system = distro()
-    if not (system.startsWith("ubuntu-") or system.startsWith("debian-")): return
-    let arch = execCmdEx("dpkg --print-architecture")
-    if arch.exitCode != 0: return
-    let multi = case arch.output.strip()
-      of "amd64": "x86_64-linux-gnu"
-      of "arm64": "aarch64-linux-gnu"
-      else: return
-    for name in libs:
-      let package = case name
-        of "sodium": "libsodium-dev"
-        of "z": "zlib1g-dev"
-        of "curl": "libcurl4-openssl-dev"
-        else: continue
-      let header = case name
-        of "sodium": "sodium.h"
-        of "z": "zlib.h"
-        else: "curl/curl.h"
-      if probe(compiler, name, header, paths): continue
-      let version = candidate(package)
-      if version.len == 0:
-        raise newException(IOError, "No apt candidate for " & package & ". Update apt package lists or install it manually.")
-      let dependency = if name == "curl": runtime() else: ""
-      if name == "curl" and dependency.len == 0:
-        raise newException(IOError, "Unable to find libcurl's runtime package in apt metadata.")
-      let revision = if dependency.len > 0: candidate(dependency) else: ""
-      if dependency.len > 0 and revision.len == 0:
-        raise newException(IOError, "No apt candidate for " & dependency &
-          ". Update apt package lists or install it manually.")
-      let stamp = sha256Hex(package & version & dependency & revision)[0 .. 15]
-      let root = directory() / "native" / system / arch.output.strip() / name / stamp
-      let marker = root / ".ready"
-      let folder = root / "usr" / "lib" / multi
-      let library = folder / ("lib" & name & (if name == "curl": ".so" else: ".a"))
-      let location = root / "usr" / "include" /
-        (if name == "curl": multi else: "")
-      if not fileExists(marker) or not fileExists(library) or
-          not fileExists(location / header):
-        createDir(root)
-        fetch(package, version, root, progress)
-        if dependency.len > 0: fetch(dependency, revision, root, progress)
-        if not fileExists(library) or not fileExists(location / header):
-          raise newException(IOError, "The " & package & " package lacks " & header &
-            " or lib" & name & ".")
-        writeFile(marker, version & "\n" & revision & "\n")
-      result.headers.add(location)
-      result.links.add((name, library))
-      if name == "curl":
-        let shared = folder / "libcurl.so.4"
-        if not fileExists(shared):
-          raise newException(IOError, "The libcurl runtime package lacks libcurl.so.4.")
-        result.runtime.add(shared)
+    progress: Observer = nil): Supply =
+  if libs.len == 0: return
+  let selected = target.toLowerAscii()
+  let windows = if selected.len > 0: "windows" in selected or "win32" in selected else: defined(windows)
+  let linux = if selected.len > 0: "linux" in selected else: defined(linux)
+  let x64 = if selected.len > 0: "x86_64" in selected or "amd64" in selected or "x64" in selected else: defined(amd64)
+  let arm64 = if selected.len > 0: "aarch64" in selected or "arm64" in selected else: defined(arm64)
+  for name in libs:
+    case name
+    of "sodium", "z":
+      if windows and x64:
+        let dep = if name == "sodium": "libsodium" else: "zlib"
+        result.headers.add(container(dep & "/windows-x64/include"))
+        let archive = if name == "sodium": "libsodium.lib" else: "zlib.lib"
+        result.links.add((name, verified(dep & "/windows-x64/" & archive)))
+        if name == "sodium": result.defines.add("SODIUM_STATIC=1")
+      elif linux and (x64 or arm64):
+        let musl = selected.contains("musl")
+        let key = (if musl: "linux-musl-" else: "linux-") &
+          (if x64: "x64" else: "arm64")
+        let root = vendor().parentDir / ".artifacts" / "vendor" / key
+        let record = root / "provenance.json"
+        if not fileExists(record):
+          raise newException(IOError, "Missing controlled native artifacts for " & key & "; explicitly run node tools/vendor/build.mjs --target " & key & " on that target. Normal builds never download/install dependencies.")
+        let document = parseFile(record)
+        if document["target"].getStr() != key or document["vendorIdentity"].getStr() != digest(readFile(vendor() / "manifest.json")):
+          raise newException(IOError, "Native artifacts do not match target/vendor lock; rebuild " & key)
+        if musl and not document["compilerTarget"].getStr().endsWith("-linux-musl"):
+          raise newException(IOError, "Native musl artifacts require a musl compiler target: " & key)
+        for path, digest in document["files"]:
+          if isAbsolute(path) or ".." in path.split('/'): raise newException(IOError, "Unsafe native artifact path")
+          if not fileExists(root / path) or digest(readFile(root / path)) != digest.getStr():
+            raise newException(IOError, "Native artifact checksum mismatch: " & path)
+        let dep = if name == "sodium": "libsodium" else: "zlib"
+        let archive = dep & "/lib/" & (if name == "sodium": "libsodium.a" else: "libz.a")
+        let header = dep & "/include/" & (if name == "sodium": "sodium.h" else: "zlib.h")
+        if not document["files"].hasKey(archive) or not document["files"].hasKey(header):
+          raise newException(IOError, "Native build record omits required archive/header: " & dep)
+        result.headers.add(root / dep / "include")
+        result.links.add((name, root / dep / "lib" / (if name == "sodium": "libsodium.a" else: "libz.a")))
+      else:
+        raise newException(IOError, "No qualified controlled " & name & " artifact for target '" & target & "'; Windows ARM, macOS, WASI and freestanding are not qualified")
+    of "curl":
+      if not linux:
+        raise newException(IOError, "OS-linked libcurl is currently qualified for Linux only")
+      result.headers.add(container("curl/include"))
+      if selected.contains("musl"):
+        let key = "linux-musl-" & (if x64: "x64" else: "arm64")
+        let root = vendor().parentDir / ".artifacts" / "vendor" / key
+        let record = root / "provenance.json"
+        if not fileExists(record):
+          raise newException(IOError, "Missing controlled native artifacts for " & key)
+        let document = parseFile(record)
+        if document["target"].getStr() != key or
+            document["vendorIdentity"].getStr() != digest(readFile(vendor() / "manifest.json")) or
+            not document["compilerTarget"].getStr().startsWith(
+              (if x64: "x86_64-" else: "aarch64-")) or
+            not document["compilerTarget"].getStr().endsWith("-linux-musl"):
+          raise newException(IOError, "Native curl archive does not match target/vendor lock")
+        for path, expected in document["files"]:
+          if isAbsolute(path) or ".." in path.split('/') or
+              not fileExists(root / path) or
+              digest(readFile(root / path)) != expected.getStr():
+            raise newException(IOError, "Native artifact checksum mismatch: " & path)
+        let archive = "curl/lib/libcurl.a"
+        if not document["files"].hasKey(archive):
+          raise newException(IOError, "Missing controlled musl curl archive; run node tools/vendor/curl.mjs --target " & key & " --archive <curl source archive>")
+        var recipe = newJNull()
+        for item in document["recipes"]:
+          if item["dependency"].getStr() == "curl": recipe = item
+        if recipe.kind != JObject or not recipe.hasKey("archiveSha256") or
+            not recipe.hasKey("tlsBackend") or recipe["archiveSha256"].getStr() !=
+            document["files"][archive].getStr():
+          raise newException(IOError, "Native curl archive lacks matching build provenance")
+        result.links.add((name, root / archive))
+        if recipe["tlsBackend"].getStr() == "openssl-static":
+          let lock = parseFile(vendor() / "openssl-musl.json")
+          let expected = lock["targets"][key]
+          if recipe["opensslLockIdentity"].getStr() !=
+              digest(readFile(vendor() / "openssl-musl.json")) or
+              recipe["opensslDevSha256"].getStr() != expected["devSha256"].getStr() or
+              recipe["opensslStaticSha256"].getStr() != expected["staticSha256"].getStr():
+            raise newException(IOError, "Native curl OpenSSL inputs do not match the target lock")
+          for dep in ["ssl", "crypto"]:
+            let relative = "curl/lib/lib" & dep & ".a"
+            if not document["files"].hasKey(relative):
+              raise newException(IOError, "Native curl OpenSSL archive missing: " & relative)
+            result.links.add((dep, root / relative))
+        elif recipe["tlsBackend"].getStr() == "none":
+          result.defines.add("FOO_HTTP_NO_HTTPS=1")
+        else:
+          raise newException(IOError, "Unsupported native curl TLS backend")
+      # Other Linux targets retain the OS-owned TLS/CA-store integration.
+    else: discard
+
+proc requirements*(artifact, target, compiler, vendorIdentity: string; libraries: seq[string];
+    providers: seq[string] = @[]; inspectorOverride = "") =
+  let windows = if target.len > 0: "windows" in target else: defined(windows)
+  let macos = if target.len > 0: "darwin" in target or "macos" in target else: defined(macosx)
+  let wasm = "wasm" in target or "wasi" in target
+  let label = if windows: "dumpbin.exe" elif wasm: "wasm-objdump"
+    elif macos: "otool" else: "readelf"
+  let inspector = if inspectorOverride.len > 0: inspectorOverride else: findExe(label)
+  if inspector.len == 0:
+    raise newException(IOError, "Runtime/architecture audit requires " & label &
+      "; install it with the selected toolchain or set an inspector override.")
+  let flags = if windows: " /headers /imports "
+    elif wasm: " -x " elif macos: " -hv -L " else: " -h -d "
+  let checked = execCmdEx(quoteShell(inspector) & flags & quoteShell(artifact))
+  if checked.exitCode != 0:
+    raise newException(IOError, "Runtime/architecture audit requires " & label &
+      " at " & inspector & ": " & checked.output)
+  writeFile(artifact & ".dependencies.json", pretty(%*{
+    "format": "foo.runtime-requirements", "version": 1, "target": target,
+    "compilerFrontend": compiler, "vendorIdentity": vendorIdentity,
+    "linkedLibraries": libraries, "optionalRuntimeProviders": providers,
+    "inspectionTool": inspector, "inspection": checked.output}) & "\n")

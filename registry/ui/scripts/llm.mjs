@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "../../..");
@@ -7,12 +7,8 @@ const clean = (content) => content.replace(/[ \t]+$/gm, "").trim();
 const core = [
   "docs/README.md",
   "docs/start.md",
-  "docs/basics.md",
-  "docs/types.md",
-  "docs/operators.md",
-  "docs/flow.md",
+  "docs/language.md",
   "docs/functions.md",
-  "docs/errors.md",
   "docs/modules.md",
   "docs/projects.md",
   "docs/collections.md",
@@ -31,9 +27,10 @@ const core = [
 const remaining = readdirSync(resolve(root, "docs"))
   .filter(name => name.endsWith(".md"))
   .map(name => `docs/${name}`)
-  .filter(name => !core.includes(name))
+  .filter(name => !core.includes(name) &&
+    name !== "docs/POLICY.md")
   .sort();
-const sources = ["CHANGELOG.md", ...core, ...remaining];
+const sources = [...core, ...remaining];
 const parts = [
   "# FOO Language Documentation",
   "",
@@ -42,9 +39,9 @@ const parts = [
   "",
   "This file contains the complete canonical language, tool, tutorial, and implementation reference for the current compiler.",
   "",
-  "Before relying on a language or toolchain behavior, read the newest release in CHANGELOG.md. It may supersede an older example elsewhere in this file.",
+  "Check the current documentation and target qualification before relying on a language or toolchain behavior.",
   "",
-  "Do not silently reconcile contradictions. If the documentation, standard library declarations, compiler behavior, or C and Zig backends disagree, write an issue-ready observation report for https://github.com/radiiplus/foo/issues. Include a concise title, FOO version or commit when known, platform and backend, expected behavior with its documentation or declaration source, observed behavior, minimal reproduction, exact diagnostics or output, impact, and any verified workaround. Distinguish confirmed behavior from inference. Do not claim that an issue was submitted unless it actually was.",
+  "Do not silently reconcile contradictions. If documentation, standard library declarations, or compiler behavior disagree, write an issue-ready observation report for https://github.com/radiiplus/foo/issues. Include the FOO version or commit, platform and target, expected behavior with its source, observed behavior, minimal reproduction, exact diagnostics or output, impact, and verified workarounds. Distinguish confirmed behavior from inference.",
 ];
 
 for (const source of sources) {
@@ -53,8 +50,3 @@ for (const source of sources) {
 }
 
 writeFileSync(target, `${parts.join("\n")}\n`, "utf8");
-
-const data = resolve(import.meta.dirname, "../public/benchmark");
-mkdirSync(data, { recursive: true });
-copyFileSync(resolve(root, "benchmark/branch.json"),
-  resolve(data, "branch.json"));

@@ -1,0 +1,4 @@
+-- Development candidate; production promotion requires independent API qualification.
+use "candidate/searching.iv" as candidate.
+public function find(content text, value text) giving optional unsigned { give candidate.find(content, value). }
+public function linear(content text, value text) giving optional unsigned { give candidate.linear(content, value). }

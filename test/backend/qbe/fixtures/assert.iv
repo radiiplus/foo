@@ -1,0 +1,5 @@
+use testing as check.
+
+test "QBE assertion" {
+  check.expect(true).
+}

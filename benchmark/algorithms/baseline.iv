@@ -1,0 +1,246 @@
+-- Frozen implementations used by the historical paired investigation.
+-- Builds typed sequences and applies ordering, searching, and transformations.
+public use "sequence" function create[T] giving sequence of T.
+public use "sequence" function append[T](items sequence of T, value T) giving failable sequence of T.
+public use "sequence" function remove[T](items sequence of T, index unsigned) giving failable sequence of T.
+public use "sequence" function copy[T](items sequence of T) giving failable sequence of T.
+public use "sequence" function length[T](items sequence of T) giving unsigned.
+-- Reads the length of a borrowed, read-only sequence without copying it.
+public use "sequence" function extent[T](items sequence of constant T) giving unsigned.
+-- The returned view borrows items; keep the owner alive while using it.
+public use "sequence" function view[T](items sequence of constant T, offset unsigned, count unsigned) giving failable sequence of constant T.
+public use "sequence" function release[T](items sequence of T) giving failable nothing.
+public use "sequence" function sized[T](length unsigned) giving failable sequence of T.
+use "sequence" function compact[T](items sequence of T, length unsigned) giving failable sequence of T.
+public function lower[T](values sequence of constant T, target T) giving unsigned where T is Ord {
+  dynamic left of type unsigned is 0.
+  dynamic right is extent[T](values).
+  while left less than right {
+    constant middle is left plus (right subtract left) divide 2.
+    when (values at middle) less than target {
+      set left to middle plus 1.
+    } otherwise {
+      set right to middle.
+    }
+  }
+  give left.
+}
+public function upper[T](values sequence of constant T, target T) giving unsigned where T is Ord {
+  dynamic left of type unsigned is 0.
+  dynamic right is extent[T](values).
+  while left less than right {
+    constant middle is left plus (right subtract left) divide 2.
+    when target less than (values at middle) {
+      set right to middle.
+    } otherwise {
+      set left to middle plus 1.
+    }
+  }
+  give left.
+}
+public function search[T](values sequence of constant T, target T) giving optional unsigned where T is Ord {
+  constant index is lower[T](values, target).
+  when index less than extent[T](values) and (values at index) is target {
+    give index.
+  }
+  give null.
+}
+-- Removes adjacent duplicates from ascending input into independent storage.
+public function unique[T](values sequence of constant T) giving failable sequence of T where T is Ord {
+  constant length is extent[T](values).
+  constant result is sized[T](length) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic count of type unsigned is 0.
+  for each value in values {
+    when count is 0 or not ((result at (count subtract 1)) is value) {
+      set result at count to value.
+      increase count by 1.
+    }
+  }
+  give compact[T](result, count) try.
+}
+-- Merges two ascending inputs into one independently owned stable result.
+public function merge[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {
+  constant first is extent[T](left).
+  constant second is extent[T](right).
+  when second greater than 18446744073709551615 subtract first {
+    give fail(Error.Bounds).
+  }
+  constant result is sized[T](first plus second) try.
+  dynamic a of type unsigned is 0.
+  dynamic b of type unsigned is 0.
+  dynamic cursor of type unsigned is 0.
+  while a less than first and b less than second {
+    when (right at b) less than (left at a) {
+      set result at cursor to right at b.
+      increase b by 1.
+    } otherwise {
+      set result at cursor to left at a.
+      increase a by 1.
+    }
+    increase cursor by 1.
+  }
+  while a less than first {
+    set result at cursor to left at a.
+    increase a by 1.
+    increase cursor by 1.
+  }
+  while b less than second {
+    set result at cursor to right at b.
+    increase b by 1.
+    increase cursor by 1.
+  }
+  give result.
+}
+-- Advances past every copy of the current value in an ascending sequence.
+function advance[T](values sequence of constant T, index unsigned) giving unsigned where T is Ord {
+  constant value is values at index.
+  dynamic cursor is index plus 1.
+  while cursor less than extent[T](values) and (values at cursor) is value {
+    increase cursor by 1.
+  }
+  give cursor.
+}
+-- Returns the ascending union of two ascending sequences without duplicates.
+public function unite[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {
+  constant first is extent[T](left).
+  constant second is extent[T](right).
+  when second greater than 18446744073709551615 subtract first {
+    give fail(Error.Bounds).
+  }
+  constant result is sized[T](first plus second) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic a of type unsigned is 0.
+  dynamic b of type unsigned is 0.
+  dynamic count of type unsigned is 0.
+  while a less than first and b less than second {
+    when (left at a) less than (right at b) {
+      set result at count to left at a.
+      set a to advance[T](left, a).
+    } otherwise when (right at b) less than (left at a) {
+      set result at count to right at b.
+      set b to advance[T](right, b).
+    } otherwise {
+      set result at count to left at a.
+      set a to advance[T](left, a).
+      set b to advance[T](right, b).
+    }
+    increase count by 1.
+  }
+  while a less than first {
+    set result at count to left at a.
+    increase count by 1.
+    set a to advance[T](left, a).
+  }
+  while b less than second {
+    set result at count to right at b.
+    increase count by 1.
+    set b to advance[T](right, b).
+  }
+  give compact[T](result, count) try.
+}
+-- Returns the ascending values shared by two ascending sequences.
+public function intersect[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {
+  constant first is extent[T](left).
+  constant second is extent[T](right).
+  dynamic capacity is first.
+  when second less than first { set capacity to second. }
+  constant result is sized[T](capacity) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic a of type unsigned is 0.
+  dynamic b of type unsigned is 0.
+  dynamic count of type unsigned is 0.
+  while a less than first and b less than second {
+    when (left at a) less than (right at b) {
+      set a to advance[T](left, a).
+    } otherwise when (right at b) less than (left at a) {
+      set b to advance[T](right, b).
+    } otherwise {
+      set result at count to left at a.
+      increase count by 1.
+      set a to advance[T](left, a).
+      set b to advance[T](right, b).
+    }
+  }
+  give compact[T](result, count) try.
+}
+-- Returns ascending values from left that do not appear in right.
+public function difference[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {
+  constant first is extent[T](left).
+  constant second is extent[T](right).
+  constant result is sized[T](first) try.
+  after error { release[T](result) fallback nothing. }
+  dynamic a of type unsigned is 0.
+  dynamic b of type unsigned is 0.
+  dynamic count of type unsigned is 0.
+  while a less than first and b less than second {
+    when (left at a) less than (right at b) {
+      set result at count to left at a.
+      increase count by 1.
+      set a to advance[T](left, a).
+    } otherwise when (right at b) less than (left at a) {
+      set b to advance[T](right, b).
+    } otherwise {
+      set a to advance[T](left, a).
+      set b to advance[T](right, b).
+    }
+  }
+  while a less than first {
+    set result at count to left at a.
+    increase count by 1.
+    set a to advance[T](left, a).
+  }
+  give compact[T](result, count) try.
+}
+public function sort[T](items sequence of T) giving failable sequence of T where T is Ord {
+  dynamic result is copy[T](items) try.
+  after error { release[T](result) fallback nothing. }
+  constant size is length[T](result).
+  when size less than 2 { give result. }
+  constant scratch is sized[T](size) try.
+  after { release[T](scratch) fallback nothing. }
+  dynamic width of type unsigned is 1.
+  while width less than size {
+    dynamic origin of type unsigned is 0.
+    while origin less than size {
+      dynamic middle is size.
+      when width less than size subtract origin { set middle to origin plus width. }
+      dynamic end is size.
+      when width less than size subtract middle { set end to middle plus width. }
+      dynamic left is origin.
+      dynamic right is middle.
+      dynamic cursor is origin.
+      while left less than middle and right less than end {
+        when (result at right) less than (result at left) {
+          set scratch at cursor to result at right.
+          increase right by 1.
+        } otherwise {
+          set scratch at cursor to result at left.
+          increase left by 1.
+        }
+        increase cursor by 1.
+      }
+      while left less than middle {
+        set scratch at cursor to result at left.
+        increase left by 1.
+        increase cursor by 1.
+      }
+      while right less than end {
+        set scratch at cursor to result at right.
+        increase right by 1.
+        increase cursor by 1.
+      }
+      set origin to end.
+    }
+    dynamic index of type unsigned is 0.
+    while index less than size {
+      set result at index to scratch at index.
+      increase index by 1.
+    }
+    when width greater than size divide 2 { set width to size. }
+    otherwise { set width to width multiply 2. }
+  }
+  give result.
+}
+
+public use "text" function find(content text, value text) giving optional unsigned.

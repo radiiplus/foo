@@ -1,10 +1,7 @@
-import ../build/cache as buildcache
-import ../build/compiler as buildcompiler
-import ../build/files as buildfiles
-import ../build/planner as buildplanner
-import ../build/project as buildproject
-import ../build/query as buildquery
-import ../build/release as buildrelease
-import ../build/tasks as buildtasks
+import ../build/files as files
+import ../build/planner as planner
+import ../build/project as project
+import ../build/query as query
+import ../build/tasks as tasks
 
 echo "build suite: ok"

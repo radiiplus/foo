@@ -14,16 +14,28 @@
   #error ProjectRoot must point to the FOO repository root.
 #endif
 
+#ifndef PackageId
+  #define PackageId "{{E3BFAEE7-920F-4D93-AEA4-32764273820C}"
+#endif
+
+#ifndef AppLabel
+  #define AppLabel "FOO"
+#endif
+
+#ifndef PathRegistryKey
+  #define PathRegistryKey "Software\FOO"
+#endif
+
 [Setup]
-AppId={{E3BFAEE7-920F-4D93-AEA4-32764273820C}
-AppName=FOO
+AppId={#PackageId}
+AppName={#AppLabel}
 AppVersion={#AppVersion}
 AppPublisher=radiiplus
 AppPublisherURL=https://github.com/radiiplus/foo
 AppSupportURL=https://github.com/radiiplus/foo/issues
 AppUpdatesURL=https://github.com/radiiplus/foo/releases
 DefaultDirName={localappdata}\Programs\FOO
-DefaultGroupName=FOO
+DefaultGroupName={#AppLabel}
 DisableProgramGroupPage=yes
 LicenseFile={#ProjectRoot}\LICENSE
 OutputDir={#OutputDir}
@@ -34,7 +46,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\bin\foo.exe
-UninstallDisplayName=FOO
+UninstallDisplayName={#AppLabel}
 Uninstallable=yes
 SetupIconFile=..\assets\installer.ico
 WizardStyle=modern
@@ -59,9 +71,6 @@ Name: "{group}\FOO Command Prompt"; Filename: "{cmd}"; Parameters: "/K ""set PAT
 Name: "{group}\FOO Documentation"; Filename: "https://github.com/radiiplus/foo/tree/v{#AppVersion}/docs"
 Name: "{group}\Uninstall FOO"; Filename: "{uninstallexe}"
 
-[UninstallDelete]
-Type: filesandordirs; Name: "{app}\.artifacts\toolchain"
-
 [Run]
 Filename: "{cmd}"; Parameters: "/K ""set PATH={app}\bin;%PATH%&& cd /d {userdocs}&& foo version"""; Description: "Open a FOO command prompt"; WorkingDir: "{userdocs}"; Flags: postinstall nowait skipifsilent unchecked
 
@@ -69,7 +78,7 @@ Filename: "{cmd}"; Parameters: "/K ""set PATH={app}\bin;%PATH%&& cd /d {userdocs
 const
   EnvironmentKey = 'Environment';
   EnvironmentValue = 'Path';
-  InstallerKey = 'Software\FOO';
+  InstallerKey = '{#PathRegistryKey}';
   PathAddedValue = 'InstallerAddedPath';
 
 function NormalizePathEntry(Value: String): String;

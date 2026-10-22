@@ -1,0 +1,22 @@
+-- Measures a preserved private function-call boundary.
+use testing as check.
+use system as machine.
+
+function next(value unsigned) giving unsigned keeping call {
+  give value plus 1.
+}
+
+function main giving failable integer 32 {
+  dynamic index of type unsigned is 0.
+  dynamic checksum of type unsigned is 0.
+  dynamic limit of type unsigned is 10`000`000.
+  when machine.cores try greater than 0 { increase limit by 1. }
+
+  while index less than limit {
+    set checksum to checksum plus next(index).
+    increase index by 1.
+  }
+
+  check.same(checksum, 50`000`015`000`001).
+  give 0.
+}

@@ -40,7 +40,7 @@ public function category(value pointer to details) giving failable text borrowin
   give classify(value) try.
 }
 use "fs" function restricted(value pointer to details) giving failable boolean.
--- Reports the inverse of the read-only attribute or mode bits, not an access check.
+-- Reports the inverse of read-only attributes or mode bits; WASI uses guest access rights.
 public function writable(value pointer to details) giving failable boolean {
   give not (restricted(value) try).
 }

@@ -1,0 +1,15 @@
+capability "project"
+project {
+  name is "qbe-wasi-project"
+  version is "0.1.0"
+  entry is "src/main.iv"
+  build {
+    backend is "qbe"
+    products {
+      app {
+        kind is "exe"
+        entry is "src/main.iv"
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+-- Development candidate; production promotion requires independent API qualification.
+use "candidate/ordered.iv" as candidate.
+public function intersect[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord { give candidate.intersect[T](left, right) try. }

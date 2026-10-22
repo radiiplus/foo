@@ -1,0 +1,16 @@
+use process as host.
+use time as clock.
+use testing as check.
+use "text" function release(content text) giving failable nothing.
+
+start {
+  check.expect(host.count is greater than 0).
+  constant program is host.argument(0) try.
+  check.expect(lengthof(program) is greater than 0).
+  release(program) try.
+  check.same(host.environment("FOO_WASI_MISSING_7F19") fallback "missing", "missing").
+  constant first is clock.current try.
+  check.expect((clock.wall try) is greater than 0).
+  clock.sleep(1000000) try.
+  check.expect((clock.current try) is greater than or equal to first).
+}

@@ -11,7 +11,7 @@ exports.run = async function run() {
     assert(extension, 'FOO extension not registered');
     await extension.activate();
     assert(extension.isActive, 'FOO extension must activate for live language support');
-    const document = await vscode.workspace.openTextDocument(path.resolve(__dirname, 'cases/pointers.iv'));
+    const document = await vscode.workspace.openTextDocument(path.resolve(__dirname, 'fixtures/pointers.iv'));
     assert.equal(document.languageId, 'foo', '.iv must select FOO without file associations');
     assert.equal(vscode.workspace.getConfiguration('editor', document).get('bracketPairColorization.enabled'), true);
     report.checks.push('clean .iv detection', 'language defaults');
@@ -55,7 +55,9 @@ exports.run = async function run() {
     await vscode.commands.executeCommand('editor.action.jumpToBracket');
     assert.equal(editor.selection.active.line, 2);
     report.checks.push('bracket matching');
-    const pointer = document.positionAt(document.getText().indexOf('data of type pointer'));
+    const offset = document.getText().indexOf('data of type pointer');
+    assert(offset >= 0, 'Missing pointer annotation in the live editor fixture');
+    const pointer = document.positionAt(offset);
     const word = document.getWordRangeAtPosition(pointer.translate(0, 1));
     assert(word && document.getText(word) === 'data');
     report.checks.push('identifier word selection');

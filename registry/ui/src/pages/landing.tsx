@@ -1,12 +1,11 @@
 import { ArrowRight, BookOpen, Braces, Check, Copy, Download, GitFork, PackageSearch } from "lucide-react";
 import { lazy, Suspense, useState, type ReactNode } from "react";
 
-import baseline from "../../../../benchmark/baseline.json";
 import { Backdrop } from "../components/backdrop";
 import { highlightFoo } from "../components/code";
-import type { SceneKind } from "../components/technical-scene";
+import type { Kind } from "../components/scene";
 
-const SceneCanvas = lazy(() => import("../components/technical-scene").then(({ TechnicalScene }) => ({ default: TechnicalScene })));
+const Canvas = lazy(() => import("../components/scene").then(({ Display }) => ({ default: Display })));
 
 type LandingProps = { onEnter: (query?: string) => void };
 
@@ -45,20 +44,18 @@ export default function Landing({ onEnter }: LandingProps) {
 
     <main className="registry-home-main foo3d-landing">
       <section className="foo3d-hero" aria-labelledby="registry-home-title">
-        <div className="foo3d-hero-copy"><p className="registry-kicker">NATIVE SYSTEMS / READABLE BY DESIGN</p><h1 id="registry-home-title">FOO</h1><p className="foo3d-hero-hook">Let the code read. Let the machine run.</p><p>A systems language with explicit failure and ownership, C and Zig backends, and one toolchain from first file to published package.</p><div className="registry-home-hero-actions"><a className="primary" href="/docs/start">Start building <ArrowRight size={16} /></a><a href="#why-foo">Explore FOO <ArrowRight size={15} /></a><a href="https://github.com/radiiplus/foo" target="_blank" rel="noreferrer">View source <GitFork size={15} /></a></div></div>
+        <div className="foo3d-hero-copy"><p className="registry-kicker">NATIVE SYSTEMS / READABLE BY DESIGN</p><h1 id="registry-home-title">FOO</h1><p className="foo3d-hero-hook">Let the code read. Let the machine run.</p><p>A systems language with explicit failure and ownership, QBE native output, and one toolchain from first file to published package.</p><div className="registry-home-hero-actions"><a className="primary" href="/docs/start">Start building <ArrowRight size={16} /></a><a href="#why-foo">Explore FOO <ArrowRight size={15} /></a><a href="https://github.com/radiiplus/foo" target="_blank" rel="noreferrer">View source <GitFork size={15} /></a></div></div>
         <Scene kind="hero" label="Interactive 3D representation of FOO source, checking, and native output" className="foo3d-hero-scene" />
       </section>
 
       <Story id="why-foo" number="01" topic="THE IDEA" title="Who pays for the abstraction?" kind="thesis" label="Three 3D layers connecting readable source, checked semantics, and native output">
         <p>FOO's sentence-like syntax has exact, checkable meaning. Types, errors, storage, and low-level access remain visible where they matter, so an expressive program can still be inspected as systems code.</p>
-        <a className="foo3d-link" href="/docs/foundations">Read the design foundations <ArrowRight size={15} /></a>
+        <a className="foo3d-link" href="/docs/language">Read the language guide <ArrowRight size={15} /></a>
       </Story>
 
-      <Story id="performance" number="02" topic="EVIDENCE" title="Where did 116 milliseconds go?" kind="performance" label="3D representation of packed operations replacing repeated per-bit work" reverse>
-        <p>On one packed bitmap fixture, replacing per-bit work with packed-word operations cut the C backend's median operation time from {baseline.operationMedianMs.control.toFixed(2)} ms to {baseline.operationMedianMs.foo.toFixed(2)} ms: 83.2x on this fixture.</p>
-        <div className="foo3d-measure"><span><b>{baseline.operationMedianMs.control.toFixed(2)} ms</b> before</span><i /><span><b>{baseline.operationMedianMs.foo.toFixed(2)} ms</b> after</span></div>
-        <p className="foo3d-fineprint">30,000 64-bit words per input; Windows x64, Intel Core i5-1145G7. A separate C++20 control was faster. These are workload results, not a language ranking.</p>
-        <a className="foo3d-link" href="/docs/audit">Inspect the paired audit <ArrowRight size={15} /></a>
+      <Story id="performance" number="02" topic="PERFORMANCE" title="Measure the work that matters." kind="performance" label="3D representation of operations and measured runtime" reverse>
+        <p>Build the same workload in the mode and target you plan to ship. Check its result, warm it up, and compare repeated samples with a matching control.</p>
+        <a className="foo3d-link" href="/docs/benchmarking">Benchmarking guide <ArrowRight size={15} /></a>
       </Story>
 
       <Story id="language" number="03" topic="SOURCE" title="Can a whole program fit on one line?" kind="language" label="3D stack of source tokens and typed operations">
@@ -68,12 +65,12 @@ export default function Landing({ onEnter }: LandingProps) {
           <pre role="tabpanel" aria-label={current.file}><code>{current.source.split("\n").map((line, index) => <span className="foo3d-code-line" key={`${example}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><span dangerouslySetInnerHTML={{ __html: highlightFoo(line) || " " }} /></span>)}</code></pre>
           <div className="foo3d-code-result"><span>{current.file}</span><strong>{current.output}</strong></div>
         </div>
-        <a className="foo3d-link" href="/docs/introduction">Start with the language <ArrowRight size={15} /></a>
+        <a className="foo3d-link" href="/docs/language">Start with the language <ArrowRight size={15} /></a>
       </Story>
 
-      <Story id="compiler" number="04" topic="COMPILER" title="What survives the trip to native?" kind="compiler" label="Five connected 3D compiler stages, branching into native C and Zig output" reverse>
-        <p>FOO parses and checks source, lowers it to an intermediate representation, specializes the work, then emits C or Zig. Reachability keeps only the functions and runtime services the output needs.</p>
-        <div className="foo3d-inline-steps"><span>SOURCE</span><i /><span>CHECK</span><i /><span>IR</span><i /><span>C / ZIG</span></div>
+      <Story id="compiler" number="04" topic="COMPILER" title="What survives the trip to native?" kind="compiler" label="Five connected 3D compiler stages ending in QBE output" reverse>
+        <p>FOO parses and checks source, lowers it to an intermediate representation, specializes the work, then emits QBE IL for native targets. Reachability keeps only the functions and runtime services the output needs.</p>
+        <div className="foo3d-inline-steps"><span>SOURCE</span><i /><span>CHECK</span><i /><span>IR</span><i /><span>QBE</span></div>
         <a className="foo3d-link" href="/docs/compiler">Follow the compiler <ArrowRight size={15} /></a>
       </Story>
 
@@ -101,7 +98,7 @@ export default function Landing({ onEnter }: LandingProps) {
 }
 
 function Story({ id, number, topic, title, kind, label, reverse, children }: {
-  id: string; number: string; topic: string; title: string; kind: SceneKind; label: string; reverse?: boolean; children: ReactNode;
+  id: string; number: string; topic: string; title: string; kind: Kind; label: string; reverse?: boolean; children: ReactNode;
 }) {
   return <section id={id} className={`foo3d-story${reverse ? " reverse" : ""}`} aria-labelledby={`${id}-title`}>
     <div className="foo3d-story-copy"><p className="registry-kicker">{number} / {topic}</p><h2 id={`${id}-title`}>{title}</h2>{children}</div>
@@ -109,6 +106,6 @@ function Story({ id, number, topic, title, kind, label, reverse, children }: {
   </section>;
 }
 
-function Scene({ kind, label, className = "" }: { kind: SceneKind; label: string; className?: string }) {
-  return <Suspense fallback={<div className={`foo3d-scene ${className}`} aria-hidden="true" />}><SceneCanvas kind={kind} label={label} className={className} /></Suspense>;
+function Scene({ kind, label, className = "" }: { kind: Kind; label: string; className?: string }) {
+  return <Suspense fallback={<div className={`foo3d-scene ${className}`} aria-hidden="true" />}><Canvas kind={kind} label={label} className={className} /></Suspense>;
 }

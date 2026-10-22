@@ -1,0 +1,30 @@
+use testing as check.
+use codec.
+use "text" function release(content text) giving failable nothing.
+use sequence as items.
+define Item as record { id of type unsigned. active of type boolean. }.
+start {
+  constant encoded is codec.encode[Item](Item(42, true)) try.
+  after { release(encoded) fallback nothing. }
+  check.expect(encoded is "{\"id\":42,\"active\":true}").
+  constant decoded is codec.decode[Item](encoded) try.
+  check.expect(decoded is Item(42, true)).
+  check.expect((codec.decode[Item]("{\"active\":false,\"id\":0}") try) is Item(0, false)).
+  check.expect((codec.decode[Item](" { \"id\" : 42, \"active\" : true } ") try) is Item(42, true)).
+  check.expect((codec.decode[Item]("{\"id\":18446744073709551615,\"active\":true}") try) is Item(18446744073709551615, true)).
+  check.expect((codec.decode[Item]("{\"id\":9,\"active\":true,\"extra\":0}") try) is Item(9, true)).
+  check.expect((codec.decode[Item]("{\"id\":9,\"id\":7,\"active\":true}") fallback Item(7, false)) is Item(7, false)).
+  check.expect((codec.decode[Item]("{\"id\":-1,\"active\":true}") fallback Item(7, false)) is Item(7, false)).
+  check.expect((codec.decode[Item]("{\"id\":18446744073709551616,\"active\":true}") fallback Item(7, false)) is Item(7, false)).
+  check.expect((codec.decode[Item]("{\"id\":1,\"active\":1}") fallback Item(7, false)) is Item(7, false)).
+  check.expect((codec.decode[Item]("{\"id\":1}") fallback Item(7, false)) is Item(7, false)).
+  check.expect((codec.decode[Item]("{\"id\":1,\"active\":true") fallback Item(7, false)) is Item(7, false)).
+  dynamic values is items.sized[integer](3) try.
+  after { items.release[integer](values) fallback nothing. }
+  set values at 0 to 1.
+  set values at 1 to 2.
+  set values at 2 to 3.
+  constant sequence is codec.encode[sequence of integer](values) try.
+  after { release(sequence) fallback nothing. }
+  check.expect(sequence is "[1,2,3]").
+}

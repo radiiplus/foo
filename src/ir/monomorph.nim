@@ -1,11 +1,12 @@
 import std/[sequtils, sets, strutils, tables]
 import ./[kind, node, valid]
-import ../opt/arch as targetArch
+import ../opt/arch as architecture
 import ../opt/vector as vectorizer
+import ../pkg/hash
 import std/unicode
 
 type
-  OptimizeOptions* = object
+  Policy* = object
     inline*: bool
     target*: string
     cpu*: string
@@ -13,12 +14,13 @@ type
     mode*: string
     vectorize*: bool
     hot*: HashSet[string]
-  OptimizeResult* = object
+  Changes* = object
     module*: Module
     expressions*: int
     functions*: int
     dead*: int
     inlined*: int
+    callbacks*: int
     boundaries*: int
     allocations*: int
     pipelines*: int
@@ -26,111 +28,119 @@ type
     serializations*: int
     vectors*: int
 
-proc cloneType(value: `Type`; seen: var Table[pointer, `Type`]): `Type` =
+proc copy(value: `Type`; seen: var Table[pointer, `Type`]): `Type` =
   if value == nil: return nil
   let identity = cast[pointer](value)
   if seen.hasKey(identity): return seen[identity]
   result = `Type`(kind: value.kind, name: value.name, width: value.width,
     abi: value.abi, attributes: value.attributes, volatile: value.volatile,
     constant: value.constant, fields: initOrderedTable[string, `Type`](),
-    fieldAttrs: value.fieldAttrs, variants: initOrderedTable[string, `Type`]())
+    annotations: value.annotations, variants: initOrderedTable[string, `Type`]())
   seen[identity] = result
-  result.elem = cloneType(value.elem, seen)
-  for parameter in value.params: result.params.add(cloneType(parameter, seen))
-  result.ret = cloneType(value.ret, seen)
-  for name, field in value.fields: result.fields[name] = cloneType(field, seen)
-  for name, variant in value.variants: result.variants[name] = cloneType(variant, seen)
+  result.elem = copy(value.elem, seen)
+  for parameter in value.params: result.params.add(copy(parameter, seen))
+  result.ret = copy(value.ret, seen)
+  for name, field in value.fields: result.fields[name] = copy(field, seen)
+  for name, variant in value.variants: result.variants[name] = copy(variant, seen)
 
-proc cloneValue(value: Value; seen: var Table[pointer, `Type`]): Value =
+proc copy(value: Value; seen: var Table[pointer, `Type`]): Value =
   Value(kind: value.kind, name: value.name, bits: value.bits,
-    `type`: cloneType(value.type, seen))
+    `type`: copy(value.type, seen))
 
-proc cloneInstruction(value: Instruction; seen: var Table[pointer, `Type`]): Instruction
-proc cloneBlock(value: Block; seen: var Table[pointer, `Type`]): Block =
+proc copy(value: Instruction; seen: var Table[pointer, `Type`]): Instruction
+proc copy(value: Block; seen: var Table[pointer, `Type`]): Block =
   if value == nil: return nil
   result = Block(label: value.label)
-  for parameter in value.params: result.params.add(cloneValue(parameter, seen))
-  for instruction in value.instrs: result.instrs.add(cloneInstruction(instruction, seen))
-  result.term = cloneInstruction(value.term, seen)
+  for parameter in value.params: result.params.add(copy(parameter, seen))
+  for instruction in value.instrs: result.instrs.add(copy(instruction, seen))
+  result.term = copy(value.term, seen)
 
-proc cloneInstruction(value: Instruction; seen: var Table[pointer, `Type`]): Instruction =
+proc copy(value: Instruction; seen: var Table[pointer, `Type`]): Instruction =
   if value == nil: return nil
   result = Instruction(kind: value.kind, memory: value.memory, op: value.op,
     field: value.field, panic: value.panic, trace: value.trace,
     effects: value.effects, span: value.span, error: value.error,
     symbol: value.symbol, region: value.region, `func`: value.func,
     abi: value.abi, attributes: value.attributes, label: value.label,
-    trueLabel: value.trueLabel, falseLabel: value.falseLabel, msg: value.msg,
-    handler: value.handler, path: value.path, evalBody: value.evalBody,
-    mask: value.mask, reduceOp: value.reduceOp, code: value.code)
-  result.dest = cloneValue(value.dest, seen); result.target = cloneValue(value.target, seen)
-  result.ptr = cloneValue(value.ptr, seen); result.val = cloneValue(value.val, seen)
-  result.val2 = cloneValue(value.val2, seen); result.callee = cloneValue(value.callee, seen)
-  result.cond = cloneValue(value.cond, seen); result.value = cloneValue(value.value, seen)
-  result.expr = cloneValue(value.expr, seen)
-  for item in value.args: result.args.add(cloneValue(item, seen))
-  for item in value.trueArgs: result.trueArgs.add(cloneValue(item, seen))
-  for item in value.falseArgs: result.falseArgs.add(cloneValue(item, seen))
-  for edge in value.blocks: result.blocks.add((label: edge.label, value: cloneValue(edge.value, seen)))
-  result.fallback = cloneBlock(value.fallback, seen)
-  result.typeArg = cloneType(value.typeArg, seen)
-  for item in value.typeArgs: result.typeArgs.add(cloneType(item, seen))
+    yes: value.yes, no: value.no, msg: value.msg,
+    handler: value.handler, path: value.path, evaluation: value.evaluation,
+    mask: value.mask, reduction: value.reduction, code: value.code)
+  result.dest = copy(value.dest, seen); result.target = copy(value.target, seen)
+  result.ptr = copy(value.ptr, seen); result.val = copy(value.val, seen)
+  result.val2 = copy(value.val2, seen); result.callee = copy(value.callee, seen)
+  result.cond = copy(value.cond, seen); result.value = copy(value.value, seen)
+  result.expr = copy(value.expr, seen)
+  for item in value.args: result.args.add(copy(item, seen))
+  for item in value.positive: result.positive.add(copy(item, seen))
+  for item in value.negative: result.negative.add(copy(item, seen))
+  for edge in value.blocks: result.blocks.add((label: edge.label, value: copy(edge.value, seen)))
+  result.fallback = copy(value.fallback, seen)
+  for section in value.fallbackBlocks:
+    result.fallbackBlocks.add(copy(section, seen))
+  result.argument = copy(value.argument, seen)
+  for item in value.arguments: result.arguments.add(copy(item, seen))
 
-proc cloneFunction(value: node.Function; seen: var Table[pointer, `Type`]): node.Function =
+proc copy(value: node.Function; seen: var Table[pointer, `Type`]): node.Function =
   result = node.Function(public: value.public, line: value.line, name: value.name,
-    abi: value.abi, attributes: value.attributes, typeParams: value.typeParams,
-    ret: cloneType(value.ret, seen), derives: value.derives)
-  for parameter in value.params: result.params.add(cloneValue(parameter, seen))
-  for basicBlock in value.blocks: result.blocks.add(cloneBlock(basicBlock, seen))
+    abi: value.abi, attributes: value.attributes, generics: value.generics,
+    ret: copy(value.ret, seen), derives: value.derives)
+  for parameter in value.params: result.params.add(copy(parameter, seen))
+  for section in value.blocks: result.blocks.add(copy(section, seen))
 
-proc cloneModule*(input: Module): Module =
+proc copy*(input: Module): Module =
   var seen = initTable[pointer, `Type`]()
   result = Module(version: input.version, stage: input.stage, name: input.name,
-    unitPackage: input.unitPackage, unitPath: input.unitPath, target: input.target,
+    inputs: input.inputs,
+    package: input.package, path: input.path, target: input.target,
     requires: input.requires, regions: input.regions, traces: input.traces,
     native: input.native, residue: input.residue,
     optimization: input.optimization)
   for item in input.storage:
     result.storage.add(Storage(name: item.name, public: item.public,
-      value: cloneValue(item.value, seen)))
+      thread: item.thread, alignment: item.alignment,
+      section: item.section, value: copy(item.value, seen)))
   for item in input.types:
-    result.types.add(TypeDecl(name: item.name, `type`: cloneType(item.type, seen)))
+    result.types.add(Definition(name: item.name, `type`: copy(item.type, seen)))
   for item in input.externs:
-    var copy = Extern(typeParams: item.typeParams, symbol: item.symbol,
-      name: item.name, abi: item.abi, ret: cloneType(item.ret, seen))
-    for parameter in item.params: copy.params.add(cloneType(parameter, seen))
+    var copy = Extern(generics: item.generics, symbol: item.symbol,
+      name: item.name, abi: item.abi, ret: copy(item.ret, seen))
+    for parameter in item.params: copy.params.add(copy(parameter, seen))
     result.externs.add(copy)
-  for function in input.funcs: result.funcs.add(cloneFunction(function, seen))
+  for function in input.funcs: result.funcs.add(copy(function, seen))
 
 proc walk(function: node.Function; visit: proc(instruction: Instruction) {.closure.}) =
   var pending = function.blocks
   var index = 0
   while index < pending.len:
-    let basicBlock = pending[index]; inc index
-    for instruction in basicBlock.instrs:
+    let section = pending[index]; inc index
+    for instruction in section.instrs:
       visit(instruction)
       if instruction.fallback != nil: pending.add(instruction.fallback)
-    if basicBlock.term != nil: visit(basicBlock.term)
+      pending.add(instruction.fallbackBlocks)
+    if section.term != nil:
+      visit(section.term)
+      if section.term.fallback != nil: pending.add(section.term.fallback)
+      pending.add(section.term.fallbackBlocks)
 
 proc prepare*(input: Module): Module =
-  result = cloneModule(input)
+  result = copy(input)
   for function in result.funcs:
     var normal = initHashSet[string]()
     var exceptional = initHashSet[string]()
     if function.blocks.len > 0: normal.incl(function.blocks[0].label)
-    for basicBlock in function.blocks:
-      if basicBlock.term != nil:
-        if basicBlock.term.label.len > 0: normal.incl(basicBlock.term.label)
-        if basicBlock.term.trueLabel.len > 0: normal.incl(basicBlock.term.trueLabel)
-        if basicBlock.term.falseLabel.len > 0: normal.incl(basicBlock.term.falseLabel)
-      for instruction in basicBlock.instrs:
+    for section in function.blocks:
+      if section.term != nil:
+        if section.term.label.len > 0: normal.incl(section.term.label)
+        if section.term.yes.len > 0: normal.incl(section.term.yes)
+        if section.term.no.len > 0: normal.incl(section.term.no)
+      for instruction in section.instrs:
         if instruction.panic.len > 0: exceptional.incl(instruction.panic)
-        if instruction.kind == InstrKind.Thread and instruction.func.len > 0:
-          instruction.kind = InstrKind.Call
+        if instruction.kind == Opcode.Thread and instruction.func.len > 0:
+          instruction.kind = Opcode.Call
     var retained: seq[Block]
-    for basicBlock in function.blocks:
-      if basicBlock.label in normal or basicBlock.label notin exceptional:
-        retained.add(basicBlock)
+    for section in function.blocks:
+      if section.label in normal or section.label notin exceptional:
+        retained.add(section)
     function.blocks = retained
 
 proc operands(instruction: Instruction): seq[Value] =
@@ -143,13 +153,13 @@ proc operands(instruction: Instruction): seq[Value] =
   if instruction.value.name.len > 0: result.add(instruction.value)
   if instruction.expr.name.len > 0: result.add(instruction.expr)
   result.add(instruction.args)
-  result.add(instruction.trueArgs)
-  result.add(instruction.falseArgs)
+  result.add(instruction.positive)
+  result.add(instruction.negative)
   for edge in instruction.blocks: result.add(edge.value)
 
 proc replace(value: var Value; replacements: Table[string, Value]) =
   var seen = initHashSet[string]()
-  while value.kind == ValueKind.Reg and replacements.hasKey(value.name) and value.name notin seen:
+  while value.kind == Flavor.Reg and replacements.hasKey(value.name) and value.name notin seen:
     seen.incl(value.name)
     value = replacements[value.name]
 
@@ -159,27 +169,34 @@ proc substitute(instruction: Instruction; replacements: Table[string, Value]) =
   replace(instruction.callee, replacements); replace(instruction.cond, replacements)
   replace(instruction.value, replacements); replace(instruction.expr, replacements)
   for value in instruction.args.mitems: replace(value, replacements)
-  for value in instruction.trueArgs.mitems: replace(value, replacements)
-  for value in instruction.falseArgs.mitems: replace(value, replacements)
+  for value in instruction.positive.mitems: replace(value, replacements)
+  for value in instruction.negative.mitems: replace(value, replacements)
   for edge in instruction.blocks.mitems: replace(edge.value, replacements)
   if instruction.fallback != nil:
     for child in instruction.fallback.instrs: substitute(child, replacements)
     if instruction.fallback.term != nil: substitute(instruction.fallback.term, replacements)
+  for section in instruction.fallbackBlocks:
+    for child in section.instrs: substitute(child, replacements)
+    if section.term != nil: substitute(section.term, replacements)
 
 proc pure(instruction: Instruction): bool =
   if instruction == nil or instruction.dest.name.len == 0 or instruction.effects.len > 0 or
       instruction.panic.len > 0 or instruction.trace.len > 0 or
-      instruction.memory.input.len > 0 or instruction.fallback != nil: return false
-  if instruction.kind in {InstrKind.Add, InstrKind.Sub, InstrKind.Mul,
-      InstrKind.Div, InstrKind.Remainder}:
-    return instruction.dest.type != nil and instruction.dest.type.kind == TypeKind.Float
-  if instruction.kind == InstrKind.Construct:
-    return instruction.dest.type != nil and instruction.dest.type.kind != TypeKind.Slice
-  instruction.kind in {InstrKind.Not, InstrKind.Convert, InstrKind.Compare,
-    InstrKind.Length, InstrKind.Splat, InstrKind.Shuffle, InstrKind.Select,
-    InstrKind.Reduce}
+      instruction.memory.input.len > 0 or instruction.fallback != nil or
+      instruction.fallbackBlocks.len > 0: return false
+  if instruction.kind in {Opcode.Add, Opcode.Sub, Opcode.Mul,
+      Opcode.Div, Opcode.Remainder}:
+    return instruction.dest.type != nil and instruction.dest.type.kind == Shape.Float
+  if instruction.kind == Opcode.Reduce:
+    return instruction.dest.type != nil and instruction.dest.type.kind == Shape.Float
+  if instruction.kind == Opcode.Construct:
+    return instruction.dest.type != nil and instruction.dest.type.kind != Shape.Slice
+  if instruction.kind == Opcode.Bit:
+    return instruction.op in ["and", "or", "xor", "not"]
+  instruction.kind in {Opcode.Not, Opcode.Convert, Opcode.Compare,
+    Opcode.Length, Opcode.Splat, Opcode.Shuffle, Opcode.Select}
 
-proc semanticTypeKey(value: `Type`; active: var HashSet[pointer]): string =
+proc signature(value: `Type`; active: var HashSet[pointer]): string =
   if value == nil: return "nil"
   let identity = cast[pointer](value)
   if identity in active: return "ref(" & value.name & ")"
@@ -189,98 +206,190 @@ proc semanticTypeKey(value: `Type`; active: var HashSet[pointer]): string =
     $value.abi.len & ":" & value.abi
   for attribute in value.attributes:
     result.add(",a" & $attribute.len & ":" & attribute)
-  if value.elem != nil: result.add(",e" & semanticTypeKey(value.elem, active))
+  if value.elem != nil: result.add(",e" & signature(value.elem, active))
   for parameter in value.params:
-    result.add(",p" & semanticTypeKey(parameter, active))
-  if value.ret != nil: result.add(",r" & semanticTypeKey(value.ret, active))
-  for name, fieldType in value.fields:
+    result.add(",p" & signature(parameter, active))
+  if value.ret != nil: result.add(",r" & signature(value.ret, active))
+  for name, member in value.fields:
     result.add(",f" & $name.len & ":" & name & "=" &
-      semanticTypeKey(fieldType, active))
-    for attribute in value.fieldAttrs.getOrDefault(name):
+      signature(member, active))
+    for attribute in value.annotations.getOrDefault(name):
       result.add("#" & $attribute.len & ":" & attribute)
   for name, variantType in value.variants:
     result.add(",v" & $name.len & ":" & name & "=" &
-      semanticTypeKey(variantType, active))
+      signature(variantType, active))
   result.add(")")
   active.excl(identity)
 
-proc semanticTypeKey(value: `Type`): string =
+proc signature(value: `Type`): string =
   var active = initHashSet[pointer]()
-  semanticTypeKey(value, active)
+  signature(value, active)
 
-proc valueKey(value: Value): string =
+proc key(value: Value): string =
   $value.kind & ":" & $value.name.len & ":" & value.name & ":" &
-    $value.bits.len & ":" & value.bits & ":" & semanticTypeKey(value.type)
-proc instructionKey(instruction: Instruction): string =
+    $value.bits.len & ":" & value.bits & ":" & signature(value.type)
+proc key(instruction: Instruction): string =
   result = $instruction.kind & ":" & instruction.op & ":" &
-    instruction.field & ":" & instruction.reduceOp
+    instruction.field & ":" & instruction.reduction
   for item in instruction.mask: result.add("#" & $item)
-  for value in operands(instruction): result.add("|" & valueKey(value))
+  for value in operands(instruction): result.add("|" & key(value))
   if instruction.dest.type != nil:
-    result.add("->" & semanticTypeKey(instruction.dest.type))
+    result.add("->" & signature(instruction.dest.type))
 
-proc pureFunction*(function: node.Function): bool =
+proc pure*(function: node.Function): bool =
   ## Shared conservative proof for boundary elimination and backend metadata.
   ## Absence of a proof must never be interpreted as absence of effects.
   if function == nil or function.public or function.name == "main" or
       function.abi.len > 0 or function.attributes.len > 0 or
       function.blocks.len != 1 or function.ret == nil or
-      function.ret.kind in {TypeKind.Error, TypeKind.Failable}: return false
-  let basicBlock = function.blocks[0]
-  if basicBlock == nil or basicBlock.term == nil or
-      basicBlock.term.kind != InstrKind.Return: return false
-  for parameter in basicBlock.params:
-    if parameter.type == nil or parameter.type.kind != TypeKind.Memory: return false
-  for instruction in basicBlock.instrs:
+      function.ret.kind in {Shape.Error, Shape.Failable}: return false
+  let section = function.blocks[0]
+  if section == nil or section.term == nil or
+      section.term.kind != Opcode.Return: return false
+  for parameter in section.params:
+    if parameter.type == nil or parameter.type.kind != Shape.Memory: return false
+  for instruction in section.instrs:
     if not pure(instruction): return false
     for value in operands(instruction):
-      if value.kind == ValueKind.Global: return false
-  basicBlock.term.value.type == nil or basicBlock.term.value.kind != ValueKind.Global
+      if value.kind == Flavor.Global: return false
+  section.term.value.type == nil or section.term.value.kind != Flavor.Global
 
-proc canonicalValue(value: Value; names: Table[string, string]): string =
+proc canonical(value: Value; names: Table[string, string]): string =
   if value.type == nil: return "none"
   let identity = case value.kind
-    of ValueKind.Reg: names.getOrDefault(value.name, "?" & value.name)
-    of ValueKind.Const: value.name & ":" & value.bits
-    of ValueKind.Global: value.name
+    of Flavor.Reg: names.getOrDefault(value.name, "?" & value.name)
+    of Flavor.Const: value.name & ":" & value.bits
+    of Flavor.Global: value.name
   $value.kind & ":" & $identity.len & ":" & identity & ":" &
-    semanticTypeKey(value.type)
+    signature(value.type)
 
-proc functionKey(function: node.Function): string =
+proc fingerprint(function: node.Function): string =
   var names = initTable[string, string]()
-  result = "ret=" & semanticTypeKey(function.ret)
+  result = "ret=" & signature(function.ret)
   for index, parameter in function.params:
     names[parameter.name] = "p" & $index
-    result.add("|param=" & semanticTypeKey(parameter.type))
+    result.add("|param=" & signature(parameter.type))
   var serial = 0
   for instruction in function.blocks[0].instrs:
     result.add("|op=" & $instruction.kind & ":" & instruction.op & ":" &
-      instruction.field & ":" & instruction.reduceOp)
+      instruction.field & ":" & instruction.reduction)
     for item in instruction.mask: result.add("#" & $item)
     for value in operands(instruction):
-      result.add(";" & canonicalValue(value, names))
-    result.add("->" & semanticTypeKey(instruction.dest.type))
+      result.add(";" & canonical(value, names))
+    result.add("->" & signature(instruction.dest.type))
     names[instruction.dest.name] = "v" & $serial
     inc serial
-  result.add("|return=" & canonicalValue(function.blocks[0].term.value, names))
+  result.add("|return=" & canonical(function.blocks[0].term.value, names))
 
-proc addressTaken(module: Module): HashSet[string] =
+proc addresses(module: Module): HashSet[string] =
   var taken = initHashSet[string]()
   for function in module.funcs:
     function.walk(proc(instruction: Instruction) =
       for value in operands(instruction):
-        if value.kind == ValueKind.Global and value.type != nil and
-            value.type.kind == TypeKind.Function:
+        if value.kind == Flavor.Global and value.type != nil and
+            value.type.kind == Shape.Function:
           taken.incl(value.name))
   taken
 
-proc mergeEquivalent(module: Module; protected: HashSet[string]): int =
+proc specializeCallbacks(module: Module): int =
+  var functions = initTable[string, node.Function]()
+  var occupied = initHashSet[string]()
+  for function in module.funcs:
+    functions[function.name] = function
+    occupied.incl(function.name)
+  for external in module.externs: occupied.incl(external.name)
+  var instances = initTable[tuple[callee: string, position: int,
+    callback: string], string]()
+  var usedTraces = initHashSet[string]()
+  for trace in module.traces: usedTraces.incl(trace.id)
+  var clones: seq[node.Function]
+  var traces: seq[Trace]
+  var specialized = 0
+  var remaining = 4096
+  for caller in module.funcs:
+    caller.walk(proc(call: Instruction) =
+      if call.kind != Opcode.Call or not functions.hasKey(call.func): return
+      let original = functions[call.func]
+      if original.abi.len > 0 or original.attributes.len > 0 or
+          original.params.len != call.args.len: return
+      for index, argument in call.args:
+        if argument.kind != Flavor.Global or argument.type == nil or
+            argument.type.kind != Shape.Function or
+            original.params[index].type == nil or
+            signature(original.params[index].type) != signature(argument.type) or
+            not functions.hasKey(argument.name): continue
+        let callback = functions[argument.name]
+        if callback.abi != argument.type.abi or
+            callback.params.len != argument.type.params.len or
+            signature(callback.ret) != signature(argument.type.ret): continue
+        var compatible = true
+        for position, parameter in callback.params:
+          if signature(parameter.type) != signature(argument.type.params[position]):
+            compatible = false
+            break
+        if not compatible: continue
+        let parameter = original.params[index].name
+        var present = false
+        original.walk(proc(instruction: Instruction) =
+          if instruction.kind == Opcode.Call and instruction.callee.kind == Flavor.Reg and
+              instruction.callee.name == parameter: present = true)
+        if not present: continue
+        var weight = 0
+        original.walk(proc(instruction: Instruction) = inc weight)
+        if weight > 512 or weight > remaining: continue
+        let key = (callee: original.name, position: index,
+          callback: argument.name)
+        if not instances.hasKey(key):
+          if clones.len >= 128: continue
+          let base = original.name & "__callback_" &
+            digest(original.name & ":" & $index & ":" & argument.name)[0..<16]
+          var name = base
+          var serial = 0
+          while name in occupied:
+            inc serial
+            name = base & "_" & $serial
+          occupied.incl(name)
+          var seen = initTable[pointer, `Type`]()
+          let clone = copy(original, seen)
+          clone.name = name
+          clone.public = false
+          var slots = initTable[string, string]()
+          var position = 0
+          for trace in module.traces:
+            if trace.`function` == original.name:
+              var id = name & ".trace." & $position
+              while id in usedTraces:
+                inc position
+                id = name & ".trace." & $position
+              usedTraces.incl(id)
+              inc position
+              slots[trace.id] = id
+              traces.add(Trace(id: id, `function`: name))
+          clone.walk(proc(instruction: Instruction) =
+            if slots.hasKey(instruction.trace):
+              instruction.trace = slots[instruction.trace]
+            if instruction.kind == Opcode.Call and instruction.callee.kind == Flavor.Reg and
+                instruction.callee.name == parameter:
+              instruction.func = argument.name
+              instruction.callee = Value()
+              instruction.symbol = "")
+          clones.add(clone)
+          instances[key] = name
+          inc specialized
+          remaining -= weight
+        call.func = instances[key]
+        break)
+  module.funcs.add(clones)
+  module.traces.add(traces)
+  result = specialized
+
+proc merge(module: Module; protected: HashSet[string]): int =
   var representatives = initTable[string, string]()
   var aliases = initTable[string, string]()
   var retained: seq[node.Function]
   for function in module.funcs:
-    if pureFunction(function) and function.name notin protected:
-      let key = functionKey(function)
+    if pure(function) and function.name notin protected:
+      let key = fingerprint(function)
       if representatives.hasKey(key):
         aliases[function.name] = representatives[key]
         inc result
@@ -293,40 +402,83 @@ proc mergeEquivalent(module: Module; protected: HashSet[string]): int =
       if aliases.hasKey(instruction.func): instruction.func = aliases[instruction.func])
   module.funcs = retained
 
-proc cost(instruction: Instruction; profile: targetArch.Profile): int =
+proc cost(instruction: Instruction; profile: architecture.Profile): int =
   case instruction.kind
-  of InstrKind.Mul: profile.multiply
-  of InstrKind.Div, InstrKind.Remainder: profile.divide
-  of InstrKind.Construct: 4
-  of InstrKind.Splat, InstrKind.Shuffle, InstrKind.Select, InstrKind.Reduce: 2
+  of Opcode.Mul: profile.multiply
+  of Opcode.Div, Opcode.Remainder: profile.divide
+  of Opcode.Construct: 4
+  of Opcode.Splat, Opcode.Shuffle, Opcode.Select, Opcode.Reduce: 2
   else: 1
 
-proc functionCost(function: node.Function; profile: targetArch.Profile): int =
+proc cost(function: node.Function; profile: architecture.Profile): int =
   for instruction in function.blocks[0].instrs:
     result += cost(instruction, profile)
 
-proc inlineCalls(module: Module; options: OptimizeOptions;
+proc guardedInlineable(function: node.Function): bool =
+  if function == nil or function.public or function.name == "main" or
+      function.abi.len > 0 or function.attributes.len > 0 or
+      function.blocks.len < 2 or function.ret == nil or
+      function.ret.kind in {Shape.Error, Shape.Failable}:
+    return false
+  let entry = function.blocks[0]
+  if entry == nil or entry.term == nil or entry.term.kind != Opcode.Return or
+      entry.params.len != 1 or entry.params[0].type == nil or
+      entry.params[0].type.kind != Shape.Memory or
+      entry.term.memory.input != entry.params[0].name:
+    return false
+  var failures = initHashSet[string]()
+  for section in function.blocks[1 .. ^1]:
+    if section == nil or section.term == nil or
+        section.term.kind != Opcode.Panic or section.instrs.len > 0 or
+        section.params.len != 1 or section.params[0].type == nil or
+        section.params[0].type.kind != Shape.Memory or
+        section.term.memory.input != section.params[0].name:
+      return false
+    failures.incl(section.label)
+  var used = initHashSet[string]()
+  for instruction in entry.instrs:
+    if instruction.memory.output.len > 0: return false
+    let checked = instruction.kind in {Opcode.Add, Opcode.Sub, Opcode.Mul} and
+      instruction.dest.type != nil and
+      instruction.dest.type.kind in {Shape.Int, Shape.Uint} and
+      instruction.panic in failures and instruction.effects.len == 0 and
+      instruction.trace.len == 0 and instruction.memory.input.len == 0 and
+      instruction.fallback == nil and instruction.fallbackBlocks.len == 0
+    if not (pure(instruction) or checked): return false
+    if checked: used.incl(instruction.panic)
+    for value in operands(instruction):
+      if value.kind == Flavor.Global: return false
+  used.len == failures.len and
+    entry.term.value.type != nil and entry.term.value.kind != Flavor.Global
+
+proc inline(module: Module; options: Policy;
     protected: HashSet[string]; pipelines: var int): int =
-  let profile = targetArch.profile(options.target, options.cpu)
+  let profile = architecture.profile(options.target, options.cpu)
   let budget = max(1, profile.budget)
   let maximum = max(4, budget div 4)
   var candidates = initTable[string, node.Function]()
   var costs = initTable[string, int]()
+  var guarded = initHashSet[string]()
   for function in module.funcs:
-    if pureFunction(function) and function.name notin protected:
-      let weight = functionCost(function, profile)
+    let checked = options.backend == "qbe" and options.mode == "release" and
+      options.target in ["x86_64-linux-gnu", "x86_64-windows-msvc"] and
+      guardedInlineable(function)
+    if (pure(function) or checked) and function.name notin protected:
+      let weight = cost(function, profile)
       let limit = if function.name in options.hot: maximum * 2 else: maximum
       if weight <= limit:
         candidates[function.name] = function
         costs[function.name] = weight
+        if checked: guarded.incl(function.name)
   for caller in module.funcs:
     var remaining = if caller.name in options.hot: budget * 2 else: budget
     var serial = 0
     var occupied = initHashSet[string]()
     for parameter in caller.params: occupied.incl(parameter.name)
-    for basicBlock in caller.blocks:
-      for parameter in basicBlock.params: occupied.incl(parameter.name)
-      for instruction in basicBlock.instrs:
+    for section in caller.blocks:
+      occupied.incl(section.label)
+      for parameter in section.params: occupied.incl(parameter.name)
+      for instruction in section.instrs:
         if instruction.dest.name.len > 0: occupied.incl(instruction.dest.name)
     proc fresh(): string =
       while true:
@@ -336,14 +488,18 @@ proc inlineCalls(module: Module; options: OptimizeOptions;
           occupied.incl(result)
           return
     var replacements = initTable[string, Value]()
-    for basicBlock in caller.blocks:
+    var memoryAliases = initTable[string, string]()
+    var extraBlocks: seq[Block]
+    for section in caller.blocks:
       var retained: seq[Instruction]
       var previous = ""
-      for instruction in basicBlock.instrs:
-        let connected = previous.len > 0 and instruction.kind == InstrKind.Call and
-          instruction.args.anyIt(it.kind == ValueKind.Reg and it.name == previous)
+      for instruction in section.instrs:
+        let connected = previous.len > 0 and instruction.kind == Opcode.Call and
+          instruction.args.anyIt(it.kind == Flavor.Reg and it.name == previous)
         substitute(instruction, replacements)
-        if instruction.kind != InstrKind.Call or
+        if memoryAliases.hasKey(instruction.memory.input):
+          instruction.memory.input = memoryAliases[instruction.memory.input]
+        if instruction.kind != Opcode.Call or
             not candidates.hasKey(instruction.func) or
             costs[instruction.func] > remaining:
           retained.add(instruction)
@@ -361,12 +517,24 @@ proc inlineCalls(module: Module; options: OptimizeOptions;
         for index, parameter in candidate.params:
           local[parameter.name] = instruction.args[index]
         var seen = initTable[pointer, `Type`]()
+        var panicLabels = initTable[string, string]()
+        if instruction.func in guarded:
+          for failure in candidate.blocks[1 .. ^1]:
+            let cloned = copy(failure, seen)
+            cloned.label = fresh()
+            panicLabels[failure.label] = cloned.label
+            let memory = fresh()
+            cloned.params[0].name = memory
+            cloned.term.memory.input = memory
+            extraBlocks.add(cloned)
         for child in candidate.blocks[0].instrs:
           let original = child.dest
-          let copy = cloneInstruction(child, seen)
+          let copy = copy(child, seen)
           substitute(copy, local)
+          if copy.panic.len > 0 and panicLabels.hasKey(copy.panic):
+            copy.panic = panicLabels[copy.panic]
           if original.type != nil:
-            if returned.type != nil and returned.kind == ValueKind.Reg and
+            if returned.type != nil and returned.kind == Flavor.Reg and
                 returned.name == original.name and instruction.dest.type != nil:
               copy.dest = instruction.dest
             else:
@@ -376,111 +544,121 @@ proc inlineCalls(module: Module; options: OptimizeOptions;
         if instruction.dest.type != nil:
           var value = returned
           replace(value, local)
-          if value.kind != ValueKind.Reg or value.name != instruction.dest.name:
+          if value.kind != Flavor.Reg or value.name != instruction.dest.name:
             replacements[instruction.dest.name] = value
+        if instruction.func in guarded and instruction.memory.output.len > 0:
+          memoryAliases[instruction.memory.output] = instruction.memory.input
+          replacements[instruction.memory.output] = Value(kind: Flavor.Reg,
+            name: instruction.memory.input, `type`: `Type`(kind: Shape.Memory))
         remaining -= costs[instruction.func]
         inc result
         if connected: inc pipelines
         previous = if instruction.dest.type != nil: instruction.dest.name else: ""
-      basicBlock.instrs = retained
-      if basicBlock.term != nil: substitute(basicBlock.term, replacements)
+      section.instrs = retained
+      if section.term != nil:
+        substitute(section.term, replacements)
+        if memoryAliases.hasKey(section.term.memory.input):
+          section.term.memory.input = memoryAliases[section.term.memory.input]
+    caller.blocks.add(extraBlocks)
 
-proc promoteSlots(function: node.Function): int =
+proc promote(function: node.Function): int =
   var owners = initTable[string, string]()
-  for basicBlock in function.blocks:
-    for instruction in basicBlock.instrs:
-      if instruction.kind == InstrKind.Alloc and instruction.op == "slot" and
-          instruction.dest.type != nil and instruction.dest.type.kind == TypeKind.Ptr:
+  for section in function.blocks:
+    for instruction in section.instrs:
+      if instruction.kind == Opcode.Alloc and instruction.op == "slot" and
+          instruction.dest.type != nil and instruction.dest.type.kind == Shape.Ptr:
         if instruction.dest.type.elem != nil and not instruction.dest.type.volatile and
             not instruction.dest.type.elem.volatile and instruction.effects.len == 0 and
-            instruction.panic.len == 0 and instruction.trace.len == 0 and instruction.fallback == nil:
-          owners[instruction.dest.name] = basicBlock.label
+            instruction.panic.len == 0 and instruction.trace.len == 0 and
+            instruction.fallback == nil and instruction.fallbackBlocks.len == 0:
+          owners[instruction.dest.name] = section.label
   if owners.len == 0: return
 
   var valid = initTable[string, bool]()
   var initialized = initTable[string, bool]()
   for name in owners.keys: valid[name] = true
-  for basicBlock in function.blocks:
-    for instruction in basicBlock.instrs:
+  for section in function.blocks:
+    for instruction in section.instrs:
       for value in operands(instruction):
-        if value.kind != ValueKind.Reg or not owners.hasKey(value.name): continue
-        let direct = instruction.ptr.kind == ValueKind.Reg and
+        if value.kind != Flavor.Reg or not owners.hasKey(value.name): continue
+        let direct = instruction.ptr.kind == Flavor.Reg and
           instruction.ptr.name == value.name and
-          instruction.kind in {InstrKind.Load, InstrKind.Store}
-        if basicBlock.label != owners[value.name] or not direct or
+          instruction.kind in {Opcode.Load, Opcode.Store}
+        if section.label != owners[value.name] or not direct or
             instruction.effects.len > 0 or instruction.panic.len > 0 or
             instruction.trace.len > 0 or instruction.fallback != nil or
+            instruction.fallbackBlocks.len > 0 or
             value.type == nil or value.type.elem == nil or
             value.type.volatile or value.type.elem.volatile:
           valid[value.name] = false
-        elif instruction.kind == InstrKind.Load and
+        elif instruction.kind == Opcode.Load and
             not initialized.getOrDefault(value.name):
           valid[value.name] = false
-        elif instruction.kind == InstrKind.Store:
+        elif instruction.kind == Opcode.Store:
           initialized[value.name] = true
-    if basicBlock.term != nil:
-      for value in operands(basicBlock.term):
-        if value.kind == ValueKind.Reg and owners.hasKey(value.name):
+    if section.term != nil:
+      for value in operands(section.term):
+        if value.kind == Flavor.Reg and owners.hasKey(value.name):
           valid[value.name] = false
 
-  for basicBlock in function.blocks:
+  for section in function.blocks:
     var current = initTable[string, Value]()
     var replacements = initTable[string, Value]()
     var retained: seq[Instruction]
-    for instruction in basicBlock.instrs:
+    for instruction in section.instrs:
       substitute(instruction, replacements)
-      if instruction.kind == InstrKind.Alloc and instruction.op == "slot" and
+      if instruction.kind == Opcode.Alloc and instruction.op == "slot" and
           valid.getOrDefault(instruction.dest.name):
         inc result
         continue
-      if instruction.ptr.kind == ValueKind.Reg and
+      if instruction.ptr.kind == Flavor.Reg and
           valid.getOrDefault(instruction.ptr.name):
-        if instruction.kind == InstrKind.Store:
+        if instruction.kind == Opcode.Store:
           current[instruction.ptr.name] = instruction.val
           continue
-        if instruction.kind == InstrKind.Load and
+        if instruction.kind == Opcode.Load and
             current.hasKey(instruction.ptr.name):
           replacements[instruction.dest.name] = current[instruction.ptr.name]
           continue
       retained.add(instruction)
-    basicBlock.instrs = retained
-    if basicBlock.term != nil: substitute(basicBlock.term, replacements)
+    section.instrs = retained
+    if section.term != nil: substitute(section.term, replacements)
 
-proc eliminateBoundaries(function: node.Function): int =
-  for basicBlock in function.blocks:
+proc eliminate(function: node.Function): int =
+  for section in function.blocks:
     var replacements = initTable[string, Value]()
     var retained: seq[Instruction]
-    for instruction in basicBlock.instrs:
+    for instruction in section.instrs:
       substitute(instruction, replacements)
-      if instruction.kind == InstrKind.Convert and pure(instruction) and instruction.dest.type != nil and
+      if instruction.kind == Opcode.Convert and pure(instruction) and instruction.dest.type != nil and
           instruction.val.type != nil and
-          semanticTypeKey(instruction.dest.type) == semanticTypeKey(instruction.val.type):
+          signature(instruction.dest.type) == signature(instruction.val.type):
         replacements[instruction.dest.name] = instruction.val
         inc result
       else:
         retained.add(instruction)
-    basicBlock.instrs = retained
-    if basicBlock.term != nil: substitute(basicBlock.term, replacements)
+    section.instrs = retained
+    if section.term != nil: substitute(section.term, replacements)
 
-proc specializeContinuations(module: Module): int =
+proc continuations(module: Module): int =
   var specialized = 0
   var blocking = initHashSet[string]()
   for external in module.externs:
     let symbol = if external.symbol.len > 0: external.symbol else: external.name
     if external.abi in ["runtime", "runtime.task"] and symbol == "block" and
         external.params.len == 1 and external.ret != nil and
-        external.ret.kind == TypeKind.Void:
+        external.ret.kind == Shape.Void:
       blocking.incl(external.name)
   if blocking.len == 0: return
   for function in module.funcs:
     function.walk(proc(instruction: Instruction) =
-      if instruction.kind == InstrKind.Call and instruction.func in blocking and
+      if instruction.kind == Opcode.Call and instruction.func in blocking and
           instruction.args.len == 1:
         let callback = instruction.args[0]
-        if callback.kind == ValueKind.Global and callback.type != nil and
-            callback.type.kind == TypeKind.Function and
+        if callback.kind == Flavor.Global and callback.type != nil and
+            callback.type.kind == Shape.Function and
             callback.type.params.len == 0 and callback.type.ret != nil and
-            callback.type.ret.kind == TypeKind.Void:
+            callback.type.ret.kind == Shape.Void:
           instruction.func = callback.name
           instruction.callee = Value()
           instruction.args = @[]
@@ -520,21 +698,21 @@ proc serialize(module: Module): int =
   if quotes.len == 0: return
   for function in module.funcs:
     function.walk(proc(instruction: Instruction) =
-      if instruction.kind != InstrKind.Call or instruction.func notin quotes or
-          instruction.args.len != 1 or instruction.args[0].kind != ValueKind.Const:
+      if instruction.kind != Opcode.Call or instruction.func notin quotes or
+          instruction.args.len != 1 or instruction.args[0].kind != Flavor.Const:
         return
       let source = instruction.args[0]
-      if source.type == nil or source.type.kind != TypeKind.Slice or
+      if source.type == nil or source.type.kind != Shape.Slice or
           instruction.dest.type == nil or
-          instruction.dest.type.kind != TypeKind.Failable:
+          instruction.dest.type.kind != Shape.Failable:
         return
       let raw = bytes(source.name)
       var text = newString(raw.len)
       for index, value in raw: text[index] = char(value)
       if text.validateUtf8 != -1: return
       let encoded = escape(raw)
-      instruction.kind = InstrKind.Convert
-      instruction.val = Value(kind: ValueKind.Const, name: quoted(encoded),
+      instruction.kind = Opcode.Convert
+      instruction.val = Value(kind: Flavor.Const, name: quoted(encoded),
         `type`: instruction.dest.type.elem)
       instruction.args = @[]
       instruction.func = ""
@@ -545,29 +723,30 @@ proc serialize(module: Module): int =
       inc folded)
   result = folded
 
-proc optimize*(input: Module; options = OptimizeOptions()): OptimizeResult =
-  result.module = cloneModule(input)
+proc optimize*(input: Module; options = Policy()): Changes =
+  result.module = copy(input)
   if options.vectorize:
     result.vectors = vectorizer.apply(result.module, options.backend,
       options.target, options.cpu, options.mode)
-  let protected = addressTaken(result.module)
-  result.continuations = specializeContinuations(result.module)
+  let protected = addresses(result.module)
+  result.continuations = continuations(result.module)
   result.serializations = serialize(result.module)
   if options.inline:
-    result.functions = mergeEquivalent(result.module, protected)
-    result.inlined = inlineCalls(result.module, options, protected,
+    result.callbacks = specializeCallbacks(result.module)
+    result.functions = merge(result.module, protected)
+    result.inlined = inline(result.module, options, protected,
       result.pipelines)
   for function in result.module.funcs:
-    result.allocations += promoteSlots(function)
-    result.boundaries += eliminateBoundaries(function)
+    result.allocations += promote(function)
+    result.boundaries += eliminate(function)
     var replacements = initTable[string, Value]()
-    for basicBlock in function.blocks:
+    for section in function.blocks:
       var seen = initTable[string, Value]()
       var retained: seq[Instruction]
-      for instruction in basicBlock.instrs:
+      for instruction in section.instrs:
         substitute(instruction, replacements)
         if pure(instruction):
-          let key = instructionKey(instruction)
+          let key = key(instruction)
           if seen.hasKey(key):
             replacements[instruction.dest.name] = seen[key]
             inc result.expressions
@@ -576,32 +755,33 @@ proc optimize*(input: Module; options = OptimizeOptions()): OptimizeResult =
         else:
           seen.clear()
         retained.add(instruction)
-      basicBlock.instrs = retained
-      if basicBlock.term != nil: substitute(basicBlock.term, replacements)
+      section.instrs = retained
+      if section.term != nil: substitute(section.term, replacements)
     var changed = true
     while changed:
       changed = false
       var used = initHashSet[string]()
-      for basicBlock in function.blocks:
-        for instruction in basicBlock.instrs:
+      for section in function.blocks:
+        for instruction in section.instrs:
           for value in operands(instruction):
-            if value.kind == ValueKind.Reg: used.incl(value.name)
-        if basicBlock.term != nil:
-          for value in operands(basicBlock.term):
-            if value.kind == ValueKind.Reg: used.incl(value.name)
-      for basicBlock in function.blocks:
+            if value.kind == Flavor.Reg: used.incl(value.name)
+        if section.term != nil:
+          for value in operands(section.term):
+            if value.kind == Flavor.Reg: used.incl(value.name)
+      for section in function.blocks:
         var retained: seq[Instruction]
-        for instruction in basicBlock.instrs:
+        for instruction in section.instrs:
           if pure(instruction) and instruction.dest.name notin used:
             inc result.dead; changed = true
           else: retained.add(instruction)
-        basicBlock.instrs = retained
+        section.instrs = retained
   if result.module.version == 1:
     discard seal(result.module)
   result.module.optimization.expressions += result.expressions
   result.module.optimization.functions += result.functions
   result.module.optimization.dead += result.dead
   result.module.optimization.inlined += result.inlined
+  result.module.optimization.callbacks += result.callbacks
   result.module.optimization.boundaries += result.boundaries
   result.module.optimization.allocations += result.allocations
   result.module.optimization.pipelines += result.pipelines
@@ -609,199 +789,202 @@ proc optimize*(input: Module; options = OptimizeOptions()): OptimizeResult =
   result.module.optimization.serializations += result.serializations
   result.module.optimization.vectors += result.vectors
 
-proc typeKey(value: `Type`; seen: var HashSet[pointer]): string =
+proc key(value: `Type`): string =
   if value == nil: return "void"
-  let identity = cast[pointer](value)
-  if identity in seen: return value.name
-  seen.incl(identity)
-  var typeName = ""
-  for character in value.name:
-    typeName.add(if character.isAlphaNumeric: character else: '_')
-  result = $value.kind & (if typeName.len > 0: "_" & typeName else: "")
-  if value.width > 0: result.add("_" & $value.width)
-  if value.constant: result.add("_const")
-  if value.elem != nil: result.add("_" & typeKey(value.elem, seen))
-  for parameter in value.params: result.add("_" & typeKey(parameter, seen))
-  if value.ret != nil: result.add("_" & typeKey(value.ret, seen))
+  $value.kind & "_" & digest(signature(value))
 
-proc typeKey(value: `Type`): string =
-  var seen = initHashSet[pointer]()
-  typeKey(value, seen)
-
-proc substituteType(value: `Type`; bindings: Table[string, `Type`];
+proc substitute(value: `Type`; bindings: Table[string, `Type`];
     seen: var Table[pointer, `Type`]): `Type` =
   if value == nil: return nil
-  if value.kind == TypeKind.Struct and bindings.hasKey(value.name): return bindings[value.name]
+  if value.kind == Shape.Struct and bindings.hasKey(value.name): return bindings[value.name]
   let identity = cast[pointer](value)
   if seen.hasKey(identity): return seen[identity]
   result = `Type`(kind: value.kind, name: value.name, width: value.width,
     abi: value.abi, attributes: value.attributes, volatile: value.volatile,
     constant: value.constant, fields: initOrderedTable[string, `Type`](),
-    fieldAttrs: value.fieldAttrs, variants: initOrderedTable[string, `Type`]())
+    annotations: value.annotations, variants: initOrderedTable[string, `Type`]())
   seen[identity] = result
-  result.elem = substituteType(value.elem, bindings, seen)
-  for parameter in value.params: result.params.add(substituteType(parameter, bindings, seen))
-  result.ret = substituteType(value.ret, bindings, seen)
-  for name, field in value.fields: result.fields[name] = substituteType(field, bindings, seen)
-  for name, variant in value.variants: result.variants[name] = substituteType(variant, bindings, seen)
+  result.elem = substitute(value.elem, bindings, seen)
+  for parameter in value.params: result.params.add(substitute(parameter, bindings, seen))
+  result.ret = substitute(value.ret, bindings, seen)
+  for name, field in value.fields: result.fields[name] = substitute(field, bindings, seen)
+  for name, variant in value.variants: result.variants[name] = substitute(variant, bindings, seen)
 
-proc specializeValue(value: var Value; bindings: Table[string, `Type`];
+proc specialize(value: var Value; bindings: Table[string, `Type`];
     seen: var Table[pointer, `Type`]) =
-  value.type = substituteType(value.type, bindings, seen)
+  value.type = substitute(value.type, bindings, seen)
 
-proc specializeFunction(function: node.Function; bindings: Table[string, `Type`]) =
+proc specialize(function: node.Function; bindings: Table[string, `Type`]) =
   var seen = initTable[pointer, `Type`]()
-  for parameter in function.params.mitems: specializeValue(parameter, bindings, seen)
-  function.ret = substituteType(function.ret, bindings, seen)
-  function.typeParams = @[]
+  for parameter in function.params.mitems: specialize(parameter, bindings, seen)
+  function.ret = substitute(function.ret, bindings, seen)
+  function.generics = @[]
   function.walk(proc(instruction: Instruction) =
-    specializeValue(instruction.dest, bindings, seen)
-    specializeValue(instruction.val, bindings, seen)
-    specializeValue(instruction.val2, bindings, seen)
-    specializeValue(instruction.ptr, bindings, seen)
-    specializeValue(instruction.target, bindings, seen)
-    specializeValue(instruction.callee, bindings, seen)
-    specializeValue(instruction.cond, bindings, seen)
-    specializeValue(instruction.value, bindings, seen)
-    specializeValue(instruction.expr, bindings, seen)
-    for value in instruction.args.mitems: specializeValue(value, bindings, seen)
-    for value in instruction.trueArgs.mitems: specializeValue(value, bindings, seen)
-    for value in instruction.falseArgs.mitems: specializeValue(value, bindings, seen)
-    instruction.typeArg = substituteType(instruction.typeArg, bindings, seen)
-    for typ in instruction.typeArgs.mitems: typ = substituteType(typ, bindings, seen))
+    specialize(instruction.dest, bindings, seen)
+    specialize(instruction.val, bindings, seen)
+    specialize(instruction.val2, bindings, seen)
+    specialize(instruction.ptr, bindings, seen)
+    specialize(instruction.target, bindings, seen)
+    specialize(instruction.callee, bindings, seen)
+    specialize(instruction.cond, bindings, seen)
+    specialize(instruction.value, bindings, seen)
+    specialize(instruction.expr, bindings, seen)
+    for value in instruction.args.mitems: specialize(value, bindings, seen)
+    for value in instruction.positive.mitems: specialize(value, bindings, seen)
+    for value in instruction.negative.mitems: specialize(value, bindings, seen)
+    for edge in instruction.blocks.mitems: specialize(edge.value, bindings, seen)
+    instruction.argument = substitute(instruction.argument, bindings, seen)
+    for typ in instruction.arguments.mitems: typ = substitute(typ, bindings, seen))
+  var sections = function.blocks
+  var position = 0
+  while position < sections.len:
+    let section = sections[position]
+    inc position
+    for parameter in section.params.mitems:
+      specialize(parameter, bindings, seen)
+    for instruction in section.instrs:
+      if instruction.fallback != nil: sections.add(instruction.fallback)
+      sections.add(instruction.fallbackBlocks)
+    if section.term != nil and section.term.fallback != nil:
+      sections.add(section.term.fallback)
+    if section.term != nil: sections.add(section.term.fallbackBlocks)
 
 proc monomorphize*(input: Module): Module =
-  result = cloneModule(input)
-  var genericFunctions = initTable[string, node.Function]()
-  var genericExterns = initTable[string, Extern]()
+  result = copy(input)
+  var routines = initTable[string, node.Function]()
+  var externals = initTable[string, Extern]()
   var functions: seq[node.Function]
   for function in result.funcs:
-    if function.typeParams.len > 0: genericFunctions[function.name] = function
+    if function.generics.len > 0: routines[function.name] = function
     else: functions.add(function)
   var externs: seq[Extern]
   for external in result.externs:
-    if external.typeParams.len > 0: genericExterns[external.name] = external
+    if external.generics.len > 0: externals[external.name] = external
     else: externs.add(external)
-  proc isGeneric(name: string): bool =
-    genericFunctions.hasKey(name) or genericExterns.hasKey(name)
+  proc generic(name: string): bool =
+    routines.hasKey(name) or externals.hasKey(name)
   var instances = initTable[string, string]()
-  var specializedTraces: seq[Trace]
+  var instantiations: seq[Trace]
   var queue: seq[Instruction]
   for function in functions:
     function.walk(proc(instruction: Instruction) =
-      if instruction.kind == InstrKind.Call and isGeneric(instruction.func):
+      if instruction.kind == Opcode.Call and generic(instruction.func):
         queue.add(instruction))
   var position = 0
   while position < queue.len:
     let call = queue[position]; inc position
-    let originalName = call.func
-    let parameters = if genericFunctions.hasKey(originalName):
-      genericFunctions[originalName].typeParams
-      else: genericExterns[originalName].typeParams
-    if call.typeArgs.len != parameters.len:
-      raise newException(ValueError, "Generic function '" & originalName &
+    let spelling = call.func
+    let parameters = if routines.hasKey(spelling):
+      routines[spelling].generics
+      else: externals[spelling].generics
+    if call.arguments.len != parameters.len:
+      raise newException(ValueError, "Generic function '" & spelling &
         "' needs " & $parameters.len & " type arguments")
-    var key = originalName
-    for typ in call.typeArgs: key.add("_" & typeKey(typ))
+    var key = spelling
+    for typ in call.arguments: key.add("_" & key(typ))
     if not instances.hasKey(key):
       if instances.len >= 4096:
         raise newException(ValueError,
           "Generic specialization exceeds 4096 instances; check for expanding recursive type arguments")
       var bindings = initTable[string, `Type`]()
-      for index, parameter in parameters: bindings[parameter] = call.typeArgs[index]
-      let instanceName = key
-      instances[key] = instanceName
+      for index, parameter in parameters: bindings[parameter] = call.arguments[index]
+      let identifier = key
+      instances[key] = identifier
       inc result.optimization.generics
-      if genericExterns.hasKey(originalName):
-        let original = genericExterns[originalName]
+      if externals.hasKey(spelling):
+        let original = externals[spelling]
         var seen = initTable[pointer, `Type`]()
-        var clone = Extern(name: instanceName,
+        var clone = Extern(name: identifier,
           symbol: if original.symbol.len > 0: original.symbol else: original.name,
           abi: original.abi,
-          ret: substituteType(original.ret, bindings, seen))
+          ret: substitute(original.ret, bindings, seen))
         for parameter in original.params:
-          clone.params.add(substituteType(parameter, bindings, seen))
+          clone.params.add(substitute(parameter, bindings, seen))
         externs.add(clone)
       else:
-        let original = genericFunctions[originalName]
-        var cloneSeen = initTable[pointer, `Type`]()
-        var clone = cloneFunction(original, cloneSeen)
-        clone.name = instanceName
-        specializeFunction(clone, bindings)
+        let original = routines[spelling]
+        var copied = initTable[pointer, `Type`]()
+        var clone = copy(original, copied)
+        clone.name = identifier
+        specialize(clone, bindings)
         functions.add(clone)
         clone.walk(proc(instruction: Instruction) =
           if instruction.trace.len > 0:
-            let suffix = if instruction.trace.startsWith(originalName):
-              instruction.trace[originalName.len .. ^1]
+            let suffix = if instruction.trace.startsWith(spelling):
+              instruction.trace[spelling.len .. ^1]
             else: ".trace"
-            instruction.trace = instanceName & suffix
-            if not specializedTraces.anyIt(it.id == instruction.trace):
-              specializedTraces.add(Trace(id: instruction.trace,
-                `function`: instanceName))
-          if instruction.kind == InstrKind.Call and isGeneric(instruction.func):
+            instruction.trace = identifier & suffix
+            if not instantiations.anyIt(it.id == instruction.trace):
+              instantiations.add(Trace(id: instruction.trace,
+                `function`: identifier))
+          if instruction.kind == Opcode.Call and generic(instruction.func):
             queue.add(instruction))
     call.func = instances[key]
-    call.typeArgs = @[]
+    call.arguments = @[]
   result.funcs = functions
   result.externs = externs
-  var genericNames = initHashSet[string]()
-  for name in genericFunctions.keys: genericNames.incl(name)
-  for name in genericExterns.keys: genericNames.incl(name)
+  var labels = initHashSet[string]()
+  for name in routines.keys: labels.incl(name)
+  for name in externals.keys: labels.incl(name)
   var traces: seq[Trace]
   for trace in result.traces:
-    if trace.function notin genericNames: traces.add(trace)
-  traces.add(specializedTraces)
+    if trace.function notin labels: traces.add(trace)
+  traces.add(instantiations)
   result.traces = traces
 
   var visited = initHashSet[pointer]()
-  var declarations = initOrderedTable[string, TypeDecl]()
+  var declarations = initOrderedTable[string, Definition]()
   for declaration in result.types: declarations[declaration.name] = declaration
-  proc specializeNamed(value: `Type`) =
+  proc instantiate(value: `Type`) =
     if value == nil: return
     let identity = cast[pointer](value)
     if identity in visited: return
     visited.incl(identity)
-    specializeNamed(value.elem)
-    for parameter in value.params: specializeNamed(parameter)
-    specializeNamed(value.ret)
-    for field in value.fields.values: specializeNamed(field)
-    for variant in value.variants.values: specializeNamed(variant)
+    instantiate(value.elem)
+    for parameter in value.params: instantiate(parameter)
+    instantiate(value.ret)
+    for field in value.fields.values: instantiate(field)
+    for variant in value.variants.values: instantiate(variant)
     let bracket = value.name.find('[')
-    if value.kind in {TypeKind.Struct, TypeKind.PackedStruct,
-        TypeKind.TaggedUnion} and bracket >= 0 and value.params.len > 0:
+    if value.kind in {Shape.Struct, Shape.PackedStruct,
+        Shape.TaggedUnion} and bracket >= 0 and value.params.len > 0:
       var suffix: seq[string]
-      for parameter in value.params: suffix.add(typeKey(parameter))
+      for parameter in value.params: suffix.add(key(parameter))
       value.name = value.name[0 ..< bracket] & "__" & suffix.join("__")
-      declarations[value.name] = TypeDecl(name: value.name, `type`: value)
-  proc specializeNamed(value: var Value) = specializeNamed(value.type)
-  proc specializeNamed(instruction: Instruction) =
+      declarations[value.name] = Definition(name: value.name, `type`: value)
+  proc instantiate(value: var Value) = instantiate(value.type)
+  proc instantiate(instruction: Instruction) =
     if instruction == nil: return
-    specializeNamed(instruction.dest); specializeNamed(instruction.val)
-    specializeNamed(instruction.val2); specializeNamed(instruction.ptr)
-    specializeNamed(instruction.target); specializeNamed(instruction.callee)
-    specializeNamed(instruction.cond); specializeNamed(instruction.value)
-    specializeNamed(instruction.expr)
-    for value in instruction.args.mitems: specializeNamed(value)
-    for value in instruction.trueArgs.mitems: specializeNamed(value)
-    for value in instruction.falseArgs.mitems: specializeNamed(value)
-    for edge in instruction.blocks.mitems: specializeNamed(edge.value)
-    specializeNamed(instruction.typeArg)
-    for value in instruction.typeArgs: specializeNamed(value)
+    instantiate(instruction.dest); instantiate(instruction.val)
+    instantiate(instruction.val2); instantiate(instruction.ptr)
+    instantiate(instruction.target); instantiate(instruction.callee)
+    instantiate(instruction.cond); instantiate(instruction.value)
+    instantiate(instruction.expr)
+    for value in instruction.args.mitems: instantiate(value)
+    for value in instruction.positive.mitems: instantiate(value)
+    for value in instruction.negative.mitems: instantiate(value)
+    for edge in instruction.blocks.mitems: instantiate(edge.value)
+    instantiate(instruction.argument)
+    for value in instruction.arguments: instantiate(value)
     if instruction.fallback != nil:
-      for parameter in instruction.fallback.params.mitems: specializeNamed(parameter)
-      for child in instruction.fallback.instrs: specializeNamed(child)
-      specializeNamed(instruction.fallback.term)
-  for declaration in result.types: specializeNamed(declaration.type)
-  for item in result.storage.mitems: specializeNamed(item.value)
+      for parameter in instruction.fallback.params.mitems: instantiate(parameter)
+      for child in instruction.fallback.instrs: instantiate(child)
+      instantiate(instruction.fallback.term)
+    for section in instruction.fallbackBlocks:
+      for parameter in section.params.mitems: instantiate(parameter)
+      for child in section.instrs: instantiate(child)
+      instantiate(section.term)
+  for declaration in result.types: instantiate(declaration.type)
+  for item in result.storage.mitems: instantiate(item.value)
   for external in result.externs.mitems:
-    for parameter in external.params: specializeNamed(parameter)
-    specializeNamed(external.ret)
+    for parameter in external.params: instantiate(parameter)
+    instantiate(external.ret)
   for function in result.funcs:
-    for parameter in function.params.mitems: specializeNamed(parameter)
-    specializeNamed(function.ret)
-    for basicBlock in function.blocks:
-      for parameter in basicBlock.params.mitems: specializeNamed(parameter)
-      for instruction in basicBlock.instrs: specializeNamed(instruction)
-      specializeNamed(basicBlock.term)
+    for parameter in function.params.mitems: instantiate(parameter)
+    instantiate(function.ret)
+    for section in function.blocks:
+      for parameter in section.params.mitems: instantiate(parameter)
+      for instruction in section.instrs: instantiate(instruction)
+      instantiate(section.term)
   result.types = @[]
   for declaration in declarations.values: result.types.add(declaration)

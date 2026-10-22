@@ -1,18 +1,18 @@
 import { ArrowUpRight, ChevronLeft, ChevronRight, FileJson, LibraryBig, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { standardIndex, standards, type PublicApiItem, type StandardPackage } from "../utils/registry";
+import { index, standards, type Declaration, type Standard } from "../utils/registry";
 import { displayPackageName } from "../utils/format";
-import { PackageArtwork } from "../components/package-artwork";
+import { Artwork } from "../components/artwork";
 
 type StandardProps = { onOpen: (name: string, symbolId?: string) => void };
-type SymbolMatch = { id: string; entry: PublicApiItem };
-type Match = { packageItem: StandardPackage; items: SymbolMatch[] };
+type SymbolMatch = { id: string; entry: Declaration };
+type Match = { product: Standard; items: SymbolMatch[] };
 const PAGE_SIZE = 20;
 
 export default function Standard({ onOpen }: StandardProps) {
   const initial = useMemo(readStandardState, []);
-  const [packages, setPackages] = useState<StandardPackage[]>([]);
+  const [packages, setPackages] = useState<Standard[]>([]);
   const [query, setQuery] = useState(initial.query);
   const [page, setPage] = useState(initial.page);
   const [error, setError] = useState("");
@@ -33,14 +33,14 @@ export default function Standard({ onOpen }: StandardProps) {
 
   const matches = useMemo<Match[]>(() => {
     const needle = query.trim().toLowerCase();
-    return packages.flatMap((packageItem) => {
-      const all = packageItem.api.modules.flatMap((module) => module.items.map((entry, index) => ({
+    return packages.flatMap((product) => {
+      const all = product.api.modules.flatMap((module) => module.items.map((entry, index) => ({
         id: `${module.path}:${entry.kind}:${entry.name}:${index}`,
         entry,
       })));
-      if (!needle || `${packageItem.name} ${packageItem.description}`.toLowerCase().includes(needle)) return [{ packageItem, items: all }];
+      if (!needle || `${product.name} ${product.description}`.toLowerCase().includes(needle)) return [{ product, items: all }];
       const items = all.filter(({ entry }) => `${entry.kind} ${entry.name} ${entry.declaration} ${entry.documentation}`.toLowerCase().includes(needle));
-      return items.length ? [{ packageItem, items }] : [];
+      return items.length ? [{ product, items }] : [];
     });
   }, [packages, query]);
 
@@ -48,7 +48,7 @@ export default function Standard({ onOpen }: StandardProps) {
   const currentPage = Math.min(page, pageCount - 1);
   const pageStart = currentPage * PAGE_SIZE;
   const visibleMatches = matches.slice(pageStart, pageStart + PAGE_SIZE);
-  const itemCount = packages.reduce((count, packageItem) => count + packageItem.api.modules.reduce((sum, module) => sum + module.items.length, 0), 0);
+  const itemCount = packages.reduce((count, product) => count + product.api.modules.reduce((sum, module) => sum + module.items.length, 0), 0);
 
   useEffect(() => { if (resultsRef.current) resultsRef.current.scrollTop = 0; }, [currentPage, query]);
   useEffect(() => {
@@ -65,20 +65,20 @@ export default function Standard({ onOpen }: StandardProps) {
     <div className="registry-standard-toolbar">
       <header className="registry-standard-head"><h1>Standard library</h1><span>{loading ? "Loading" : `${matches.length} modules / ${itemCount} symbols`}</span></header>
       <label className="registry-standard-search"><Search size={16} /><span className="sr-only">Search standard modules and symbols</span><input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder="Find modules, functions, types" /></label>
-      <a className="registry-standard-index" href={standardIndex()} target="_blank" rel="noreferrer" title="Machine-readable standard library index" aria-label="Machine-readable standard library index"><FileJson size={16} /></a>
+      <a className="registry-standard-index" href={index()} target="_blank" rel="noreferrer" title="Machine-readable standard library index" aria-label="Machine-readable standard library index"><FileJson size={16} /></a>
     </div>
     <div ref={resultsRef} className="registry-standard-results">
       {loading ? <div className="registry-loading">Reading public interfaces...</div>
         : error ? <div className="registry-empty"><LibraryBig size={22} /><p>{error}</p></div>
-        : matches.length ? <div className="registry-standard-masonry">{visibleMatches.map(({ packageItem, items }) => <article className="registry-result-card registry-standard-card standard" key={packageItem.name}>
-            <button className="registry-result-primary" type="button" onClick={() => onOpen(packageItem.name)}>
-              <span className="registry-card-top"><span className="registry-result-icon" aria-hidden="true"><PackageArtwork name={packageItem.name} kind="standard" /></span><ArrowUpRight size={16} aria-hidden="true" /></span>
+        : matches.length ? <div className="registry-standard-masonry">{visibleMatches.map(({ product, items }) => <article className="registry-result-card registry-standard-card standard" key={product.name}>
+            <button className="registry-result-primary" type="button" onClick={() => onOpen(product.name)}>
+              <span className="registry-card-top"><span className="registry-result-icon" aria-hidden="true"><Artwork name={product.name} kind="standard" /></span><ArrowUpRight size={16} aria-hidden="true" /></span>
               <span className="registry-result-kind">Standard library</span>
-              <strong className="registry-result-name">{displayPackageName(packageItem.name)}</strong>
-              <span className="registry-result-description">{packageItem.description}</span>
+              <strong className="registry-result-name">{displayPackageName(product.name)}</strong>
+              <span className="registry-result-description">{product.description}</span>
               <span className="registry-result-meta"><span>Public interface</span><span>{items.length} {items.length === 1 ? "symbol" : "symbols"}</span></span>
             </button>
-            {query && items.length > 0 && <div className="registry-module-symbols">{items.slice(0, 5).map(({ id, entry }) => <button type="button" key={id} onClick={() => onOpen(packageItem.name, id)}>{entry.name}</button>)}{items.length > 5 && <span>+{items.length - 5} more</span>}</div>}
+            {query && items.length > 0 && <div className="registry-module-symbols">{items.slice(0, 5).map(({ id, entry }) => <button type="button" key={id} onClick={() => onOpen(product.name, id)}>{entry.name}</button>)}{items.length > 5 && <span>+{items.length - 5} more</span>}</div>}
           </article>)}</div>
         : <div className="registry-empty"><LibraryBig size={22} /><p>No standard modules match this search.</p></div>}
     </div>

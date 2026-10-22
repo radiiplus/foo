@@ -1,30 +1,30 @@
 # Projects
 
-Version: 1. Configuration file: `project.json`.
+Version: 1. Configuration file: `project.ivc`. The built-in project capability
+is defined in `src/config/project.cap`.
 
-A project declares its language version, capability level and dependencies.
-The application version and configuration schema version are separate fields.
+A project declares its identity and optional settings. Language version 1,
+project schema 1, and the base capability level are supplied by the capability
+definition unless explicitly changed.
 
-```json
-{
-  "schema": 1,
-  "name": "myapp",
-  "version": "1.0.0",
-  "license": "MIT OR Apache-2.0",
-  "language": "1",
-  "source": "src",
-  "entry": "src/main.iv",
-  "entries": { "worker": "src/worker.iv" },
-  "requires": "base",
-  "dependencies": { "http": "^1.2.0" }
+```ivc
+capability "project"
+project {
+  name is "myapp"
+  version is "1.0.0"
+  license is "MIT OR Apache-2.0"
+  source is "src"
+  entry is "src/main.iv"
+  entries { worker is "src/worker.iv" }
+  dependencies { http is "^1.2.0" }
 }
 ```
 
 ## Schema
 
-The root is a JSON object. Duplicate keys and unknown properties are errors.
-Required properties are name, version, language, requires and dependencies.
-An absent schema means 1; canonical serialization writes it explicitly.
+The root is a configuration document. Duplicate fields and unknown properties are errors.
+Required properties are name and version. An absent schema means 1; the
+configuration engine supplies its own format version without an authored field.
 Other schema or language versions require a matching specification.
 
 | Property | Type and constraint |
@@ -64,20 +64,20 @@ A dependency string is one of the following disjoint forms:
 | `1.2.3` | Exact version from the configured registry |
 | `^1.2.3` | Compatible version below the next breaking major (with zero-major rules) |
 | `~1.2.3` | Compatible patch version within minor 1.2 |
-| `path+../library` | A local package path relative to project.json |
+| `path+../library` | A local package path relative to the declaring manifest |
 | `git+https://host/project.git#COMMIT` | HTTPS Git source at a full 40-hex-digit commit |
 
 Registry dependencies accept exact, caret, and tilde constraints. Tags, branch
 names, wildcards, and disjunctions are not valid registry constraints.
 `foo add NAME` records a caret constraint from the current release, while
 `foo add NAME@VERSION` records the supplied constraint. `foo install` resolves
-the manifest and writes the exact selected graph to `foo.lock`.
+the manifest and writes the exact selected graph to `foo.ivl`.
 
 `foo add NAME PATH` normalizes separators, converts an absolute path to a
 project-relative path when possible, and records `path+PATH`. A root local path
-is resolved relative to the root `project.json`; a local dependency's own
-relative path is resolved relative to that dependency's `project.json`. The
-target must contain `project.json`, its `name` must equal NAME, and its `version`
+is resolved relative to the root manifest; a local dependency's own
+relative path is resolved relative to that dependency's manifest. The
+target must contain `project.ivc`, its `name` must equal NAME, and its `version`
 must be exact. That declared version becomes the installed package version.
 Installation copies the package into `.foo/packages/NAME` and records the
 normalized source plus its current content digest. A later `foo install`
@@ -112,22 +112,33 @@ All build properties are optional; unknown properties are errors.
 | target | Preset name or versioned advanced target object; default host preset |
 | optimize | `"dev"` or `"release"`; default dev; both preserve defined semantics |
 | output | Project-relative dedicated output directory; default `output` |
-| icon | Optional project-relative `.ico` file embedded in Windows executable products |
-| coverage | Project-relative path for versioned per-function execution counts; default empty |
-| profile | Project-relative path to a version 1 function coverage file consumed by release optimization; default empty |
-| docs | Boolean; default false; emit backend documentation plus `docs/api.json` |
+| icon | Reserved project-relative `.ico` path; the current QBE driver rejects it |
+| coverage | Reserved path for versioned per-function execution counts; default empty; the current QBE driver rejects it |
+| profile | Reserved path for a version 1 function coverage file; default empty; the current QBE driver rejects it |
+| docs | Boolean; default false; currently rejected until documentation emission is qualified |
 | products | Object from single-word product names to product records |
 | resources | Array of project-relative glob strings; default empty |
 | native | Object from project-relative .iv paths to native-interface dependency names; default empty |
 | hooks | Optional root-only `prebuild` and `postbuild` command strings |
 
-Without products, the project builds one executable, selecting the unique
-discovered start unless entry selects its file explicitly. A product record has entry
-(required relative .iv path), kind (exe/static/shared, default exe), and needs
+Without products, the project builds one product from the selected source. A
+source with `start` or executable top-level statements builds an executable;
+importable source without an entry builds a static library on native targets
+or a relocatable object on WASM/WASI. SPIR-V builds a shader. A target list
+selects the current host when present; an explicit `--target` selects a
+specific target. Set `build.type` or pass `foo build --kind KIND` to override
+the inferred kind. A product
+record has entry (required relative .iv path), optional kind
+(exe/static/shared/object/shader; inferred when omitted), and needs
 (array of product names, default empty). It may additionally have soname,
 version, exports, script and rpath. Soname and version are nonempty strings;
 exports and script are project-relative paths; rpath is an array of target
 search-path strings. Platform-inapplicable options are errors.
+The current QBE driver supports shared products only on Windows x64 and derives
+their exports from public C or native ABI functions. It rejects explicit export
+lists, soname, version and rpath settings. Linker scripts are accepted only for
+freestanding ELF products. See [current QBE support](../docs/qbe.md) for the
+qualified product and target combinations.
 
 Only libraries may satisfy needs. Product dependency cycles and links against
 an executable are errors. Each executable's source graph contains exactly one
@@ -138,34 +149,34 @@ Build hooks execute only from the root project's reviewed manifest. Installing
 a dependency never executes dependency hooks. A nonzero hook exit status fails
 the build, and hook-produced inputs participate in the normal build fingerprint.
 
-```json
-{
-  "schema": 1,
-  "name": "myapp",
-  "version": "1.0.0",
-  "language": "1",
-  "requires": "system",
-  "dependencies": { "platform": "path+../platform" },
-  "build": {
-    "target": ["linux-x64"],
-    "output": "output",
-    "optimize": "dev",
-    "products": {
-      "core": { "entry": "core.iv", "kind": "static" },
-      "app": { "entry": "main.iv", "needs": ["core"] }
-    },
-    "resources": ["assets/**/*.txt"],
-    "backend": "c",
-    "native": { "substrate": "c" }
+```ivc
+capability "project"
+project {
+  name is "myapp"
+  version is "1.0.0"
+  requires using system
+  dependencies { platform is "path+../platform" }
+  build {
+    target is ["linux-x64"]
+    output is "output"
+    optimize is "dev"
+    products {
+      core { entry is "core.iv" kind is "static" }
+      app { entry is "main.iv" needs is ["core"] }
+    }
+    resources is ["assets/**/*.txt"]
+    backend is "qbe"
+    native { substrate is "c" }
   }
 }
 ```
 
-`build.native` is an advanced binding for opaque native blocks. Its substrate
-is c (system capability) or asm (machine capability). Assembly bindings may
-list modified register names in `clobbers`. Both compiler backends support this
-binding. Without an explicit selection, native blocks use C. Native payloads
-do not implicitly capture FOO locals.
+`build.native` describes an advanced binding for opaque native blocks. Its
+substrate is c (system capability) or asm (machine capability). Assembly
+bindings may list modified register names in `clobbers`. The current QBE driver
+rejects this project-level binding; source-level native C and assembly
+contracts remain available on qualified targets. Native payloads do not
+implicitly capture FOO locals.
 
 `build.optimize` selects dev or release. Release enables semantic optimization;
 dev can opt in with `build.semantic: true`. `build.substrate: "c"` requests
@@ -173,15 +184,16 @@ portable C implementations; the default auto selection can use target-specific
 implementations when the project capability permits them. Changing these
 options invalidates the affected cached IR or emission.
 
-`build.coverage` instruments functions and writes a version 1 JSON profile at
-normal process completion. A later release build may set `build.profile` to
-that file. Profile contents participate in artifact identity, and malformed,
-missing, or incompatible profiles are build errors rather than silent fallbacks.
+`build.coverage` and `build.profile` reserve the versioned per-function
+instrumentation and profile-guided optimization contract. The current QBE
+driver rejects both settings and does not produce or consume these profiles.
+When this route is implemented, profile contents must participate in artifact
+identity; malformed, missing, or incompatible profiles must fail the build.
 
-When `build.docs` is true, both backends write `docs/api.json`. The document has
-format `foo.docs`, version 1, the module name, and arrays describing public,
-foreign, and start functions plus declared types. A backend may place additional
-native documentation beside this portable index.
+`build.docs` is reserved for a portable `docs/api.json` index with format
+`foo.docs`, version 1. The QBE driver currently rejects this option; no index
+is emitted. The standalone generator in `src/build/docs.nim` is not wired into
+the build path.
 
 ## Release staging and command links
 
@@ -219,7 +231,7 @@ outside the package are invalid resource selections.
 
 ## Dependency lock and capability closure
 
-`foo.lock` is JSON with format `foo.lock`, version 1, the registry index
+`foo.ivl` is JSON with format `foo.ivl`, version 1, the registry index
 revision when a registry was used, and a packages array sorted by package
 identity. Every package entry records its name, exact version, source locator,
 content digest, direct status, and exact dependency identities. Registry source

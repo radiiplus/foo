@@ -179,4 +179,4 @@ Read [The standard library](library.md) for module-level details.
 | Releasing an alias too early | Release only after every use of that owned value. |
 | Expecting hash-map order | Use an ordered sequence or persistent map workflow. |
 
-Next: [Error handling](errors.md).
+Next: [Modules and packages](modules.md).

@@ -1,0 +1,6 @@
+function main giving integer 32 {
+  dynamic left of type unsigned 33 is 4294967296.
+  dynamic right of type unsigned 33 is 4294967296.
+  set left to left multiply right.
+  give 0.
+}

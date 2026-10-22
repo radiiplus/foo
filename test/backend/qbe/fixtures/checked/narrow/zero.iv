@@ -1,0 +1,6 @@
+function main giving integer 32 {
+  dynamic value of type unsigned 4 is 12.
+  dynamic divisor of type unsigned 4 is 0.
+  set value to value divide divisor.
+  give 0.
+}

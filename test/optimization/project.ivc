@@ -1,0 +1,10 @@
+capability "project"
+project {
+  name is "optimization-fixture"
+  version is "0.1.0"
+  build {
+    backend is "c"
+    optimize is "release"
+    semantic is true
+  }
+}

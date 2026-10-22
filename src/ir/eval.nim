@@ -1,6 +1,6 @@
 import std/[math, sets, strutils, tables]
 import ../ast/node as ast
-import ../ast/print as astPrint
+import ../ast/print as printing
 
 type Layout = object
   size: int
@@ -10,19 +10,27 @@ type Layout = object
   types: seq[string]
   count: int
 
+proc rounded(size, alignment: int): int =
+  size + (alignment - size mod alignment) mod alignment
+
 proc layout(node: ast.`Type`; types: Table[string, ast.Alias];
-    active: HashSet[string]; pointerBytes: int): Layout =
+    active: HashSet[string]; bytes: int): Layout =
   if node.tag == "primitive":
     let primitive = ast.Primitive(node)
     case primitive.name
     of "byte", "boolean": result.size = 1
     of "character": result.size = 4
-    of "integer", "unsigned", "decimal":
+    of "integer", "unsigned":
       let width = if primitive.width.len == 0: 64 else: parseInt(primitive.width)
-      if width in [8, 16, 32, 64]: result.size = width div 8
+      if width in 1..128:
+        result.size = (if width <= 8: 1 elif width <= 16: 2
+          elif width <= 32: 4 elif width <= 64: 8 else: 16)
+    of "decimal":
+      let width = if primitive.width.len == 0: 64 else: parseInt(primitive.width)
+      if width in [32, 64]: result.size = width div 8
     of "text":
-      result.size = pointerBytes * 2
-      result.alignment = pointerBytes
+      result.size = rounded(bytes, 8) + 8
+      result.alignment = max(bytes, 8)
       return
     else: discard
     if result.size == 0:
@@ -30,9 +38,28 @@ proc layout(node: ast.`Type`; types: Table[string, ast.Alias];
     result.alignment = result.size
     return
   if node.tag in ["pointer", "function-type"]:
-    return Layout(size: pointerBytes, alignment: pointerBytes)
+    return Layout(size: bytes, alignment: bytes)
   if node.tag in ["sequence", "array"]:
-    return Layout(size: pointerBytes * 2, alignment: pointerBytes)
+    return Layout(size: rounded(bytes, 8) + 8, alignment: max(bytes, 8))
+  if node.tag in ["optional", "error"]:
+    let element = if node.tag == "optional": ast.Optional(node).elem
+      else: ast.Error(node).elem
+    let member = if element == nil or (element.tag == "primitive" and
+        ast.Primitive(element).name == "nothing"):
+      Layout(size: 1, alignment: 1)
+    else: layout(element, types, active, bytes)
+    let tag = if node.tag == "optional": 1 else: bytes
+    result.alignment = max(tag, member.alignment)
+    result.size = rounded(rounded(tag, member.alignment) + member.size,
+      result.alignment)
+    return
+  if node.tag == "vector":
+    let vector = ast.Vector(node)
+    let count = parseInt(vector.length)
+    let member = layout(vector.elem, types, active, bytes)
+    if count <= 0 or member.size > high(int) div count:
+      raise newException(ValueError, "Compile-time vector layout overflows")
+    return Layout(size: member.size * count, alignment: member.alignment)
   if node.tag != "named":
     raise newException(ValueError, "Compile-time layout requires a fixed-width scalar, address, slice, or c record")
   let name = ast.Named(node).name.text
@@ -46,14 +73,14 @@ proc layout(node: ast.`Type`; types: Table[string, ast.Alias];
   result.alignment = 1
   result.offsets = initTable[string, int]()
   for field in ast.Record(types[name].body).fields:
-    let member = layout(field.type, types, pending, pointerBytes)
+    let member = layout(field.type, types, pending, bytes)
     let padding = (member.alignment - result.size mod member.alignment) mod member.alignment
     if result.size > high(int) - padding - member.size:
       raise newException(ValueError, "Compile-time record layout overflows")
     result.size += padding
     result.offsets[field.name.text] = result.size
     result.names.add(field.name.text)
-    result.types.add(astPrint.print(field.type))
+    result.types.add(printing.print(field.type))
     result.size += member.size
     result.alignment = max(result.alignment, member.alignment)
     inc result.count
@@ -63,21 +90,24 @@ proc layout(node: ast.`Type`; types: Table[string, ast.Alias];
     if attribute.startsWith("align(") and attribute.endsWith(")"):
       result.alignment = max(result.alignment,
         parseInt(attribute[6 ..< attribute.len - 1]))
-  result.size += (result.alignment - result.size mod result.alignment) mod result.alignment
+  let padding = (result.alignment - result.size mod result.alignment) mod result.alignment
+  if result.size > high(int) - padding:
+    raise newException(ValueError, "Compile-time record layout overflows")
+  result.size += padding
 
 proc evaluate*(expression: ast.Expression; bindings: Table[string, ast.Expression];
     active: HashSet[string]; types: Table[string, ast.Alias];
-    pointerBytes: int = sizeof(pointer)): ast.Expression
+    bytes: int = sizeof(pointer)): ast.Expression
 
 proc evaluate*(expression: ast.Expression; bindings: Table[string, ast.Expression];
     active: HashSet[string]; types: Table[string, ast.Alias];
-    pointerBytes: int): ast.Expression =
+    bytes: int): ast.Expression =
   if expression == nil: raise newException(ValueError, "Compile-time evaluation cannot execute an empty expression")
   if expression.tag in ["integer", "decimal", "text", "character", "true",
       "false", "nothing", "null", "newline"]:
     return expression
   if expression.tag == "group":
-    return evaluate(ast.Group(expression).expr, bindings, active, types, pointerBytes)
+    return evaluate(ast.Group(expression).expr, bindings, active, types, bytes)
   if expression.tag == "name":
     let name = ast.Name(expression).text
     if name in active:
@@ -86,12 +116,12 @@ proc evaluate*(expression: ast.Expression; bindings: Table[string, ast.Expressio
       raise newException(ValueError, "Compile-time value '" & name & "' is not constant")
     var pending = active
     pending.incl(name)
-    return evaluate(bindings[name], bindings, pending, types, pointerBytes)
+    return evaluate(bindings[name], bindings, pending, types, bytes)
   if expression.tag == "field":
     let field = ast.Field(expression)
     if field.object.tag == "reflect" and field.field.text in ["size", "alignment", "count"]:
       let measured = layout(ast.Reflect(field.object).type, types,
-        initHashSet[string](), pointerBytes)
+        initHashSet[string](), bytes)
       let value = case field.field.text
         of "size": measured.size
         of "alignment": measured.alignment
@@ -105,9 +135,9 @@ proc evaluate*(expression: ast.Expression; bindings: Table[string, ast.Expressio
           ["offset", "fieldname", "fieldtype"]:
         if call.args.len != 1:
           raise newException(ValueError, "reflect field query requires one name or index")
-        let name = evaluate(call.args[0], bindings, active, types, pointerBytes)
+        let name = evaluate(call.args[0], bindings, active, types, bytes)
         let measured = layout(ast.Reflect(field.object).type, types,
-          initHashSet[string](), pointerBytes)
+          initHashSet[string](), bytes)
         if measured.count == 0:
           raise newException(ValueError, "reflect field query requires a c record")
         var label: string
@@ -129,11 +159,11 @@ proc evaluate*(expression: ast.Expression; bindings: Table[string, ast.Expressio
           value: if field.field.text == "fieldname": label else: measured.types[index])
   if expression.tag == "binary":
     let binary = ast.Binary(expression)
-    let left = evaluate(binary.left, bindings, active, types, pointerBytes)
+    let left = evaluate(binary.left, bindings, active, types, bytes)
     if (binary.op == "and" and left.tag == "false") or
         (binary.op == "or" and left.tag == "true"):
       return left
-    let right = evaluate(binary.right, bindings, active, types, pointerBytes)
+    let right = evaluate(binary.right, bindings, active, types, bytes)
     proc boolean(value: bool): ast.Expression =
       if value: ast.`True`(tag: "true", span: expression.span)
       else: ast.`False`(tag: "false", span: expression.span)
@@ -196,7 +226,7 @@ proc evaluate*(expression: ast.Expression; bindings: Table[string, ast.Expressio
         else: raise newException(ValueError, "Unsupported compile-time operator '" & binary.op & "'")
   if expression.tag == "unary":
     let unary = ast.Unary(expression)
-    let value = evaluate(unary.operand, bindings, active, types, pointerBytes)
+    let value = evaluate(unary.operand, bindings, active, types, bytes)
     if unary.op == "not" and value.tag in ["true", "false"]:
       if value.tag == "true": return ast.`False`(tag: "false", span: expression.span)
       return ast.`True`(tag: "true", span: expression.span)
@@ -216,11 +246,11 @@ proc evaluate*(expression: ast.Expression;
     initTable[string, ast.Alias](), sizeof(pointer))
 
 proc visit(body: ast.Block; inherited: Table[string, ast.Expression];
-    types: Table[string, ast.Alias]; pointerBytes: int) =
+    types: Table[string, ast.Alias]; bytes: int) =
   var bindings = inherited
   for statement in body.stmts:
     if statement.tag == "eval":
-      for declaration in ast.EvalBlock(statement).body.stmts:
+      for declaration in ast.Evaluation(statement).body.stmts:
         if declaration.tag == "constant":
           bindings[ast.Constant(declaration).name.text] = ast.Constant(declaration).value
         elif declaration.tag == "mutable":
@@ -233,16 +263,16 @@ proc visit(body: ast.Block; inherited: Table[string, ast.Expression];
   var runtime: seq[ast.Statement]
   for statement in body.stmts:
     if statement.tag == "eval":
-      for declaration in ast.EvalBlock(statement).body.stmts:
+      for declaration in ast.Evaluation(statement).body.stmts:
         if declaration.tag == "constant":
           let constant = ast.Constant(declaration)
           constant.value = evaluate(constant.value, bindings,
-            initHashSet[string](), types, pointerBytes)
+            initHashSet[string](), types, bytes)
           constant.evaluated = true
           bindings[constant.name.text] = constant.value
         elif declaration.tag == "verify":
           let verdict = evaluate(ast.Verify(declaration).condition, bindings,
-            initHashSet[string](), types, pointerBytes)
+            initHashSet[string](), types, bytes)
           if verdict.tag != "true":
             raise newException(ValueError,
               if verdict.tag == "false": "Compile-time assertion failed"
@@ -260,26 +290,26 @@ proc visit(body: ast.Block; inherited: Table[string, ast.Expression];
     var scope = bindings
     if statement.tag == "function":
       for parameter in ast.Function(statement).params: scope.del(parameter.name.text)
-      visit(ast.Function(statement).body, scope, types, pointerBytes)
+      visit(ast.Function(statement).body, scope, types, bytes)
     elif statement.tag == "when":
       let branch = ast.`When`(statement)
-      visit(branch.then, scope, types, pointerBytes)
+      visit(branch.then, scope, types, bytes)
       if branch.else != nil:
-        if branch.else.tag == "block": visit(ast.Block(branch.else), scope, types, pointerBytes)
+        if branch.else.tag == "block": visit(ast.Block(branch.else), scope, types, bytes)
         elif branch.else.tag == "when":
           let wrapper = ast.Block(tag: "block", span: branch.else.span, stmts: @[ast.Statement(branch.else)])
-          visit(wrapper, scope, types, pointerBytes)
-    elif statement.tag == "while": visit(ast.`While`(statement).body, scope, types, pointerBytes)
-    elif statement.tag == "for": visit(ast.`For`(statement).body, scope, types, pointerBytes)
-    elif statement.tag == "unsafe": visit(ast.Unsafe(statement).body, scope, types, pointerBytes)
-    elif statement.tag == "test": visit(ast.TestBlock(statement).body, scope, types, pointerBytes)
+          visit(wrapper, scope, types, bytes)
+    elif statement.tag == "while": visit(ast.`While`(statement).body, scope, types, bytes)
+    elif statement.tag == "for": visit(ast.`For`(statement).body, scope, types, bytes)
+    elif statement.tag == "unsafe": visit(ast.Unsafe(statement).body, scope, types, bytes)
+    elif statement.tag == "test": visit(ast.Test(statement).body, scope, types, bytes)
     elif statement.tag == "defer" and ast.`Defer`(statement).body.tag == "block":
-      visit(ast.Block(ast.`Defer`(statement).body), scope, types, pointerBytes)
+      visit(ast.Block(ast.`Defer`(statement).body), scope, types, bytes)
     elif statement.tag == "match":
-      for arm in ast.Match(statement).cases: visit(arm.body, scope, types, pointerBytes)
+      for arm in ast.Match(statement).cases: visit(arm.body, scope, types, bytes)
 
 proc expand*(program: ast.Program; target = "") =
-  let pointerBytes = if target.len == 0: sizeof(pointer)
+  let bytes = if target.len == 0: sizeof(pointer)
     elif target.startsWith("wasm32") or target.startsWith("wasi") or
         target == "wasm-freestanding" or target.startsWith("i386") or
         target.startsWith("x86-") or target.startsWith("arm-") or
@@ -292,4 +322,4 @@ proc expand*(program: ast.Program; target = "") =
       if statement.tag == "alias":
         let alias = ast.Alias(statement)
         types[alias.name.text] = alias
-    visit(unit.body, initTable[string, ast.Expression](), types, pointerBytes)
+    visit(unit.body, initTable[string, ast.Expression](), types, bytes)

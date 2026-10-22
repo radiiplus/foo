@@ -5,8 +5,8 @@ import ../../src/build/planner
 let callback = display(jsonOutput = true, verbose = true)
 callback(Progress(phase: ppDone, name: "app", file: "app.exe", cached: true,
   elapsed: 12.4, stages: @[Step(name: "emit", reused: true, elapsed: 1.0)]))
-let operation = newOperation("build", jsonOutput = true)
-doAssert not operation.isFinished()
+let operation = operation("build", jsonOutput = true)
+doAssert not operation.finished()
 doAssert not operation.estimate().timingKnown
 operation.report("plan", "Source", "1", false)
 operation.report("plan", "Compilation", "1", false)
@@ -22,10 +22,10 @@ doAssert not operation.estimate().timingKnown
 operation.report("reuse", "app", "app.exe", true)
 doAssert operation.estimate().percent == 99
 operation.finish(summary = "1 file · 0 errors · 0 warnings")
-doAssert operation.isFinished()
+doAssert operation.finished()
 doAssert operation.estimate().percent == 100
 
-let failed = newOperation("test", jsonOutput = true)
+let failed = operation("test", jsonOutput = true)
 failed.report("plan", "Execution", "2", false)
 failed.report("run", "first", "", false)
 failed.report("ran", "first", "", false)
@@ -34,7 +34,7 @@ failed.finish(false)
 doAssert failed.estimate().completed == 1
 doAssert failed.estimate().percent == 0
 
-let measured = newOperation("benchmark", jsonOutput = true)
+let measured = operation("benchmark", jsonOutput = true)
 measured.report("plan", "Measurement", "2", false)
 for _ in 0 ..< 2:
   measured.report("sample", "startup", "", false)
@@ -43,22 +43,31 @@ doAssert measured.estimate().completed == 2
 measured.finish()
 doAssert measured.estimate().percent == 100
 
+let stages = operation("build", jsonOutput = true)
+stages.report("plan", "Compilation", "2", false)
+stages.report("build", "first", "", false)
+for stage in ["verify", "compile", "runtime"]:
+  stages.report("cache", stage, "QBE cache / validated content", true)
+doAssert stages.estimate().completed == 0
+stages.report("done", "first", "", false)
+doAssert stages.estimate().completed == 1
+
 let root = getTempDir() / ("foo-progress-" & $getCurrentProcessId())
 if dirExists(root): removeDir(root)
 createDir(root)
-let recorded = newOperation("build", jsonOutput = true)
+let recorded = operation("build", jsonOutput = true)
 recorded.configure(root, "c", "windows-x64", "dev")
 recorded.plan("Compilation", 3, 5.0)
 for _ in 0 ..< 3:
-  recorded.startWork("Compilation")
+  recorded.start("Compilation")
   sleep(10)
-  recorded.finishWork("Compilation")
+  recorded.finish("Compilation")
 recorded.finish()
 doAssert fileExists(root / ".artifacts" / "progress.json")
 let saved = parseJson(readFile(root / ".artifacts" / "progress.json"))
 doAssert saved["version"].getInt() == 2
 doAssert saved["seconds"]["BUILD|c|windows-x64|dev|Compilation"]["count"].getInt() == 3
-let reused = newOperation("build", jsonOutput = true)
+let reused = operation("build", jsonOutput = true)
 reused.configure(root, "c", "windows-x64", "dev")
 reused.plan("Compilation", 1, 5.0)
 reused.report("reuse", "app", "app.exe", true)
@@ -68,10 +77,10 @@ reused.finish()
 writeFile(root / ".artifacts" / "progress.json",
   "{\"version\":2,\"seconds\":{\"BUILD|c|windows-x64|dev|Compilation\":" &
   "{\"count\":3,\"mean\":0.01,\"m2\":0.0}}}")
-let overdue = newOperation("build", jsonOutput = true)
+let overdue = operation("build", jsonOutput = true)
 overdue.configure(root, "c", "windows-x64", "dev")
 overdue.plan("Compilation", 1, 5.0)
-overdue.startWork("Compilation")
+overdue.start("Compilation")
 sleep(40)
 doAssert not overdue.estimate().timingKnown
 doAssert overdue.estimate().percent == 0
@@ -79,7 +88,7 @@ overdue.finish(false)
 
 writeFile(root / ".artifacts" / "progress.json",
   "{\"version\":1,\"seconds\":{\"BUILD|c|windows-x64|dev|Compilation\":0.01}}")
-let legacy = newOperation("build", jsonOutput = true)
+let legacy = operation("build", jsonOutput = true)
 legacy.configure(root, "c", "windows-x64", "dev")
 legacy.plan("Compilation", 1, 5.0)
 doAssert not legacy.estimate().timingKnown
@@ -88,10 +97,10 @@ doAssert legacy.estimate().remaining == 0
 writeFile(root / ".artifacts" / "progress.json",
   "{\"version\":2,\"seconds\":{\"BUILD|c|windows-x64|dev|Compilation\":" &
   "{\"count\":3,\"mean\":1.0,\"m2\":0.0}}}")
-let calibrated = newOperation("build", jsonOutput = true)
+let calibrated = operation("build", jsonOutput = true)
 calibrated.configure(root, "c", "windows-x64", "dev")
 calibrated.plan("Compilation", 1, 5.0)
-calibrated.startWork("Compilation")
+calibrated.start("Compilation")
 sleep(20)
 doAssert calibrated.estimate().timingKnown
 doAssert calibrated.estimate().percent > 0
@@ -101,11 +110,11 @@ calibrated.finish(false)
 writeFile(root / ".artifacts" / "progress.json",
   "{\"version\":2,\"seconds\":{\"BUILD|c|windows-x64|dev|Compilation\":" &
   "{\"count\":3,\"mean\":1.0,\"m2\":2.0}}}")
-let variable = newOperation("build", jsonOutput = true)
+let variable = operation("build", jsonOutput = true)
 variable.configure(root, "c", "windows-x64", "dev")
 variable.plan("Compilation", 1, 5.0)
 doAssert not variable.estimate().timingKnown
-let concise = newOperation("test", compact = true)
+let concise = operation("test", compact = true)
 concise.plan("Execution", 1, 1.0)
 concise.report("run", "sample", "", false)
 concise.report("ran", "sample", "", false)

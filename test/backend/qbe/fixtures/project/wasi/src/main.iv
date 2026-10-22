@@ -1,0 +1,16 @@
+function descend(value integer 32, count integer 32) giving integer 32 {
+  when count is 0 { give value. }
+  give descend(value, count subtract 1).
+}
+
+public function answer giving integer 32 {
+  give descend(42, 3).
+}
+
+public function checked(value integer 32) giving integer 32 {
+  give value plus 1.
+}
+
+function main giving integer 32 {
+  give 0.
+}

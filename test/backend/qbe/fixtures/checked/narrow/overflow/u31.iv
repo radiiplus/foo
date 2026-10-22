@@ -1,0 +1,5 @@
+function main giving integer 32 {
+  dynamic value of type unsigned 31 is 2147483647.
+  set value to value multiply value.
+  give 0.
+}

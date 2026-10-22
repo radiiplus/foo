@@ -1,4 +1,4 @@
-# Chapter 12: Advanced (Bending the Hardware to Your Will)
+# Advanced
 
 You have mastered the basics of FOO. You can write safe, readable, and fast applications. But what happens when you need to write a device driver, a game engine, or a piece of code that squeezes every last drop of performance out of a specific CPU?
 
@@ -30,7 +30,8 @@ when answer is 42 { display "42". }
 
 ## 2. Custom Allocators (Memory Chefs)
 
-In Chapter 4, we learned about **Regions** (bulk cleanup). But sometimes, you need even more control. Maybe you want a special memory pool for a game engine, or a memory buffer that lives on a specific hardware device.
+The [memory guide](memory.md) introduces regions (bulk cleanup). An application
+may also need a pool for reusable storage or a buffer supplied by a device.
 
 FOO allows you to create custom **Allocators** (objects that reserve and release memory).
 
@@ -42,10 +43,9 @@ after { memory.close(arena) fallback nothing. }
 constant buffer is memory.allocate(arena, 1024) try.
 ```
 
-**The Benefit:** You can dictate exactly *where* your memory lives, ensuring
-your high-performance app never suffers from fragmentation (free memory broken
-into pieces that are hard to reuse) or slow allocation (memory reservation)
-delays.
+The arena groups these allocations for one cleanup. An allocator can control
+placement and reuse through its contract; neither an arena nor a custom
+allocator guarantees that fragmentation or allocation delays disappear.
 
 ---
 
@@ -83,12 +83,12 @@ Repeated header names are preserved. This supports fields such as `Set-Cookie`,
 but it also means callers must clear credentials before reusing a client for
 another trust domain (a system or organization trusted under different rules).
 
-On Windows, the C backend uses WinHTTP and the operating-system certificate
+On Windows, the hosted runtime uses WinHTTP and the operating-system certificate
 store, so HTTP and HTTPS do not require a separate curl or OpenSSL installation.
 Loading an additional PEM file (a text file containing certificates) with
 `http.trust` is not supported by WinHTTP and fails with
-`CustomTrustUnavailable`; the Zig and POSIX (Unix-compatible operating-system
-interface) implementations support explicit certificate files.
+`CustomTrustUnavailable`; the POSIX (Unix-compatible operating-system
+interface) implementation supports explicit certificate files where qualified.
 
 ### TCP socket policy
 
@@ -161,28 +161,25 @@ contract, with its target requirements and effects declared at the boundary.
 
 ## 5. Hardware Tuning (`opt`)
 
-You know FOO automatically optimizes your code for your CPU. But what if you want to build an app for a *very specific* piece of silicon, like an Apple M1 chip or a specific Intel server?
-
-You can use the `-mcpu` flag to tell FOO's `opt` engine exactly what hardware to target.
+Use `-mcpu` to select a CPU profile for a supported target. The build host must
+be able to run the selected instructions. Apple targets are not enabled in the
+current QBE build route.
 
 ```sh
-# Build for Apple Silicon
-foo build -mcpu apple_m1
-
-# Build for a modern Intel/AMD chip with AVX2
-foo build -mcpu x86-64-v3
+foo build --target windows-x64 -mcpu x86-64-v3
 ```
 
-**The benefit:** the selected profile permits compatible instructions and
-runtime paths. For example, x86-64-v3 enables the measured AVX2 byte-transfer
-path. It does not promise that every expression is vectorized.
+The profile records permitted CPU features for compiler and runtime selection.
+It does not promise that every expression is vectorized or that a particular
+program runs faster. Measure the target program before choosing a profile for
+release.
 
 Runtime hot paths (frequently executed code) use the same target profile. Byte
 transfer, sequence transforms, mutable hash lookup, atomics (shared operations
 completed as one step), and task backends have named optimization contracts, so
-a C or Zig implementation can be replaced without changing FOO source. The
-compiler always retains a portable implementation; target-specific code is
-selected only for a compatible CPU and build mode.
+a target-specific runtime adapter can be replaced without changing FOO source. The
+compiler records the selected target and CPU policy in build metadata. Run the
+result only on CPUs that support the selected profile.
 
 Run `foo build --explain` to see each selected substrate (low-level service)
 and its reason. The exact thresholds and semantic restrictions (limits needed

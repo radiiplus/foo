@@ -21,6 +21,8 @@ target/
 release/
 .foo/
 *.exe
+!/vendor/tcc/bootstrap/windows-x64/*.exe
+!/vendor/spirv-tools/windows-x64/spirv-val.exe
 *.ilk
 *.pdb
 # Pre-rename local caches and recovery snapshots

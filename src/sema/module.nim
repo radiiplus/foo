@@ -36,12 +36,12 @@ proc graph*(resolution: Resolution): JsonNode =
         if function.name.text == "start": entry = true
         symbols.add(%* {"name": unit.name & "::" & function.name.text, "visibility": (if function.public: "public" else: "private")})
       elif statement.tag in ["extern-function", "constant", "mutable", "alias"]:
-        var symbolName = ""
+        var label = ""
         var public = false
-        if statement.tag == "extern-function": symbolName = ExternFunction(statement).name.text; public = ExternFunction(statement).public
-        elif statement.tag == "constant": symbolName = Constant(statement).name.text; public = Constant(statement).public
-        elif statement.tag == "mutable": symbolName = Mutable(statement).name.text; public = Mutable(statement).public
-        else: symbolName = Alias(statement).name.text; public = Alias(statement).public
-        symbols.add(%* {"name": unit.name & "::" & symbolName, "visibility": (if public: "public" else: "private")})
+        if statement.tag == "extern-function": label = External(statement).name.text; public = External(statement).public
+        elif statement.tag == "constant": label = Constant(statement).name.text; public = Constant(statement).public
+        elif statement.tag == "mutable": label = Mutable(statement).name.text; public = Mutable(statement).public
+        else: label = Alias(statement).name.text; public = Alias(statement).public
+        symbols.add(%* {"name": unit.name & "::" & label, "visibility": (if public: "public" else: "private")})
     units.add(%* {"namespace": unit.name, "package": unit.package, "path": unit.path, "entry": entry, "imports": imports, "symbols": symbols})
   %* {"format": "foo.graph", "version": 1, "units": units, "order": resolution.order}

@@ -37,8 +37,7 @@ fails the test.
 foo test
 foo test test/orders.iv
 foo test --filter tax
-foo test --backend c
-foo test --backend zig
+foo test --backend qbe
 foo test --mode release
 foo test --watch
 foo test lib
@@ -140,17 +139,19 @@ test "generated values stay positive" {
 The failing index is reproducible. FOO does not silently invent random values
 for a type.
 
+For compile-time assertions, use `eval { verify condition. }`. Reflection
+exposes immutable type information; supported fixed-layout queries can be
+evaluated before execution. Other layouts depend on the target. See the
+[type specification](../specs/types.md) for the exact supported queries and
+the [grammar](../specs/grammar.md) for compile-time evaluation rules.
+
 ## Native fixtures
 
-Tests that need C support declare their native sources in `project.json`:
+Tests that need C support declare their native sources in `project.ivc`:
 
-```json
-{
-  "tests": {
-    "database": {
-      "sources": ["test/native/database.c"]
-    }
-  }
+```ivc
+tests {
+  database { sources is ["test/native/database.c"] }
 }
 ```
 

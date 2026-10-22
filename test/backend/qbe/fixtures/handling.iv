@@ -1,0 +1,27 @@
+use sequence as items.
+use testing as check.
+
+define Pair as record { value of type integer. }.
+dynamic closed is 0.
+
+function work(flag boolean) giving failable Pair {
+  after { set closed to closed plus 1. }
+  when flag { give fail(Error.InvalidInput). }
+  give Pair(9).
+}
+
+function read(flag boolean) giving failable integer {
+  constant pair is work(flag) try.
+  give pair.value.
+}
+
+start {
+  constant values is items.sized[integer](2) try.
+  after { items.release[integer](values) fallback nothing. }
+  set values at 0 to 4.
+  set values at 1 to 7.
+  check.expect(values at 0 is 4 and values at 1 is 7).
+  check.expect((read(false) fallback 0) is 9).
+  check.expect((read(true) fallback 7) is 7).
+  check.expect(closed is 2).
+}

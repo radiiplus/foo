@@ -159,9 +159,9 @@ foo add shared ..\shared
 ```
 
 Git dependencies use an immutable (unchangeable) full commit. Local paths are normalized and
-stored as `path+...` entries in `project.json`. An absolute path is converted
+stored as `path+...` entries in `project.ivc`. An absolute path is converted
 to a project-relative path when the two locations permit it. A local path is resolved from
-the directory containing the `project.json` that declares it. Therefore the
+the directory containing the manifest that declares it. Therefore the
 same dependency is written on Linux and macOS as:
 
 ```sh
@@ -169,9 +169,9 @@ foo add shared ../shared
 ```
 
 `foo install` reads the local package's exact `version` from its own
-`project.json`, checks that its declared `name` matches `shared`, copies the
+`project.ivc`, checks that its declared `name` matches `shared`, copies the
 package under `.foo/packages/shared`, and records its source digest (a content
-fingerprint) in `foo.lock`. A local package may use another relative local path;
+fingerprint) in `foo.ivl`. A local package may use another relative local path;
 that nested path is resolved from the local package that declares it. Running
 `foo install` again rereads local sources and refreshes their lock entries while
 preserving registry versions already selected by the reachable lock graph.
@@ -206,7 +206,7 @@ triggering unexpected network access.
 
 ## Lock files
 
-`foo install` writes `foo.lock` with exact versions, content digests (short
+`foo install` writes `foo.ivl` with exact versions, content digests (short
 fingerprints used to verify content), and the resolved dependency graph (the
 full tree of packages and the packages they need). Commit it for applications so another machine can
 reproduce the same graph.

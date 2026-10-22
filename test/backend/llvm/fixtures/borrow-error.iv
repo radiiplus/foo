@@ -1,4 +1,0 @@
-function invalid(left pointer to byte,right pointer to byte) giving pointer to byte borrowing left {
-  give right.
-}
-start { }

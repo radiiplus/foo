@@ -1,0 +1,12 @@
+use testing as check.
+
+define Pair as record { left of type unsigned. right of type unsigned. }.
+function make(value unsigned) giving Pair {
+  give Pair(value, value plus 1).
+}
+
+dynamic maximum of type unsigned is 18446744073709551615.
+function main {
+  constant pair is make(maximum).
+  check.expect(pair.left is maximum).
+}

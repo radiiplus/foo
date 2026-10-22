@@ -1,0 +1,5 @@
+function main giving integer 32 {
+  dynamic value of type integer 31 is (0 subtract 1073741823) subtract 1.
+  set value to value multiply 2.
+  give 0.
+}

@@ -1,0 +1,95 @@
+use testing as check.
+
+function main giving integer 32 {
+  dynamic u1a of type unsigned 1 is 1.
+  dynamic u1b of type unsigned 1 is 0.
+  check.expect(u1a plus u1b is 1).
+  check.expect(u1a subtract u1b is 1).
+  check.expect(u1a multiply u1a is 1).
+  check.expect(u1a divide u1a is 1).
+  check.expect(u1a remainder u1a is 0).
+  check.expect(u1b less than u1a).
+
+  dynamic u2a of type unsigned 2 is 1.
+  dynamic u2b of type unsigned 2 is 2.
+  check.expect(u2a plus u2b is 3).
+  check.expect(u2b subtract u2a is 1).
+  check.expect(u2a multiply u2b is 2).
+  check.expect(u2b divide u2a is 2).
+  check.expect(u2b remainder u2a is 0).
+  check.expect(u2a less than u2b).
+  check.expect(u2b greater than u2a).
+
+  dynamic i2a of type integer 2 is (0 subtract 1) subtract 1.
+  dynamic i2b of type integer 2 is 1.
+  check.expect(i2a plus i2b is (0 subtract 1)).
+  check.expect(i2b subtract i2b is 0).
+  check.expect(i2a multiply i2b is ((0 subtract 1) subtract 1)).
+  check.expect(i2a divide i2b is ((0 subtract 1) subtract 1)).
+  check.expect(i2a remainder i2b is 0).
+  check.expect(i2a less than i2b).
+
+  dynamic u4a of type unsigned 4 is 5.
+  dynamic u4b of type unsigned 4 is 2.
+  check.expect(u4a plus u4b is 7).
+  check.expect(u4a subtract u4b is 3).
+  check.expect(u4a multiply u4b is 10).
+  check.expect(u4a divide u4b is 2).
+  check.expect(u4a remainder u4b is 1).
+
+  dynamic u8a of type unsigned 8 is 100.
+  dynamic u8b of type unsigned 8 is 2.
+  check.expect(u8a plus u8b is 102).
+  check.expect(u8a multiply u8b divide u8b is 100).
+  check.expect(u8a remainder u8b is 0).
+
+  dynamic i16a of type integer 16 is 0 subtract 300.
+  dynamic i16b of type integer 16 is 7.
+  check.expect(i16a plus i16b is (0 subtract 293)).
+  check.expect(i16a subtract i16b is (0 subtract 307)).
+  check.expect(i16a multiply i16b is (0 subtract 2100)).
+  check.expect(i16a divide i16b is (0 subtract 42)).
+  check.expect(i16a remainder i16b is (0 subtract 6)).
+  check.expect(i16a less than i16b).
+
+  dynamic u31a of type unsigned 31 is 123456789.
+  dynamic u31b of type unsigned 31 is 7.
+  check.expect(u31a plus u31b is 123456796).
+  check.expect(u31a subtract u31b is 123456782).
+  check.expect(u31a multiply u31b is 864197523).
+  check.expect(u31a divide u31b is 17636684).
+  check.expect(u31a remainder u31b is 1).
+
+  dynamic u33a of type unsigned 33 is 2147483648.
+  dynamic u33b of type unsigned 33 is 2.
+  check.expect(u33a plus u33b is 2147483650).
+  check.expect(u33a subtract u33b is 2147483646).
+  check.expect(u33a multiply u33b is 4294967296).
+  check.expect(u33a divide u33b is 1073741824).
+  check.expect(u33a remainder u33b is 0).
+
+  dynamic i33a of type integer 33 is 0 subtract 2147483648.
+  dynamic i33b of type integer 33 is 2.
+  check.expect(i33a plus i33b is (0 subtract 2147483646)).
+  check.expect(i33a multiply i33b is ((0 subtract 4294967295) subtract 1)).
+  check.expect(i33a divide i33b is (0 subtract 1073741824)).
+  check.expect(i33a remainder i33b is 0).
+  check.expect(i33a less than i33b).
+
+  dynamic u63a of type unsigned 63 is 4611686018427387904.
+  dynamic u63b of type unsigned 63 is 2.
+  check.expect(u63a plus u63b is 4611686018427387906).
+  check.expect(u63a subtract u63b is 4611686018427387902).
+  check.expect(u63a divide u63b is 2305843009213693952).
+  check.expect(u63a remainder u63b is 0).
+
+  dynamic i63a of type integer 63 is 0 subtract 2305843009213693952.
+  dynamic i63b of type integer 63 is 2.
+  check.expect(i63a plus i63b is (0 subtract 2305843009213693950)).
+  check.expect(i63a subtract i63b is (0 subtract 2305843009213693954)).
+  check.expect(i63a multiply i63b is ((0 subtract 4611686018427387903) subtract 1)).
+  check.expect(i63a divide i63b is (0 subtract 1152921504606846976)).
+  check.expect(i63a remainder i63b is 0).
+  check.expect(i63a less than i63b).
+  give 0.
+}

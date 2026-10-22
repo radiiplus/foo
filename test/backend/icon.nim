@@ -1,5 +1,5 @@
 import std/os
-import ../../src/backend/native/icon
+import ../../src/build/icon
 
 let root = getTempDir() / "foo-backend-icon-test"
 if dirExists(root): removeDir(root)

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "FOO Configuration",
+  "scopeName": "source.foo.config",
+  "fileTypes": ["ivc", "cap"],
+  "patterns": [
+    {
+      "name": "comment.line.foo.config",
+      "match": "(?:#|//|--).*"
+    },
+    {
+      "name": "string.quoted.double.foo.config",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.foo.config",
+          "match": "\\\\(?:[\"\\\\/bfnrt]|u[0-9a-fA-F]{4})"
+        }
+      ]
+    },
+    {
+      "name": "keyword.control.foo.config",
+      "match": "\\b(?:capability|import|override)\\b"
+    },
+    {
+      "name": "keyword.operator.foo.config",
+      "match": "\\b(?:is|enable|disable|using)\\b"
+    },
+    {
+      "name": "constant.language.foo.config",
+      "match": "\\b(?:true|false|null)\\b"
+    },
+    {
+      "name": "constant.numeric.foo.config",
+      "match": "(?<![A-Za-z0-9_.-])-?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?:KiB|MiB|GiB|TiB|KB|MB|GB|TB|min|ms|s|h)?\\b"
+    },
+    {
+      "name": "variable.other.property.foo.config",
+      "match": "\\b[A-Za-z][A-Za-z0-9_-]*(?=\\s+(?:is|enable|disable|using)\\b|\\s*\\{)"
+    },
+    {
+      "name": "punctuation.section.foo.config",
+      "match": "[{}\\[\\],]"
+    }
+  ]
+}

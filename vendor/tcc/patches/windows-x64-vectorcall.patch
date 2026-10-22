@@ -1,0 +1,274 @@
+diff --git a/tcc.h b/tcc.h
+index 864a4e3..d7c9c6b 100644
+--- a/tcc.h
++++ b/tcc.h
+@@ -513,7 +513,7 @@ struct SymAttr {
+ /* function attributes or temporary attributes for parsing */
+ struct FuncAttr {
+     unsigned
+-    func_call   : 3, /* calling convention (0..5), see below */
++    func_call   : 3, /* calling convention (0..7), see below */
+     func_type   : 2, /* FUNC_OLD/NEW/ELLIPSIS */
+     func_noreturn : 1, /* attribute((noreturn)) */
+     func_ctor   : 1, /* attribute((constructor)) */
+@@ -610,6 +610,7 @@ typedef struct DLLReference {
+ #define FUNC_FASTCALL3 4 /* first parameter in %eax, %edx, %ecx */
+ #define FUNC_FASTCALLW 5 /* first parameter in %ecx, %edx */
+ #define FUNC_THISCALL  6 /* first param in %ecx */
++#define FUNC_VECTORCALL 7 /* Microsoft x64 positional XMM0-XMM5 */
+ 
+ /* field 'Sym.t' for macros */
+ #define MACRO_OBJ      0 /* object like macro */
+diff --git a/tcc_vectorcall_abi.h b/tcc_vectorcall_abi.h
+new file mode 100644
+index 0000000..d8d6bf9
+--- /dev/null
++++ b/tcc_vectorcall_abi.h
+@@ -0,0 +1,12 @@
++#ifndef FOO_TCC_VECTORCALL_ABI_H
++#define FOO_TCC_VECTORCALL_ABI_H
++
++/* Microsoft x64 vectorcall assigns scalar registers by parameter position. */
++static int vectorcall_xmm_slot(int position, int type)
++{
++    int basic = type & VT_BTYPE;
++    return position < 6 && (basic == VT_FLOAT || basic == VT_DOUBLE)
++        ? position : -1;
++}
++
++#endif
+diff --git a/tccgen.c b/tccgen.c
+index 1b63467..24e298c 100644
+--- a/tccgen.c
++++ b/tccgen.c
+@@ -552,6 +552,13 @@ ST_FUNC void put_extern_sym2(Sym *sym, int sh_num,
+                 other |= ST_PE_STDCALL;
+                 can_add_underscore = 0;
+             }
++#ifdef TCC_TARGET_X86_64
++            if (ref->f.func_call == FUNC_VECTORCALL && can_add_underscore) {
++                sprintf(buf1, "%s@@%d", name, ref->f.func_args * PTR_SIZE);
++                name = buf1;
++                can_add_underscore = 0;
++            }
++#endif
+         }
+ #endif
+ 
+@@ -4084,6 +4091,13 @@ redo:
+         case TOK_STDCALL3:
+             ad->f.func_call = FUNC_STDCALL;
+             break;
++#if defined(TCC_TARGET_PE) && defined(TCC_TARGET_X86_64)
++        case TOK_VECTORCALL1:
++        case TOK_VECTORCALL2:
++        case TOK_VECTORCALL3:
++            ad->f.func_call = FUNC_VECTORCALL;
++            break;
++#endif
+ #ifdef TCC_TARGET_I386
+         case TOK_REGPARM1:
+         case TOK_REGPARM2:
+@@ -4945,6 +4959,28 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
+             next();
+             ad->f.func_noreturn = 1;
+             break;
++#if defined(TCC_TARGET_PE) && defined(TCC_TARGET_X86_64)
++        case TOK_CDECL1:
++        case TOK_CDECL2:
++        case TOK_CDECL3:
++        case TOK_STDCALL1:
++        case TOK_STDCALL2:
++        case TOK_STDCALL3:
++        case TOK_FASTCALL1:
++        case TOK_FASTCALL2:
++        case TOK_FASTCALL3:
++        case TOK_THISCALL1:
++        case TOK_THISCALL2:
++        case TOK_THISCALL3:
++            next();
++            break;
++        case TOK_VECTORCALL1:
++        case TOK_VECTORCALL2:
++        case TOK_VECTORCALL3:
++            ad->f.func_call = FUNC_VECTORCALL;
++            next();
++            break;
++#endif
+             /* GNUC attribute */
+         case TOK_ATTRIBUTE1:
+         case TOK_ATTRIBUTE2:
+@@ -5076,6 +5112,11 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
+     if (tok == '(') {
+         /* function type, or recursive declarator (return if so) */
+         next();
++#if defined(TCC_TARGET_PE) && defined(TCC_TARGET_X86_64)
++        if (tok == TOK_VECTORCALL1 || tok == TOK_VECTORCALL2 ||
++            tok == TOK_VECTORCALL3)
++            return 0;
++#endif
+ 	if (TYPE_DIRECT == (td & (TYPE_DIRECT|TYPE_ABSTRACT)))
+ 	  return 0;
+ 
+@@ -5347,6 +5388,13 @@ static CType *type_decl(CType *type, AttributeDef *ad, int *v, int td)
+ 	    /* XXX: this is not correct to modify 'ad' at this point, but
+ 	       the syntax is not clear */
+ 	    parse_attribute(ad);
++#if defined(TCC_TARGET_PE) && defined(TCC_TARGET_X86_64)
++            if (tok == TOK_VECTORCALL1 || tok == TOK_VECTORCALL2 ||
++                tok == TOK_VECTORCALL3) {
++                ad->f.func_call = FUNC_VECTORCALL;
++                next();
++            }
++#endif
+ 	    post = type_decl(type, ad, v, td);
+ 	    skip(')');
+ 	} else
+diff --git a/tcctok.h b/tcctok.h
+index d8e7b44..0fa9b0c 100644
+--- a/tcctok.h
++++ b/tcctok.h
+@@ -135,6 +135,9 @@
+      DEF(TOK_THISCALL1, "thiscall")
+      DEF(TOK_THISCALL2, "__thiscall")
+      DEF(TOK_THISCALL3, "__thiscall__")
++     DEF(TOK_VECTORCALL1, "vectorcall")
++     DEF(TOK_VECTORCALL2, "__vectorcall")
++     DEF(TOK_VECTORCALL3, "__vectorcall__")
+      DEF(TOK_REGPARM1, "regparm")
+      DEF(TOK_REGPARM2, "__regparm__")
+      DEF(TOK_CLEANUP1, "cleanup")
+diff --git a/win32/build-tcc.bat b/win32/build-tcc.bat
+index 83b5636..07dc3bf 100644
+--- a/win32/build-tcc.bat
++++ b/win32/build-tcc.bat
+@@ -102,6 +102,7 @@ if "%D%"=="" echo %SELF%: error: unknown target '%T%'&&exit /B 1
+ @if (%BINDIR%)==() set BINDIR=%TCCDIR%
+ 
+ :git_hash
++if not exist ..\.git goto :git_done
+ git.exe --version 2>nul
+ if not %ERRORLEVEL%==0 goto :git_done
+ for /f %%b in ('git.exe rev-parse --abbrev-ref HEAD') do set GITHASH=%%b
+@@ -128,7 +129,7 @@ echo>..\config.h #define TCC_VERSION "%VERSION%"
+ @set IMPLIB=libtcc.dll
+ @if "%CC:~0,5%"=="clang" set IMPLIB=libtcc.lib
+ 
+-%CC% -o libtcc.dll -shared %LIBTCC_C% %D% -DLIBTCC_AS_DLL
++%CC% -o libtcc.dll -shared %LIBTCC_C% lib\kernel32.def %D% -DLIBTCC_AS_DLL
+ @if errorlevel 1 goto :the_end
+ %CC% -o tcc.exe ..\tcc.c %IMPLIB% %D% -DONE_SOURCE"=0"
+ @if errorlevel 1 goto :the_end
+diff --git a/x86_64-gen.c b/x86_64-gen.c
+index c62c8a0..4dfe44e 100644
+--- a/x86_64-gen.c
++++ b/x86_64-gen.c
+@@ -776,6 +776,8 @@ static int is_sse_float(int t) {
+     return bt == VT_DOUBLE || bt == VT_FLOAT;
+ }
+ 
++#include "tcc_vectorcall_abi.h"
++
+ static int gfunc_arg_size(CType *type) {
+     int align;
+     if (type->t & (VT_ARRAY|VT_BITFIELD))
+@@ -787,6 +789,12 @@ void gfunc_call(int nb_args)
+ {
+     int size, r, args_size, i, d, bt, struct_size;
+     int arg;
++    Sym *called = vtop[-nb_args].type.ref;
++    int vectorcall = called->f.func_call == FUNC_VECTORCALL;
++
++    if (vectorcall && ((called->type.t & VT_BTYPE) == VT_STRUCT ||
++                       called->f.func_type == FUNC_ELLIPSIS))
++        tcc_error("unsupported vectorcall result or variadic signature");
+ 
+ #ifdef CONFIG_TCC_BCHECK
+     if (tcc_state->do_bounds_check)
+@@ -808,6 +816,9 @@ void gfunc_call(int nb_args)
+         --arg;
+         sv = &vtop[-i];
+         bt = (sv->type.t & VT_BTYPE);
++        if (vectorcall && (bt == VT_STRUCT || bt == VT_LDOUBLE ||
++            (is_sse_float(sv->type.t) && arg >= 6)))
++            tcc_error("unsupported vectorcall argument");
+         size = gfunc_arg_size(&sv->type);
+ 
+         if (using_regs(size))
+@@ -860,18 +871,20 @@ void gfunc_call(int nb_args)
+             if (is_sse_float(vtop->type.t)) {
+ 		if (tcc_state->nosse)
+ 		  tcc_error("SSE disabled");
+-                if (arg >= REGN) {
++                if (arg >= (vectorcall ? 6 : REGN)) {
+                     gv(RC_XMM0);
+                     /* movq %xmm0, j*8(%rsp) */
+                     gen_offs_sp(0xd60f66, 0x100, arg*8);
+                 } else {
+                     /* Load directly to xmmN register */
+                     gv(RC_XMM0 << arg);
+-                    d = arg_prepare_reg(arg);
+-                    /* mov %xmmN, %rxx */
+-                    o(0x66);
+-                    orex(1,d,0, 0x7e0f);
+-                    o(0xc0 + arg*8 + REG_VALUE(d));
++                    if (!vectorcall && arg < REGN) {
++                        d = arg_prepare_reg(arg);
++                        /* mov %xmmN, %rxx */
++                        o(0x66);
++                        orex(1,d,0, 0x7e0f);
++                        o(0xc0 + arg*8 + REG_VALUE(d));
++                    }
+                 }
+             } else {
+                 if (bt == VT_STRUCT) {
+@@ -921,6 +934,7 @@ void gfunc_prolog(Sym *func_sym)
+ {
+     CType *func_type = &func_sym->type;
+     int addr, reg_param_index, bt, size;
++    int vectorcall = func_type->ref->f.func_call == FUNC_VECTORCALL;
+     Sym *sym;
+     CType *type;
+ 
+@@ -935,6 +949,8 @@ void gfunc_prolog(Sym *func_sym)
+     reg_param_index = 0;
+ 
+     sym = func_type->ref;
++    if (vectorcall && ((func_vt.t & VT_BTYPE) == VT_STRUCT || func_var))
++        tcc_error("unsupported vectorcall result or variadic signature");
+ 
+     /* if the function returns a structure, then add an
+        implicit pointer parameter */
+@@ -950,6 +966,9 @@ void gfunc_prolog(Sym *func_sym)
+     while ((sym = sym->next) != NULL) {
+         type = &sym->type;
+         bt = type->t & VT_BTYPE;
++        if (vectorcall && (bt == VT_STRUCT || bt == VT_LDOUBLE ||
++            (is_sse_float(type->t) && reg_param_index >= 6)))
++            tcc_error("unsupported vectorcall argument");
+         size = gfunc_arg_size(type);
+         if (!using_regs(size)) {
+             if (reg_param_index < REGN) {
+@@ -957,11 +976,21 @@ void gfunc_prolog(Sym *func_sym)
+             }
+             gfunc_set_param(sym, addr, 1);
+         } else {
+-            if (reg_param_index < REGN) {
++            if (reg_param_index < REGN ||
++                (vectorcall && vectorcall_xmm_slot(reg_param_index, type->t) >= 0)) {
+                 /* save arguments passed by register */
+                 if ((bt == VT_FLOAT) || (bt == VT_DOUBLE)) {
+ 		    if (tcc_state->nosse)
+ 		      tcc_error("SSE disabled");
++                    if (vectorcall && reg_param_index >= REGN) {
++                        loc -= 8;
++                        gfunc_set_param(sym, loc, 0);
++                        gen_modrm32(0xd60f66, reg_param_index, VT_LOCAL,
++                                    NULL, loc);
++                        addr += 8;
++                        reg_param_index++;
++                        continue;
++                    }
+                     /* movq */
+                     gen_modrm32(0xd60f66, reg_param_index, VT_LOCAL, NULL, addr);
+                 } else {

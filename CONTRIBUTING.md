@@ -1,6 +1,11 @@
 # Contributing to FOO
 
-FOO changes often cross the language grammar, both native backends, tooling,
+Documentation changes follow the [documentation policy](docs/POLICY.md).
+Read the relevant index and preserve unique contracts and evidence when
+consolidating pages. Check links, examples, and implementation claims before
+reporting a documentation change as complete.
+
+FOO changes often cross the language grammar, QBE backend, runtime, tooling,
 documentation, and editor support. Keep a contribution focused, state its
 observable behavior, and test the paths it changes.
 
@@ -16,9 +21,9 @@ observable behavior, and test the paths it changes.
 
 ## Development setup
 
-The repository expects Node.js 22.13 or newer and Nim 2.2. The managed Zig
-toolchain is installed by the project. Windows native compiler builds also need
-LLVM so `clang` and `llvm-rc` are available.
+The repository expects Node.js 22.13 or newer and Nim 2.2. Native builds use
+the managed QBE toolchain and target-specific assembler and linker tools.
+Windows release resources also require the Windows SDK resource compiler.
 
 ```sh
 npm install
@@ -32,52 +37,50 @@ keys, or release credentials.
 
 ## Repository conventions
 
-- Use one-word names for FOO files and declarations, public FOO APIs, and
-  repository-owned Markdown filenames. Keep established words such as
-  `checksum`; split constructed joins into modules or choose one clear word.
-  Foreign ABI symbols, required toolchain filenames, and GitHub metadata are
-  exceptions. Nim, C, Zig, JavaScript, and TypeScript internals follow their
-  existing conventions.
-- Follow the surrounding Nim, JavaScript, FOO, C, Zig, and Markdown style.
-- Keep public behavior consistent between the C and Zig backends.
+- Follow [naming and shared-code rules](docs/naming.md). Keep required ABI,
+  toolchain, and external file spellings compatible.
+- Follow the surrounding Nim, JavaScript, FOO, C, and Markdown style.
+- Check QBE behavior in each affected target and mode; use the
+  [target gates](test/backend/qbe/TARGETS.md) for target-specific changes.
 - Add focused regression coverage beside the affected subsystem.
 - Update the specification for contracts and the guide for user-facing usage.
 - Add an entry under `Unreleased` in [CHANGELOG.md](CHANGELOG.md).
 - Regenerate `registry/ui/public/llm.txt` with
   `node registry/ui/scripts/llm.mjs` after documentation changes.
 
-If the compiler, standard library declarations, guide, or two backends disagree,
+If the compiler, standard library declarations, guide, or specification disagree,
 do not silently choose one as correct. Document the observed behavior and use
 the implementation-inconsistency issue form when the right contract is unclear.
 
 ## Tests
 
-Run the smallest relevant tests while developing. Examples:
+Follow [test maintenance](test/POLICY.md) when adding, merging, or retiring
+tests. Run the smallest relevant region while developing. Examples:
 
 ```sh
 npm run check
 npm run test:docs
 npm run test:editor
-npm run test:native -- --jobs=2
+npm run test:core
+node test/run.mjs runtime --list
 ```
 
-Individual Nim tests can also be compiled and run directly when isolating a
-failure. The native runner discovers every `.nim` file under `test/`, limits
-parallel work, and writes its report under `.artifacts/native-tests/`.
+The native runner discovers Nim leaves under `test/`, batches compatible
+modules, limits parallel work, and writes reports under `.artifacts/test/`.
+Select one leaf with `node test/run.mjs REGION --only test/path/to/leaf`.
 
-Use `npm test` for the complete standard-library and native suite when the
-change affects shared compiler behavior. Backend, cross-target, installer, and
-benchmark changes may require their focused platform commands as well. State
+Run each affected domain command when the change affects shared compiler
+behavior. Backend, cross-target, installer, and benchmark changes may require
+their focused platform commands as well. State
 which checks were run and which could not be run in the pull request.
 
 ## Performance changes
 
 Establish startup and harness cost before attributing time to FOO code. Compare
-equivalent FOO-to-C, FOO-to-Zig, handwritten C, handwritten Zig, and handwritten
-Rust workloads where the benchmark report defines them. Record raw samples,
-allocation/copy metrics where relevant, the target, CPU, toolchain, and build
-mode. Prefer eliminating work, allocations, and copies before instruction-level
-optimization.
+the current compiler with an exact baseline and matched controls, including a
+pinned Rust control when making a Rust comparison. Follow the
+[benchmark policy](benchmark/POLICY.md): record raw paired samples, variability,
+allocation/copy metrics where relevant, target, CPU, toolchain, and build mode.
 
 ## Pull requests
 

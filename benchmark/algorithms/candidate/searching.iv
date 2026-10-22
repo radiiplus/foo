@@ -1,0 +1,94 @@
+-- Portable, allocation-free Crochemore-Perrin two-way search prototype.
+-- Derived from the algorithm in Crochemore/Perrin, JACM 38(3), 1991.
+use "text" function length(content text) giving unsigned.
+use "finding.iv" as original.
+define factor as record { cut of type unsigned. period of type unsigned. }.
+function suffix(value text, reverse boolean) giving factor {
+  constant size is length(value).
+  dynamic cut of type unsigned is 0.
+  dynamic cursor of type unsigned is 0.
+  dynamic step of type unsigned is 1.
+  dynamic period of type unsigned is 1.
+  while step less than size subtract cursor {
+    constant next is value at (cursor plus step).
+    constant prior is value at (cut plus step subtract 1).
+    when (not reverse and next less than prior) or (reverse and prior less than next) {
+      set cursor to cursor plus step.
+      set step to 1.
+      set period to cursor plus 1 subtract cut.
+    } otherwise when next is prior {
+      when step is period { set cursor to cursor plus period. set step to 1. }
+      otherwise { increase step by 1. }
+    } otherwise {
+      set cut to cursor plus 1.
+      set cursor to cut.
+      set step to 1.
+      set period to 1.
+    }
+  }
+  give factor(cut, period).
+}
+public function linear(content text, value text) giving optional unsigned {
+  constant size is length(content).
+  constant width is length(value).
+  when width is 0 { give 0. }
+  when width greater than size { give null. }
+  constant first is suffix(value, false).
+  constant second is suffix(value, true).
+  dynamic cut is first.cut.
+  dynamic period is first.period.
+  when second.cut greater than cut { set cut to second.cut. set period to second.period. }
+  dynamic periodic is period less than or equal to width subtract cut.
+  dynamic index of type unsigned is 0.
+  while periodic and index less than cut {
+    when value at index is not value at (index plus period) { set periodic to false. }
+    increase index by 1.
+  }
+  dynamic remembered of type unsigned is 0.
+  when periodic { set remembered to width subtract period. }
+  otherwise {
+    set period to width subtract cut plus 1.
+    when cut greater than period { set period to cut. }
+  }
+  constant last is size subtract width.
+  dynamic origin of type unsigned is 0.
+  dynamic memory of type unsigned is 0.
+  while origin less than or equal to last {
+    set index to cut.
+    when memory greater than index { set index to memory. }
+    while index less than width and value at index is content at (origin plus index) { increase index by 1. }
+    when index less than width {
+      constant shift is index subtract cut plus 1.
+      when shift greater than last subtract origin { give null. }
+      set origin to origin plus shift.
+      set memory to 0.
+    } otherwise {
+      set index to cut.
+      while index greater than memory and value at (index subtract 1) is content at (origin plus index subtract 1) { set index to index subtract 1. }
+      when index less than or equal to memory { give origin. }
+      when period greater than last subtract origin { give null. }
+      set origin to origin plus period.
+      set memory to remembered.
+    }
+  }
+  give null.
+}
+
+public function find(content text, value text) giving optional unsigned {
+  constant size is length(content).
+  constant width is length(value).
+  when size less than 4096 or size greater than 1048576 or width less than 256 or width greater than 4096 or width greater than size {
+    give original.find(content, value).
+  }
+  -- Qualify repeated-prefix near-misses; retain Horspool for ordinary needles.
+  constant first is value at 0.
+  when value at (width subtract 1) is not first or value at (width subtract 2) is first {
+    give original.find(content, value).
+  }
+  dynamic index of type unsigned is 1.
+  while index less than width subtract 2 {
+    when value at index is not first { give original.find(content, value). }
+    increase index by 1.
+  }
+  give linear(content, value).
+}

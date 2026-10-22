@@ -30,17 +30,17 @@ proc doubled(value: string): string =
   if carry > 0: result.add(char(ord('0') + carry))
   result.reverse()
 
-proc powerOfTwo(exponent: int): string =
+proc power(exponent: int): string =
   result = "1"
   for _ in 0 ..< exponent: result = doubled(result)
 
-proc lessThan(left, right: string): bool =
+proc less(left, right: string): bool =
   left.len < right.len or (left.len == right.len and left < right)
 
-proc lessOrEqual(left, right: string): bool =
-  left == right or lessThan(left, right)
+proc bounded(left, right: string): bool =
+  left == right or less(left, right)
 
-proc divideByTwo(value: string): tuple[quotient: string, remainder: int] =
+proc halved(value: string): tuple[quotient: string, remainder: int] =
   var carry = 0
   for digit in value:
     let current = carry * 10 + ord(digit) - ord('0')
@@ -50,16 +50,16 @@ proc divideByTwo(value: string): tuple[quotient: string, remainder: int] =
   if result.quotient.len == 0: result.quotient = "0"
   result.remainder = carry
 
-proc exactlyRepresentable(digits: string; precision: int): bool =
+proc exact(digits: string; precision: int): bool =
   if digits == "0": return true
   var value = digits
   var bits, trailing = 0
-  var countingTrailing = true
+  var counting = true
   while value != "0":
-    let divided = divideByTwo(value)
+    let divided = halved(value)
     inc bits
-    if countingTrailing and divided.remainder == 0: inc trailing
-    else: countingTrailing = false
+    if counting and divided.remainder == 0: inc trailing
+    else: counting = false
     value = divided.quotient
   bits - trailing <= precision
 
@@ -84,7 +84,7 @@ proc substitute*(value: Type; replacements: Table[string, Type]): Type =
     let bracket = result.name.find('[')
     if bracket >= 0:
       var names: seq[string]
-      for argument in result.arguments: names.add(typeToString(argument))
+      for argument in result.arguments: names.add(label(argument))
       result.name = result.name[0 ..< bracket] & "[" &
         names.join(", ") & "]"
   for name, field in value.fields: result.fields[name] = substitute(field, replacements)
@@ -102,42 +102,51 @@ proc satisfies*(value: Type; trait: string): bool =
   of "Allocator": value != nil and value.kind == "opaque" and value.name == "allocator"
   else: false
 
-proc canCoerce*(fromType, toType: Type): Coercion =
-  let yes = Coercion(ok: true, `type`: toType)
+proc coercion*(source, representation: Type): Coercion =
+  let yes = Coercion(ok: true, `type`: representation)
   let no = Coercion(ok: false, reason: "The value cannot be represented by the expected type")
-  if typesEqual(fromType, toType): return yes
-  if fromType.kind == "primitive" and fromType.name == "text" and toType.kind == "sequence" and toType.constant and toType.elem.kind == "primitive" and toType.elem.name == "byte": return yes
-  if fromType.kind == "primitive" and fromType.name == "never": return yes
-  if (fromType.kind == "optional" and toType.kind == "optional") or (fromType.kind == "error" and toType.kind == "error"): return if canCoerce(fromType.elem, toType.elem).ok: yes else: no
-  if toType.kind == "optional" or toType.kind == "error": return if canCoerce(fromType, toType.elem).ok: yes else: no
-  if fromType.kind == "sequence" and toType.kind == "sequence" and not fromType.constant and toType.constant and typesEqual(fromType.elem, toType.elem): return yes
-  if fromType.kind == "literal" and toType.kind == "primitive":
-    if toType.name notin ["integer", "unsigned", "decimal", "byte"]: return no
-    let value = decimal(fromType.value)
+  if equal(source, representation): return yes
+  if source.kind == "function" and representation.kind == "function" and
+      source.abi == "runtime.codec" and representation.abi.len == 0 and
+      source.params.len == representation.params.len and
+      source.borrows == representation.borrows and
+      source.releases == representation.releases and
+      equal(source.ret, representation.ret):
+    for index, parameter in source.params:
+      if not equal(parameter, representation.params[index]): return no
+    return yes
+  if source.kind == "primitive" and source.name == "text" and representation.kind == "sequence" and representation.constant and representation.elem.kind == "primitive" and representation.elem.name == "byte": return yes
+  if source.kind == "primitive" and source.name == "never": return yes
+  if (source.kind == "optional" and representation.kind == "optional") or (source.kind == "error" and representation.kind == "error"): return if coercion(source.elem, representation.elem).ok: yes else: no
+  if representation.kind == "optional" or representation.kind == "error": return if coercion(source, representation.elem).ok: yes else: no
+  if source.kind == "sequence" and representation.kind == "sequence" and not source.constant and representation.constant and equal(source.elem, representation.elem): return yes
+  if source.kind == "literal" and representation.kind == "primitive":
+    if representation.name notin ["integer", "unsigned", "decimal", "byte"]: return no
+    let value = decimal(source.value)
     if not value.valid: return no
-    if toType.name == "decimal":
+    if representation.name == "decimal":
       try:
         let number = parseFloat((if value.negative: "-" else: "") & value.digits)
-        let precision = if toType.width == 32: 24 else: 53
+        let precision = if representation.width == 32: 24 else: 53
         return if number.classify in {fcInf, fcNegInf, fcNan}: no
-          elif exactlyRepresentable(value.digits, precision): yes else: no
+          elif exact(value.digits, precision): yes else: no
       except ValueError: return no
-    let width = if toType.name == "byte": 8 elif toType.width > 0: toType.width else: 64
+    let width = if representation.name == "byte": 8 elif representation.width > 0: representation.width else: 64
     if width < 1 or width > 128: return no
-    if toType.name == "integer":
-      let limit = powerOfTwo(width - 1)
-      if (value.negative and lessOrEqual(value.digits, limit)) or
-          (not value.negative and lessThan(value.digits, limit)): return yes
-    elif not value.negative and lessThan(value.digits, powerOfTwo(width)):
+    if representation.name == "integer":
+      let limit = power(width - 1)
+      if (value.negative and bounded(value.digits, limit)) or
+          (not value.negative and less(value.digits, limit)): return yes
+    elif not value.negative and less(value.digits, power(width)):
       return yes
     return no
-  if fromType.kind == "primitive" and toType.kind == "primitive":
-    let left = if fromType.width > 0: fromType.width else: 64
-    let right = if toType.width > 0: toType.width else: 64
-    if fromType.name == toType.name and fromType.name in
+  if source.kind == "primitive" and representation.kind == "primitive":
+    let left = if source.width > 0: source.width else: 64
+    let right = if representation.width > 0: representation.width else: 64
+    if source.name == representation.name and source.name in
         ["integer", "unsigned", "decimal"] and left <= right: return yes
-    if fromType.name == "unsigned" and toType.name == "integer" and left < right:
+    if source.name == "unsigned" and representation.name == "integer" and left < right:
       return yes
-    if fromType.name in ["integer", "unsigned"] and toType.name == "decimal" and
+    if source.name in ["integer", "unsigned"] and representation.name == "decimal" and
         left <= (if right == 32: 24 else: 53): return yes
   no

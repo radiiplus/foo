@@ -6,8 +6,16 @@ define Header as c record {
   count of type unsigned 32.
 } aligned to 64.
 
-test "target layout and aligned records" {
+define Compact as c record {
+  tag of type byte.
+  count of type unsigned 32.
+  mark of type unsigned 16.
+}.
+
+test "target layout, aligned records and type constants" {
   eval {
+    constant width is reflect[integer 32].size.
+    constant integeralignment is reflect[integer 32].alignment.
     constant word is reflect[pointer to byte].size.
     constant slice is reflect[sequence of byte].size.
     constant size is reflect[Header].size.
@@ -16,6 +24,13 @@ test "target layout and aligned records" {
     constant first is reflect[Header].fieldname(0).
     constant second is reflect[Header].fieldtype("address").
     constant position is reflect[Header].offset(1).
+    constant compactsize is reflect[Compact].size.
+    constant compactalignment is reflect[Compact].alignment.
+    constant compactfields is reflect[Compact].count.
+    constant compactposition is reflect[Compact].offset("count").
+    verify width is 4.
+    verify integeralignment is 4.
+    verify width multiply 2 is 8.
     verify word is 8.
     verify slice is 16.
     verify size is 64.
@@ -24,8 +39,13 @@ test "target layout and aligned records" {
     verify first is "tag".
     verify second is "pointer to byte".
     verify position is 8.
+    verify compactsize is 12.
+    verify compactalignment is 4.
+    verify compactfields is 3.
+    verify compactposition is 4.
   }
   constant actual is reflect[Header].
   check.expect(actual.size is size).
   check.expect(actual.alignment is alignment).
+  check.expect(width is 4).
 }

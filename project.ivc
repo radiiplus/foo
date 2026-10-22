@@ -1,0 +1,10 @@
+capability "project"
+project {
+  name is "foo"
+  version is "1.0.0"
+  license is "MIT OR Apache-2.0"
+  build {
+    target is ["linux", "darwin", "windows", "wasm", "wasi", "freestanding"]
+    optimize is "dev"
+  }
+}

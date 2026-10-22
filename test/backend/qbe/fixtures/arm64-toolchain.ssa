@@ -1,0 +1,4 @@
+export function w $foo_qbe_assembler_probe() {
+@start
+    ret 42
+}

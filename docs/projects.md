@@ -1,7 +1,9 @@
 # Projects and Entry Points
 
-`project.json` tells FOO what the project is, where its source lives, which file
+`project.ivc` tells FOO what the project is, where its source lives, which file
 runs by default, and which dependencies it uses.
+Its built-in capability is defined in `src/config/project.cap` and generated
+under `.artifacts/.cap/project.cap`.
 
 ## Create a project
 
@@ -24,37 +26,72 @@ for release packages and desktop metadata.
 
 ## The generated manifest (the project's configuration record)
 
-```json
-{
-  "schema": 1,
-  "name": "invoice-app",
-  "language": "1",
-  "version": "0.1.0",
-  "source": "src",
-  "entry": "src/main.iv",
-  "entries": {},
-  "requires": "base",
-  "dependencies": {},
-  "build": { "output": "output", "icon": "assets/icon.ico" }
+```ivc
+capability "project"
+project {
+  name is "invoice-app"
+  version is "0.1.0"
+  source is "src"
+  entry is "src/main.iv"
+  entries {}
+  build {
+    output is "output"
+  }
 }
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `schema` | Version of the project-file format. |
+| `schema` | Project schema version; defaults to 1 and usually stays implicit. |
 | `name` | Project or package identity. |
-| `language` | FOO language version. |
+| `language` | FOO language version; defaults to 1. |
 | `version` | Project release version. |
 | `source` | Directory containing application modules. |
 | `entry` | Default file used by `foo run`. |
 | `entries` | Named alternative runnable files. |
-| `requires` | Highest toolchain capability (permission level) the project permits. |
+| `requires` | Highest toolchain capability (permission level) the project permits; defaults to base. |
 | `dependencies` | Package names and version/source constraints (rules limiting acceptable versions or sources). |
 | `build.output` | Project-relative directory for completed apps and libraries; defaults to `output`. |
-| `build.icon` | Optional project-relative `.ico` file embedded in Windows executable products. |
+| `build.type` | Optional artifact kind: `exe`, `static`, `shared`, `object`, or `shader`. |
+| `build.icon` | Reserved for Windows executable resources; currently rejected by QBE. |
 
 Unknown fields are rejected so misspelled configuration does not silently do
 nothing.
+
+Without `build.type`, FOO builds runnable source as an executable. Source with
+only declarations builds a native static library or a WASM/WASI object; SPIR-V
+targets build shaders. `foo build --kind KIND` overrides this for one build,
+and `foo build --target TARGET` selects a specific target. A configured target
+list uses the current host when it is present.
+
+Use `foo config check` to validate the manifest and any explicitly selected
+capabilities. `foo config emit` writes a deterministic, output-only
+`.artifacts/config/config.cimg`; builds still read source configuration.
+For other domains, define `.cap/NAME.cap` and select it from any
+`NAME.ivc`. A `.cap` file declares allowed fields and their rules; an `.ivc`
+file selects capabilities and supplies values. For example,
+`.cap/service.cap` declares a port:
+
+```cap
+namespace is "service"
+version is 1
+fields {
+  port { type is "integer" required enable }
+}
+```
+
+`service.ivc` selects that schema and supplies a value:
+
+```ivc
+capability "service"
+service { port is 8080 }
+```
+
+Run `foo config check service.ivc` or `foo config emit service.ivc` to validate
+or emit that configuration independently of the project manifest.
+The selected schema is generated as `.artifacts/.cap/NAME.cap`.
+The [configuration specification](../specs/configuration.md) describes imports,
+merge rules, `.cap` definitions, and current limitations.
 
 When omitted, `source` defaults to `src` and `entry` defaults to
 `SOURCE/main.iv`. `requires: "base"` selects the portable standard services;
@@ -66,15 +103,13 @@ it is a capability level, not a module or package dependency. The `test/` and
 
 Use separate objects when a dependency is not needed in every installation:
 
-```json
-{
-  "dependencies": { "http-client": "^1.2.0" },
-  "devDependencies": { "test-data": "~1.0.0" },
-  "optionalDependencies": { "metrics": "^2.0.0" },
-  "platformDependencies": {
-    "windows": { "win-service": "^1.0.0" },
-    "linux": { "systemd": "^1.0.0" }
-  }
+```ivc
+dependencies { http-client is "^1.2.0" }
+devDependencies { test-data is "~1.0.0" }
+optionalDependencies { metrics is "^2.0.0" }
+platformDependencies {
+  windows { win-service is "^1.0.0" }
+  linux { systemd is "^1.0.0" }
 }
 ```
 
@@ -83,7 +118,8 @@ Use separate objects when a dependency is not needed in every installation:
 - `optionalDependencies` are omitted when no compatible release exists.
 - `platformDependencies` participate only when their platform selector matches.
 
-`foo install` records the selected result in `foo.lock`. Commit that lock file
+`foo install` records the selected result in JSON `foo.ivl`, which has editor
+syntax coloring. Commit that lock file
 for applications so another machine resolves the same graph (complete tree of
 packages and the packages they need).
 
@@ -96,14 +132,12 @@ Add another executable source:
 display "Worker started".
 ```
 
-Then name it in `project.json`:
+Then name it in `project.ivc`:
 
-```json
-{
-  "entry": "src/main.iv",
-  "entries": {
-    "worker": "src/worker.iv"
-  }
+```ivc
+project {
+  entry is "src/main.iv"
+  entries { worker is "src/worker.iv" }
 }
 ```
 
@@ -178,6 +212,10 @@ foo test test/orders.iv --filter total
 ```
 
 Selecting one file avoids compiling and running unrelated long suites.
+Test build files are kept under `.artifacts/test` in a stable directory for
+each suite, backend, and mode. Concurrent runs of the same suite wait for the
+current build and execution to finish. Self-contained C fast-path builds reuse
+their executable when the generated program and native compiler are unchanged.
 If the selected project, file, or filter contains no `test` block and no
 explicitly selected `start` fixture, the command exits unsuccessfully.
 
@@ -212,20 +250,18 @@ and continuous build artifacts are useful.
 
 Build tasks can generate a record from structured values before compilation:
 
-```json
-{
-  "build": {
-    "tasks": {
-      "schema": {
-        "kind": "record",
-        "output": "schema.iv",
-        "values": {
-          "name": "Schema",
-          "fields": [
-            { "name": "id", "type": "unsigned" },
-            { "name": "ready", "type": "boolean" }
-          ]
-        }
+```ivc
+build {
+  tasks {
+    schema {
+      kind is "record"
+      output is "schema.iv"
+      values {
+        name is "Schema"
+        fields is [
+          { name is "id" type is "unsigned" },
+          { name is "ready" type is "boolean" }
+        ]
       }
     }
   }
@@ -238,8 +274,7 @@ when imported like any other FOO module.
 
 ```sh
 foo check
-foo build --backend zig
-foo build --backend c
+foo build --backend qbe
 foo run --explain
 foo build --compact
 ```
@@ -262,19 +297,19 @@ Completed products are written to `output/` by default:
 ```text
 output/
 |-- app.exe          # Windows application
-|-- libcore.a        # Static library on Linux
-`-- libservice.so    # Shared library on Linux
+`-- libcore.a        # Static library on Linux
 ```
+
+The `spirv-vulkan1.3` shader product uses the SPIR-V route selected by the QBE
+driver and the bundled validator. Linux shared-library output is not supported
+by the current linker path; Windows x64 shared products use DLLs. See
+[QBE Backend Support](qbe.md) for target gates.
 
 Choose another project-local directory when packaging or deployment expects a
 different layout:
 
-```json
-{
-  "build": {
-    "output": "dist/native"
-  }
-}
+```ivc
+build { output is "dist/native" }
 ```
 
 FOO creates the directory, including missing parent directories, during the
@@ -283,30 +318,24 @@ tests, benchmarks, dependencies, or `.artifacts`. All configured products are
 placed directly in the output directory with the filename required by their
 kind and target platform.
 
-The generated `build.icon` is used only for Windows executable products.
-Libraries and non-Windows targets do not invoke a Windows resource compiler.
-The C backend requires `llvm-rc` for an icon-enabled Windows build; set
-`FOO_RESOURCE_COMPILER` when it is installed under another command name. The
-managed Zig backend reads the resource directly.
+The scaffold includes an icon asset, but QBE application builds reject
+`build.icon`. The compiler's own Windows release icon is embedded by its
+separate packaging build.
 
 ## Optional application releases
 
 Ordinary projects do not need release configuration. Add it only when an
 application is ready to be staged for deployment:
 
-```json
-{
-  "license": "MIT",
-  "release": {
-    "directory": "release",
-    "icon": "assets/icon.svg",
-    "license": "LICENSE",
-    "readme": "README.md",
-    "files": ["NOTICE"],
-    "sign": {
-      "provider": "auto"
-    }
-  }
+```ivc
+license is "MIT"
+release {
+  directory is "release"
+  icon is "assets/icon.svg"
+  license is "LICENSE"
+  readme is "README.md"
+  files is ["NOTICE"]
+  sign { provider is "auto" }
 }
 ```
 
@@ -328,8 +357,13 @@ support files, `release.json`, and `SHA256SUMS` (hashes used to detect changed
 bytes). Existing content for that exact name, version, and target is replaced;
 other staged releases remain untouched.
 
-Signing is opt-in. `provider: "auto"` selects Authenticode for Windows, GPG for
-Linux ELF executables, and codesign for macOS. Credentials remain outside the
+`release.json` records the relative path, size, and SHA-256 of each staged
+payload, including support files and any bundled runtime library. `SHA256SUMS`
+also covers `release.json`.
+
+Signing is opt-in. `provider: "auto"` selects Authenticode for Windows and GPG
+for Linux ELF executables. The current QBE build route has no macOS target.
+Credentials remain outside the
 manifest. Release signing covers executable and shared-library products;
 static archives remain unsigned:
 
@@ -337,7 +371,7 @@ static archives remain unsigned:
 | --- | --- | --- |
 | `gpg` | `FOOSIGNER` | GPG fingerprint; creates a detached armored `.asc` signature. |
 | `authenticode` | `FOOSIGNER` | Certificate-store thumbprint (certificate identifier); `signtool` embeds the signature. |
-| `codesign` | `FOOSIGNER` | Apple signing identity; `codesign` embeds the signature. |
+| `codesign` | `FOOSIGNER` | Signs an existing Apple binary; the QBE route cannot build one. |
 
 Set `release.sign.timestamp` to the timestamp service supplied by the Windows
 certificate provider. Tool commands can be overridden with `GPG`, `SIGNTOOL`,
@@ -347,25 +381,9 @@ or `CODESIGN`. Sign one existing product without creating a bundle with:
 foo sign output/invoice-app.exe --provider authenticode
 ```
 
-For profile-guided optimization (using measurements from earlier runs to guide
-the compiler), first record representative execution
-and then consume the result:
-
-```json
-{
-  "build": {
-    "optimize": "release",
-    "coverage": ".artifacts/coverage.json"
-  }
-}
-```
-
-Run the instrumented binary (a build that records execution counts) under a
-representative workload (input that resembles real use). Then remove
-`coverage` and set `"profile": ".artifacts/coverage.json"` for the optimized
-release build. The versioned profile guides inlining (replacing selected calls
-with their function bodies); changing its contents invalidates (makes unusable)
-the cached artifact (saved build output).
+QBE application builds currently reject `build.coverage` and `build.profile`.
+Use [Benchmarking](benchmarking.md) to measure release products; see
+[QBE Backend Support](qbe.md) for other unsupported build options.
 
 ## Generated directories
 
@@ -373,7 +391,7 @@ FOO writes completed app, static-library, and shared-library products under
 `output/`, or the directory selected by `build.output`. Compiler-generated
 source, object files, cache metadata, test executables, and benchmark
 executables remain under `.artifacts/`. Installed package contents live under
-`.foo/`. Keep source, `project.json`, and `foo.lock`; remove the configured
+`.foo/`. Keep source, `project.ivc`, and `foo.ivl`; remove the configured
 output directory and internal build state with:
 
 ```sh

@@ -1,0 +1,61 @@
+-- Galloping lower-bound prototype with a portable linear fallback.
+use "sequence" function extent[T](values sequence of constant T) giving unsigned.
+use "sequence" function sized[T](length unsigned) giving failable sequence of T.
+use "sequence" function release[T](values sequence of T) giving failable nothing.
+use "sequence" function compact[T](values sequence of T, length unsigned) giving failable sequence of T.
+
+function seek[T](values sequence of constant T, origin unsigned, target T) giving unsigned where T is Ord {
+  constant size is extent[T](values).
+  dynamic left is origin.
+  dynamic right is size.
+  dynamic step of type unsigned is 1.
+  while step less than size subtract origin {
+    constant probe is origin plus step.
+    when not ((values at probe) less than target) {
+      set right to probe.
+      stop.
+    }
+    set left to probe plus 1.
+    when step greater than (size subtract origin) divide 2 { stop. }
+    set step to step multiply 2.
+  }
+  while left less than right {
+    constant middle is left plus (right subtract left) divide 2.
+    when (values at middle) less than target { set left to middle plus 1. }
+    otherwise { set right to middle. }
+  }
+  give left.
+}
+function advance[T](values sequence of constant T, index unsigned) giving unsigned where T is Ord {
+  constant value is values at index.
+  dynamic cursor is index plus 1.
+  while cursor less than extent[T](values) and (values at cursor) is value { increase cursor by 1. }
+  give cursor.
+}
+public function intersect[T](left sequence of constant T, right sequence of constant T) giving failable sequence of T where T is Ord {
+  constant first is extent[T](left).
+  constant second is extent[T](right).
+  dynamic capacity is first.
+  when second less than first { set capacity to second. }
+  constant result is sized[T](capacity) try.
+  after error { release[T](result) fallback nothing. }
+  constant gallop is capacity greater than or equal to 32 and (first greater than or equal to 1024 or second greater than or equal to 1024) and first less than or equal to 65536 and second less than or equal to 65536 and (first divide capacity greater than or equal to 16 or second divide capacity greater than or equal to 16).
+  dynamic a of type unsigned is 0.
+  dynamic b of type unsigned is 0.
+  dynamic count of type unsigned is 0.
+  while a less than first and b less than second {
+    when (left at a) less than (right at b) {
+      when gallop { set a to seek[T](left, a, right at b). }
+      otherwise { set a to advance[T](left, a). }
+    } otherwise when (right at b) less than (left at a) {
+      when gallop { set b to seek[T](right, b, left at a). }
+      otherwise { set b to advance[T](right, b). }
+    } otherwise {
+      set result at count to left at a.
+      increase count by 1.
+      set a to advance[T](left, a).
+      set b to advance[T](right, b).
+    }
+  }
+  give compact[T](result, count) try.
+}

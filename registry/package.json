@@ -13,9 +13,9 @@
     "build": "npm run build --workspace @foo/ui",
     "bootstrap": "node --env-file=serverless/supabase/functions/.env repository/scripts/bootstrap.mjs",
     "materialize": "node --env-file=serverless/supabase/functions/.env repository/scripts/materialize.mjs",
-    "standard": "node ../tools/standard-catalog.mjs",
+    "standard": "node ../tools/catalog.mjs",
     "check": "tsc -p tsconfig.json",
-    "test": "node ../tools/standard-catalog.mjs --check && tsx --test test/*.ts",
+    "test": "node ../tools/catalog.mjs --check && tsx --test test/*.ts",
     "test:deno": "npm run test --workspace @foo/serverless"
   },
   "devDependencies": {

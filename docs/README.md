@@ -5,21 +5,24 @@ one line. Run it, change the message, then follow the lessons as your program
 needs names, decisions, functions, and access to the system.
 
 FOO is a compiled systems language with sentence-like source code. It builds
-native programs through C or Zig and makes failures and memory ownership
+native programs through QBE and makes failures and memory ownership
 explicit when those details matter.
+
+QBE is the active native backend. See [QBE backend support](qbe.md) for
+qualified targets and current limits.
 
 This book has two layers:
 
-- **Learn** pages teach one topic at a time with small examples, expected
-  behavior, exercises, and common mistakes.
-- **Build and reference** pages explain complete subsystems and provide exact
-  contracts for production work.
+- **Learn** pages teach the language with examples, exercises, and common
+  mistakes.
+- **Build and reference** pages explain practical workflows. The
+  [specifications](../specs/README.md) define exact technical contracts.
 
 Machine readers (automated tools such as language models) can use
 [`/llm.txt`](https://fooregistry.web.app/llm.txt). It is generated from the
 current language, library, project, testing, diagnostic, and platform chapters
 on every website build. It deliberately excludes proposals, duplicated
-specifications, historical performance reports, and changelog entries.
+specifications and changelog entries.
 
 ## Hello world
 
@@ -41,20 +44,25 @@ FOO also supports an explicit `start` function when an application benefits
 from one. It does not require `start` or `give nothing.` for a one-line
 program.
 
+FOO uses a small, precise vocabulary. `plus` joins text or adds numbers. Give
+a value a name when you need to reuse it:
+
+```foo
+constant name is "vibes".
+display "Hello, " plus name plus "!".
+```
+
+Change the name and run the program again. Each sentence has a defined grammar
+that the compiler checks before building it. The [language guide](language.md)
+introduces those rules; later chapters cover functions, failures, and memory.
+
 ## Learn
 
 Read these lessons in order when FOO is new to you.
 
-1. **[Introduction](intro.md)** - Understand what FOO is designed to do.
-2. **[Getting Started](start.md)** - Install FOO and create a project.
-3. **[FOO Basics](basics.md)** - Write statements, blocks, comments, and top-level code.
-4. **[Variables](variables.md)** - Use constants, dynamic values, inference, and scope.
-5. **[Types and Values](types.md)** - Learn primitive, optional, failable, and compound types.
-6. **[Operators](operators.md)** - Write arithmetic, comparisons, and Boolean logic.
-7. **[Conditions and Loops](flow.md)** - Use `when`, `otherwise`, `match`, `while`, and `for each`.
-8. **[Functions](functions.md)** - Define operations, results, public APIs, and generics.
-9. **[Expressions and English Grammar](expressions.md)** - Use sentence calls, defaults, overloads, guards, closures, and intentional mutation.
-10. **[Language Foundations](foundations.md)** - Understand inference, absence, comparison, generics, modules, memory, effects, concurrency, time, tooling, and design boundaries.
+1. **[Getting Started](start.md)** - Install FOO and create a project.
+2. **[The Language](language.md)** - Learn statements, values, operators, decisions, and loops.
+3. **[Functions](functions.md)** - Define operations, use sentence calls, handle failures, and clean up resources.
 
 Each lesson ends with a safe experiment. Run `foo check` after each change so
 the compiler can explain mistakes before the program is built.
@@ -63,36 +71,45 @@ the compiler can explain mistakes before the program is built.
 
 Use these chapters when creating a real application or package.
 
-11. **[The Language](language.md)** - See the core language as one connected system.
-12. **[Collections](collections.md)** - Work with sequences, maps, sets, queues, and stacks.
-13. **[Error Handling](errors.md)** - Use postfix `try`, `fallback`, and `after`.
-14. **[Modules and Packages](modules.md)** - Organize code and install dependencies.
-15. **[Projects and Entry Points](projects.md)** - Configure entries, tests, benchmarks, and builds.
-16. **[Data and Memory](memory.md)** - Understand records, regions, ownership, and low-level storage.
-17. **[Patterns with Today's Language](patterns.md)** - Build constructors, codecs, state machines, capabilities, transactions, typed time, and properties from current features.
-18. **[Systems](systems.md)** - Work with files, networks, processes, C, and the operating system.
-19. **[Concurrency](concurrency.md)** - Choose tasks, threads, channels, locks, and atomics.
-20. **[The Standard Library](library.md)** - Follow guided examples for common modules.
-21. **[Standard Library Index](catalog.md)** - Find all shipped modules by task, compare abstraction levels, and read common API surfaces.
-22. **[Packages](packages.md)** - Resolve, lock, audit, and publish dependencies.
-23. **[Testing](testing.md)** - Organize assertions, filters, watches, and native fixtures.
-24. **[Benchmarking](benchmarking.md)** - Measure programs with warmups and repeated samples.
-25. **[Optimization Under the Hood](tuning.md)** - Understand execution specialization, boundary and work elimination, fusion rules, adaptive paths, and measured evidence.
-26. **[Performance Report](performance.md)** - Review current measurements, sequence behavior, runtime telemetry, and profiling decisions.
+4. **[Collections](collections.md)** - Work with sequences, maps, sets, queues, and stacks.
+5. **[Modules and Packages](modules.md)** - Organize code and install dependencies.
+6. **[Projects and Entry Points](projects.md)** - Configure entries, tests, benchmarks, and builds.
+7. **[Data and Memory](memory.md)** - Understand records, regions, ownership, and low-level storage.
+8. **[Patterns with Today's Language](patterns.md)** - Build constructors, codecs, state machines, capabilities, transactions, typed time, and properties from current features.
+9. **[Systems](systems.md)** - Work with files, networks, processes, C, and the operating system.
+10. **[Concurrency](concurrency.md)** - Choose tasks, threads, channels, locks, and atomics.
+11. **[The Standard Library](library.md)** - Follow guided examples for common modules.
+12. **[Standard Library Index](catalog.md)** - Find shipped modules and API surfaces.
+13. **[Packages](packages.md)** - Resolve, lock, audit, and publish dependencies.
+14. **[Testing](testing.md)** - Organize assertions, filters, watches, and native fixtures.
+15. **[Benchmarking](benchmarking.md)** - Measure programs with warmups and repeated samples.
+16. **[Optimization Under the Hood](tuning.md)** - Review optimization paths and evidence.
+17. **[Performance](performance.md)** - Review measured FOO program times and their scope.
 
 ## Master and reference
 
 These chapters describe compiler behavior, target configuration, and the exact
 surface of the current language.
 
-27. **[The Compiler](compiler.md)** - Follow source through checking, optimization, and native backends.
-28. **[Diagnostics](diagnostics.md)** - Read grouped terminal, JSON, and editor errors.
-29. **[Platforms](platforms.md)** - Build for desktop, server, ARM, WebAssembly, and freestanding targets.
-30. **[Feature Status](status.md)** - Separate implemented behavior from future design.
-31. **[Building Release Binaries](releasing.md)** - Build Windows and Linux compiler binaries, use WSL, sign Linux output, and package platform icons.
-32. **[Reference](reference.md)** - Look up commands, vocabulary, and core types quickly.
-33. **[Advanced](advanced.md)** - Use allocators, protocol controls, native code, and hardware tuning.
-34. **[Syntax Guide](syntax.md)** - Look up complete sentence forms.
+18. **[The Compiler](compiler.md)** - Follow source through checking and native builds.
+19. **[Diagnostics](diagnostics.md)** - Read terminal, JSON, and editor errors.
+20. **[Platforms](platforms.md)** - Build for desktop, ARM, WebAssembly, and freestanding targets.
+21. **[Feature Status](status.md)** - Separate implemented behavior from future design.
+22. **[Building Release Binaries](releasing.md)** - Package and sign compiler releases.
+23. **[Reference](reference.md)** - Look up commands, vocabulary, and core types.
+24. **[Advanced](advanced.md)** - Use allocators, native code, and hardware tuning.
+25. **[Syntax Guide](syntax.md)** - Look up sentence forms.
+26. **[QBE Backend Support](qbe.md)** - Review target coverage and qualification evidence.
+
+## Further reference
+
+These pages cover build inputs, runtime and hardware contracts, and project
+maintenance:
+
+- [Build Cache](cache.md) and [Linking](linking.md) explain artifact reuse and native inputs.
+- [Build Dependencies](dependencies.md) and [Vendored Dependencies](vendor.md) identify tools, assets, and update rules.
+- [Runtime](runtime.md), [Freestanding Runtime](freestanding.md), and [Hardware Targets](hardware.md) describe target services and setup.
+- [Systems Capabilities](capabilities.md) and [Naming](naming.md) define access levels and repository naming rules.
 
 Proposed systems design work is tracked separately from the current language:
 see the [systems capability audit](capabilities.md) and the
@@ -102,7 +119,8 @@ see the [systems capability audit](capabilities.md) and the
 
 A complete `foo` code block can be placed in an `.iv` source file unless the
 text immediately above it says it is only a fragment. Shell blocks contain CLI
-commands; JSON blocks belong in `project.json` or `foo.lock` as stated nearby.
+commands; configuration blocks belong in `project.ivc`, and JSON lock examples
+belong in `foo.ivl` as stated nearby.
 
 Examples use the current vocabulary:
 
@@ -129,7 +147,7 @@ Examples use the current vocabulary:
 | Package | A versioned dependency containing one or more modules. |
 | Failable | Able to return a typed failure instead of a success value. |
 | Ownership | Responsibility for keeping and eventually releasing a resource. |
-| Backend | The C or Zig path that produces native code. |
+| Backend | The QBE path that produces native code for currently supported targets. |
 | Native code | Instructions built to run directly on a chosen processor and operating system. |
 | Runtime | Support code and services used while a compiled program is running. |
 | Compiler | The tool that checks FOO source and translates it into an executable. |
@@ -142,4 +160,4 @@ Examples use the current vocabulary:
 | Cache | Saved compiler work reused when its inputs remain valid. |
 
 Start with [Getting Started](start.md), then continue to
-[FOO Basics](basics.md).
+[The Language](language.md).

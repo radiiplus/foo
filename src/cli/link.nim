@@ -19,7 +19,7 @@ proc quoted(value: string): string =
     "'" & value.replace("'", "'\"'\"'") & "'"
 
 proc install*(project: Project; entry = ""; name = ""): string =
-  discard project.entryPath(entry)
+  discard project.entry(entry)
   let command = if name.len > 0: name
     elif entry.len > 0: entry
     else: project.manifest().name

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Card } from "../components/card";
 import { Categories } from "../components/categories";
 import { Search } from "../components/search";
-import { packages as loadPackages, type Category, type PackageSummary, type Query } from "../utils/registry";
+import { packages as loadPackages, type Category, type Summary, type Query } from "../utils/registry";
 
 export type Action = {
   id: number;
@@ -27,7 +27,7 @@ export default function Discover({ action, inputRef, onOpen }: DiscoverProps) {
   const [tag, setTag] = useState(initial.tag);
   const [kind, setKind] = useState<"" | "standard" | "package">(initial.kind);
   const [sort, setSort] = useState<Query["sort"]>(initial.sort);
-  const [items, setItems] = useState<PackageSummary[]>([]);
+  const [items, setItems] = useState<Summary[]>([]);
   const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);

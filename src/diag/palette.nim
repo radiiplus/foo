@@ -1,6 +1,6 @@
 import std/strutils
 
-type PaletteEntry* = tuple[hex: string, fallback: int]
+type Entry* = tuple[hex: string, fallback: int]
 
 const palette* = [
   (role: "info", entry: (hex: "61DAFB", fallback: 34)),
@@ -13,7 +13,7 @@ const palette* = [
 ]
 
 proc shade*(role: string; depth = 1): string =
-  var selected: PaletteEntry
+  var selected: Entry
   var found = false
   for item in palette:
     if item.role == role: selected = item.entry; found = true; break

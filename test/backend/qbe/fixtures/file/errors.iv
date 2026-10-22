@@ -1,0 +1,11 @@
+use "../../../../../lib/file.iv" as files.
+use resource as usage.
+use testing as check.
+
+start {
+  constant missing is "qbe-missing-7df1f632.bin".
+  check.expect(not (files.exists(missing) try)).
+  check.same(files.read(missing) fallback "missing", "missing").
+  check.same(files.read("bad\0path") fallback "invalid", "invalid").
+  check.expect(usage.files is 0).
+}

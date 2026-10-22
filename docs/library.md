@@ -1,4 +1,4 @@
-# Chapter 7: The Standard Library (Batteries Included)
+# The Standard Library
 
 One of the greatest strengths of FOO is its **Standard Library** (`lib/`, the
 modules shipped with the language). In many languages, you have to hunt down
@@ -122,7 +122,7 @@ read the status and body separately, then release the response and close the
 client. Servers can `listen`, `accept`, inspect `method` and `header`, stream
     with `read`, stop the server with `shutdown`, and control connection reuse
     with `reply`. Both levels use the same
-runtime contract on the C and Zig backends.
+runtime contract through the QBE backend.
 
 ---
 
@@ -157,8 +157,8 @@ constant token is codec.decode("abc") try.
 ```
 
 For the standard JSON form, `codecs.encode[T]` and `codecs.decode[T]` generate
-type-specific code. The portable generated-code set (the set supported by both
-native backends) is boolean, signed and unsigned integers, decimal, text,
+type-specific code. The generated-code set on qualified QBE targets includes
+boolean, signed and unsigned integers, decimal, text,
 optional values, sequences, choices, and nested records whose contained values
 use the same set. Encoding adopts its
 completed output buffer directly instead of copying it into a second managed
@@ -167,11 +167,11 @@ and numeric ranges.
 
 Generated codec support is not currently identical for every type:
 
-| Value shape | C backend | Zig backend | Portable application contract |
-| --- | --- | --- | --- |
-| Boolean, integer, decimal, text | Supported | Supported | Supported |
-| Optional values, sequences, choices, and records made only from portable values | Supported recursively | Supported recursively | Supported |
-| Pointer, function, or resource fields | Not a generated-code contract | Backend-dependent | Not portable |
+| Value shape | QBE coverage | Application contract |
+| --- | --- | --- |
+| Boolean, integer, decimal, text | Windows x64 dev/release fixtures pass | Supported |
+| Optional values, sequences, choices, and records made only from portable values | Representative Windows x64 fixtures pass; the full target matrix is open | Supported recursively |
+| Pointer, function, or resource fields | No generated codec contract | Not portable |
 
 Generated sequences, including `sequence of byte`, use JSON arrays. Each byte
 is a number from 0 through 255; text uses a JSON string. Optional values use
@@ -215,28 +215,19 @@ reader can restore it.
 
 FOO's `crypto` module provides hashing (turning data into a fixed-size
 fingerprint) and encryption (making data unreadable without the required key).
-The C backend uses libsodium headers and its static library at build time.
-Windows x64 distributions include both. On Debian and Ubuntu, FOO downloads
-and caches `libsodium-dev` automatically when the dependency is missing; no
-system installation or administrator access is required. The Zig backend uses
-Zig's cryptography library.
+QBE builds link the target's verified native cryptography implementation,
+including libsodium and BLAKE3 where those dependencies are qualified. The
+required archives and target coverage are listed in [Dependencies](dependencies.md).
 
 **Supported Libraries:**
-*   **libsodium:** The C backend's cryptography dependency.
+*   **libsodium:** A native cryptography dependency for qualified QBE targets.
 *   **Platform TLS:** WinHTTP and the Windows certificate store on Windows;
     libcurl-backed transport on Linux and macOS.
 
-For C builds, compression uses zlib and HTTP on Linux uses libcurl. On Debian
-and Ubuntu, FOO also provisions missing `zlib1g-dev` and
-`libcurl4-openssl-dev` into its toolchain cache. When provisioned, C binaries
-link the cached libsodium and zlib archives and ship a cached `libcurl.so.4`
-beside the executable. `foo doctor` verifies or provisions these dependencies
-for native modules imported by local project sources. Provisioning requires
-working apt package metadata and network access. On other systems without a
-bundled library, install the development files or supply their include and
-library paths explicitly.
-Windows x64 builds use the bundled static zlib headers and library in
-`vendor/zlib`.
+Compression uses zlib and HTTP on Linux uses libcurl. The target runtime or
+verified vendor archive must supply each dependency; ordinary builds do not
+download packages. `foo doctor` reports the required native inputs. Windows
+x64 builds use the controlled static zlib headers and library in `vendor/zlib`.
 
 `compress.encode` and `compress.decode` transfer arbitrarily long data between
 `io.stream` handles using bounded chunks. The wire format has a four-byte
@@ -282,13 +273,13 @@ once when finished, including on error paths.
 returns lowercase hex. Use `blake.begin`, `blake.update`, `blake.result` or
 `blake.finalize`, and `blake.close` for chunked input. BLAKE3 results are
 repeatable without consuming the state; later updates can extend it. C builds
-compile the bundled BLAKE3 sources with SSE2 on x86-64 and NEON on AArch64;
-Zig uses target-selected vector lanes.
+compile the bundled BLAKE3 sources with the portable implementation selected
+for the hosted runtime.
 
 `crypto.encrypt` and `crypto.decrypt` accept `"xchacha20poly1305"` with a
 24-byte nonce or `"aes256gcm"` with a 12-byte nonce. Both require a 32-byte
 key and return owned binary data. `crypto.available` reports whether an
-algorithm can run on the current backend; C's AES-GCM requires CPU support.
+algorithm can run on the current target; AES-GCM requires CPU support.
 Authentication failures return an error and never expose plaintext. Nonces
 must be unique for each key. `crypto.protect(key)` stores a 32-byte key in
 locked memory; `crypto.encipher` and `crypto.decipher` use it without returning the key,
@@ -327,11 +318,11 @@ display "Hash: " plus hash.
 
 You might be wondering: *"How does FOO implement all these features so quickly?"*
 
-This is where FOO’s **Interoperability** shines. Modules such as `net`, `crypto`, and `file` target stable runtime contracts. Each backend can provide a tuned native implementation while FOO code keeps one portable API.
+Modules such as `net`, `crypto`, and `file` target stable runtime contracts. The QBE backend selects compatible runtime implementations while FOO code keeps one portable API.
 
 Bulk copy, task scheduling, networking, and collection storage are selected
 through backend-neutral runtime contracts (rules that do not depend on one code
-generator). C and Zig provide their own implementations without changing
+generator). Hosted and WASI providers supply their implementations without changing
 application source.
 
 Advanced users can stay inside those portable contracts while controlling more of the underlying service. `http` exposes persistent request headers, redirect limits, and connection reuse. `net` exposes partial sends, half-close, TCP_NODELAY, and keepalive. `file` exposes process-buffer flushing, stable-storage sync, atomic same-filesystem replacement, removal, byte seeking, position, and size. These are explicit operations on the same handles used by the simpler APIs; no backend object leaks into FOO code.
@@ -488,9 +479,8 @@ available for existing code.
 
 The transfer contract is used throughout the runtime, including sequences,
 text, JSON, HTTP buffers, and allocator growth (expanding reserved memory).
-Release builds choose an AVX2, AArch64, machine, or portable C implementation
-from the target profile. Zig builds use an overlap-safe block transfer sized
-for the selected CPU.
+Release builds choose an AVX2, AArch64, machine, or portable implementation
+from the target profile. Every selected transfer path preserves overlap safety.
 
 Selection is workload-aware rather than a blanket replacement of system code.
 The AVX2 path covers a measured medium-size range, non-overlapping bulk machine
@@ -553,4 +543,4 @@ The FOO Standard Library is designed to be **Predictable**.
 *   Every module uses the same naming conventions.
 *   Proven hot-path contracts (rules for frequently executed code) can select backend and CPU-specific implementations through the `opt` engine.
 
-In the next chapter, we will look at **Packages**, where we will learn how to install libraries from the community and publish our own!
+Next: [Standard Library Index](catalog.md) or [Packages](packages.md).

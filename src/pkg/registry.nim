@@ -1,25 +1,31 @@
 import std/[algorithm, json, os, osproc, sequtils, sets, strutils, tables, times]
 when not defined(windows): import std/httpclient
 import ./[fetch, hash, semver, surface]
-import ../fmt/formatter as fooFormatter
+import ../build/files as paths
+import ../config/project as projectConfig
+import ../ast/print as formatter
 
 const
   defaultSource* = "https://raw.githubusercontent.com/radiiplus/foo.registry/main"
   defaultFooSource* = "https://raw.githubusercontent.com/radiiplus/foo/main"
   defaultApi* = "https://arfoskacounswfvzjkfv.supabase.co/functions/v1/registry"
+  currentLockName = "foo.ivl"
+
+proc locate(root: string): string =
+  root / currentLockName
 
 type
-  RegistryResponse* = object
+  Response* = object
     status*: int
     body*: string
   Registry* = object
     source*: string
     fooSource*: string
     api*: string
-  RegistryTransport* = proc(config: Registry; path, methodName, body, token: string): RegistryResponse {.closure.}
-  RegistryBrowserOpener* = proc(url: string) {.closure.}
-  RegistryProgress* = proc(phase, name, detail: string) {.closure.}
-  PublishProgress* = RegistryProgress
+  Transport* = proc(config: Registry; path, methodName, body, token: string): Response {.closure.}
+  Browser* = proc(url: string) {.closure.}
+  Progress* = proc(phase, name, detail: string) {.closure.}
+  PublishProgress* = Progress
   Installed* = object
     name*: string
     version*: string
@@ -30,20 +36,20 @@ type
     direct*: bool
     dependencies*: seq[string]
 
-var registryTransport*: RegistryTransport
-var registryBrowserOpener*: RegistryBrowserOpener
-var standardCache: JsonNode
-var standardCacheSource = ""
-var standardCacheUntil = 0.0
+var client*: Transport
+var launcher*: Browser
+var cache: JsonNode
+var origin = ""
+var until = 0.0
 
-proc setRegistryTransport*(transport: RegistryTransport) =
-  registryTransport = transport
-  standardCache = nil
+proc transport*(transport: Transport) =
+  client = transport
+  cache = nil
 
-proc setRegistryBrowserOpener*(opener: RegistryBrowserOpener) =
-  registryBrowserOpener = opener
+proc browser*(opener: Browser) =
+  launcher = opener
 
-proc trimSlash(value: string): string =
+proc trim(value: string): string =
   result = value
   while result.endsWith("/"): result.setLen(result.len - 1)
 
@@ -53,9 +59,8 @@ proc configuration*(root: string): Registry =
     fooSource: getEnv("FOO_SOURCE_URL", defaultFooSource),
     api: getEnv("FOO_REGISTRY_API", defaultApi),
   )
-  let manifestPath = root / "project.json"
-  if not fileExists(manifestPath): return
-  let project = parseJson(readFile(manifestPath))
+  if not projectConfig.manifestExists(root): return
+  let project = projectConfig.readProject(root)
   let registry = project.getOrDefault("registry")
   if registry != nil and registry.kind == JObject:
     let source = registry.getOrDefault("url").getStr()
@@ -63,38 +68,38 @@ proc configuration*(root: string): Registry =
     if source.len > 0: result.source = source
     if api.len > 0: result.api = api
 
-proc request(config: Registry; path, methodName, body, token: string): RegistryResponse =
-  if registryTransport != nil:
-    return registryTransport(config, path, methodName, body, token)
+proc request(config: Registry; path, methodName, body, token: string): Response =
+  if client != nil:
+    return client(config, path, methodName, body, token)
   let base = if path.startsWith("/auth/") or path in ["/publish", "/deprecate"]: config.api
     elif path == "registry/standard.json": config.fooSource
     else: config.source
-  let endpoint = trimSlash(base) & "/" & path.strip(chars = {'/'})
+  let endpoint = trim(base) & "/" & path.strip(chars = {'/'})
   when defined(windows):
     if methodName notin ["GET", "POST"]:
       raise newException(ValueError, "Unsupported registry method: " & methodName)
     let identity = $getCurrentProcessId() & "-" & $int64(epochTime() * 1_000_000)
-    let headerPath = getTempDir() / ("foo-headers-" & identity & ".txt")
-    let bodyPath = getTempDir() / ("foo-body-" & identity & ".json")
-    writeFile(headerPath, "accept: application/json\ncontent-type: application/json\n" &
+    let route = getTempDir() / ("foo-headers-" & identity & ".txt")
+    let location = getTempDir() / ("foo-body-" & identity & ".json")
+    writeFile(route, "accept: application/json\ncontent-type: application/json\n" &
       (if token.len > 0: "authorization: Bearer " & token & "\n" else: ""))
-    if methodName == "POST": writeFile(bodyPath, body)
+    if methodName == "POST": writeFile(location, body)
     try:
       var command = "curl.exe --silent --show-error --location --max-time 30 --request " & methodName &
-        " --header " & quoteShell("@" & headerPath)
-      if methodName == "POST": command.add(" --data-binary " & quoteShell("@" & bodyPath))
+        " --header " & quoteShell("@" & route)
+      if methodName == "POST": command.add(" --data-binary " & quoteShell("@" & location))
       command.add(" --write-out " & quoteShell("FOO_STATUS:%{http_code}") & " -- " & quoteShell(endpoint))
       let response = execCmdEx(command)
       if response.exitCode != 0: raise newException(IOError, response.output.strip)
       let marker = response.output.rfind("FOO_STATUS:")
       if marker < 0: raise newException(IOError, "Registry request returned no HTTP status")
-      result = RegistryResponse(
+      result = Response(
         status: parseInt(response.output[marker + 11 .. ^1].strip),
         body: response.output[0 ..< marker],
       )
     finally:
-      if fileExists(headerPath): removeFile(headerPath)
-      if fileExists(bodyPath): removeFile(bodyPath)
+      if fileExists(route): removeFile(route)
+      if fileExists(location): removeFile(location)
   else:
     let client = newHttpClient(timeout = 30_000)
     defer: client.close()
@@ -104,9 +109,9 @@ proc request(config: Registry; path, methodName, body, token: string): RegistryR
       of "GET": client.get(endpoint)
       of "POST": client.request(endpoint, httpMethod = HttpPost, body = body)
       else: raise newException(ValueError, "Unsupported registry method: " & methodName)
-    result = RegistryResponse(status: response.code.int, body: response.body)
+    result = Response(status: response.code.int, body: response.body)
 
-proc requireResponse(response: RegistryResponse; operation: string): JsonNode =
+proc require(response: Response; operation: string): JsonNode =
   if response.status < 200 or response.status >= 300:
     var detail = response.body
     try:
@@ -119,21 +124,21 @@ proc requireResponse(response: RegistryResponse; operation: string): JsonNode =
   except CatchableError as error:
     raise newException(IOError, operation & " returned invalid JSON: " & error.msg)
 
-proc standardCatalog(config: Registry): JsonNode =
-  if standardCache != nil and standardCacheSource == config.fooSource and
-      epochTime() < standardCacheUntil: return standardCache
-  result = requireResponse(request(config, "registry/standard.json", "GET", "", ""),
+proc catalog(config: Registry): JsonNode =
+  if cache != nil and origin == config.fooSource and
+      epochTime() < until: return cache
+  result = require(request(config, "registry/standard.json", "GET", "", ""),
     "FOO standard catalog")
   if result.getOrDefault("schema").getStr() != "foo.standard-catalog/v1" or
       result.getOrDefault("entries").kind != JArray or
       result.getOrDefault("packages").kind != JArray or
       result["entries"].len != result["packages"].len:
     raise newException(ValueError, "Invalid FOO standard catalog")
-  standardCache = result
-  standardCacheSource = config.fooSource
-  standardCacheUntil = epochTime() + 60
+  cache = result
+  origin = config.fooSource
+  until = epochTime() + 60
 
-proc validName(value: string): bool =
+proc valid(value: string): bool =
   var package = value
   if value.startsWith("lib/"):
     let parts = value.split('/')
@@ -154,7 +159,7 @@ proc validName(value: string): bool =
     if character notin {'a'..'z', '0'..'9', '-'}: return false
   true
 
-proc exactVersion*(value: string): bool =
+proc exact*(value: string): bool =
   let base = value.split('-', maxsplit = 1)[0]
   let parts = base.split('.')
   if parts.len != 3: return false
@@ -169,28 +174,28 @@ proc exactVersion*(value: string): bool =
       if not (character.isAlphaNumeric or character in {'.', '-'}): return false
   true
 
-proc ensurePackage(name, version: string) =
-  if not validName(name): raise newException(ValueError, "Invalid package name: " & name)
-  discard parseConstraint(version)
+proc ensure(name, version: string) =
+  if not valid(name): raise newException(ValueError, "Invalid package name: " & name)
+  discard constraint(version)
 
-proc sourceDependency(value: string): bool =
+proc source(value: string): bool =
   value.startsWith("path+") or value.startsWith("git+") or
     value.startsWith("https://") or value.startsWith("http://")
 
-proc ensureDependency(name, version: string) =
-  if not validName(name): raise newException(ValueError, "Invalid package name: " & name)
-  if sourceDependency(version):
+proc dependency(name, version: string) =
+  if not valid(name): raise newException(ValueError, "Invalid package name: " & name)
+  if source(version):
     if version.startsWith("path+") and version.len == 5:
       raise newException(ValueError, "Local dependency path cannot be empty: " & name)
     return
-  discard parseConstraint(version)
+  discard constraint(version)
 
-proc ensureRelease(name, version: string) =
-  if not validName(name): raise newException(ValueError, "Invalid package name: " & name)
-  if not exactVersion(version): raise newException(ValueError, "Package version must be exact: " & version)
+proc release(name, version: string) =
+  if not valid(name): raise newException(ValueError, "Invalid package name: " & name)
+  if not exact(version): raise newException(ValueError, "Package version must be exact: " & version)
 
 proc entries(config: Registry): tuple[revision: string, values: seq[JsonNode]] =
-  let manifest = requireResponse(request(config, "indexes/index.json", "GET", "", ""), "Registry index")
+  let manifest = require(request(config, "indexes/index.json", "GET", "", ""), "Registry index")
   if manifest.getOrDefault("schema").getStr() != "foo.registry/v1" or
       manifest.getOrDefault("shards").kind != JArray:
     raise newException(ValueError, "Invalid registry index")
@@ -201,14 +206,14 @@ proc entries(config: Registry): tuple[revision: string, values: seq[JsonNode]] =
       raise newException(ValueError, "Invalid registry shard path")
     let shard = request(config, path, "GET", "", "")
     if shard.status < 200 or shard.status >= 300:
-      discard requireResponse(shard, "Registry shard")
+      discard require(shard, "Registry shard")
     for line in shard.body.splitLines:
       if line.strip.len == 0: continue
       let entry = parseJson(line)
       if entry.getOrDefault("schema").getStr() != "foo.entry/v1":
         raise newException(ValueError, "Invalid registry JSONL entry")
       if entry.getOrDefault("kind").getStr() != "standard": result.values.add(entry)
-  let standard = standardCatalog(config)
+  let standard = catalog(config)
   for index in 0 ..< standard["entries"].len:
     let entry = standard["entries"][index]
     if entry.getOrDefault("schema").getStr() != "foo.entry/v1" or
@@ -233,24 +238,24 @@ proc search*(root, query: string; limit = 50): seq[JsonNode] =
       result.add(entry)
       if result.len >= limit: break
 
-proc findEntry(config: Registry; name: string): JsonNode =
+proc find(config: Registry; name: string): JsonNode =
   for entry in entries(config).values:
     if entry.getOrDefault("name").getStr() == name: return entry
   raise newException(IOError, "Package not found: " & name)
 
-proc latestVersion*(root, name: string): string =
-  if not validName(name): raise newException(ValueError, "Invalid package name: " & name)
-  findEntry(configuration(root), name).getOrDefault("version").getStr()
+proc latest*(root, name: string): string =
+  if not valid(name): raise newException(ValueError, "Invalid package name: " & name)
+  find(configuration(root), name).getOrDefault("version").getStr()
 
 proc release(config: Registry; name, version: string): JsonNode =
-  ensureRelease(name, version)
+  release(name, version)
   if name.startsWith("lib/"):
-    let standard = standardCatalog(config)
+    let standard = catalog(config)
     for record in standard["packages"]:
       if record.getOrDefault("name").getStr() == name and
           record.getOrDefault("version").getStr() == version: return record
     raise newException(IOError, "Package version not found: " & name & "@" & version)
-  let entry = findEntry(config, name)
+  let entry = find(config, name)
   var path = ""
   let versions = entry.getOrDefault("versions")
   if versions != nil and versions.kind == JArray:
@@ -258,7 +263,7 @@ proc release(config: Registry; name, version: string): JsonNode =
       if item.getOrDefault("version").getStr() == version:
         path = item.getOrDefault("path").getStr()
   if path.len == 0: raise newException(IOError, "Package version not found: " & name & "@" & version)
-  result = requireResponse(request(config, path, "GET", "", ""), "Package metadata")
+  result = require(request(config, path, "GET", "", ""), "Package metadata")
   if result.getOrDefault("schema").getStr() != "foo.package/v1" or
       result.getOrDefault("name").getStr() != name or
       result.getOrDefault("version").getStr() != version:
@@ -266,23 +271,23 @@ proc release(config: Registry; name, version: string): JsonNode =
 
 proc info*(root, name: string; version = ""): JsonNode =
   let config = configuration(root)
-  let selected = if version.len > 0: version else: findEntry(config, name).getOrDefault("version").getStr()
+  let selected = if version.len > 0: version else: find(config, name).getOrDefault("version").getStr()
   release(config, name, selected)
 
-proc authFile(): string =
+proc auth(): string =
   getEnv("FOO_CONFIG_DIR", getConfigDir() / "foo") / "auth.json"
 
-proc authToken*(): string =
+proc token*(): string =
   result = getEnv("FOO_TOKEN")
   if result.len > 0: return
-  let path = authFile()
+  let path = auth()
   if not fileExists(path): return
   try: result = parseJson(readFile(path)).getOrDefault("access_token").getStr()
   except CatchableError: discard
 
-proc openUrl(url: string) =
-  if registryBrowserOpener != nil:
-    registryBrowserOpener(url)
+proc open(url: string) =
+  if launcher != nil:
+    launcher(url)
     return
   when defined(windows):
     discard execCmdEx("cmd /c start \"\" " & quoteShell(url))
@@ -293,7 +298,7 @@ proc openUrl(url: string) =
 
 proc login*(): string =
   let config = configuration(getCurrentDir())
-  let started = requireResponse(request(config, "/auth/device", "POST", "{}", ""), "GitHub device login")
+  let started = require(request(config, "/auth/device", "POST", "{}", ""), "GitHub device login")
   let device = started.getOrDefault("device_code").getStr()
   let code = started.getOrDefault("user_code").getStr()
   let url = started.getOrDefault("verification_uri").getStr()
@@ -303,7 +308,7 @@ proc login*(): string =
     raise newException(IOError, "GitHub device login returned incomplete instructions")
   echo "Open " & url & " and enter code " & code
   echo "GitHub keeps the device page open. Return to this terminal after authorizing."
-  openUrl(url)
+  open(url)
   let deadline = epochTime() + float(expires)
   while epochTime() < deadline:
     sleep(interval * 1000)
@@ -313,9 +318,9 @@ proc login*(): string =
       let pending = parseJson(response.body)
       if pending.getOrDefault("error").getStr() == "slow_down": interval += 5
       continue
-    let token = requireResponse(response, "GitHub device login").getOrDefault("access_token").getStr()
+    let token = require(response, "GitHub device login").getOrDefault("access_token").getStr()
     if token.len == 0: raise newException(IOError, "GitHub device login returned no token")
-    let path = authFile()
+    let path = auth()
     createDir(path.parentDir)
     writeFile(path, pretty(%*{"access_token": token}) & "\n")
     when defined(posix): setFilePermissions(path, {fpUserRead, fpUserWrite})
@@ -338,7 +343,7 @@ type Requirement = object
   direct: bool
   optional: bool
 
-proc addDependencies(result: JsonNode; project: JsonNode; field, kind: string) =
+proc add(result: JsonNode; project: JsonNode; field, kind: string) =
   let values = project.getOrDefault(field)
   if values == nil or values.kind != JObject: return
   var names: seq[string]
@@ -353,35 +358,35 @@ proc addDependencies(result: JsonNode; project: JsonNode; field, kind: string) =
       version = values[name].getOrDefault("version").getStr()
       let configured = values[name].getOrDefault("platforms")
       if configured != nil and configured.kind == JArray: platforms = configured
-    ensureDependency(name, version)
+    dependency(name, version)
     result.add(%*{"name": name, "version": version, "kind": kind, "platforms": platforms})
 
-proc projectDependencies(project: JsonNode): JsonNode =
+proc dependencies(project: JsonNode): JsonNode =
   result = newJArray()
-  result.addDependencies(project, "dependencies", "runtime")
-  result.addDependencies(project, "devDependencies", "dev")
-  result.addDependencies(project, "optionalDependencies", "optional")
-  let platformValues = project.getOrDefault("platformDependencies")
-  if platformValues != nil and platformValues.kind == JObject:
+  result.add(project, "dependencies", "runtime")
+  result.add(project, "devDependencies", "dev")
+  result.add(project, "optionalDependencies", "optional")
+  let systems = project.getOrDefault("platformDependencies")
+  if systems != nil and systems.kind == JObject:
     var selectors: seq[string]
-    for selector in platformValues.keys: selectors.add(selector)
+    for selector in systems.keys: selectors.add(selector)
     selectors.sort()
     for selector in selectors:
-      let values = platformValues[selector]
+      let values = systems[selector]
       if values.kind != JObject: raise newException(ValueError, "platformDependencies entries must be objects")
       var names: seq[string]
       for name in values.keys: names.add(name)
       names.sort()
       for name in names:
         let version = values[name].getStr()
-        ensureDependency(name, version)
+        dependency(name, version)
         result.add(%*{"name": name, "version": version, "kind": "platform", "platforms": [selector]})
 
-proc bundledSource(root: string): JsonNode =
-  var paths = @[root / "project.json"]
-  let sourceRoot = root / "src"
-  if dirExists(sourceRoot):
-    for path in walkDirRec(sourceRoot):
+proc bundled(root: string): JsonNode =
+  var paths = projectConfig.manifestFiles(root)
+  let directory = root / "src"
+  if dirExists(directory):
+    for path in walkDirRec(directory):
       if not fileExists(path) or not path.endsWith(".iv"): continue
       paths.add(path)
   paths = paths.deduplicate()
@@ -392,34 +397,34 @@ proc bundledSource(root: string): JsonNode =
   for path in paths:
     let relative = relativePath(path, root).replace('\\', '/')
     var content = readFile(path).replace("\r\n", "\n").replace("\r", "\n")
-    if path.endsWith(".iv"): content = fooFormatter.formatSource(content)
+    if path.endsWith(".iv"): content = formatter.format(content)
     total += relative.len + content.len
     if total > 16 * 1024 * 1024: raise newException(ValueError, "Package source exceeds 16 MiB")
     files.add(%*{"path": relative, "content": content})
     canonical.add(relative & "\0" & content & "\0")
-  %*{"format": "foo.source/v1", "digest": sha256Hex(canonical), "files": files}
+  %*{"format": "foo.source/v1", "digest": digest(canonical), "files": files}
 
 proc required(node: JsonNode; field: string): string =
   result = node.getOrDefault(field).getStr().strip
-  if result.len == 0: raise newException(ValueError, "project.json needs a non-empty '" & field & "' field")
+  if result.len == 0: raise newException(ValueError, "Project manifest needs a non-empty '" & field & "' field")
 
 proc publish*(root: string; token = ""; progress: PublishProgress = nil): string =
-  let manifestPath = root / "project.json"
-  if not fileExists(manifestPath): raise newException(IOError, "project.json not found")
-  let project = parseJson(readFile(manifestPath))
+  if not projectConfig.manifestExists(root):
+    raise newException(IOError, "Project manifest not found")
+  let project = projectConfig.readProject(root)
   let name = required(project, "name").toLowerAscii()
   let version = required(project, "version")
   if name.startsWith("lib/"):
     raise newException(ValueError, "The bundled library package namespace is reserved")
-  ensurePackage(name, version)
+  ensure(name, version)
   let state = git(root, "status", "--porcelain")
   if state.len > 0: raise newException(ValueError, "Commit project changes before publishing")
   let revision = git(root, "rev-parse", "HEAD").toLowerAscii()
   if revision.len != 40: raise newException(ValueError, "Publishing requires a Git commit")
-  let readmePath = root / "README.md"
-  if not fileExists(readmePath): raise newException(ValueError, "README.md not found")
+  let readme = root / "README.md"
+  if not fileExists(readme): raise newException(ValueError, "README.md not found")
   var documentation = newJArray()
-  for line in readFile(readmePath).splitLines:
+  for line in readFile(readme).splitLines:
     if line.strip.len > 0: documentation.add(%line)
   if documentation.len < 100:
     raise newException(ValueError, "README.md must contain at least 100 non-empty lines")
@@ -428,33 +433,33 @@ proc publish*(root: string; token = ""; progress: PublishProgress = nil): string
   if tags == nil or tags.kind != JArray: tags = newJArray()
   var platforms = project.getOrDefault("platforms")
   if platforms == nil or platforms.kind != JArray: platforms = newJArray()
-  let publishedDependencies = projectDependencies(project)
-  for dependency in publishedDependencies:
-    if sourceDependency(dependency["version"].getStr()):
+  let published = dependencies(project)
+  for dependency in published:
+    if source(dependency["version"].getStr()):
       raise newException(ValueError, "Published dependencies must use registry versions: " &
         dependency["name"].getStr())
-  let packageName = name & "@" & version
-  if progress != nil: progress("package", packageName, "revision " & revision[0 .. 11])
-  let source = bundledSource(root)
-  let api = publicApi(source)
-  let iconNode = project.getOrDefault("icon")
+  let label = name & "@" & version
+  if progress != nil: progress("package", label, "revision " & revision[0 .. 11])
+  let source = bundled(root)
+  let api = public(source)
+  let declaration = project.getOrDefault("icon")
   var icon = ""
-  if iconNode != nil:
-    if iconNode.kind != JString: raise newException(ValueError, "project.json icon must be an SVG path")
-    let iconPath = iconNode.getStr().replace('\\', '/')
-    if iconPath.len == 0 or iconPath.startsWith("/") or ':' in iconPath or
-        not iconPath.endsWith(".svg") or
-        iconPath.split('/').anyIt(it.len == 0 or it == "." or it == ".."):
-      raise newException(ValueError, "project.json icon must be a relative SVG path")
-    let sourcePath = root / iconPath
-    if not fileExists(sourcePath): raise newException(ValueError, "Package icon not found: " & iconPath)
-    if getFileSize(sourcePath) > 64 * 1024: raise newException(ValueError, "Package icon exceeds 64 KiB")
-    icon = readFile(sourcePath)
+  if declaration != nil:
+    if declaration.kind != JString: raise newException(ValueError, "Project icon must be an SVG path")
+    let image = declaration.getStr().replace('\\', '/')
+    if image.len == 0 or image.startsWith("/") or ':' in image or
+        not image.endsWith(".svg") or
+        image.split('/').anyIt(it.len == 0 or it == "." or it == ".."):
+      raise newException(ValueError, "Project icon must be a relative SVG path")
+    let input = root / image
+    if not fileExists(input): raise newException(ValueError, "Package icon not found: " & image)
+    if getFileSize(input) > 64 * 1024: raise newException(ValueError, "Package icon exceeds 64 KiB")
+    icon = readFile(input)
   var exports = 0
   for module in api.getOrDefault("modules"):
     exports += module.getOrDefault("items").len
   if progress != nil:
-    progress("bundle", packageName, $source["files"].len & " files, " &
+    progress("bundle", label, $source["files"].len & " files, " &
       $exports & " exports, " & $documentation.len & " documentation lines")
   let publication = %*{
     "schema": "foo.publish/v1",
@@ -473,32 +478,26 @@ proc publish*(root: string; token = ""; progress: PublishProgress = nil): string
       "repository": repository,
       "revision": revision,
       "install": "foo add " & name,
-      "dependencies": publishedDependencies,
+      "dependencies": published,
     },
     "documentation": documentation,
     "source": source,
     "api": api,
   }
   if icon.len > 0: publication["icon"] = %icon
-  let credential = if token.len > 0: token else: authToken()
+  let credential = if token.len > 0: token else: token()
   if credential.len == 0: raise newException(ValueError, "Run 'foo login' before publishing")
-  if progress != nil: progress("upload", packageName, configuration(root).api)
-  let response = requireResponse(request(configuration(root), "/publish", "POST", $publication, credential), "Publication")
-  let publishedName = response.getOrDefault("package").getStr(name)
-  let publishedVersion = response.getOrDefault("version").getStr(version)
+  if progress != nil: progress("upload", label, configuration(root).api)
+  let response = require(request(configuration(root), "/publish", "POST", $publication, credential), "Publication")
+  let identifier = response.getOrDefault("package").getStr(name)
+  let edition = response.getOrDefault("version").getStr(version)
   let commit = response.getOrDefault("commit").getStr()
   if progress != nil and commit.len > 0:
-    progress("commit", publishedName & "@" & publishedVersion,
+    progress("commit", identifier & "@" & edition,
       if commit.len >= 12: commit[0 .. 11] else: commit)
-  publishedName & "@" & publishedVersion
+  identifier & "@" & edition
 
-proc removeTree(path: string) =
-  if not dirExists(path): return
-  for kind, child in walkDir(path):
-    if kind == pcDir: removeTree(child) else: removeFile(child)
-  removeDir(path)
-
-proc sourceDigest(source: JsonNode): string =
+proc digest(source: JsonNode): string =
   if source == nil or source.kind != JObject or source.getOrDefault("format").getStr() != "foo.source/v1" or
       source.getOrDefault("files").kind != JArray:
     raise newException(ValueError, "Package has no valid source bundle")
@@ -517,37 +516,37 @@ proc sourceDigest(source: JsonNode): string =
     seen.incl(key)
     previous = path
     canonical.add(path & "\0" & content.getStr() & "\0")
-  result = sha256Hex(canonical)
+  result = digest(canonical)
   if source.getOrDefault("digest").getStr() != result:
     raise newException(ValueError, "Package source digest mismatch")
 
-proc extractRelease(root: string; record: JsonNode): Installed =
+proc extract(root: string; record: JsonNode): Installed =
   result.name = record.getOrDefault("name").getStr()
   result.version = record.getOrDefault("version").getStr()
   result.source = "registry+" & result.name & "@" & result.version
   result.repository = record.getOrDefault("repository").getStr()
   result.revision = record.getOrDefault("revision").getStr().toLowerAscii()
-  ensureRelease(result.name, result.version)
+  release(result.name, result.version)
   let source = record.getOrDefault("source")
-  result.digest = sourceDigest(source)
+  result.digest = digest(source)
   let destination = root / ".foo" / "packages" / result.name
-  removeTree(destination)
+  paths.erase(destination)
   createDir(destination)
   for file in source["files"]:
     let target = destination / file["path"].getStr()
     createDir(target.parentDir)
     writeFile(target, file["content"].getStr())
 
-proc currentPlatform(): string =
+proc platform(): string =
   when defined(windows): "windows"
   elif defined(macosx): "macos"
   elif defined(linux): "linux"
   else: "other"
 
 proc enabled(platforms: seq[string]): bool =
-  platforms.len == 0 or "all" in platforms or currentPlatform() in platforms
+  platforms.len == 0 or "all" in platforms or platform() in platforms
 
-proc dependencies(record: JsonNode): seq[Requirement] =
+proc imports(record: JsonNode): seq[Requirement] =
   let values = record.getOrDefault("dependencies")
   if values == nil or values.kind != JArray: return
   for value in values:
@@ -555,7 +554,7 @@ proc dependencies(record: JsonNode): seq[Requirement] =
     if kind == "dev": continue
     let name = value.getOrDefault("name").getStr()
     let version = value.getOrDefault("version").getStr()
-    ensurePackage(name, version)
+    ensure(name, version)
     var platforms: seq[string]
     let selected = value.getOrDefault("platforms")
     if selected != nil and selected.kind == JArray:
@@ -564,8 +563,8 @@ proc dependencies(record: JsonNode): seq[Requirement] =
     result.add(Requirement(name: name, version: version, kind: kind,
       platforms: platforms, optional: kind == "optional"))
 
-proc rootRequirements(project: JsonNode): seq[Requirement] =
-  for dependency in projectDependencies(project):
+proc requirements(project: JsonNode): seq[Requirement] =
+  for dependency in dependencies(project):
     var platforms: seq[string]
     for platform in dependency["platforms"]: platforms.add(platform.getStr())
     let kind = dependency["kind"].getStr()
@@ -574,46 +573,46 @@ proc rootRequirements(project: JsonNode): seq[Requirement] =
       version: dependency["version"].getStr(), kind: kind, platforms: platforms,
       direct: true, optional: kind == "optional"))
 
-type SourceNode = object
+type Origin = object
   package: Installed
   path: string
   requirements: seq[Requirement]
 
-proc canonicalSource(source, base, root: string): string =
+proc canonical(source, base, root: string): string =
   if not source.startsWith("path+"): return source
   let value = source[5 .. ^1]
   let absolute = if value.isAbsolute: absolutePath(value) else: absolutePath(value, base)
   "path+" & relativePath(absolute, root).replace('\\', '/')
 
-proc copySource(source, destination: string) =
+proc copy(source, destination: string) =
   createDir(destination)
   for kind, child in walkDir(source):
     let name = child.lastPathPart
     if name in [".git", ".foo", ".artifacts", "node_modules", "target"]: continue
     let target = destination / name
     case kind
-    of pcDir: copySource(child, target)
+    of pcDir: copy(child, target)
     of pcFile:
       createDir(target.parentDir)
       copyFile(child, target)
     else:
       raise newException(ValueError, "Local packages cannot contain filesystem links: " & child)
 
-proc sourceNodes(root: string; roots: seq[Requirement]; registryRoots: var seq[Requirement];
-    progress: RegistryProgress = nil): seq[SourceNode] =
+proc nodes(root: string; roots: seq[Requirement]; repositories: var seq[Requirement];
+    progress: Progress = nil): seq[Origin] =
   var queue: seq[tuple[requirement: Requirement, base: string]]
   for requirement in roots:
-    if sourceDependency(requirement.version):
+    if source(requirement.version):
       queue.add((requirement: requirement, base: root))
     else:
-      registryRoots.add(requirement)
+      repositories.add(requirement)
   var selected = initTable[string, string]()
   var position = 0
   while position < queue.len:
     var requirement = queue[position].requirement
     let base = queue[position].base
     inc position
-    requirement.version = canonicalSource(requirement.version, base, root)
+    requirement.version = canonical(requirement.version, base, root)
     if selected.hasKey(requirement.name):
       if selected[requirement.name] != requirement.version:
         raise newException(ValueError, "Dependency conflict for " & requirement.name &
@@ -623,9 +622,9 @@ proc sourceNodes(root: string; roots: seq[Requirement]; registryRoots: var seq[R
           if item.package.name == requirement.name: item.package.direct = true
       continue
     if progress != nil: progress("fetch", requirement.name, requirement.version)
-    var fetched: FetchResult
+    var fetched: Download
     try:
-      fetched = fetchDep(requirement.name, requirement.version, root)
+      fetched = fetch(requirement.name, requirement.version, root)
     except CatchableError:
       if requirement.optional: continue
       raise
@@ -636,21 +635,20 @@ proc sourceNodes(root: string; roots: seq[Requirement]; registryRoots: var seq[R
       raise newException(ValueError,
         "Dependency source cannot be inside .foo/packages: " & requirement.name)
     selected[requirement.name] = requirement.version
-    let manifestPath = fetched.path / "project.json"
-    if not fileExists(manifestPath):
-      raise newException(ValueError, "Dependency " & requirement.name & " has no project.json")
-    let manifest = parseJson(readFile(manifestPath))
+    if not projectConfig.manifestExists(fetched.path):
+      raise newException(ValueError, "Dependency " & requirement.name & " has no project manifest")
+    let manifest = projectConfig.readProject(fetched.path)
     let declared = manifest.getOrDefault("name").getStr()
     let version = manifest.getOrDefault("version").getStr()
     if declared != requirement.name:
       raise newException(ValueError, "Dependency name " & requirement.name &
         " does not match project name " & declared)
-    ensureRelease(declared, version)
-    var node = SourceNode(
+    release(declared, version)
+    var node = Origin(
       package: Installed(name: declared, version: version,
         source: requirement.version, digest: fetched.hash, direct: requirement.direct),
       path: fetched.path)
-    for dependency in projectDependencies(manifest):
+    for dependency in dependencies(manifest):
       let kind = dependency["kind"].getStr()
       if kind == "dev": continue
       var platforms: seq[string]
@@ -659,21 +657,21 @@ proc sourceNodes(root: string; roots: seq[Requirement]; registryRoots: var seq[R
       var child = Requirement(name: dependency["name"].getStr(),
         version: dependency["version"].getStr(), kind: kind,
         platforms: platforms, optional: kind == "optional")
-      if sourceDependency(child.version):
-        child.version = canonicalSource(child.version, fetched.path, root)
+      if source(child.version):
+        child.version = canonical(child.version, fetched.path, root)
         queue.add((requirement: child, base: root))
       else:
-        registryRoots.add(child)
+        repositories.add(child)
       node.requirements.add(child)
     result.add(node)
 
-proc installSources(root: string; nodes: var seq[SourceNode];
-    registryPackages: seq[Installed]; progress: RegistryProgress): seq[Installed] =
+proc install(root: string; nodes: var seq[Origin];
+    inventory: seq[Installed]; progress: Progress): seq[Installed] =
   var versions = initTable[string, string]()
-  for item in registryPackages: versions[item.name] = item.version
+  for item in inventory: versions[item.name] = item.version
   for item in nodes:
     if versions.hasKey(item.package.name):
-      removeTree(root / ".foo" / "packages")
+      paths.erase(root / ".foo" / "packages")
       raise newException(ValueError, "Dependency " & item.package.name &
         " is selected from both a registry and an external source")
     versions[item.package.name] = item.package.version
@@ -686,16 +684,16 @@ proc installSources(root: string; nodes: var seq[SourceNode];
           " is missing " & dependency.name)
     item.package.dependencies.sort()
     let destination = root / ".foo" / "packages" / item.package.name
-    removeTree(destination)
-    copySource(item.path, destination)
+    paths.erase(destination)
+    copy(item.path, destination)
     if progress != nil:
       progress("install", item.package.name & "@" & item.package.version,
         "digest:" & item.package.digest[0 .. 11])
     result.add(item.package)
-  result.add(registryPackages)
+  result.add(inventory)
   result.sort(proc(left, right: Installed): int = cmp(left.name, right.name))
 
-proc requirementJson(requirements: seq[Requirement]): JsonNode =
+proc requirements(requirements: seq[Requirement]): JsonNode =
   result = newJArray()
   var sorted = requirements
   sorted.sort(proc(left, right: Requirement): int = cmp(left.name, right.name))
@@ -704,18 +702,18 @@ proc requirementJson(requirements: seq[Requirement]): JsonNode =
     for platform in item.platforms: platforms.add(%platform)
     result.add(%*{"name": item.name, "version": item.version, "kind": item.kind, "platforms": platforms})
 
-proc registryLock(lock: JsonNode; roots: seq[Requirement]): JsonNode =
+proc lock(lock: JsonNode; roots: seq[Requirement]): JsonNode =
   let packages = lock.getOrDefault("packages")
-  if lock.getOrDefault("format").getStr() != "foo.lock" or
+  if lock.getOrDefault("format").getStr() != "foo.ivl" or
       packages == nil or packages.kind != JArray:
-    raise newException(ValueError, "Invalid foo.lock")
+    raise newException(ValueError, "Invalid foo.ivl")
   var locked = initTable[string, JsonNode]()
   for item in packages:
     let source = item.getOrDefault("source").getStr()
     if not source.startsWith("registry+"): continue
     let name = item.getOrDefault("name").getStr()
     let version = item.getOrDefault("version").getStr()
-    ensureRelease(name, version)
+    release(name, version)
     if locked.hasKey(name):
       raise newException(ValueError, "Duplicate lockfile package: " & name)
     locked[name] = item
@@ -750,10 +748,10 @@ proc registryLock(lock: JsonNode; roots: seq[Requirement]): JsonNode =
     item["direct"] = %roots.anyIt(it.name == name and it.direct)
     values.add(item)
   %*{
-    "format": "foo.lock",
+    "format": "foo.ivl",
     "version": 1,
     "registry": lock.getOrDefault("registry").getStr(),
-    "requirements": requirementJson(roots),
+    "requirements": requirements(roots),
     "packages": values,
   }
 
@@ -772,7 +770,7 @@ proc choose(catalog: seq[JsonNode]; name: string; constraints: seq[string]): str
     result = semver.select(versions(catalog, name, true), constraints)
 
 proc resolve(root: string; config: Registry; catalog: seq[JsonNode]; roots: seq[Requirement];
-    progress: RegistryProgress = nil): seq[Installed] =
+    progress: Progress = nil): seq[Installed] =
   var preferred = initTable[string, string]()
   var records = initTable[string, JsonNode]()
   var fetched = initTable[string, JsonNode]()
@@ -815,14 +813,14 @@ proc resolve(root: string; config: Registry; catalog: seq[JsonNode]; roots: seq[
         record = release(config, requirement.name, preferred[requirement.name])
         fetched[identity] = record
       records[requirement.name] = record
-      for dependency in dependencies(record): queue.add(dependency)
+      for dependency in imports(record): queue.add(dependency)
     if restart: continue
     var names = toSeq(records.keys)
     names.sort()
     for name in names:
-      var installed = extractRelease(root, records[name])
+      var installed = extract(root, records[name])
       installed.direct = name in direct
-      for dependency in dependencies(records[name]):
+      for dependency in imports(records[name]):
         if records.hasKey(dependency.name):
           installed.dependencies.add(dependency.name & "@" & records[dependency.name]["version"].getStr())
       installed.dependencies.sort()
@@ -832,7 +830,7 @@ proc resolve(root: string; config: Registry; catalog: seq[JsonNode]; roots: seq[
       result.add(installed)
     return
 
-proc writeLock(root, registryRevision: string; requirements: seq[Requirement]; packages: seq[Installed]) =
+proc write(root, generation: string; requirements: seq[Requirement]; packages: seq[Installed]) =
   var values = newJArray()
   for item in packages:
     var dependencies = newJArray()
@@ -845,24 +843,24 @@ proc writeLock(root, registryRevision: string; requirements: seq[Requirement]; p
       "direct": item.direct,
       "dependencies": dependencies,
     })
-  writeFile(root / "foo.lock", pretty(%*{
-    "format": "foo.lock",
+  writeFile(root / "foo.ivl", pretty(%*{
+    "format": "foo.ivl",
     "version": 1,
-    "registry": registryRevision,
-    "requirements": requirementJson(requirements),
+    "registry": generation,
+    "requirements": requirements(requirements),
     "packages": values,
   }) & "\n")
 
 proc reproduce(root: string; config: Registry; lock: JsonNode;
-    progress: RegistryProgress = nil): seq[Installed] =
+    progress: Progress = nil): seq[Installed] =
   let packages = lock.getOrDefault("packages")
-  if lock.getOrDefault("format").getStr() != "foo.lock" or packages == nil or packages.kind != JArray:
-    raise newException(ValueError, "Invalid foo.lock")
+  if lock.getOrDefault("format").getStr() != "foo.ivl" or packages == nil or packages.kind != JArray:
+    raise newException(ValueError, "Invalid foo.ivl")
   var locked = initTable[string, JsonNode]()
   for item in packages:
     let name = item.getOrDefault("name").getStr()
     let version = item.getOrDefault("version").getStr()
-    ensureRelease(name, version)
+    release(name, version)
     if locked.hasKey(name): raise newException(ValueError, "Duplicate lockfile package: " & name)
     locked[name] = item
   for requirement in lock.getOrDefault("requirements"):
@@ -875,12 +873,12 @@ proc reproduce(root: string; config: Registry; lock: JsonNode;
     let version = item.getOrDefault("version").getStr()
     if progress != nil: progress("fetch", name & "@" & version, "locked")
     let record = release(config, name, version)
-    var installed = extractRelease(root, record)
+    var installed = extract(root, record)
     if installed.digest != item.getOrDefault("digest").getStr():
       raise newException(ValueError, "Lockfile digest mismatch for " & name & "@" & version)
     installed.direct = item.getOrDefault("direct").getBool()
     var expected: seq[string]
-    for dependency in dependencies(record):
+    for dependency in imports(record):
       if not locked.hasKey(dependency.name):
         if dependency.optional: continue
         raise newException(ValueError, "Lockfile is missing dependency " & dependency.name & " for " & name)
@@ -901,12 +899,11 @@ proc reproduce(root: string; config: Registry; lock: JsonNode;
         "sha256:" & installed.digest[0 .. 11])
     result.add(installed)
 
-proc install*(root: string; package = ""; progress: RegistryProgress = nil;
+proc install*(root: string; package = ""; progress: Progress = nil;
     refreshRegistry = false): seq[Installed] =
-  let manifestPath = root / "project.json"
-  if not fileExists(manifestPath): raise newException(IOError, "project.json not found")
+  if not projectConfig.manifestExists(root): raise newException(IOError, "Project manifest not found")
   let config = configuration(root)
-  var project = parseJson(readFile(manifestPath))
+  var project = projectConfig.readProject(root)
   if project.getOrDefault("dependencies").kind != JObject: project["dependencies"] = newJObject()
   if package.len > 0:
     var name = package
@@ -915,53 +912,53 @@ proc install*(root: string; package = ""; progress: RegistryProgress = nil;
     if marker > 0:
       name = package[0 ..< marker]
       version = package[marker + 1 .. ^1]
-    if version.len == 0: version = "^" & findEntry(config, name).getOrDefault("version").getStr()
-    ensurePackage(name, version)
+    if version.len == 0: version = "^" & find(config, name).getOrDefault("version").getStr()
+    ensure(name, version)
     project["dependencies"][name] = %version
-    writeFile(manifestPath, pretty(project) & "\n")
-  let requirements = rootRequirements(project)
-  let hasSources = requirements.anyIt(sourceDependency(it.version))
+    projectConfig.writeProject(root, project)
+  let requirements = requirements(project)
+  let has = requirements.anyIt(source(it.version))
   if progress != nil:
     progress("resolve", "dependencies", $requirements.len & " direct requirements")
-  let lockPath = root / "foo.lock"
-  if not refreshRegistry and not hasSources and package.len == 0 and fileExists(lockPath):
-    let lock = parseJson(readFile(lockPath))
+  let receipt = locate(root)
+  if not refreshRegistry and not has and package.len == 0 and fileExists(receipt):
+    let lock = parseJson(readFile(receipt))
     if lock.getOrDefault("requirements") != nil and
-        $lock.getOrDefault("requirements") == $requirementJson(requirements):
+        $lock.getOrDefault("requirements") == $requirements(requirements):
       if progress != nil:
         let revision = lock.getOrDefault("registry").getStr()
-        progress("locked", "foo.lock", if revision.len >= 12: revision[0 .. 11] else: revision)
-      return reproduce(root, config, lock, progress)
-  var registryRoots: seq[Requirement]
-  var sources = sourceNodes(root, requirements, registryRoots, progress)
-  var lockedRegistry: JsonNode
-  if not refreshRegistry and package.len == 0 and fileExists(lockPath):
-    lockedRegistry = registryLock(parseJson(readFile(lockPath)), registryRoots)
-  removeTree(root / ".foo" / "packages")
+        progress("locked", "foo.ivl", if revision.len >= 12: revision[0 .. 11] else: revision)
+      result = reproduce(root, config, lock, progress)
+      return
+  var repositories: seq[Requirement]
+  var sources = nodes(root, requirements, repositories, progress)
+  var pinned: JsonNode
+  if not refreshRegistry and package.len == 0 and fileExists(receipt):
+    pinned = lock(parseJson(readFile(receipt)), repositories)
+  paths.erase(root / ".foo" / "packages")
   var revision = ""
   var registered: seq[Installed]
-  if registryRoots.len > 0:
-    if lockedRegistry != nil:
-      revision = lockedRegistry.getOrDefault("registry").getStr()
+  if repositories.len > 0:
+    if pinned != nil:
+      revision = pinned.getOrDefault("registry").getStr()
       if progress != nil:
-        progress("locked", "foo.lock", if revision.len >= 12: revision[0 .. 11] else: revision)
-      registered = reproduce(root, config, lockedRegistry, progress)
+        progress("locked", "foo.ivl", if revision.len >= 12: revision[0 .. 11] else: revision)
+      registered = reproduce(root, config, pinned, progress)
     else:
       let catalog = entries(config)
       revision = catalog.revision
-      registered = resolve(root, config, catalog.values, registryRoots, progress)
-  result = installSources(root, sources, registered, progress)
-  writeLock(root, revision, requirements, result)
+      registered = resolve(root, config, catalog.values, repositories, progress)
+  result = install(root, sources, registered, progress)
+  write(root, revision, requirements, result)
   if progress != nil:
-    progress("lock", "foo.lock", if revision.len >= 12: revision[0 .. 11] else: "local sources")
+    progress("lock", "foo.ivl", if revision.len >= 12: revision[0 .. 11] else: "local sources")
 
-proc update*(root: string; package = ""; progress: RegistryProgress = nil): seq[Installed] =
-  let manifestPath = root / "project.json"
-  if not fileExists(manifestPath): raise newException(IOError, "project.json not found")
-  let project = parseJson(readFile(manifestPath))
+proc update*(root: string; package = ""; progress: Progress = nil): seq[Installed] =
+  if not projectConfig.manifestExists(root): raise newException(IOError, "Project manifest not found")
+  let project = projectConfig.readProject(root)
   let config = configuration(root)
-  let requirements = rootRequirements(project)
-  if requirements.anyIt(sourceDependency(it.version)):
+  let requirements = requirements(project)
+  if requirements.anyIt(source(it.version)):
     if package.len > 0 and requirements.allIt(it.name != package):
       raise newException(ValueError, "Package is not a direct project dependency: " & package)
     return install(root, progress = progress, refreshRegistry = true)
@@ -969,12 +966,12 @@ proc update*(root: string; package = ""; progress: RegistryProgress = nil): seq[
     progress("resolve", "dependencies", $requirements.len & " direct requirements")
   let catalog = entries(config)
   var resolution = requirements
-  let lockPath = root / "foo.lock"
+  let receipt = locate(root)
   if package.len > 0:
     if requirements.allIt(it.name != package):
       raise newException(ValueError, "Package is not a direct project dependency: " & package)
-    if fileExists(lockPath):
-      let lock = parseJson(readFile(lockPath))
+    if fileExists(receipt):
+      let lock = parseJson(readFile(receipt))
       var locked = initTable[string, JsonNode]()
       for item in lock.getOrDefault("packages"): locked[item["name"].getStr()] = item
       var unlocked = initHashSet[string]()
@@ -991,19 +988,19 @@ proc update*(root: string; package = ""; progress: RegistryProgress = nil): seq[
       for name, item in locked:
         if name notin unlocked:
           resolution.add(Requirement(name: name, version: item["version"].getStr(), kind: "locked"))
-  removeTree(root / ".foo" / "packages")
+  paths.erase(root / ".foo" / "packages")
   result = resolve(root, config, catalog.values, resolution, progress)
-  writeLock(root, catalog.revision, requirements, result)
-  if progress != nil: progress("lock", "foo.lock", catalog.revision[0 .. 11])
+  write(root, catalog.revision, requirements, result)
+  if progress != nil: progress("lock", "foo.ivl", catalog.revision[0 .. 11])
 
 proc outdated*(root: string): seq[JsonNode] =
-  let lockPath = root / "foo.lock"
-  if not fileExists(lockPath): raise newException(IOError, "foo.lock not found; run foo install")
-  let project = parseJson(readFile(root / "project.json"))
-  let requirements = rootRequirements(project).filterIt(not sourceDependency(it.version))
+  let receipt = locate(root)
+  if not fileExists(receipt): raise newException(IOError, "foo.ivl not found; run foo install")
+  let project = projectConfig.readProject(root)
+  let requirements = requirements(project).filterIt(not source(it.version))
   if requirements.len == 0: return
   let catalog = entries(configuration(root))
-  let lock = parseJson(readFile(lockPath))
+  let lock = parseJson(readFile(receipt))
   var locked = initTable[string, string]()
   for item in lock.getOrDefault("packages"):
     locked[item["name"].getStr()] = item["version"].getStr()
@@ -1014,27 +1011,26 @@ proc outdated*(root: string): seq[JsonNode] =
       result.add(%*{"name": requirement.name, "current": current, "latest": latest,
         "constraint": requirement.version})
 
-proc removePackage*(root, name: string;
-    progress: RegistryProgress = nil): seq[Installed] =
-  if not validName(name): raise newException(ValueError, "Invalid package name: " & name)
-  let path = root / "project.json"
-  let project = parseJson(readFile(path))
+proc remove*(root, name: string;
+    progress: Progress = nil): seq[Installed] =
+  if not valid(name): raise newException(ValueError, "Invalid package name: " & name)
+  let project = projectConfig.readProject(root)
   var removed = false
   for field in ["dependencies", "devDependencies", "optionalDependencies"]:
     let values = project.getOrDefault(field)
     if values != nil and values.kind == JObject and values.hasKey(name):
       values.delete(name)
       removed = true
-  let platformValues = project.getOrDefault("platformDependencies")
-  if platformValues != nil and platformValues.kind == JObject:
-    for _, values in platformValues:
+  let systems = project.getOrDefault("platformDependencies")
+  if systems != nil and systems.kind == JObject:
+    for _, values in systems:
       if values.kind == JObject and values.hasKey(name):
         values.delete(name)
         removed = true
   if not removed: raise newException(ValueError, "Package is not a project dependency: " & name)
-  writeFile(path, pretty(project) & "\n")
-  let lockPath = root / "foo.lock"
-  if fileExists(lockPath): removeFile(lockPath)
+  projectConfig.writeProject(root, project)
+  let receipt = locate(root)
+  if fileExists(receipt): removeFile(receipt)
   if progress != nil: progress("remove", name, "project dependency")
   install(root, progress = progress)
 
@@ -1044,10 +1040,10 @@ proc deprecate*(root, package, message: string; token = ""): string =
     raise newException(ValueError, "Deprecation requires package@version")
   let name = package[0 ..< marker]
   let version = package[marker + 1 .. ^1]
-  ensureRelease(name, version)
+  release(name, version)
   if message.strip.len == 0: raise newException(ValueError, "Deprecation message is required")
-  let credential = if token.len > 0: token else: authToken()
+  let credential = if token.len > 0: token else: token()
   if credential.len == 0: raise newException(ValueError, "Run 'foo login' before deprecating a package")
-  let response = requireResponse(request(configuration(root), "/deprecate", "POST",
+  let response = require(request(configuration(root), "/deprecate", "POST",
     $(%*{"name": name, "version": version, "message": message.strip}), credential), "Deprecation")
   response.getOrDefault("package").getStr(name) & "@" & response.getOrDefault("version").getStr(version)

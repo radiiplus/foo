@@ -1,7 +1,7 @@
 import std/options
 import std/strutils
 import ./kind
-import ./token
+import ./token as tokens
 import ../diag/engine
 import ../diag/code
 import ../diag/span
@@ -12,20 +12,20 @@ type
     file: string
     pos, line, col: int
     diag: Engine
-    start, startLine, startCol: int
+    start, row, column: int
 
-proc newLexer*(src: string; diag: Engine): Lexer =
-  Lexer(src: src, file: diag.getFile, diag: diag, line: 1, col: 1,
-    startLine: 1, startCol: 1)
+proc lexer*(src: string; diag: Engine): Lexer =
+  Lexer(src: src, file: diag.file, diag: diag, line: 1, col: 1,
+    row: 1, column: 1)
 
 proc mark(lexer: Lexer) =
   lexer.start = lexer.pos
-  lexer.startLine = lexer.line
-  lexer.startCol = lexer.col
+  lexer.row = lexer.line
+  lexer.column = lexer.col
 
 proc span(lexer: Lexer): Span =
-  Span(start: lexer.start, `end`: lexer.pos, line: lexer.startLine,
-    col: lexer.startCol, file: lexer.file)
+  Span(start: lexer.start, `end`: lexer.pos, line: lexer.row,
+    col: lexer.column, file: lexer.file)
 
 proc read(lexer: Lexer): char =
   if lexer.pos >= lexer.src.len: return '\0'
@@ -41,8 +41,8 @@ proc letter(ch: char): bool = (ch >= 'a' and ch <= 'z') or (ch >= 'A' and ch <= 
 proc digit(ch: char): bool = ch >= '0' and ch <= '9'
 proc alnum(ch: char): bool = letter(ch) or digit(ch)
 
-proc make(lexer: Lexer; kind: Kind; text: string): Token =
-  Token(kind: kind, span: lexer.span(), text: text)
+proc make(lexer: Lexer; kind: Kind; text: string): tokens.Token =
+  tokens.Token(kind: kind, span: lexer.span(), text: text)
 
 proc skip(lexer: Lexer) =
   while lexer.pos < lexer.src.len and lexer.src[lexer.pos] in {' ', '\t', '\r'}: discard lexer.read()
@@ -59,7 +59,7 @@ proc comment(lexer: Lexer) =
     discard lexer.read()
   lexer.diag.emit(Code.Unterminated, lexer.span(), "unterminated multiline comment")
 
-proc stringLiteral(lexer: Lexer; raw = false): Token =
+proc text(lexer: Lexer; raw = false): tokens.Token =
   lexer.mark()
   if raw:
     discard lexer.read(); discard lexer.read(); discard lexer.read()
@@ -90,7 +90,7 @@ proc stringLiteral(lexer: Lexer; raw = false): Token =
   elif not reported: lexer.diag.emit(Code.Unterminated, lexer.span(), "unterminated string")
   make(lexer, Kind.String, text)
 
-proc characterLiteral(lexer: Lexer): Token =
+proc character(lexer: Lexer): tokens.Token =
   lexer.mark(); discard lexer.read()
   var text = ""
   if lexer.pos < lexer.src.len and lexer.src[lexer.pos] == '\\':
@@ -113,7 +113,7 @@ proc characterLiteral(lexer: Lexer): Token =
   else: lexer.diag.emit(Code.Unterminated, lexer.span(), "unterminated character literal")
   make(lexer, Kind.Char, text)
 
-proc numberLiteral(lexer: Lexer): Token =
+proc number(lexer: Lexer): tokens.Token =
   lexer.mark()
   var text = ""
   while lexer.pos < lexer.src.len and (digit(lexer.src[lexer.pos]) or lexer.src[lexer.pos] in {'`', '_'}):
@@ -125,17 +125,17 @@ proc numberLiteral(lexer: Lexer): Token =
       if lexer.src[lexer.pos] notin {'`', '_'}: text.add(lexer.read()) else: discard lexer.read()
   let spelling = lexer.src[lexer.start ..< lexer.pos]
   let point = spelling.find('.')
-  let fractionalSeparator = point >= 0 and '`' in spelling[point + 1 .. ^1]
+  let separator = point >= 0 and '`' in spelling[point + 1 .. ^1]
   if spelling.contains('_'):
     lexer.diag.emit(Code.Digit, lexer.span(), "Use backticks between digits instead of underscores")
-  elif fractionalSeparator:
+  elif separator:
     lexer.diag.emit(Code.Digit, lexer.span(), "Backticks can separate only the whole-number part")
   elif spelling.contains("``") or spelling.endsWith('`') or spelling.contains("`.") or spelling.contains(".`"):
     lexer.diag.emit(Code.Digit, lexer.span(), "Place backticks between digits")
   result = make(lexer, (if real: Kind.Float else: Kind.Int), text)
   result.spelling = spelling
 
-proc keywordKind(text: string): Kind =
+proc keyword(text: string): Kind =
   case text
   of "constant": Constant
   of "dynamic": Mutable
@@ -154,7 +154,7 @@ proc keywordKind(text: string): Kind =
   of "use": Use
   of "public": Public
   of "unsafe": Unsafe
-  of "native": Native
+  of "native": Kind.Native
   of "try": Try
   of "are": Are
   of "fallback": Catch
@@ -211,13 +211,13 @@ proc keywordKind(text: string): Kind =
   of "derives": Derives
   else: Ident
 
-proc word(lexer: Lexer): Token =
+proc word(lexer: Lexer): tokens.Token =
   lexer.mark()
   var text = ""
   while lexer.pos < lexer.src.len and (alnum(lexer.src[lexer.pos]) or lexer.src[lexer.pos] == '_'): text.add(lexer.read())
-  make(lexer, keywordKind(text), text)
+  make(lexer, keyword(text), text)
 
-proc blockToken(lexer: Lexer; kind: Kind; substrate: string = ""; header = ""): Token =
+proc native(lexer: Lexer; kind: Kind; substrate: string = ""; header = ""): tokens.Token =
   lexer.mark()
   while lexer.pos < lexer.src.len and lexer.src[lexer.pos] != '{': discard lexer.read()
   if lexer.pos < lexer.src.len: discard lexer.read()
@@ -251,14 +251,14 @@ proc blockToken(lexer: Lexer; kind: Kind; substrate: string = ""; header = ""): 
       dec depth
       if depth == 0:
         var tok = make(lexer, kind, body)
-        if substrate.len > 0: tok.native = some(NativeInfo(substrate: substrate,
+        if substrate.len > 0: tok.native = some(tokens.Lexeme(substrate: substrate,
           header: if header.len > 0: some(header) else: none(string)))
         return tok
     body.add(ch)
   lexer.diag.emit(Code.Unterminated, lexer.span(), "unterminated native block")
   make(lexer, kind, body)
 
-proc symbol(lexer: Lexer): Token =
+proc symbol(lexer: Lexer): tokens.Token =
   lexer.mark(); let ch = lexer.read()
   if ch == '#' and lexer.pos < lexer.src.len and lexer.src[lexer.pos] == '[':
     discard lexer.read(); return make(lexer, Kind.HashBracket, "#[")
@@ -277,7 +277,7 @@ proc symbol(lexer: Lexer): Token =
       Kind.Broken
   make(lexer, kind, $ch)
 
-proc next(lexer: Lexer): Token =
+proc next(lexer: Lexer): tokens.Token =
   lexer.skip()
   if lexer.pos >= lexer.src.len:
     lexer.mark(); return make(lexer, Kind.Eof, "")
@@ -302,18 +302,18 @@ proc next(lexer: Lexer): Token =
         header = lexer.src[cursor ..< opening].strip()
         cursor = opening
     if cursor < lexer.src.len and lexer.src[cursor] == '{':
-      return blockToken(lexer, Kind.Native, substrate, header)
+      return native(lexer, Kind.Native, substrate, header)
   if ch == '\n': lexer.mark(); discard lexer.read(); return make(lexer, Kind.NewlineToken, "\n")
   if ch == '-' and lexer.pos + 2 < lexer.src.len and lexer.src[lexer.pos + 1] == '-' and lexer.src[lexer.pos + 2] == '-': lexer.comment(); return lexer.next()
   if ch == '-' and lexer.pos + 1 < lexer.src.len and lexer.src[lexer.pos + 1] == '-': lexer.scanline(); return lexer.next()
-  if lexer.src[lexer.pos .. ^1].startsWith("raw\""): return stringLiteral(lexer, true)
-  if ch == '"': return stringLiteral(lexer)
-  if ch == '\'': return characterLiteral(lexer)
-  if digit(ch): return numberLiteral(lexer)
+  if lexer.src[lexer.pos .. ^1].startsWith("raw\""): return text(lexer, true)
+  if ch == '"': return text(lexer)
+  if ch == '\'': return character(lexer)
+  if digit(ch): return number(lexer)
   if letter(ch) or ch == '_': return word(lexer)
   symbol(lexer)
 
-proc lex*(lexer: Lexer; lossless = false): seq[Token] =
+proc lex*(lexer: Lexer; lossless = false): seq[tokens.Token] =
   var ending = 0
   while true:
     var tok = lexer.next()

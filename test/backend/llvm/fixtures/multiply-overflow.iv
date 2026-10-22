@@ -1,2 +1,0 @@
-function double(value integer 65) giving integer 65 { give value multiply 2. }
-start { double(18446744073709551615). }

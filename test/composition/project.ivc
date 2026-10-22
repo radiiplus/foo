@@ -1,0 +1,7 @@
+capability "project"
+project {
+  name is "composition"
+  version is "0.1.0"
+  source is "src"
+  entry is "src/main.iv"
+}

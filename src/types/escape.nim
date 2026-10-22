@@ -35,12 +35,12 @@ proc merge(sets: varargs[HashSet[int]]): HashSet[int] =
   for values in sets:
     for value in values: result.incl(value)
 
-proc nodeType(types: Table[pointer, semantic.Type]; node: ast.Node): semantic.Type =
+proc typed(types: Table[pointer, semantic.Type]; node: ast.Node): semantic.Type =
   if node != nil and types.hasKey(cast[pointer](node)): types[cast[pointer](node)] else: nil
 
-proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
+proc escape*(body: ast.Block; environment: Environment; diag: Engine;
     types: Table[pointer, semantic.Type]; parameters: seq[string] = @[];
-    returnsFrom: seq[int] = @[]) =
+    returns: seq[int] = @[]) =
   proc report(expression: ast.Expression; origins: HashSet[int]; limit: int;
       message: string) =
     for depth in origins:
@@ -67,32 +67,32 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
       let name = ast.Name(node).text
       if bindings.hasKey(name): result = bindings[name].origins
     of "uninitialized":
-      if storage(nodeType(types, node)): result.incl(depth)
+      if storage(typed(types, node)): result.incl(depth)
     of "group": result = expression(ast.Group(node).expr, bindings, depth)
     of "unary": result = expression(ast.Unary(node).operand, bindings, depth)
     of "binary":
       let binary = ast.Binary(node)
       let origins = merge(expression(binary.left, bindings, depth),
         expression(binary.right, bindings, depth))
-      if storage(nodeType(types, node)): result = origins
+      if storage(typed(types, node)): result = origins
     of "field":
       let origins = expression(ast.Field(node).object, bindings, depth)
-      if storage(nodeType(types, node)): result = origins
+      if storage(typed(types, node)): result = origins
     of "index":
       let index = ast.Index(node)
       let origins = expression(index.object, bindings, depth)
       discard expression(index.index, bindings, depth)
-      if storage(nodeType(types, node)): result = origins
+      if storage(typed(types, node)): result = origins
     of "call":
       let call = ast.Call(node)
-      var callee = nodeType(types, call.callee)
+      var callee = typed(types, call.callee)
       if callee == nil and call.callee.tag == "name":
         callee = environment.lookup(ast.Name(call.callee).text)
       var arguments: seq[HashSet[int]]
       for argument in call.args:
         arguments.add(expression(argument, bindings, depth))
-      let callType = nodeType(types, node)
-      if callType != nil and callType.kind == "record" and
+      let representation = typed(types, node)
+      if representation != nil and representation.kind == "record" and
           (callee == nil or callee.kind != "function"):
         for origins in arguments: result = merge(result, origins)
         return
@@ -101,7 +101,7 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
             (index notin callee.borrows and callee.abi != "runtime.dylib"):
           report(argument, arguments[index], 0,
             "This call may retain storage owned by the current scope")
-      if not storage(callType): return
+      if not storage(representation): return
       if callee != nil and callee.kind == "function" and
           (callee.abi.len == 0 or callee.abi in ["runtime.sequence", "runtime.memory"] or
           (callee.abi == "runtime.fs" and callee.borrows.len > 0)):
@@ -128,12 +128,12 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
         result = merge(result, expression(item, bindings, depth))
     else: discard
 
-  proc visit(bodyNode: ast.Block; outer: var Table[string, Binding]; depth: int) =
+  proc visit(section: ast.Block; outer: var Table[string, Binding]; depth: int) =
     var bindings = initTable[string, Binding]()
     for name, binding in outer:
       bindings[name] = Binding(origins: merge(binding.origins), depth: binding.depth,
         span: binding.span)
-    for statement in bodyNode.stmts:
+    for statement in section.stmts:
       case statement.tag
       of "constant":
         let declaration = ast.Constant(statement)
@@ -157,9 +157,9 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
           let origins = expression(value, bindings, depth)
           report(value, origins, 0,
             "This result may outlive storage owned by its function")
-          if returnsFrom.len > 0 and storage(nodeType(types, value)):
+          if returns.len > 0 and storage(typed(types, value)):
             for origin in origins:
-              if origin < 0 and -origin - 1 notin returnsFrom:
+              if origin < 0 and -origin - 1 notin returns:
                 diag.emit(Code.ScopeEscape, value.span,
                   "This result borrows from a parameter outside its declared relationship")
                 break
@@ -198,14 +198,14 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
           else:
             visit(ast.Block(branch.else), bindings, depth + 1)
       of "match":
-        let matchNode = ast.Match(statement)
-        let scrutineeOrigins = expression(matchNode.scrutinee, bindings, depth)
-        for arm in matchNode.cases:
+        let match = ast.Match(statement)
+        let provenance = expression(match.scrutinee, bindings, depth)
+        for arm in match.cases:
           var locals = bindings
           if arm.pattern != nil and arm.pattern.tag == "variant-pattern":
-            let pattern = ast.VariantPattern(arm.pattern)
+            let pattern = ast.Arm(arm.pattern)
             if pattern.binding != nil:
-              locals[pattern.binding.text] = Binding(origins: scrutineeOrigins,
+              locals[pattern.binding.text] = Binding(origins: provenance,
                 depth: depth + 1, span: pattern.span)
           discard expression(arm.guard, locals, depth + 1)
           visit(arm.body, locals, depth + 1)
@@ -221,7 +221,7 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
         discard expression(loop.cond, bindings, depth)
         visit(loop.body, bindings, depth + 1)
       of "unsafe": visit(ast.Unsafe(statement).body, bindings, depth + 1)
-      of "eval": visit(ast.EvalBlock(statement).body, bindings, depth + 1)
+      of "eval": visit(ast.Evaluation(statement).body, bindings, depth + 1)
       of "defer":
         let deferred = ast.`Defer`(statement)
         if deferred.body != nil and deferred.body.tag == "block":
@@ -241,41 +241,41 @@ proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine;
       bindings[parameter] = Binding(origins: origins, depth: 0, span: body.span)
   visit(body, bindings, 1)
 
-proc checkEscape*(body: ast.Block; environment: Environment; diag: Engine) =
-  checkEscape(body, environment, diag, initTable[pointer, semantic.Type]())
+proc escape*(body: ast.Block; environment: Environment; diag: Engine) =
+  escape(body, environment, diag, initTable[pointer, semantic.Type]())
 
-proc checkBorrowInvalidation*(body: ast.Block; environment: Environment;
+proc invalidate*(body: ast.Block; environment: Environment;
     diag: Engine; types: Table[pointer, semantic.Type]; parameters: seq[string] = @[];
     releases: seq[int] = @[]) =
   var parents = initTable[int, HashSet[int]]()
   var returned: seq[tuple[owners: HashSet[int], span: Span]]
-  var nextOwner = 0
+  var identity = 0
 
   proc fresh(): HashSet[int] =
-    inc nextOwner
+    inc identity
     result = initHashSet[int]()
-    result.incl(nextOwner)
+    result.incl(identity)
 
-  proc includesInvalid(owners, invalid: HashSet[int];
+  proc expired(owners, invalid: HashSet[int];
       seen: var HashSet[int]): bool =
     for owner in owners:
       if owner in invalid: return true
       if owner in seen: continue
       seen.incl(owner)
-      if parents.hasKey(owner) and includesInvalid(parents[owner], invalid, seen):
+      if parents.hasKey(owner) and expired(parents[owner], invalid, seen):
         return true
 
-  proc calleeType(node: ast.Expression): semantic.Type =
-    result = nodeType(types, node)
+  proc callee(node: ast.Expression): semantic.Type =
+    result = typed(types, node)
     if result == nil and node != nil and node.tag == "name":
       result = environment.lookup(ast.Name(node).text)
 
-  proc callName(node: ast.Expression): string =
+  proc called(node: ast.Expression): string =
     if node == nil: return ""
     if node.tag == "name": return ast.Name(node).text
     if node.tag == "field": return ast.Field(node).field.text
 
-  proc visitExpr(node: ast.Expression; bindings: Table[string, HashSet[int]];
+  proc expression(node: ast.Expression; bindings: Table[string, HashSet[int]];
       invalid: var HashSet[int]): HashSet[int] =
     result = initHashSet[int]()
     if node == nil: return
@@ -285,26 +285,26 @@ proc checkBorrowInvalidation*(body: ast.Block; environment: Environment;
       if bindings.hasKey(name):
         result = bindings[name]
         var seen = initHashSet[int]()
-        if includesInvalid(result, invalid, seen):
+        if expired(result, invalid, seen):
           diag.emit(Code.ScopeEscape, node.span,
             "Storage is used after its owner was released, resized, or unmapped")
-    of "group": result = visitExpr(ast.Group(node).expr, bindings, invalid)
-    of "unary": result = visitExpr(ast.Unary(node).operand, bindings, invalid)
+    of "group": result = expression(ast.Group(node).expr, bindings, invalid)
+    of "unary": result = expression(ast.Unary(node).operand, bindings, invalid)
     of "field":
-      let owners = visitExpr(ast.Field(node).object, bindings, invalid)
-      if storage(nodeType(types, node)): result = owners
+      let owners = expression(ast.Field(node).object, bindings, invalid)
+      if storage(typed(types, node)): result = owners
     of "index":
       let index = ast.Index(node)
-      let owners = visitExpr(index.object, bindings, invalid)
-      discard visitExpr(index.index, bindings, invalid)
-      if storage(nodeType(types, node)): result = owners
+      let owners = expression(index.object, bindings, invalid)
+      discard expression(index.index, bindings, invalid)
+      if storage(typed(types, node)): result = owners
     of "call":
       let call = ast.Call(node)
       var arguments: seq[HashSet[int]]
       for argument in call.args:
-        arguments.add(visitExpr(argument, bindings, invalid))
-      let signature = calleeType(call.callee)
-      let name = callName(call.callee)
+        arguments.add(expression(argument, bindings, invalid))
+      let signature = callee(call.callee)
+      let name = called(call.callee)
       if signature != nil and signature.kind == "function":
         for index in signature.borrows:
           if index < arguments.len:
@@ -329,135 +329,135 @@ proc checkBorrowInvalidation*(body: ast.Block; environment: Environment;
           invalid = merge(invalid, arguments[consumed])
     of "binary":
       let binary = ast.Binary(node)
-      let owners = merge(visitExpr(binary.left, bindings, invalid),
-        visitExpr(binary.right, bindings, invalid))
-      if storage(nodeType(types, node)): result = owners
+      let owners = merge(expression(binary.left, bindings, invalid),
+        expression(binary.right, bindings, invalid))
+      if storage(typed(types, node)): result = owners
     of "allocation":
       let allocation = ast.Allocation(node)
-      discard visitExpr(allocation.size, bindings, invalid)
-      discard visitExpr(allocation.owner, bindings, invalid)
+      discard expression(allocation.size, bindings, invalid)
+      discard expression(allocation.owner, bindings, invalid)
     of "sequence-value":
       for item in ast.Values(node).items:
-        result = merge(result, visitExpr(item, bindings, invalid))
+        result = merge(result, expression(item, bindings, invalid))
     else: discard
 
-  proc allocationParent(node: ast.Expression;
+  proc parent(node: ast.Expression;
       bindings: Table[string, HashSet[int]];
       invalid: var HashSet[int]): HashSet[int] =
     result = initHashSet[int]()
     if node == nil: return
     if node.tag in ["group", "unary"]:
-      return allocationParent(if node.tag == "group": ast.Group(node).expr
+      return parent(if node.tag == "group": ast.Group(node).expr
         else: ast.Unary(node).operand, bindings, invalid)
     if node.tag != "call": return
     let call = ast.Call(node)
-    let signature = calleeType(call.callee)
+    let signature = callee(call.callee)
     if signature != nil and signature.abi == "runtime.memory" and
-        callName(call.callee) in ["allocate", "reserve", "expand"] and
+        called(call.callee) in ["allocate", "reserve", "expand"] and
         call.args.len > 0:
-      result = visitExpr(call.args[0], bindings, invalid)
+      result = expression(call.args[0], bindings, invalid)
 
-  proc visitBlock(bodyNode: ast.Block; outer: var Table[string, HashSet[int]];
+  proc visit(section: ast.Block; outer: var Table[string, HashSet[int]];
       invalid: var HashSet[int]) =
     var bindings = outer
-    let firstReturn = returned.len
-    var deferredActions: seq[ast.Expression]
-    var deferredBlocks: seq[ast.Block]
-    for statement in bodyNode.stmts:
+    let output = returned.len
+    var actions: seq[ast.Expression]
+    var blocks: seq[ast.Block]
+    for statement in section.stmts:
       case statement.tag
       of "constant", "mutable":
         let value = if statement.tag == "constant":
           ast.Constant(statement).value else: ast.Mutable(statement).value
         let name = if statement.tag == "constant":
           ast.Constant(statement).name.text else: ast.Mutable(statement).name.text
-        var owners = visitExpr(value, bindings, invalid)
-        if owners.len == 0 and storage(nodeType(types, value)):
+        var owners = expression(value, bindings, invalid)
+        if owners.len == 0 and storage(typed(types, value)):
           owners = fresh()
-          let parent = allocationParent(value, bindings, invalid)
+          let parent = parent(value, bindings, invalid)
           if parent.len > 0:
             for owner in owners: parents[owner] = parent
         bindings[name] = owners
       of "assignment":
         let assignment = ast.Assignment(statement)
-        let owners = visitExpr(assignment.value, bindings, invalid)
-        discard visitExpr(assignment.target, bindings, invalid)
+        let owners = expression(assignment.value, bindings, invalid)
+        discard expression(assignment.target, bindings, invalid)
         if assignment.target.tag == "name":
           bindings[ast.Name(assignment.target).text] = owners
       of "destructure":
         let declaration = ast.Destructure(statement)
-        let owners = visitExpr(declaration.value, bindings, invalid)
+        let owners = expression(declaration.value, bindings, invalid)
         for name in declaration.bindings: bindings[name.text] = owners
       of "action":
         let action = ast.Action(statement)
         if action.value != nil:
-          discard visitExpr(action.value, bindings, invalid)
+          discard expression(action.value, bindings, invalid)
         else:
-          discard visitExpr(action.name, bindings, invalid)
+          discard expression(action.name, bindings, invalid)
           for argument in action.args:
-            discard visitExpr(argument, bindings, invalid)
+            discard expression(argument, bindings, invalid)
       of "give":
         let value = ast.Give(statement).value
-        let owners = visitExpr(value, bindings, invalid)
-        if storage(nodeType(types, value)) and owners.len > 0:
+        let owners = expression(value, bindings, invalid)
+        if storage(typed(types, value)) and owners.len > 0:
           returned.add((owners, value.span))
       of "defer":
         let deferred = ast.`Defer`(statement)
         if deferred.error: continue
         if deferred.body != nil and deferred.body.tag == "block":
-          deferredBlocks.add(ast.Block(deferred.body))
+          blocks.add(ast.Block(deferred.body))
         else:
-          deferredActions.add(ast.Expression(deferred.body))
+          actions.add(ast.Expression(deferred.body))
       of "when":
         let branch = ast.`When`(statement)
-        discard visitExpr(branch.cond, bindings, invalid)
+        discard expression(branch.cond, bindings, invalid)
         var yes = bindings
-        var yesInvalid = invalid
-        visitBlock(branch.then, yes, yesInvalid)
-        var noInvalid = invalid
+        var positive = invalid
+        visit(branch.then, yes, positive)
+        var negative = invalid
         if branch.else != nil:
           var no = bindings
           if branch.else.tag == "block":
-            visitBlock(ast.Block(branch.else), no, noInvalid)
+            visit(ast.Block(branch.else), no, negative)
           elif branch.else.tag == "when":
-            visitBlock(ast.Block(tag: "block", span: branch.else.span,
-              stmts: @[ast.Statement(branch.else)]), no, noInvalid)
-        invalid = merge(yesInvalid, noInvalid)
+            visit(ast.Block(tag: "block", span: branch.else.span,
+              stmts: @[ast.Statement(branch.else)]), no, negative)
+        invalid = merge(positive, negative)
       of "match":
-        let matchNode = ast.Match(statement)
-        let owners = visitExpr(matchNode.scrutinee, bindings, invalid)
+        let match = ast.Match(statement)
+        let owners = expression(match.scrutinee, bindings, invalid)
         var combined = invalid
-        for arm in matchNode.cases:
+        for arm in match.cases:
           var local = bindings
-          var armInvalid = invalid
+          var damaged = invalid
           if arm.pattern != nil and arm.pattern.tag == "variant-pattern":
-            let pattern = ast.VariantPattern(arm.pattern)
+            let pattern = ast.Arm(arm.pattern)
             if pattern.binding != nil: local[pattern.binding.text] = owners
-          discard visitExpr(arm.guard, local, armInvalid)
-          visitBlock(arm.body, local, armInvalid)
-          combined = merge(combined, armInvalid)
+          discard expression(arm.guard, local, damaged)
+          visit(arm.body, local, damaged)
+          combined = merge(combined, damaged)
         invalid = combined
       of "while":
         let loop = ast.`While`(statement)
-        discard visitExpr(loop.cond, bindings, invalid)
-        visitBlock(loop.body, bindings, invalid)
+        discard expression(loop.cond, bindings, invalid)
+        visit(loop.body, bindings, invalid)
       of "for":
         let loop = ast.`For`(statement)
         var local = bindings
-        local[loop.bind.text] = visitExpr(loop.iter, bindings, invalid)
-        visitBlock(loop.body, local, invalid)
-      of "unsafe": visitBlock(ast.Unsafe(statement).body, bindings, invalid)
+        local[loop.bind.text] = expression(loop.iter, bindings, invalid)
+        visit(loop.body, local, invalid)
+      of "unsafe": visit(ast.Unsafe(statement).body, bindings, invalid)
       else: discard
-    let beforeCleanup = invalid
-    for index in countdown(deferredBlocks.high, 0):
-      visitBlock(deferredBlocks[index], bindings, invalid)
-    for index in countdown(deferredActions.high, 0):
-      discard visitExpr(deferredActions[index], bindings, invalid)
-    var cleanupInvalid = initHashSet[int]()
+    let cleanup = invalid
+    for index in countdown(blocks.high, 0):
+      visit(blocks[index], bindings, invalid)
+    for index in countdown(actions.high, 0):
+      discard expression(actions[index], bindings, invalid)
+    var teardown = initHashSet[int]()
     for owner in invalid:
-      if owner notin beforeCleanup: cleanupInvalid.incl(owner)
-    for index in firstReturn ..< returned.len:
+      if owner notin cleanup: teardown.incl(owner)
+    for index in output ..< returned.len:
       var seen = initHashSet[int]()
-      if includesInvalid(returned[index].owners, cleanupInvalid, seen):
+      if expired(returned[index].owners, teardown, seen):
         diag.emit(Code.ScopeEscape, returned[index].span,
           "Returned storage is released by cleanup before the caller can use it")
     for name in outer.keys:
@@ -467,12 +467,12 @@ proc checkBorrowInvalidation*(body: ast.Block; environment: Environment;
   for parameter in parameters:
     if storage(environment.lookup(parameter)):
       bindings[parameter] = fresh()
-  let parameterOwners = bindings
+  let ownership = bindings
   var invalid = initHashSet[int]()
-  visitBlock(body, bindings, invalid)
+  visit(body, bindings, invalid)
   for index, parameter in parameters:
-    if index notin releases and parameterOwners.hasKey(parameter):
-      for owner in parameterOwners[parameter]:
+    if index notin releases and ownership.hasKey(parameter):
+      for owner in ownership[parameter]:
         if owner in invalid:
           diag.emit(Code.ScopeEscape, body.span,
             "Function releases parameter '" & parameter &

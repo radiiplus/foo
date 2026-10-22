@@ -1,5 +1,7 @@
 # Persistent Sequences
 
+Version: 1.
+
 This document defines the storage contract used by `sequence`. Generated code
 still represents a sequence as a data pointer and a logical length. Capacity
 and ownership metadata are private runtime details. This does not make a

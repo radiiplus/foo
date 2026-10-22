@@ -1,5 +1,6 @@
 use heap as priority.
 use testing as check.
+use sequence as items.
 
 test "persistent minimum heap" {
   constant empty is priority.create[integer].
@@ -30,4 +31,66 @@ test "persistent minimum heap" {
   check.expect(priority.first[integer](again) try is 3).
   check.expect(priority.first[integer](last) try is 7).
   check.expect(priority.length[integer](last) is 2).
+}
+
+
+test "heap push preserves prior storage while sifting" {
+  constant empty is priority.create[integer].
+  constant first is priority.push[integer](empty, 7) try.
+  constant second is priority.push[integer](first, 3) try.
+  constant third is priority.push[integer](second, 1) try.
+  after {
+    priority.release[integer](first) fallback nothing.
+    priority.release[integer](second) fallback nothing.
+    priority.release[integer](third) fallback nothing.
+  }
+  check.expect(priority.first[integer](first) try is 7).
+  check.expect(priority.first[integer](second) try is 3).
+  check.expect(priority.first[integer](third) try is 1).
+  check.expect(first.values at 0 is 7).
+  check.expect(second.values at 0 is 3 and second.values at 1 is 7).
+  set third.values at 0 to 99.
+  check.expect(priority.first[integer](first) try is 7).
+  check.expect(priority.first[integer](second) try is 3).
+}
+
+
+test "heap updates retain prior snapshots across generated priorities" {
+  dynamic seed of type unsigned is 1.
+  dynamic run of type unsigned is 0.
+  while run less than 100 {
+    constant values is items.sized[unsigned](run remainder 79) try.
+    dynamic index of type unsigned is 0.
+    while index less than items.length[unsigned](values) {
+      set seed to (seed multiply 48271 plus 1) remainder 65521.
+      set values at index to seed remainder 23. increase index by 1.
+    }
+    constant original is priority.build[unsigned](values) try.
+    constant snapshot is items.copy[unsigned](original.values) try.
+    constant newer is priority.push[unsigned](original, 0) try.
+    constant merged is priority.merge[unsigned](original, newer) try.
+    constant drained is priority.sorted[unsigned](original) try.
+    constant expected is items.sort[unsigned](values) try.
+    set index to 0.
+    while index less than items.length[unsigned](values) {
+      check.expect(original.values at index is snapshot at index).
+      check.expect(drained at index is expected at index). increase index by 1.
+    }
+    when priority.length[unsigned](original) greater than 0 {
+      constant minimum is priority.first[unsigned](original) try.
+      constant replaced is priority.replace[unsigned](original, 999) try.
+      constant popped is priority.pop[unsigned](original) try.
+      check.expect(popped.item is minimum).
+      check.expect(priority.first[unsigned](original) try is minimum).
+      set index to 0.
+      while index less than items.length[unsigned](snapshot) { check.expect(original.values at index is snapshot at index). increase index by 1. }
+      priority.release[unsigned](replaced) try. priority.release[unsigned](popped.rest) try.
+    }
+    set newer.values at 0 to 888.
+    set index to 0.
+    while index less than items.length[unsigned](snapshot) { check.expect(original.values at index is snapshot at index). increase index by 1. }
+    priority.release[unsigned](original) try. priority.release[unsigned](newer) try. priority.release[unsigned](merged) try.
+    items.release[unsigned](snapshot) try. items.release[unsigned](drained) try. items.release[unsigned](expected) try. items.release[unsigned](values) try.
+    increase run by 1.
+  }
 }

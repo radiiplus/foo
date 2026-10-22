@@ -1,0 +1,15 @@
+capability "project"
+project {
+  name is "qbe-shared-project"
+  version is "0.1.0"
+  entry is "src/library.iv"
+  build {
+    backend is "qbe"
+    products {
+      library {
+        kind is "shared"
+        entry is "src/library.iv"
+      }
+    }
+  }
+}

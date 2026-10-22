@@ -1,9 +1,10 @@
 import ../../src/sema/link
-import ../../src/sema/module as semaModule
+import ../../src/sema/module as modules
 import ../../src/sema/scope
 import ../../src/sema/symbol
 import ../../src/ast/node as ast
 import std/tables
+import std/json
 import ../../src/diag/span
 
 let imported = ast.Unit(
@@ -19,12 +20,12 @@ let entry = ast.Unit(
     ast.Statement(ast.Give(tag: "give", value: ast.Field(tag: "field",
       `object`: ast.Name(tag: "name", text: "lib"), field: ast.Name(tag: "name", text: "value"))))
   ]))
-var units = initTable[string, semaModule.Unit]()
-units["lib"] = semaModule.Unit(name: "lib", node: imported, scope: newScope())
+var units = initTable[string, modules.Unit]()
+units["lib"] = modules.Unit(name: "lib", node: imported, scope: scope())
 let field = ast.Field(ast.Give(entry.body.stmts[1]).value)
 var resolutions = initTable[pointer, Symbol]()
 resolutions[cast[pointer](field)] = Symbol(node: imported.body.stmts[0])
-let resolution = semaModule.Resolution(units: units, resolutions: resolutions, order: @["lib"])
+let resolution = modules.Resolution(units: units, resolutions: resolutions, order: @["lib"])
 let linked = link(Program(tag: "program", units: @[entry]), resolution)
 doAssert linked.units[0].body.stmts.len == 2
 doAssert linked.units[0].body.stmts[0].tag == "constant"
@@ -41,8 +42,8 @@ let choices = ast.Unit(
       name: ast.Name(tag: "name", text: "Result"),
       body: ast.Choice(tag: "choice", variants: @[item])))
   ]))
-let patternName = ast.Name(tag: "name", text: "choices.item")
-let pattern = ast.VariantPattern(tag: "variant-pattern", name: patternName,
+let label = ast.Name(tag: "name", text: "choices.item")
+let pattern = ast.Arm(tag: "variant-pattern", name: label,
   binding: ast.Name(tag: "name", text: "found"))
 let matching = ast.Unit(
   tag: "unit", span: Span(), name: ast.Name(tag: "name", text: "matching"),
@@ -51,16 +52,33 @@ let matching = ast.Unit(
       cases: @[ast.Case(tag: "case", pattern: pattern,
         body: ast.Block(tag: "block", stmts: @[]))]))
   ]))
-var choiceUnits = initTable[string, semaModule.Unit]()
-choiceUnits["choices"] = semaModule.Unit(name: "choices", node: choices, scope: newScope())
-var choiceResolutions = initTable[pointer, Symbol]()
-choiceResolutions[cast[pointer](patternName)] = Symbol(node: item)
-let choiceResolution = semaModule.Resolution(units: choiceUnits,
-  resolutions: choiceResolutions, order: @["choices"])
-let choiceLinked = link(Program(tag: "program", units: @[matching]), choiceResolution)
-let linkedAlias = ast.Alias(choiceLinked.units[0].body.stmts[0])
-let linkedItem = ast.Choice(linkedAlias.body).variants[0].name.text
-let linkedMatch = ast.Match(choiceLinked.units[0].body.stmts[1])
-doAssert linkedItem == "import_0_item"
-doAssert ast.VariantPattern(linkedMatch.cases[0].pattern).name.text == linkedItem
+var alternatives = initTable[string, modules.Unit]()
+alternatives["choices"] = modules.Unit(name: "choices", node: choices, scope: scope())
+var selections = initTable[pointer, Symbol]()
+selections[cast[pointer](label)] = Symbol(node: item)
+let selection = modules.Resolution(units: alternatives,
+  resolutions: selections, order: @["choices"])
+let choice = link(Program(tag: "program", units: @[matching]), selection)
+let alias = ast.Alias(choice.units[0].body.stmts[0])
+let assembled = ast.Choice(alias.body).variants[0].name.text
+let match = ast.Match(choice.units[0].body.stmts[1])
+doAssert assembled == "import_0_item"
+doAssert ast.Arm(match.cases[0].pattern).name.text == assembled
 echo "semantic link parity: ok"
+
+block moduleGraph:
+  let function = ast.Function(tag: "function", public: true,
+    name: ast.Name(tag: "name", text: "start"), body: ast.Block(tag: "block"))
+  let unit = ast.Unit(tag: "unit", name: ast.Name(tag: "name", text: "main"),
+    body: ast.Block(tag: "block", stmts: @[ast.Statement(function)]))
+  var imports = initTable[string, string]()
+  imports["io"] = "lib.io"
+  var units = initTable[string, modules.Unit]()
+  units["main"] = modules.Unit(name: "main", package: "app", path: "main.iv",
+    imports: imports, scope: scope(), node: unit)
+  let output = graph(Resolution(units: units,
+    resolutions: initTable[pointer, Symbol](), order: @["main"]))
+  doAssert output["format"].getStr == "foo.graph"
+  doAssert output["units"][0]["entry"].getBool
+  doAssert output["units"][0]["symbols"][0]["visibility"].getStr == "public"
+echo "semantic module parity: ok"
